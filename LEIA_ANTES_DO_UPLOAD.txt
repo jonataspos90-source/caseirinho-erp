@@ -1,0 +1,7 @@
+UPLOAD CORRETO NO GITHUB
+
+1. Abra esta pasta depois de descompactar.
+2. Selecione TODOS os arquivos e a pasta icons (Ctrl+A).
+3. No GitHub, em caseirinho-erp > Add file > Upload files, arraste os ITENS selecionados.
+4. NÃO arraste a pasta que contém estes arquivos.
+5. Na raiz do repositório devem aparecer diretamente: index.html, manifest.webmanifest, service-worker.js, offline.html, robots.txt, README.md, SECURITY.md, .nojekyll e a pasta icons.
