@@ -11318,5 +11318,109 @@ function rebind(){const b=document.getElementById('loginEntrar');if(!b)return;b.
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',rebind,{once:true});else rebind();setTimeout(rebind,300);setTimeout(rebind,1200);
 })();
 </script>
+
+<style id="john-v82-realtime-style">
+#johnRealtimeBadge{position:fixed;right:16px;top:50px;z-index:2147482500;padding:8px 11px;border-radius:999px;font:800 11px/1.2 Inter,system-ui;background:#0f3428;color:#a8f0cc;border:1px solid #21624a;box-shadow:0 8px 24px #0003}
+#johnRealtimeBadge.sync{background:#2d2810;color:#ffe59a;border-color:#6b5b16}#johnRealtimeBadge.err{background:#3a1722;color:#ffc1d0;border-color:#6e2940}
+#johnEcomNewCount{display:inline-flex;min-width:22px;height:22px;padding:0 6px;border-radius:999px;align-items:center;justify-content:center;background:#ef4444;color:white;font-size:11px;font-weight:900;margin-left:6px}
+#johnNewOrderOverlay{position:fixed;inset:0;z-index:2147483600;background:#020617aa;display:none;align-items:center;justify-content:center;padding:18px;backdrop-filter:blur(6px)}
+#johnNewOrderOverlay.show{display:flex}
+#johnNewOrderCard{width:min(620px,96vw);background:var(--j-panel,#fff);color:var(--j-text,#111827);border:1px solid var(--j-line,#dbe2ee);border-radius:22px;box-shadow:0 30px 90px #0008;overflow:hidden}
+#johnNewOrderCard .head{padding:18px 20px;background:linear-gradient(135deg,#173b80,#5b43c7);color:white}#johnNewOrderCard .body{padding:18px 20px}
+#johnNewOrderCard .order-kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}#johnNewOrderCard .order-kpis>div{border:1px solid var(--j-line,#dbe2ee);border-radius:14px;padding:11px}
+#johnNewOrderCard .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+body.john-modern [id^="ecommerce"] .john-ecom-v8-note{background:color-mix(in srgb,var(--j-blue) 8%,var(--j-panel))!important;color:var(--j-text)!important;border-color:var(--j-line)!important}
+body.john-modern [id^="ecommerce"] .john-ecom-v8-kpi{background:linear-gradient(145deg,var(--j-panel),var(--j-panel2))!important;color:var(--j-text)!important;border-color:var(--j-line)!important;border-radius:20px!important;box-shadow:var(--j-shadow2)!important}
+</style>
+<script id="john-v82-realtime">
+(function(){
+'use strict';
+if(window.__johnV82Realtime)return;window.__johnV82Realtime=true;
+const CLOUD='john_cloud_config_v1',INBOX='john_ecommerce_inbox_v1',SEEN='john_ecommerce_seen_v82';
+const A=v=>Array.isArray(v)?v:[],S=v=>String(v??''),E=id=>document.getElementById(id);
+let timer=null,orderTimer=null,busy=false,lastPull=0;
+function st(){try{return typeof __johnLocalStorage!=='undefined'?__johnLocalStorage:localStorage}catch(_){return localStorage}}
+function cfg(){let c={};try{c=JSON.parse(st().getItem(CLOUD)||'{}')||{}}catch(_){};return{apiUrl:S(c.apiUrl||'https://john-cloud-api-production.up.railway.app').replace(/\/+$/,''),apiKey:S(c.apiKey),storeSlug:S(c.storeSlug||'caseirinho')}}
+function actor(){try{return typeof usuarioAtual==='function'?(usuarioAtual()?.nome||usuarioAtual()?.login||'ERP'):'ERP'}catch(_){return'ERP'}}
+async function api(path,opt={}){const c=cfg();if(!c.apiKey)throw new Error('Credencial da nuvem não configurada.');const r=await fetch(c.apiUrl+path,{...opt,cache:'no-store',headers:{'Content-Type':'application/json','Authorization':'Bearer '+c.apiKey,'X-ERP-User':actor(),'Cache-Control':'no-store',...(opt.headers||{})}});let d={};try{d=await r.json()}catch(_){}if(!r.ok){const e=new Error(d.error||('HTTP '+r.status));e.status=r.status;throw e}return d}
+function badge(msg,kind='ok'){let b=E('johnRealtimeBadge');if(!b){b=document.createElement('div');b.id='johnRealtimeBadge';document.body.appendChild(b)}b.className=kind;b.textContent=msg}
+function persist(){try{st().setItem(typeof DB_KEY!=='undefined'?DB_KEY:'pcp_app_v1',JSON.stringify(db))}catch(_){}}
+function applyCloudDb(cloud){
+ if(!cloud||typeof cloud!=='object')return;
+ // Nuvem é a fonte oficial; mantém apenas preferências locais que não pertencem ao banco operacional.
+ db=cloud;persist();
+ try{typeof renderAll==='function'&&renderAll()}catch(e){console.warn('Render após sincronismo',e)}
+}
+async function pullAll(force=false){
+ if(busy||!cfg().apiKey)return; if(!force&&Date.now()-lastPull<2200)return;
+ busy=true;badge('☁️ Sincronizando...','sync');
+ try{
+   try{typeof window.johnCloudCapturarAlteracoes==='function'&&window.johnCloudCapturarAlteracoes()}catch(_){}
+   try{typeof window.johnCloudFlushIncremental==='function'&&await window.johnCloudFlushIncremental(true)}catch(_){}
+   const ex=await api('/api/v1/admin/sync/export');
+   applyCloudDb(ex.db); lastPull=Date.now(); badge('● Sincronizado em todos os dispositivos','ok');
+ }catch(e){badge('⚠ Sincronização pendente: '+e.message,'err');console.warn('Realtime V8.2',e)}
+ finally{busy=false}
+}
+function afterSave(){
+ setTimeout(async()=>{try{
+   // garante que flags Cliente + Usuário, alterações tardias e demais efeitos do formulário já estejam persistidos.
+   persist(); try{typeof window.johnCloudCapturarAlteracoes==='function'&&window.johnCloudCapturarAlteracoes()}catch(_){}
+   try{typeof window.johnCloudFlushIncremental==='function'&&await window.johnCloudFlushIncremental(false)}catch(_){}
+   setTimeout(()=>pullAll(true),250);
+ }catch(e){console.warn(e)}},180);
+}
+document.addEventListener('submit',ev=>{if(ev.target?.id)afterSave()},false);
+document.addEventListener('click',ev=>{
+ const b=ev.target.closest('button'); if(!b)return;
+ if(/salvar|aprovar|rejeitar|excluir|cancelar|aceitar|finalizar|receber|baixar|lançar|publicar/i.test(S(b.textContent)))afterSave();
+},true);
+window.addEventListener('focus',()=>pullAll(true));window.addEventListener('online',()=>pullAll(true));
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)pullAll(true)});
+
+function readInbox(){try{return JSON.parse(st().getItem(INBOX)||'[]')||[]}catch(_){return[]}}
+function writeInbox(v){st().setItem(INBOX,JSON.stringify(v||[]))}
+function seen(){try{return new Set(JSON.parse(st().getItem(SEEN)||'[]'))}catch(_){return new Set()}}
+function saveSeen(s){st().setItem(SEEN,JSON.stringify([...s].slice(-1000)))}
+function pending(o){const s=S(o.statusIntegracao||o.integration_status||o.status).toUpperCase();return !['IMPORTADO','REJEITADO','CANCELADO','ENTREGUE','RETIRADO'].includes(s)&&!o.rejeitado}
+function updateMenuCount(n){
+ document.querySelectorAll('[data-page="ecommercePedidosRecebidos"]').forEach(b=>{let x=b.querySelector('#johnEcomNewCount');if(n){if(!x){x=document.createElement('span');x.id='johnEcomNewCount';b.appendChild(x)}x.textContent=n}else x?.remove()})
+}
+function ensurePopup(){if(E('johnNewOrderOverlay'))return;const ov=document.createElement('div');ov.id='johnNewOrderOverlay';ov.innerHTML='<div id="johnNewOrderCard"><div class="head"><b style="font-size:20px">🛒 Novo pedido do E-commerce</b><div style="opacity:.85;margin-top:4px">Pedido recebido pela base central e disponível em todos os dispositivos.</div></div><div class="body" id="johnNewOrderBody"></div></div>';document.body.appendChild(ov)}
+function showNextPopup(markCurrent=false){
+ ensurePopup();const s=seen(),arr=readInbox().filter(pending).sort((a,b)=>S(a.criadoEm).localeCompare(S(b.criadoEm)));
+ if(markCurrent&&window.__johnPopupOrderId){s.add(window.__johnPopupOrderId);saveSeen(s)}
+ const o=arr.find(x=>!s.has(S(x.id))); updateMenuCount(arr.length);
+ if(!o){E('johnNewOrderOverlay').classList.remove('show');window.__johnPopupOrderId='';return}
+ window.__johnPopupOrderId=S(o.id);
+ const total=Number(o.total||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+ E('johnNewOrderBody').innerHTML=`<div><b>Pedido:</b> ${S(o.codigo||o.id)}</div><div class="order-kpis"><div><small>Cliente</small><br><b>${S(o.cliente?.nome||'-')}</b><br>${S(o.cliente?.telefone||'')}</div><div><small>Total</small><br><b>${total}</b><br>${S(o.modalidade||'-')}</div></div><div><b>Data:</b> ${S(o.criadoEm||'').slice(0,16).replace('T',' ')}</div><div class="actions"><button class="btn primary" id="johnOpenNewOrder">Abrir fila de pedidos</button><button class="btn secondary" id="johnSeenNextOrder">Marcar visto e próximo</button></div>`;
+ E('johnOpenNewOrder').onclick=()=>{s.add(S(o.id));saveSeen(s);E('johnNewOrderOverlay').classList.remove('show');try{typeof showPage==='function'&&showPage('ecommercePedidosRecebidos')}catch(_){};setTimeout(()=>window.johnV8RenderOrders?.(),120)};
+ E('johnSeenNextOrder').onclick=()=>showNextPopup(true); E('johnNewOrderOverlay').classList.add('show');
+}
+async function pollOrders(){
+ if(!cfg().apiKey)return;
+ try{
+  const r=await api('/api/v1/admin/store/orders?status=TODOS&limit=500');
+  const old=readInbox(),by=new Map(old.map(x=>[S(x.id),x]));for(const o of A(r.orders))by.set(S(o.id),{...(by.get(S(o.id))||{}),...o});
+  const arr=[...by.values()].sort((a,b)=>S(a.criadoEm).localeCompare(S(b.criadoEm)));writeInbox(arr);
+  try{window.johnV8RenderOrders?.()}catch(_){};setTimeout(()=>{try{const rows=[...document.querySelectorAll('#v8OrdersBody tr')];for(const tr of rows){const code=S(tr.cells?.[1]?.textContent).trim();const o=arr.find(x=>S(x.codigo||x.id)===code);if(o?.emAnalisePor&&o.bloqueioExpiraEm&&new Date(o.bloqueioExpiraEm)>new Date()){const cell=tr.cells?.[6];if(cell&&!cell.querySelector('.john-claim-note'))cell.insertAdjacentHTML('beforeend','<br><small class="john-claim-note">🔒 Em análise por '+S(o.emAnalisePor).replace(/[<>]/g,'')+'</small>')}}}catch(_){ }},50); showNextPopup(false);
+ }catch(e){console.warn('Pedidos V8.2',e)}
+}
+const oldAccept=window.johnV8AcceptOrder; if(typeof oldAccept==='function')window.johnV8AcceptOrder=async function(id){try{await api('/api/v1/admin/store/orders/'+encodeURIComponent(id)+'/claim',{method:'POST',body:JSON.stringify({actor:actor(),ttlSeconds:300})})}catch(e){if(e.status===409){alert(e.message);await pollOrders();return null}throw e}const r=await oldAccept.apply(this,arguments);setTimeout(()=>{showNextPopup(true);pullAll(true)},350);return r};
+const oldDelete=window.johnV8DeleteOrder; if(typeof oldDelete==='function')window.johnV8DeleteOrder=async function(id){const r=await oldDelete.apply(this,arguments);setTimeout(()=>{showNextPopup(true);pullAll(true)},350);return r};
+
+function fixPersonRoles(){
+ const p=E('pessoaId')&&A(db?.pessoas).find(x=>S(x.id)===S(E('pessoaId').value));if(!p)return;
+ const cli=!!E('pessoaEhCliente')?.checked,usr=!!E('pessoaEhUsuario')?.checked;
+ p.ehCliente=cli;p.ehUsuario=usr;p.tipos=[...(cli?['CLIENTE']:[]),...(usr?['USUARIO']:[])];p.tipo=cli?'CLIENTE':'USUARIO';p.atualizadoEm=new Date().toISOString();persist();
+}
+document.addEventListener('submit',ev=>{if(ev.target?.id==='pessoaForm')setTimeout(()=>{fixPersonRoles();afterSave()},120)},false);
+
+function start(){try{const c=JSON.parse(st().getItem(CLOUD)||'{}')||{};if(c.apiKey){c.incrementalAuto=true;c.autoSync=true;st().setItem(CLOUD,JSON.stringify(c))}}catch(_){}clearInterval(timer);clearInterval(orderTimer);pullAll(true);pollOrders();timer=setInterval(()=>{if(!document.hidden)pullAll(false)},3000);orderTimer=setInterval(()=>{if(!document.hidden)pollOrders()},3000)}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(start,4500),{once:true});else setTimeout(start,2200);
+})();
+</script>
+
 </body>
 </html>
