@@ -10,3 +10,10 @@ Correções principais:
 - Proteção de pedido em análise por outro operador (API 1.8).
 - E-commerce alinhado ao design visual dos demais módulos.
 - Cache PWA atualizado para V8.2.
+
+
+## V8.2.1 correção de estabilidade
+- Pedidos: restaura Pedido, Separação, WhatsApp, Editar e Excluir.
+- Tabela de pedidos inicia pela primeira coluna e mantém rolagem horizontal controlada.
+- Sincronização operacional reduzida: pedidos ~0,9 s e espelho ERP ~1,2 s, com proteção contra sobrescrever salvamento local em andamento.
+- Renderização da base só ocorre quando o conteúdo remoto mudou, reduzindo travamentos e saltos de tela.
