@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>John Sistema ERP · Caseirinho · V8.4</title>
+<title>John Sistema ERP · Caseirinho · V8.4.2</title>
 <style>
 :root{
   --primary:#5b21b6;--primary2:#7c3aed;--soft:#f5f3ff;--ink:#1f2937;--muted:#6b7280;
@@ -11648,5 +11648,50 @@ document.addEventListener('click',ev=>{const id=ev.target.closest?.('[data-page]
 })();
 
 </script>
+
+
+<!-- V8.4.2 · sincronização coordenada + mídia antes do catálogo -->
+<style id="john-v842-style">
+#cloudFastV842{display:inline-flex;align-items:center;gap:6px}.v842-media-note{margin-top:10px;padding:10px 12px;border:1px solid #86efac;background:#f0fdf4;color:#166534;border-radius:11px;font-size:12px;font-weight:750}.v842-media-note.warn{border-color:#fdba74;background:#fff7ed;color:#9a3412}
+</style>
+<script id="john-v842-network-media">
+(function(){
+'use strict';
+if(window.__johnV842)return;window.__johnV842=true;
+const E=id=>document.getElementById(id),S=v=>String(v??''),A=v=>Array.isArray(v)?v:[],N=v=>Number(v)||0;
+const nativeFetch=window.fetch.bind(window),flights=new Map(),brief=new Map(),ackOk=new Map(),ackFlights=new Map();
+const now=()=>Date.now();
+function urlOf(input){try{return typeof input==='string'?input:input?.url||String(input)}catch(_){return String(input)}}
+function methodOf(input,init){return S(init?.method||(typeof input!=='string'&&input?.method)||'GET').toUpperCase()}
+function normUrl(raw){try{const u=new URL(raw,location.href);['_ts','_v6','_v84','_v841','_v842'].forEach(k=>u.searchParams.delete(k));return u.origin+u.pathname+'?'+[...u.searchParams.entries()].sort().map(([k,v])=>encodeURIComponent(k)+'='+encodeURIComponent(v)).join('&')}catch(_){return raw}}
+function listOrders(url,method){try{const u=new URL(url,location.href);return method==='GET'&&/\/api\/v1\/admin\/store\/orders\/?$/.test(u.pathname)}catch(_){return false}}
+function changes(url,method){try{const u=new URL(url,location.href);return method==='GET'&&/\/api\/v1\/admin\/sync\/changes\/?$/.test(u.pathname)}catch(_){return false}}
+function imported(url,method){try{const u=new URL(url,location.href);return method==='POST'&&/\/api\/v1\/admin\/store\/orders\/[^/]+\/imported\/?$/.test(u.pathname)}catch(_){return false}}
+function response(pack){return new Response(pack.body,{status:pack.status,statusText:pack.statusText,headers:pack.headers})}
+async function fetchPack(input,init={},timeout=28000){const ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),timeout);try{const clean={...init,signal:ctl.signal};const r=await nativeFetch(input,clean),body=await r.text();return{body,status:r.status,statusText:r.statusText,headers:[...r.headers.entries()]}}finally{clearTimeout(tm)}}
+function markOk(label='Online · sincronizado'){const el=E('cloudStatusText');if(el&&(!/pendente|erro|falha/i.test(el.textContent)||/falha ao buscar pedidos/i.test(el.textContent))){el.textContent=label;el.className='cloud-pill ok'}const rt=E('johnRealtimeBadge');if(rt&&!/enviando/i.test(rt.textContent||''))rt.textContent='● Online · tempo real'}
+async function coalesced(input,init,ttl){const key=methodOf(input,init)+'|'+normUrl(urlOf(input)),c=brief.get(key);if(c&&now()-c.at<ttl)return response(c.pack);if(flights.has(key))return response(await flights.get(key));const p=fetchPack(input,init).then(pack=>{if(pack.status>=200&&pack.status<300){brief.set(key,{at:now(),pack});markOk()}return pack}).finally(()=>flights.delete(key));flights.set(key,p);return response(await p)}
+window.fetch=async function(input,init={}){const url=urlOf(input),method=methodOf(input,init);if(listOrders(url,method))return coalesced(input,init,950);if(changes(url,method))return coalesced(input,init,500);if(imported(url,method)){const key=normUrl(url)+'|'+S(init?.body);const ok=ackOk.get(key);if(ok&&now()-ok<10*60*1000)return new Response(JSON.stringify({ok:true,alreadyImported:true,clientDeduped:true}),{status:200,headers:{'Content-Type':'application/json'}});if(ackFlights.has(key))return response(await ackFlights.get(key));const p=fetchPack(input,init).then(pack=>{if(pack.status>=200&&pack.status<300)ackOk.set(key,now());return pack}).finally(()=>ackFlights.delete(key));ackFlights.set(key,p);return response(await p)}return nativeFetch(input,init)};
+
+function cloud(){return window.johnV84Cloud||null}
+async function admin(path,opt={}){const c=cloud();if(c?.api)return c.api(path,opt);let cfg={};try{cfg=JSON.parse((typeof __johnLocalStorage!=='undefined'?__johnLocalStorage:localStorage).getItem('john_cloud_config_v1')||'{}')||{}}catch(_){};const api=S(cfg.apiUrl||'https://john-cloud-api-production.up.railway.app').replace(/\/+$/,''),token=S(cfg.apiKey||cfg.token);if(!token)throw new Error('Token da API não configurado.');const r=await fetch(api+path,{...opt,cache:'no-store',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token,'X-ERP-User':'ERP','Cache-Control':'no-store',...(opt.headers||{})}});let j={};try{j=await r.json()}catch(_){}if(!r.ok)throw new Error(j.error||('HTTP '+r.status));return j}
+function dbRef(){try{return typeof db!=='undefined'?db:null}catch(_){return null}}
+function dataImages(p,cp){const e=p?.ecommerce&&typeof p.ecommerce==='object'?p.ecommerce:{};const src=[cp?.imagem,...A(cp?.imagens),e.imagem,...A(e.imagens),p?.imagem,...A(p?.imagens)].filter(Boolean);return [...new Set(src)]}
+function isData(x){return /^data:image\/(?:jpeg|png|webp|gif);base64,/i.test(S(x))}
+async function mediaFirst(cat){let uploaded=0,reused=0,withLocal=0;const errors=[];for(const cp of A(cat.produtos)){const p=A(dbRef()?.produtos).find(x=>S(x.id)===S(cp.id))||A(dbRef()?.produtos).find(x=>S(x.codigo)===S(cp.codigo));const e=p?(p.ecommerce=p.ecommerce||{}):null;const sources=dataImages(p,cp),remote=sources.filter(x=>!isData(x)&&/^https?:/i.test(S(x))),datas=sources.filter(isData).slice(0,5);if(datas.length)withLocal++;const urls=[...remote];for(let i=0;i<datas.length;i++){try{const ext=(datas[i].match(/^data:image\/([^;]+)/i)?.[1]||'png').replace('jpeg','jpg');const r=await admin('/api/v1/admin/store/media',{method:'POST',body:JSON.stringify({dataUrl:datas[i],filename:`${S(cp.codigo||cp.id||'produto')}_${i+1}.${ext}`,productId:S(cp.id)})});if(r.url&&!urls.includes(r.url))urls.push(r.url);r.reused?reused++:uploaded++}catch(err){errors.push(`${cp.nome||cp.codigo||cp.id}: ${err.message}`)}}if(urls.length){cp.imagem=urls[0];cp.imagens=urls.slice(0,5);if(e){e.imagem=cp.imagem;e.imagens=[...cp.imagens]}}}
+ if(errors.length)throw new Error('Falha ao confirmar imagem(ns): '+errors.slice(0,3).join(' | ')+(errors.length>3?` (+${errors.length-3})`:''));
+ try{if(typeof DB_KEY!=='undefined'&&dbRef())(typeof __johnLocalStorage!=='undefined'?__johnLocalStorage:localStorage).setItem(DB_KEY,JSON.stringify(dbRef()))}catch(_){}
+ return{uploaded,reused,withLocal};}
+async function publish(silent=false){const base=window.__johnPublicarEcomLocal;if(typeof base!=='function')throw new Error('Gerador do catálogo ainda não carregou.');const cat=base(true)||{loja:{},produtos:[]},msg=E('on84Msg');if(msg)msg.textContent='📸 Confirmando imagens no PostgreSQL antes de publicar...';const t0=performance.now(),m=await mediaFirst(cat);if(msg)msg.textContent='☁️ Imagens confirmadas. Publicando catálogo imediatamente...';const r=await admin('/api/v1/admin/store/catalog',{method:'PUT',body:JSON.stringify({...cat,replaceCatalog:false,removedProductIds:[]})});let repaired=null;try{repaired=await admin('/api/v1/admin/store/media/repair-from-erp',{method:'POST',body:'{}'})}catch(e){console.warn('Reparo automático de mídia:',e)}try{const st=typeof __johnLocalStorage!=='undefined'?__johnLocalStorage:localStorage;st.setItem('john_ecommerce_public_v1',JSON.stringify(cat))}catch(_){};const ms=Math.max(1,Math.round(performance.now()-t0));if(msg)msg.textContent=`✅ Publicado em ${ms} ms · ${r.total??A(cat.produtos).length} produto(s) · ${m.uploaded} mídia(s) nova(s) · ${m.reused} reutilizada(s)`;if(!silent)window.toast?.(`E-commerce publicado e confirmado · ${ms} ms.`);try{await cloud()?.loadOnline?.()}catch(_){};markOk('Publicado · sincronizado agora');return cat}
+async function repair(){const msg=E('on84Msg');if(msg)msg.textContent='🔧 Recuperando imagens existentes no espelho ERP/PostgreSQL...';try{const r=await admin('/api/v1/admin/store/media/repair-from-erp',{method:'POST',body:'{}'});if(msg)msg.textContent=`✅ Reparo concluído · ${r.reparados||0} produto(s) religado(s) · ${r.reutilizados||0} mídia(s) reutilizada(s).`;await cloud()?.loadOnline?.();window.toast?.('Reparo de imagens concluído.')}catch(e){if(msg)msg.textContent='❌ '+e.message;throw e}}
+async function fastSync(silent=true){const el=E('cloudStatusText');if(el){el.textContent='Enviando alterações...';el.className='cloud-pill sync'}try{window.johnCloudCapturarAlteracoes?.();const r=await window.johnCloudFlushIncremental?.(true);if(r?.error)throw new Error(r.error);try{await cloud()?.refreshOrders?.()}catch(_){}markOk(`Sincronizado agora · ${r?.pending||0} pendente(s)`);if(!silent)window.toast?.('Alterações enviadas imediatamente.');return r}catch(e){if(el){el.textContent='Pendente: '+e.message;el.className='cloud-pill err'}if(!silent)window.toast?.('Não foi possível enviar agora; a fila foi preservada.');return{error:e.message}}}
+function install(){if(cloud()){cloud().safePublish=publish;cloud().repairImages=repair}window.johnV84SafePublish=publish;window.johnV842Publish=publish;window.johnV842RepairImages=repair;window.sincronizarNuvemJohn=fastSync;const p=E('on84Publish');if(p)p.dataset.v842='1';const r=E('on84Repair');if(r)r.dataset.v842='1';const panel=E('johnCloudPanel');if(panel&&!E('cloudFastNote')){const n=document.createElement('div');n.id='cloudFastNote';n.className='v842-media-note';n.innerHTML='<b>⚡ Sincronização imediata V8.4.2:</b> salvar/publicar envia a alteração sem esperar o intervalo automático. Consultas repetidas de pedidos são agrupadas para não sobrecarregar a API.';panel.querySelector('.cloud-note')?.insertAdjacentElement('beforebegin',n)}}
+const originalPub=()=>window.__johnPublicarEcomLocal;
+function overridePublicar(){if(typeof originalPub()!=='function')return;window.publicarCatalogoEcommerce=function(silent=false){publish(silent).catch(e=>{console.error(e);if(!silent)alert('Falha ao publicar: '+e.message)});try{return originalPub()(true)}catch(_){return null}}}
+document.addEventListener('click',ev=>{const b=ev.target.closest?.('#on84Publish,#on84Repair,#cloudSyncAgora');if(!b)return;ev.preventDefault();ev.stopImmediatePropagation();if(b.id==='on84Publish')publish(false).catch(e=>alert('Falha ao publicar: '+e.message));else if(b.id==='on84Repair')repair().catch(e=>alert('Falha no reparo: '+e.message));else fastSync(false)},true);
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(()=>{install();overridePublicar();fastSync(true)},2800),{once:true});else setTimeout(()=>{install();overridePublicar();fastSync(true)},1200);[4500,7000,10000,14000,18000].forEach(ms=>setTimeout(()=>{install();overridePublicar()},ms));window.addEventListener('online',()=>fastSync(true));window.addEventListener('focus',()=>{install();fastSync(true)});
+})();
+</script>
+
 </body>
 </html>
