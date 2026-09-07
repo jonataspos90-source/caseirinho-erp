@@ -10505,9 +10505,9 @@ function diffAndQueue(){
  }
  const rootKeys=new Set([...baseline.roots.keys(),...now.roots.keys()]);
  for(const key of rootKeys){const p=baseline.roots.get(key),c=now.roots.get(key);if(!c&&p){enqueue({kind:'root',objectKey:key,operation:'DELETE',sourceUpdatedAt:new Date().toISOString()});n++}else if(c&&(!p||p.json!==c.json)){enqueue({kind:'root',objectKey:key,operation:'UPSERT',payload:c.payload,sourceUpdatedAt:new Date().toISOString()});n++}}
- baseline=now;lastCaptureAt=Date.now();updatePill();if(cfg().incrementalAuto&&n)scheduleFlush(400);return n;
+ baseline=now;lastCaptureAt=Date.now();updatePill();if(cfg().incrementalAuto&&n)scheduleFlush(35);return n;
 }
-function scheduleCapture(){clearTimeout(captureTimer);captureTimer=setTimeout(()=>{try{diffAndQueue()}catch(e){console.error('Captura incremental:',e)}},120)}
+function scheduleCapture(){clearTimeout(captureTimer);captureTimer=setTimeout(()=>{try{diffAndQueue()}catch(e){console.error('Captura incremental:',e)}},15)}
 async function api(path,opt={}){const c=cfg();if(!c.apiUrl||!c.apiKey)throw new Error('Configure URL e chave da API.');const r=await fetch(c.apiUrl+path,{...opt,headers:{'Content-Type':'application/json','Authorization':'Bearer '+c.apiKey,'X-ERP-User':actor(),...(opt.headers||{})}});let data={};try{data=await r.json()}catch(_){}if(!r.ok){const e=new Error(data?.error||('HTTP '+r.status));e.status=r.status;throw e}return data}
 function setStatus(msg,tipo='sync'){const el=E('cloudStatusText');if(el){el.textContent=msg;el.className='cloud-pill '+tipo}}
 function updatePill(q){
@@ -10532,7 +10532,7 @@ async function flushQueue(silencioso=true){
   updatePill();if(e.status===404)setStatus('A API precisa da atualização incremental /sync/batch.','err');else if(!silencioso)setStatus('Fila incremental preservada: '+e.message,'err');console.error('Sincronização incremental:',e);return {applied:total,pending:readQueue().length,error:e.message}
  }finally{flushLock=false}
 }
-function scheduleFlush(ms=1200){clearTimeout(flushTimer);flushTimer=setTimeout(()=>flushQueue(true),ms)}
+function scheduleFlush(ms=80){clearTimeout(flushTimer);flushTimer=setTimeout(()=>flushQueue(true),ms)}
 function bridgeConfig(){
  const raw=readCfg();let changed=false;
  if(raw.incrementalAuto===undefined&&raw.mirrorAuto===true){raw.incrementalAuto=true;changed=true}
@@ -11344,96 +11344,63 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 body.john-modern [id^="ecommerce"] .john-ecom-v8-note{background:color-mix(in srgb,var(--j-blue) 8%,var(--j-panel))!important;color:var(--j-text)!important;border-color:var(--j-line)!important}
 body.john-modern [id^="ecommerce"] .john-ecom-v8-kpi{background:linear-gradient(145deg,var(--j-panel),var(--j-panel2))!important;color:var(--j-text)!important;border-color:var(--j-line)!important;border-radius:20px!important;box-shadow:var(--j-shadow2)!important}
 </style>
-<script id="john-v82-realtime">
+<script id="john-v841-realtime">
 (function(){
 'use strict';
-if(window.__johnV82Realtime)return;window.__johnV82Realtime=true;
-const CLOUD='john_cloud_config_v1',INBOX='john_ecommerce_inbox_v1',SEEN='john_ecommerce_seen_v82';
+if(window.__johnV841Realtime)return;window.__johnV841Realtime=true;
+const CLOUD='john_cloud_config_v1',INBOX='john_ecommerce_inbox_v1',SEEN='john_ecommerce_seen_v82',CURSOR='john_cloud_changes_cursor_v841';
 const A=v=>Array.isArray(v)?v:[],S=v=>String(v??''),E=id=>document.getElementById(id);
-let timer=null,orderTimer=null,busy=false,lastPull=0,lastCloudSig='',dirtyUntil=0,badgeTimer=null;
+let timer=null,orderTimer=null,pullBusy=false,sendBusy=false,badgeTimer=null,renderTimer=null;
 function st(){try{return typeof __johnLocalStorage!=='undefined'?__johnLocalStorage:localStorage}catch(_){return localStorage}}
 function cfg(){let c={};try{c=JSON.parse(st().getItem(CLOUD)||'{}')||{}}catch(_){};return{apiUrl:S(c.apiUrl||'https://john-cloud-api-production.up.railway.app').replace(/\/+$/,''),apiKey:S(c.apiKey),storeSlug:S(c.storeSlug||'caseirinho')}}
 function actor(){try{return typeof usuarioAtual==='function'?(usuarioAtual()?.nome||usuarioAtual()?.login||'ERP'):'ERP'}catch(_){return'ERP'}}
 async function api(path,opt={}){const c=cfg();if(!c.apiKey)throw new Error('Credencial da nuvem não configurada.');const r=await fetch(c.apiUrl+path,{...opt,cache:'no-store',headers:{'Content-Type':'application/json','Authorization':'Bearer '+c.apiKey,'X-ERP-User':actor(),'Cache-Control':'no-store',...(opt.headers||{})}});let d={};try{d=await r.json()}catch(_){}if(!r.ok){const e=new Error(d.error||('HTTP '+r.status));e.status=r.status;throw e}return d}
 function badge(msg,kind='ok'){let b=E('johnRealtimeBadge');if(!b){b=document.createElement('div');b.id='johnRealtimeBadge';document.body.appendChild(b)}b.className=kind;b.textContent=msg}
-function persist(){try{st().setItem(typeof DB_KEY!=='undefined'?DB_KEY:'pcp_app_v1',JSON.stringify(db))}catch(_){}}
-function applyCloudDb(cloud){
- if(!cloud||typeof cloud!=='object')return false;
- let sig='';try{sig=JSON.stringify(cloud)}catch(_){}
- if(sig&&sig===lastCloudSig)return false;
- lastCloudSig=sig;db=cloud;persist();
- try{typeof renderAll==='function'&&renderAll()}catch(e){console.warn('Render após sincronismo',e)}
- return true;
+function persist(){try{st().setItem(typeof DB_KEY!=='undefined'?DB_KEY:'pcp_app_v1',JSON.stringify(db))}catch(_){} }
+function queuePending(){try{return Number(window.johnCloudIncrementalStatus?.().pending||0)}catch(_){return 0}}
+function cursor(){return S(st().getItem(CURSOR)||'1970-01-01T00:00:00.000Z')}
+function setCursor(v){if(v)st().setItem(CURSOR,S(v))}
+function localId(rec,i){return S(rec?.id??('__idx_'+i))}
+function pendingKeys(){const out=new Set;try{const q=JSON.parse(st().getItem('john_cloud_incremental_queue_v2')||'[]')||[];for(const x of A(q)){out.add(x.kind==='root'?'root|'+S(x.objectKey):'record|'+S(x.entityType)+'|'+S(x.entityId))}}catch(_){}return out}
+function scheduleRender(){clearTimeout(renderTimer);renderTimer=setTimeout(()=>{try{typeof renderAll==='function'&&renderAll()}catch(e){console.warn('Render sincronizado',e)}try{window.johnV8RenderOrders?.()}catch(_){}},45)}
+function applyChanges(changes){const blocked=pendingKeys();let changed=0;for(const ch of A(changes)){
+  if(ch.kind==='root'){
+    const key=S(ch.objectKey),pk='root|'+key;if(!key||blocked.has(pk))continue;
+    if(ch.operation==='DELETE'){if(Object.prototype.hasOwnProperty.call(db,key)){delete db[key];changed++}}
+    else{let a='',b='';try{a=JSON.stringify(db[key]);b=JSON.stringify(ch.payload)}catch(_){}if(a!==b){db[key]=ch.payload;changed++}}
+    continue;
+  }
+  const type=S(ch.entityType),id=S(ch.entityId),pk='record|'+type+'|'+id;if(!type||!id||blocked.has(pk))continue;
+  if(!Array.isArray(db[type]))db[type]=[];const arr=db[type],i=arr.findIndex((x,n)=>localId(x,n)===id);
+  if(ch.operation==='DELETE'){if(i>=0){arr.splice(i,1);changed++}}
+  else if(i>=0){let a='',b='';try{a=JSON.stringify(arr[i]);b=JSON.stringify(ch.payload)}catch(_){}if(a!==b){arr[i]=ch.payload;changed++}}
+  else{arr.push(ch.payload);changed++}
+ }
+ if(changed){persist();scheduleRender()}return changed;
 }
-async function pullAll(force=false){
- if(busy||!cfg().apiKey)return; if(!force&&(Date.now()<dirtyUntil||Date.now()-lastPull<850))return;
- busy=true;clearTimeout(badgeTimer);badgeTimer=setTimeout(()=>badge('☁️ Sincronizando...','sync'),450);
- try{
-   try{typeof window.johnCloudCapturarAlteracoes==='function'&&window.johnCloudCapturarAlteracoes()}catch(_){}
-   try{typeof window.johnCloudFlushIncremental==='function'&&await window.johnCloudFlushIncremental(true)}catch(_){}
-   const ex=await api('/api/v1/admin/sync/export');
-   applyCloudDb(ex.db); lastPull=Date.now(); clearTimeout(badgeTimer);badge('● Sincronizado agora','ok');setTimeout(()=>{if(!busy)badge('● Online · sincronização automática','ok')},900);
- }catch(e){badge('⚠ Sincronização pendente: '+e.message,'err');console.warn('Realtime V8.2',e)}
- finally{clearTimeout(badgeTimer);busy=false}
-}
-function afterSave(){
- dirtyUntil=Date.now()+1200;
- setTimeout(async()=>{try{
-   // garante que flags Cliente + Usuário, alterações tardias e demais efeitos do formulário já estejam persistidos.
-   persist(); try{typeof window.johnCloudCapturarAlteracoes==='function'&&window.johnCloudCapturarAlteracoes()}catch(_){}
-   try{typeof window.johnCloudFlushIncremental==='function'&&await window.johnCloudFlushIncremental(false)}catch(_){}
-   setTimeout(()=>pullAll(true),60);
- }catch(e){console.warn(e)}},60);
-}
-document.addEventListener('submit',ev=>{if(ev.target?.id)afterSave()},false);
-document.addEventListener('click',ev=>{
- const b=ev.target.closest('button'); if(!b)return;
- if(/salvar|aprovar|rejeitar|excluir|cancelar|aceitar|finalizar|receber|baixar|lançar|publicar/i.test(S(b.textContent)))afterSave();
-},true);
-window.addEventListener('focus',()=>pullAll(true));window.addEventListener('online',()=>pullAll(true));
-document.addEventListener('visibilitychange',()=>{if(!document.hidden)pullAll(true)});
-
-function readInbox(){try{return JSON.parse(st().getItem(INBOX)||'[]')||[]}catch(_){return[]}}
-function writeInbox(v){st().setItem(INBOX,JSON.stringify(v||[]))}
-function seen(){try{return new Set(JSON.parse(st().getItem(SEEN)||'[]'))}catch(_){return new Set()}}
-function saveSeen(s){st().setItem(SEEN,JSON.stringify([...s].slice(-1000)))}
+async function flushLocal(){if(sendBusy||!cfg().apiKey)return {pending:queuePending()};sendBusy=true;try{try{window.johnCloudCapturarAlteracoes?.()}catch(_){};const r=await window.johnCloudFlushIncremental?.(true);return r||{pending:queuePending()}}finally{sendBusy=false}}
+async function pullChanges(force=false){if(pullBusy||!cfg().apiKey||document.hidden&&!force)return null;pullBusy=true;clearTimeout(badgeTimer);badgeTimer=setTimeout(()=>badge('☁️ Sincronizando...','sync'),280);try{
+  const fl=await flushLocal();if(Number(fl?.pending||queuePending())>0&&fl?.error){clearTimeout(badgeTimer);badge('⚠ Alterações pendentes de envio','err');return fl}
+  let since=cursor(),loops=0,total=0,last=null;
+  do{const r=await api('/api/v1/admin/sync/changes?since='+encodeURIComponent(since)+'&limit=1500&_ts='+Date.now());const list=A(r.changes);total+=applyChanges(list);last=r;if(r.hasMore&&list.length){since=S(list[list.length-1].updatedAt||since);setCursor(since)}else{setCursor(r.serverTime||since);break}loops++}while(loops<5);
+  clearTimeout(badgeTimer);badge(total?'● Atualizado agora':'● Sincronizado agora','ok');setTimeout(()=>{if(!pullBusy&&!sendBusy)badge('● Online · tempo real','ok')},650);return last;
+ }catch(e){clearTimeout(badgeTimer);badge('⚠ Sincronização pendente: '+e.message,'err');console.warn('Realtime V8.4.1',e);return null}finally{pullBusy=false}}
+async function syncNow(){if(!cfg().apiKey)return null;clearTimeout(badgeTimer);badgeTimer=setTimeout(()=>badge('☁️ Enviando alteração...','sync'),180);try{persist();try{window.johnCloudCapturarAlteracoes?.()}catch(_){};const fl=await window.johnCloudFlushIncremental?.(true);if(Number(fl?.pending||queuePending())>0&&fl?.error)throw new Error(fl.error);return await pullChanges(true)}catch(e){clearTimeout(badgeTimer);badge('⚠ Não sincronizado: '+e.message,'err');console.warn(e);return null}}
+function afterSave(){syncNow()}
+document.addEventListener('submit',ev=>{if(ev.target?.id)queueMicrotask(afterSave)},false);
+document.addEventListener('click',ev=>{const b=ev.target.closest('button');if(!b)return;if(/salvar|aprovar|rejeitar|excluir|cancelar|aceitar|finalizar|receber|baixar|lançar|publicar|programar/i.test(S(b.textContent)))queueMicrotask(afterSave)},true);
+window.addEventListener('focus',()=>pullChanges(true));window.addEventListener('online',()=>syncNow());document.addEventListener('visibilitychange',()=>{if(!document.hidden)pullChanges(true)});
+function readInbox(){try{return JSON.parse(st().getItem(INBOX)||'[]')||[]}catch(_){return[]}}function writeInbox(v){st().setItem(INBOX,JSON.stringify(v||[]))}function seen(){try{return new Set(JSON.parse(st().getItem(SEEN)||'[]'))}catch(_){return new Set()}}function saveSeen(s){st().setItem(SEEN,JSON.stringify([...s].slice(-1000)))}
 function pending(o){const s=S(o.statusIntegracao||o.integration_status||o.status).toUpperCase();return !['IMPORTADO','REJEITADO','CANCELADO','ENTREGUE','RETIRADO'].includes(s)&&!o.rejeitado}
-function updateMenuCount(n){
- document.querySelectorAll('[data-page="ecommercePedidosRecebidos"]').forEach(b=>{let x=b.querySelector('#johnEcomNewCount');if(n){if(!x){x=document.createElement('span');x.id='johnEcomNewCount';b.appendChild(x)}x.textContent=n}else x?.remove()})
-}
+function updateMenuCount(n){document.querySelectorAll('[data-page="ecommercePedidosRecebidos"]').forEach(b=>{let x=b.querySelector('#johnEcomNewCount');if(n){if(!x){x=document.createElement('span');x.id='johnEcomNewCount';b.appendChild(x)}x.textContent=n}else x?.remove()})}
 function ensurePopup(){if(E('johnNewOrderOverlay'))return;const ov=document.createElement('div');ov.id='johnNewOrderOverlay';ov.innerHTML='<div id="johnNewOrderCard"><div class="head"><b style="font-size:20px">🛒 Novo pedido do E-commerce</b><div style="opacity:.85;margin-top:4px">Pedido recebido pela base central e disponível em todos os dispositivos.</div></div><div class="body" id="johnNewOrderBody"></div></div>';document.body.appendChild(ov)}
-function showNextPopup(markCurrent=false){
- ensurePopup();const s=seen(),arr=readInbox().filter(pending).sort((a,b)=>S(a.criadoEm).localeCompare(S(b.criadoEm)));
- if(markCurrent&&window.__johnPopupOrderId){s.add(window.__johnPopupOrderId);saveSeen(s)}
- const o=arr.find(x=>!s.has(S(x.id))); updateMenuCount(arr.length);
- if(!o){E('johnNewOrderOverlay').classList.remove('show');window.__johnPopupOrderId='';return}
- window.__johnPopupOrderId=S(o.id);
- const total=Number(o.total||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
- E('johnNewOrderBody').innerHTML=`<div><b>Pedido:</b> ${S(o.codigo||o.id)}</div><div class="order-kpis"><div><small>Cliente</small><br><b>${S(o.cliente?.nome||'-')}</b><br>${S(o.cliente?.telefone||'')}</div><div><small>Total</small><br><b>${total}</b><br>${S(o.modalidade||'-')}</div></div><div><b>Data:</b> ${S(o.criadoEm||'').slice(0,16).replace('T',' ')}</div><div class="actions"><button class="btn primary" id="johnOpenNewOrder">Abrir fila de pedidos</button><button class="btn secondary" id="johnSeenNextOrder">Marcar visto e próximo</button></div>`;
- E('johnOpenNewOrder').onclick=()=>{s.add(S(o.id));saveSeen(s);E('johnNewOrderOverlay').classList.remove('show');try{typeof showPage==='function'&&showPage('ecommercePedidosRecebidos')}catch(_){};setTimeout(()=>window.johnV8RenderOrders?.(),120)};
- E('johnSeenNextOrder').onclick=()=>showNextPopup(true); E('johnNewOrderOverlay').classList.add('show');
-}
-async function pollOrders(){
- if(!cfg().apiKey)return;
- try{
-  const r=await api('/api/v1/admin/store/orders?status=TODOS&limit=500');
-  const old=readInbox(),by=new Map(old.map(x=>[S(x.id),x]));for(const o of A(r.orders))by.set(S(o.id),{...(by.get(S(o.id))||{}),...o});
-  const arr=[...by.values()].sort((a,b)=>S(a.criadoEm).localeCompare(S(b.criadoEm)));writeInbox(arr);
-  try{window.johnV8RenderOrders?.()}catch(_){};setTimeout(()=>{try{const rows=[...document.querySelectorAll('#v8OrdersBody tr')];for(const tr of rows){const code=S(tr.cells?.[1]?.textContent).trim();const o=arr.find(x=>S(x.codigo||x.id)===code);if(o?.emAnalisePor&&o.bloqueioExpiraEm&&new Date(o.bloqueioExpiraEm)>new Date()){const cell=tr.cells?.[6];if(cell&&!cell.querySelector('.john-claim-note'))cell.insertAdjacentHTML('beforeend','<br><small class="john-claim-note">🔒 Em análise por '+S(o.emAnalisePor).replace(/[<>]/g,'')+'</small>')}}}catch(_){ }},50); showNextPopup(false);
- }catch(e){console.warn('Pedidos V8.2',e)}
-}
-const oldAccept=window.johnV8AcceptOrder; if(typeof oldAccept==='function')window.johnV8AcceptOrder=async function(id){try{await api('/api/v1/admin/store/orders/'+encodeURIComponent(id)+'/claim',{method:'POST',body:JSON.stringify({actor:actor(),ttlSeconds:300})})}catch(e){if(e.status===409){alert(e.message);await pollOrders();return null}throw e}const r=await oldAccept.apply(this,arguments);setTimeout(()=>{showNextPopup(true);pullAll(true)},350);return r};
-const oldDelete=window.johnV8DeleteOrder; if(typeof oldDelete==='function')window.johnV8DeleteOrder=async function(id){const r=await oldDelete.apply(this,arguments);setTimeout(()=>{showNextPopup(true);pullAll(true)},350);return r};
-
-function fixPersonRoles(){
- const p=E('pessoaId')&&A(db?.pessoas).find(x=>S(x.id)===S(E('pessoaId').value));if(!p)return;
- const cli=!!E('pessoaEhCliente')?.checked,usr=!!E('pessoaEhUsuario')?.checked;
- p.ehCliente=cli;p.ehUsuario=usr;p.tipos=[...(cli?['CLIENTE']:[]),...(usr?['USUARIO']:[])];p.tipo=cli?'CLIENTE':'USUARIO';p.atualizadoEm=new Date().toISOString();persist();
-}
-document.addEventListener('submit',ev=>{if(ev.target?.id==='pessoaForm')setTimeout(()=>{fixPersonRoles();afterSave()},40)},false);
-
-function start(){try{const c=JSON.parse(st().getItem(CLOUD)||'{}')||{};if(c.apiKey){c.incrementalAuto=true;c.autoSync=true;st().setItem(CLOUD,JSON.stringify(c))}}catch(_){}clearInterval(timer);clearInterval(orderTimer);pullAll(true);pollOrders();timer=setInterval(()=>{if(!document.hidden)pullAll(false)},900);orderTimer=setInterval(()=>{if(!document.hidden)pollOrders()},650)}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(start,4500),{once:true});else setTimeout(start,2200);
+function showNextPopup(markCurrent=false){ensurePopup();const ss=seen(),arr=readInbox().filter(pending).sort((a,b)=>S(a.criadoEm).localeCompare(S(b.criadoEm)));if(markCurrent&&window.__johnPopupOrderId){ss.add(window.__johnPopupOrderId);saveSeen(ss)}const o=arr.find(x=>!ss.has(S(x.id)));updateMenuCount(arr.length);if(!o){E('johnNewOrderOverlay').classList.remove('show');window.__johnPopupOrderId='';return}window.__johnPopupOrderId=S(o.id);const total=Number(o.total||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});E('johnNewOrderBody').innerHTML=`<div><b>Pedido:</b> ${S(o.codigo||o.id)}</div><div class="order-kpis"><div><small>Cliente</small><br><b>${S(o.cliente?.nome||'-')}</b><br>${S(o.cliente?.telefone||'')}</div><div><small>Total</small><br><b>${total}</b><br>${S(o.modalidade||'-')}</div></div><div><b>Data:</b> ${S(o.criadoEm||'').slice(0,16).replace('T',' ')}</div><div class="actions"><button class="btn primary" id="johnOpenNewOrder">Abrir fila de pedidos</button><button class="btn secondary" id="johnSeenNextOrder">Marcar visto e próximo</button></div>`;E('johnOpenNewOrder').onclick=()=>{ss.add(S(o.id));saveSeen(ss);E('johnNewOrderOverlay').classList.remove('show');try{typeof showPage==='function'&&showPage('ecommercePedidosRecebidos')}catch(_){};setTimeout(()=>window.johnV8RenderOrders?.(),60)};E('johnSeenNextOrder').onclick=()=>showNextPopup(true);E('johnNewOrderOverlay').classList.add('show')}
+async function pollOrders(){if(!cfg().apiKey||document.hidden)return;try{const r=await api('/api/v1/admin/store/orders?status=TODOS&limit=500&_ts='+Date.now());const old=readInbox(),by=new Map(old.map(x=>[S(x.id),x]));for(const o of A(r.orders))by.set(S(o.id),{...(by.get(S(o.id))||{}),...o});const arr=[...by.values()].sort((a,b)=>S(a.criadoEm).localeCompare(S(b.criadoEm)));writeInbox(arr);try{window.johnV8RenderOrders?.()}catch(_){};showNextPopup(false)}catch(e){console.warn('Pedidos V8.4.1',e)}}
+function fixPersonRoles(){const p=E('pessoaId')&&A(db?.pessoas).find(x=>S(x.id)===S(E('pessoaId').value));if(!p)return;const cli=!!E('pessoaEhCliente')?.checked,usr=!!E('pessoaEhUsuario')?.checked;p.ehCliente=cli;p.ehUsuario=usr;p.tipos=[...(cli?['CLIENTE']:[]),...(usr?['USUARIO']:[])];p.tipo=cli?'CLIENTE':'USUARIO';p.atualizadoEm=new Date().toISOString();persist()}
+document.addEventListener('submit',ev=>{if(ev.target?.id==='pessoaForm')queueMicrotask(()=>{fixPersonRoles();syncNow()})},false);
+function start(){try{const c=JSON.parse(st().getItem(CLOUD)||'{}')||{};if(c.apiKey){c.incrementalAuto=true;c.autoSync=true;st().setItem(CLOUD,JSON.stringify(c))}}catch(_){}clearInterval(timer);clearInterval(orderTimer);pullChanges(true);pollOrders();timer=setInterval(()=>pullChanges(false),600);orderTimer=setInterval(()=>pollOrders(),450);window.sincronizarNuvemJohn=async()=>syncNow();}
+window.johnSyncNowV841=syncNow;window.johnPullChangesV841=pullChanges;
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(start,1400),{once:true});else setTimeout(start,800);
 })();
 </script>
 
@@ -11539,7 +11506,7 @@ function st(){try{return typeof __johnLocalStorage!=='undefined'?__johnLocalStor
 function parsePt(v){const s=S(v).trim().replace(/\s/g,'');if(!s)return 0;const t=s.includes(',')?s.replace(/\./g,'').replace(',','.'):s;const n=Number(t);return Number.isFinite(n)?n:0}
 function uid84(){try{return typeof uid==='function'?uid():crypto.randomUUID()}catch(_){return 'v84-'+Date.now()+'-'+Math.random().toString(36).slice(2)}}
 function user(){try{return typeof usuarioAtual==='function'?usuarioAtual():null}catch(_){return null}}
-function persist(label='V8.4'){try{if(typeof save==='function')save();else if(typeof DB_KEY!=='undefined')st().setItem(DB_KEY,JSON.stringify(db))}catch(e){console.error(label,e);try{if(typeof DB_KEY!=='undefined')st().setItem(DB_KEY,JSON.stringify(db))}catch(_){}}setTimeout(()=>{try{window.sincronizarNuvemJohn?.(true)}catch(_){}},25)}
+function persist(label='V8.4.1'){try{if(typeof save==='function')save();else if(typeof DB_KEY!=='undefined')st().setItem(DB_KEY,JSON.stringify(db))}catch(e){console.error(label,e);try{if(typeof DB_KEY!=='undefined')st().setItem(DB_KEY,JSON.stringify(db))}catch(_){}}queueMicrotask(()=>{try{window.johnSyncNowV841?.()}catch(_){} })}
 function types(p){return A(p?.tipos).length?A(p.tipos):S(p?.tipo).split('|').map(x=>x.trim()).filter(Boolean)}
 function hasType(p,...ts){try{return typeof produtoTemTipo==='function'?produtoTemTipo(p,...ts):types(p).some(x=>ts.some(t=>norm(x)===norm(t)))}catch(_){return types(p).some(x=>ts.some(t=>norm(x)===norm(t)))}}
 function stock(p){try{return typeof estoqueProduto==='function'?N(estoqueProduto(p.id)):N(p?.saldo)}catch(_){return N(p?.saldo)}}
@@ -11620,8 +11587,7 @@ let online=null;
 function ensureOnline(){const p=page('ecommerceProdutosOnline','🌐 Produtos Online','Confira exatamente o que o cliente recebe da API/PostgreSQL, com preço, disponibilidade, estoque, categoria, imagens e parâmetros de pedido.',`<div class="cards"><div class="card kpi"><div class="label">Produtos online</div><div class="value" id="on84Qtd">0</div></div><div class="card kpi"><div class="label">Sem imagem</div><div class="value" id="on84SemImg">0</div></div><div class="card kpi"><div class="label">Versão catálogo</div><div class="value" id="on84Ver">-</div></div><div class="card kpi"><div class="label">Última publicação</div><div class="value v84-small-value" id="on84Pub">-</div></div></div><div class="panel"><div class="panel-body"><div class="grid v84-toolbar"><div class="field w6"><label>Pesquisar</label><input id="on84Busca" placeholder="Código, produto ou categoria"></div><div class="field"><label>Tipo ERP</label><select id="on84Tipo"><option value="TODOS">Todos</option><option value="Produto acabado">Produto acabado</option><option value="Subproduto">Subproduto</option><option value="Revenda">Revenda</option></select></div><div class="field"><label>Imagem</label><select id="on84Img"><option value="TODOS">Todas</option><option value="COM">Com imagem</option><option value="SEM">Sem imagem</option></select></div></div><div class="actions" style="margin-top:12px"><button class="btn primary" id="on84Load">Atualizar da nuvem</button><button class="btn secondary" id="on84Repair">Reparar imagens armazenadas</button><button class="btn secondary" id="on84Publish">Publicar catálogo com segurança</button></div><div id="on84Msg" class="subtitle" style="margin-top:10px"></div></div></div><div class="panel"><div class="table-wrap v84-table"><table><thead><tr><th>Imagem</th><th>Código / ID</th><th>Produto online</th><th>Tipo ERP</th><th>Categoria</th><th>Preço online</th><th>Preço ERP</th><th>Un.</th><th>Disponibilidade</th><th>Saldo</th><th>Mín.</th><th>Limite</th><th>Anteced.</th><th>Destaques</th><th>Fotos</th><th>Status</th></tr></thead><tbody id="on84Body"></tbody></table></div></div>`);if(p&&!p.dataset.v84){p.dataset.v84='1';E('on84Busca').oninput=renderOnline;E('on84Tipo').onchange=renderOnline;E('on84Img').onchange=renderOnline;E('on84Load').onclick=loadOnline;E('on84Repair').onclick=repairImages;E('on84Publish').onclick=()=>safePublish(false)}return p}
 async function loadOnline(){ensureOnline();E('on84Msg').textContent='Consultando catálogo público...';try{online=await pub('/api/v1/public/store/'+encodeURIComponent(cfg().storeSlug)+'/catalog');E('on84Msg').textContent='✅ Catálogo carregado diretamente da nuvem.';renderOnline()}catch(e){E('on84Msg').textContent='❌ '+e.message}}
 function renderOnline(){ensureOnline();const cat=online||{produtos:[]},q=norm(E('on84Busca')?.value),tp=E('on84Tipo')?.value||'TODOS',im=E('on84Img')?.value||'TODOS';const all=A(cat.produtos),cats=new Map(A(cat.loja?.categorias).map(c=>[S(c.id),c.nome]));const rows=all.map(cp=>({cp,p:A(db?.produtos).find(x=>S(x.id)===S(cp.id))})).filter(x=>{const has=!!(x.cp.imagem||A(x.cp.imagens).filter(Boolean).length);return(!q||norm(`${x.cp.codigo} ${x.cp.nome} ${x.cp.categoria}`).includes(q))&&(tp==='TODOS'||(x.p&&hasType(x.p,tp)))&&(im==='TODOS'||(im==='COM'&&has)||(im==='SEM'&&!has))});E('on84Qtd').textContent=all.length;E('on84SemImg').textContent=all.filter(x=>!(x.imagem||A(x.imagens).filter(Boolean).length)).length;E('on84Ver').textContent=S(cat.version??'-');E('on84Pub').textContent=S(cat.publicadoEm||cat.publishedAt||'-').slice(0,19).replace('T',' ');const tb=E('on84Body');tb.innerHTML=rows.map(({cp,p})=>{const imgs=A(cp.imagens).filter(Boolean),src=cp.imagem||imgs[0]||'',catn=cp.categoria||cats.get(S(cp.categoriaId))||'-';return `<tr><td>${src?`<img class="v84-thumb" src="${esc(src)}" alt="">`:'<span class="status-warn">SEM IMAGEM</span>'}</td><td><b>${esc(cp.codigo||'-')}</b><br><small>${esc(cp.id||'-')}</small></td><td><b>${esc(cp.nome||'-')}</b><br><small>${esc(cp.descricao||'')}</small></td><td>${esc(p?types(p).join(' · '):'Não localizado')}</td><td>${esc(catn)}</td><td><b>${money(cp.preco)}</b></td><td>${money(cp.precoRegular??p?.precoVenda)}</td><td>${esc(cp.unidade||p?.unidade||'-')}</td><td>${esc(S(cp.disponibilidade||'-').replaceAll('_',' '))}</td><td>${num(cp.saldoDisponivel??cp.saldoReal)}</td><td>${num(cp.quantidadeMinima||1)}</td><td>${N(cp.limitePedido)>0?num(cp.limitePedido):'Sem limite'}</td><td>${Math.max(0,N(cp.antecedenciaDias))} dia(s)</td><td>${cp.destaque?'⭐ ':''}${cp.novidade?'🆕':''}</td><td>${Math.max(imgs.length,src?1:0)}</td><td><span class="status-ok">ONLINE</span></td></tr>`}).join('')||'<tr><td colspan="16" class="empty">Nenhum produto online para estes filtros.</td></tr>'}
-async function safePublish(silent=false){const base=window.__johnPublicarEcomLocal;if(typeof base!=='function')throw new Error('O gerador de catálogo ainda não foi inicializado.');const current=await pub('/api/v1/public/store/'+encodeURIComponent(cfg().storeSlug)+'/catalog').catch(()=>({produtos:[]})),old=new Map(A(current.produtos).map(x=>[S(x.id),x])),cat=base(true)||{loja:{},produtos:[]};for(const cp of A(cat.produtos)){const prev=old.get(S(cp.id)),p=A(db.produtos).find(x=>S(x.id)===S(cp.id)),ep=p?ecom(p):null;if(!(cp.imagem||A(cp.imagens).filter(Boolean).length)&&prev&&(prev.imagem||A(prev.imagens).filter(Boolean).length)){cp.imagem=prev.imagem||A(prev.imagens)[0]||'';cp.imagens=A(prev.imagens).filter(Boolean).length?A(prev.imagens).filter(Boolean):(cp.imagem?[cp.imagem]:[]);if(ep){ep.imagem=cp.imagem;ep.imagens=[...cp.imagens]}}}
- const r=await api('/api/v1/admin/store/catalog',{method:'PUT',body:JSON.stringify({...cat,replaceCatalog:false,removedProductIds:[]})});try{st().setItem('john_ecommerce_public_v1',JSON.stringify(cat));if(typeof DB_KEY!=='undefined')st().setItem(DB_KEY,JSON.stringify(db))}catch(_){}if(!silent)window.toast?.(`Catálogo publicado sem apagar produtos. ${r.total??A(cat.produtos).length} item(ns) preservados.`);online=await pub('/api/v1/public/store/'+encodeURIComponent(cfg().storeSlug)+'/catalog').catch(()=>cat);renderOnline();return cat}
+async function safePublish(silent=false){const base=window.__johnPublicarEcomLocal;if(typeof base!=='function')throw new Error('O gerador de catálogo ainda não foi inicializado.');const cat=base(true)||{loja:{},produtos:[]};const t0=performance.now();const r=await api('/api/v1/admin/store/catalog',{method:'PUT',body:JSON.stringify({...cat,replaceCatalog:false,removedProductIds:[]})});try{st().setItem('john_ecommerce_public_v1',JSON.stringify(cat));if(typeof DB_KEY!=='undefined')st().setItem(DB_KEY,JSON.stringify(db))}catch(_){}if(!silent)window.toast?.(`Catálogo enviado imediatamente · ${r.total??A(cat.produtos).length} item(ns) online · ${Math.max(1,Math.round(performance.now()-t0))} ms.`);online=cat;renderOnline();pub('/api/v1/public/store/'+encodeURIComponent(cfg().storeSlug)+'/catalog').then(x=>{online=x;renderOnline()}).catch(()=>{});queueMicrotask(()=>window.johnSyncNowV841?.());return cat}
 async function repairImages(){ensureOnline();E('on84Msg').textContent='Procurando imagens armazenadas no PostgreSQL...';try{const r=await api('/api/v1/admin/store/media'),by=new Map;for(const m of A(r.media)){const k=S(m.productId);if(!k)continue;if(!by.has(k))by.set(k,[]);by.get(k).push(m.url)}let fixed=0;for(const p of A(db.produtos)){const ep=ecom(p),urls=A(by.get(S(p.id))).filter(Boolean);if(urls.length&&!ep.imagem&&!A(ep.imagens).filter(Boolean).length){ep.imagens=urls.slice(0,5);ep.imagem=ep.imagens[0];fixed++}}if(fixed){try{if(typeof DB_KEY!=='undefined')st().setItem(DB_KEY,JSON.stringify(db))}catch(_){}await safePublish(true)}E('on84Msg').textContent=fixed?`✅ ${fixed} produto(s) tiveram imagens restauradas e foram republicados.`:'Nenhuma mídia ausente pôde ser restaurada automaticamente. Se a foto não estiver mais no PostgreSQL, será necessário reenviá-la.';await loadOnline()}catch(e){E('on84Msg').textContent='❌ '+e.message}}
 window.johnV84SafePublish=safePublish;
 

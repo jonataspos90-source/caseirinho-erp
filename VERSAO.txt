@@ -1,5 +1,2 @@
-John Sistema ERP / Caseirinho
-Versão: 8.4 FINAL
-Data: 07/09/2026
-API esperada: 1.9.1
-Schema esperado: 9
+John Sistema ERP V8.4.1 FAST
+Correção: sincronização incremental imediata, sem exportação completa recorrente.
