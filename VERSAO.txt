@@ -1,3 +1,2 @@
-Caseirinho / John Sistema ERP V8.5.0
-Base: V8.4.4
-Foco: Pedidos estáveis, multiusuário, Pricing independente, acessos e performance
+Caseirinho / John Sistema ERP V8.6.0
+ERP + E-commerce integration: CEP/frete, descrição/categoria, LGPD e multiusuário.
