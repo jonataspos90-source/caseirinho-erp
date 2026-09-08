@@ -1,2 +1,2 @@
-John Sistema ERP V8.9.1
+John Sistema ERP V8.9.2
 Build: 2026-09-08
