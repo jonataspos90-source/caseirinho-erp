@@ -1,2 +1,2 @@
-John Sistema ERP V8.7.0
-Comercial WhatsApp, pendência cadastral, frete profissional, uso do app, mínimo e performance.
+John Sistema ERP · V8.8.0
+Base: V8.7.0 + publicação canônica, imagens, grades e exclusão multi-dispositivo
