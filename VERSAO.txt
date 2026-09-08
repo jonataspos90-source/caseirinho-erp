@@ -1,2 +1,2 @@
-John Sistema ERP · V8.8.0
-Base: V8.7.0 + publicação canônica, imagens, grades e exclusão multi-dispositivo
+John Sistema ERP V8.9.0
+Build: 2026-09-08
