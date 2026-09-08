@@ -1,2 +1,2 @@
-Caseirinho / John Sistema ERP V8.6.0
-ERP + E-commerce integration: CEP/frete, descrição/categoria, LGPD e multiusuário.
+Caseirinho / John Sistema ERP V8.6.1
+Sincronização multiusuário sem exportação completa, feed incremental de pedidos e redução de tráfego.

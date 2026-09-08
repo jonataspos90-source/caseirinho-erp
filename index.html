@@ -11398,7 +11398,7 @@ function showNextPopup(markCurrent=false){ensurePopup();const ss=seen(),arr=read
 async function pollOrders(){if(!cfg().apiKey||document.hidden)return;try{const r=await api('/api/v1/admin/store/orders?status=TODOS&limit=500&_ts='+Date.now());const old=readInbox(),by=new Map(old.map(x=>[S(x.id),x]));for(const o of A(r.orders))by.set(S(o.id),{...(by.get(S(o.id))||{}),...o});const arr=[...by.values()].sort((a,b)=>S(a.criadoEm).localeCompare(S(b.criadoEm)));writeInbox(arr);try{window.johnV8RenderOrders?.()}catch(_){};showNextPopup(false)}catch(e){console.warn('Pedidos V8.4.1',e)}}
 function fixPersonRoles(){const p=E('pessoaId')&&A(db?.pessoas).find(x=>S(x.id)===S(E('pessoaId').value));if(!p)return;const cli=!!E('pessoaEhCliente')?.checked,usr=!!E('pessoaEhUsuario')?.checked;p.ehCliente=cli;p.ehUsuario=usr;p.tipos=[...(cli?['CLIENTE']:[]),...(usr?['USUARIO']:[])];p.tipo=cli?'CLIENTE':'USUARIO';p.atualizadoEm=new Date().toISOString();persist()}
 document.addEventListener('submit',ev=>{if(ev.target?.id==='pessoaForm')queueMicrotask(()=>{fixPersonRoles();syncNow()})},false);
-function start(){try{const c=JSON.parse(st().getItem(CLOUD)||'{}')||{};if(c.apiKey){c.incrementalAuto=true;c.autoSync=true;st().setItem(CLOUD,JSON.stringify(c))}}catch(_){}clearInterval(timer);clearInterval(orderTimer);window.johnV850Pull?.(true);pollOrders();timer=null;orderTimer=null;window.sincronizarNuvemJohn=async()=>window.johnV850SyncNow?.();}
+function start(){try{const c=JSON.parse(st().getItem(CLOUD)||'{}')||{};if(c.apiKey){c.incrementalAuto=true;c.autoSync=true;st().setItem(CLOUD,JSON.stringify(c))}}catch(_){}clearInterval(timer);clearInterval(orderTimer);window.johnV850Pull?.(true);timer=null;orderTimer=null;window.sincronizarNuvemJohn=async()=>window.johnV850SyncNow?.();}
 window.johnSyncNowV841=syncNow;window.johnPullChangesV841=pullChanges;
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(start,1400),{once:true});else setTimeout(start,800);
 })();
@@ -11462,7 +11462,31 @@ function renderAuthoritative(){
  if(changed){try{window.renderPedidosNovo?.()}catch(_){}}
 }
 async function api(path,opt={}){let c={};for(const k of ['john_cloud_config_v71','john_cloud_config']){try{const x=JSON.parse(localStorage.getItem(k)||'{}');if(x&&Object.keys(x).length){c=x;break}}catch(_){}}const base=S(c.apiUrl||'https://john-cloud-api-production.up.railway.app').replace(/\/$/,'');const token=S(c.apiKey||c.token);if(!token)throw new Error('Credencial da nuvem não configurada.');const r=await fetch(base+path,{...opt,cache:'no-store',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token,'X-ERP-User':S(window.usuarioAtual?.nome||window.sessao?.nome||'ERP'),'Cache-Control':'no-store',...(opt.headers||{})}});let d={};try{d=await r.json()}catch(_){}if(!r.ok){const e=new Error(d.error||('HTTP '+r.status));e.status=r.status;throw e}return d}
-async function refresh(){try{const r=await api('/api/v1/admin/store/orders?status=TODOS&limit=1000');const arr=A(r.orders);saveLocalInbox(arr);for(const o of arr)syncLinkedTerminal(o);renderAuthoritative();return arr}catch(e){console.warn('Atualização E-commerce V8.4',e);return[]}}
+const ORDER_CURSOR_KEY='john_ecommerce_orders_cursor_v861';
+function orderCursor(){return sessionStorage.getItem(ORDER_CURSOR_KEY)||localStorage.getItem(ORDER_CURSOR_KEY)||''}
+function setOrderCursor(v){if(!v)return;sessionStorage.setItem(ORDER_CURSOR_KEY,S(v));localStorage.setItem(ORDER_CURSOR_KEY,S(v))}
+function mergeOrders(items){const old=localInbox(),by=new Map(old.map(x=>[S(x.id),x]));for(const o of A(items))by.set(S(o.id),{...(by.get(S(o.id))||{}),...o});const arr=[...by.values()].sort((a,b)=>S(a.criadoEm||a.created_at).localeCompare(S(b.criadoEm||b.created_at)));saveLocalInbox(arr);for(const o of A(items))syncLinkedTerminal(o);return arr}
+async function refresh(forceFull=false){
+ try{
+  let cursor=orderCursor();
+  if(forceFull||!cursor){
+   const r=await api('/api/v1/admin/store/orders?status=TODOS&limit=1000&_v861='+Date.now()),arr=A(r.orders);
+   saveLocalInbox(arr);for(const o of arr)syncLinkedTerminal(o);setOrderCursor(r.serverTime||new Date().toISOString());renderAuthoritative();return arr;
+  }
+  let loops=0,changed=[];
+  do{
+   const r=await api('/api/v1/admin/store/orders/changes?since='+encodeURIComponent(cursor)+'&limit=250&_v861='+Date.now());
+   const items=A(r.orders);if(items.length){mergeOrders(items);changed.push(...items)}
+   cursor=S(r.nextCursor||r.serverTime||cursor);setOrderCursor(cursor);
+   if(!r.hasMore)break;
+  }while(++loops<5);
+  if(changed.length)renderAuthoritative();
+  return changed;
+ }catch(e){
+  if(e.status===404){try{const r=await api('/api/v1/admin/store/orders?status=TODOS&limit=1000&_fallback='+Date.now()),arr=A(r.orders);saveLocalInbox(arr);for(const o of arr)syncLinkedTerminal(o);setOrderCursor(r.serverTime||new Date().toISOString());renderAuthoritative();return arr}catch(x){console.warn('Fallback pedidos V8.6.1',x);return[]}}
+  console.warn('Atualização incremental de pedidos V8.6.1',e);return[];
+ }
+}
 window.johnV83RejectOrder=async function(id){
  const arr=localInbox(),o=arr.find(x=>S(x.id)===S(id));if(!o)return;const p=linked(o);
  if(p){if(!confirm('Cancelar este pedido aceito? Ele continuará no histórico e o cancelamento será refletido em todos os aparelhos.'))return;try{await api('/api/v1/admin/store/orders/statuses',{method:'PUT',body:JSON.stringify({pedidos:{[id]:{status:'CANCELADO'}}})});p.status='CANCELADO';p.statusEcommerce='CANCELADO';p.atualizadoEm=new Date().toISOString();try{localStorage.setItem(typeof DB_KEY!=='undefined'?DB_KEY:'pcp_app_v1',JSON.stringify(db))}catch(_){}await refresh();window.renderPedidosNovo?.();window.toast?.('Pedido cancelado em todos os dispositivos.')}catch(e){alert('Não foi possível cancelar: '+e.message)}return}
@@ -11470,7 +11494,7 @@ window.johnV83RejectOrder=async function(id){
 };
 window.johnV8RenderOrders=renderAuthoritative;window.johnV8RefreshOrders=refresh;
 function installOriginFilter(){const st=E('pedidoFiltroStatus');if(!st||E('pedidoFiltroOrigem'))return;const field=document.createElement('div');field.className='field';field.innerHTML='<label>Origem</label><select id="pedidoFiltroOrigem"><option value="TODOS">Todos</option><option value="ERP">ERP</option><option value="ECOMMERCE">E-commerce</option></select>';st.closest('.field')?.insertAdjacentElement('afterend',field);E('pedidoFiltroOrigem').onchange=()=>window.renderPedidosNovo?.()}
-function init(){installOriginFilter();refresh();setInterval(()=>{if(!document.hidden)refresh()},5000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh()});window.addEventListener('focus',refresh);setTimeout(renderAuthoritative,350)}
+function init(){installOriginFilter();refresh(true);setInterval(()=>{if(!document.hidden)refresh(false)},8000);setInterval(()=>{if(!document.hidden)refresh(true)},30*60*1000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh(false)});window.addEventListener('focus',()=>refresh(false));setTimeout(renderAuthoritative,350)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(init,1400),{once:true});else setTimeout(init,500);
 })();
 </script>
@@ -11596,7 +11620,7 @@ window.johnV84Reactivate=async function(id){try{await api('/api/v1/admin/tokens/
 
 /* Pedido online: rejeitar/cancelar sem excluir lista */
 function saveInbox(arr){for(const k of IK)try{st().setItem(k,JSON.stringify(arr))}catch(_){}}
-async function refreshOrders(){try{const r=await api('/api/v1/admin/store/orders?status=TODOS&limit=1000');saveInbox(A(r.orders));window.johnV8RenderOrders?.();return A(r.orders)}catch(e){console.error('E-commerce pedidos',e);return[]}}
+async function refreshOrders(){try{if(typeof window.johnV8RefreshOrders==='function')return await window.johnV8RefreshOrders(false);const r=await api('/api/v1/admin/store/orders?status=TODOS&limit=300&_legacy=1');saveInbox(A(r.orders));window.johnV8RenderOrders?.();return A(r.orders)}catch(e){console.error('E-commerce pedidos',e);return[]}}
 async function reject(id){let arr=[];try{arr=JSON.parse(st().getItem(IK[0])||'[]')||[]}catch(_){}const p=A(db?.pedidos).find(x=>S(x.ecommercePedidoId)===S(id));if(p){if(!confirm('Cancelar este pedido aceito? O pedido ficará no histórico e não será apagado.'))return;try{await api('/api/v1/admin/store/orders/statuses',{method:'PUT',body:JSON.stringify({pedidos:{[id]:{status:'CANCELADO'}}})});p.status='CANCELADO';p.statusEcommerce='CANCELADO';p.atualizadoEm=new Date().toISOString();H().persist?.('cancelamento e-commerce');await refreshOrders();window.renderPedidosNovo?.();window.toast?.('Pedido cancelado e preservado em todos os dispositivos.')}catch(e){alert('Falha ao cancelar: '+e.message)}return}
  const reason=prompt('Motivo da rejeição:','Pedido não aceito pelo estabelecimento.');if(reason===null)return;if(!confirm('Confirmar rejeição? O pedido ficará no histórico como REJEITADO.'))return;try{await api('/api/v1/admin/store/orders/'+encodeURIComponent(id)+'/reject',{method:'POST',body:JSON.stringify({reason:S(reason).trim()||'Pedido rejeitado pelo ERP'})});await refreshOrders();window.toast?.('Pedido rejeitado e preservado no histórico.')}catch(e){alert('Falha ao rejeitar: '+e.message)}}
 window.johnV83RejectOrder=reject;window.johnV8DeleteOrder=reject;window.johnV84RefreshOrders=refreshOrders;
@@ -11906,8 +11930,16 @@ window.previewMargemProduto=function(id,v,input){if(input){input.dataset.marginI
 window.aplicarMargemLote=function(selectedOnly){const v=parsePt(E('margemLote')?.value);if(!Number.isFinite(v)||v<0||v>=100){window.toast?.('Informe uma margem entre 0,00% e 99,99%.');return}const ids=new Set([...document.querySelectorAll('.margem-selecao:checked')].map(c=>S(c.value))),list=marginProducts().filter(p=>!selectedOnly||ids.has(S(p.id)));if(selectedOnly&&!list.length){window.toast?.('Selecione ao menos um produto.');return}for(const p of list)p._novaMargem=v;window.renderManutencaoMargem?.()};
 
 /* ================= MULTIUSUÁRIO REAL: CURSOR POR ABA ================= */
-function tabCursor(){const k='john_cloud_changes_cursor_device_v860_'+deviceId();let v=st().getItem(k);if(!v){v=new Date(Date.now()-86400000).toISOString();st().setItem(k,v)}return v}
-function setTabCursor(v){if(v)st().setItem('john_cloud_changes_cursor_device_v860_'+deviceId(),S(v))}
+function deviceCursorKey(){return 'john_cloud_changes_cursor_device_v861_'+deviceId()}
+function tabCursor(){
+ const sk='john_cloud_changes_cursor_tab_v861';let v=sessionStorage.getItem(sk);
+ if(!v){
+  v=st().getItem(deviceCursorKey())||st().getItem('john_cloud_changes_cursor_device_v860_'+deviceId())||sessionStorage.getItem('john_cloud_changes_cursor_tab_v850')||st().getItem('john_cloud_changes_cursor_v841')||new Date(Date.now()-6*60*60*1000).toISOString();
+  sessionStorage.setItem(sk,v);
+ }
+ return v;
+}
+function setTabCursor(v){if(!v)return;const x=S(v);sessionStorage.setItem('john_cloud_changes_cursor_tab_v861',x);st().setItem(deviceCursorKey(),x)}
 function pendingKeys(){const out=new Set;try{for(const x of A(JSON.parse(st().getItem('john_cloud_incremental_queue_v2')||'[]'))){out.add(x.kind==='root'?'root|'+S(x.objectKey):'record|'+S(x.entityType)+'|'+S(x.entityId))}}catch(_){}return out}
 function recordId(x,i){return S(x?.id??('__idx_'+i))}
 function applyRemote(changes){const blocked=pendingKeys(),types=new Set;let count=0;for(const ch of A(changes)){if(ch.kind==='root'){const k=S(ch.objectKey);if(!k||blocked.has('root|'+k))continue;let old='',neu='';try{old=JSON.stringify(db[k]);neu=JSON.stringify(ch.payload)}catch(_){}if(ch.operation==='DELETE'){if(Object.prototype.hasOwnProperty.call(db,k)){delete db[k];count++;types.add(k)}}else if(old!==neu){db[k]=ch.payload;count++;types.add(k)}continue}const t=S(ch.entityType),id=S(ch.entityId);if(!t||!id||blocked.has('record|'+t+'|'+id))continue;if(!Array.isArray(db[t]))db[t]=[];const arr=db[t],i=arr.findIndex((x,n)=>recordId(x,n)===id);if(ch.operation==='DELETE'){if(i>=0){arr.splice(i,1);count++;types.add(t)}}else{let old='',neu='';if(i>=0){try{old=JSON.stringify(arr[i]);neu=JSON.stringify(ch.payload)}catch(_){}if(old!==neu){arr[i]=ch.payload;count++;types.add(t)}}else{arr.push(ch.payload);count++;types.add(t)}}}if(count){persistLocal();if(isEditing())remoteRenderPending=true;else renderActive()}return{count,types:[...types]}}
@@ -11917,7 +11949,7 @@ window.johnV850Pull=pull;window.johnV850SyncNow=fastSync;window.johnSyncNowV841=
 bc&&(bc.onmessage=ev=>{if(ev.data?.type==='pull')setTimeout(()=>pull(true),80)});
 window.addEventListener('storage',ev=>{if(ev.key===DBK||ev.key==='john_cloud_incremental_queue_v2')setTimeout(()=>pull(true),120)});
 window.addEventListener('focus',()=>pull(true));window.addEventListener('online',()=>pull(true));document.addEventListener('visibilitychange',()=>{if(!document.hidden)pull(true)});
-function startRealtime(){clearInterval(pullTimer);pull(true);pullTimer=setInterval(()=>pull(false),4000)}
+function startRealtime(){clearInterval(pullTimer);pull(true);pullTimer=setInterval(()=>pull(false),6000)}
 
 /* ================= ACESSOS, DISPOSITIVOS E E-COMMERCE ================= */
 function deviceId(){let id=st().getItem(DEVICE_KEY);if(!id){id='dev_'+uid();st().setItem(DEVICE_KEY,id)}return id}
@@ -11985,7 +12017,17 @@ async function admin(path,opt={}){const c=cloudCfg();if(!c.apiKey)throw new Erro
 
 /* 1) SINCRONIZAÇÃO MULTIUSUÁRIO: sempre incremental quando nuvem está configurada. */
 function forceRealtime(){const c=cloudCfg();if(c.apiKey){saveCloudCfg(c);try{window.johnCloudCapturarAlteracoes?.();window.johnCloudFlushIncremental?.(true)}catch(_){}}}
-async function reconcileOnce(){if(sessionStorage.getItem('john_v860_reconciled')==='1'||!cloudCfg().apiKey)return;sessionStorage.setItem('john_v860_reconciled','1');try{forceRealtime();await window.johnCloudFlushIncremental?.(true);const ex=await admin('/api/v1/admin/sync/export');if(!ex?.db||typeof ex.db!=='object')return;let changed=0;for(const [k,v] of Object.entries(ex.db)){if(Array.isArray(v)){if(!Array.isArray(db[k]))db[k]=[];const local=db[k],by=new Map(local.map((x,i)=>[S(x?.id??'__idx_'+i),x]));for(let i=0;i<v.length;i++){const x=v[i],id=S(x?.id??'__idx_'+i),old=by.get(id);if(JSON.stringify(old)!==JSON.stringify(x)){by.set(id,x);changed++}}db[k]=[...by.values()]}else if(JSON.stringify(db[k])!==JSON.stringify(v)){db[k]=v;changed++}}if(changed){persist();try{window.johnV850RenderAffected?.()}catch(_){}}try{const cur=ex.exportedAt||new Date().toISOString(),did=st().getItem('john_erp_device_id_v850')||'device';st().setItem('john_cloud_changes_cursor_device_v860_'+did,cur)}catch(_){}}catch(e){console.warn('Reconciliação V8.6:',e)}}
+async function reconcileOnce(){
+ if(sessionStorage.getItem('john_v861_reconciled')==='1'||!cloudCfg().apiKey)return;
+ sessionStorage.setItem('john_v861_reconciled','1');
+ try{
+  forceRealtime();
+  await window.johnCloudFlushIncremental?.(true);
+  // V8.6.1: NÃO baixa mais /sync/export em toda abertura.
+  // Cada aba mantém seu próprio cursor e recebe apenas as alterações do feed incremental.
+  await window.johnV850Pull?.(true);
+ }catch(e){console.warn('Reconciliação incremental V8.6.1:',e)}
+}
 
 /* 2) FRETE: regra única usada por ERP + E-commerce. */
 function ensureFreightFields(){const form=E('freteForm'),grid=form?.querySelector('.grid');if(!form||!grid||E('freteEcommerceAuto'))return false;const box=document.createElement('div');box.className='john-v860-freight-box';box.innerHTML=`<b>🌐 Vínculo automático com o E-commerce</b><div class="subtitle" style="margin:3px 0 12px">Cadastre aqui a localidade e o valor. O mesmo cadastro será publicado para a Loja.</div><div class="john-v860-freight-grid"><div class="field w6"><label><input id="freteEcommerceAuto" type="checkbox"> Usar esta regra automaticamente no E-commerce</label><small>Para cálculo automático, use cobrança FIXA. Regra por KM fica pendente para cálculo manual no ERP.</small></div><div class="field"><label>Identificar por *</label><select id="freteVinculoTipo"><option value="CIDADE">Cidade</option><option value="BAIRRO">Bairro</option><option value="CEP_PREFIXO">Prefixo do CEP</option></select></div><div class="field"><label>Localidade / valor de vínculo *</label><input id="freteLocalidade" placeholder="Ferraz de Vasconcelos, Poá ou Tucuruvi"></div><div class="field"><label>Cidade base</label><input id="freteCidadeBase" placeholder="Ex.: São Paulo (para bairro Tucuruvi)"></div><div class="field"><label>UF</label><input id="freteUf" maxlength="2" value="SP"></div><div class="field"><label>Prioridade</label><input id="fretePrioridade" type="number" min="1" step="1" value="10"><small>Menor número = regra avaliada primeiro.</small></div><div class="field w12"><div class="security-note">Exemplos: <b>CIDADE → Ferraz de Vasconcelos</b>; <b>CIDADE → Poá</b>; <b>BAIRRO → Tucuruvi + Cidade base São Paulo</b>. Se nenhuma regra ativa combinar com o CEP/endereço, o pedido entra como <b>Frete pendente</b> para cálculo no ERP.</div></div></div>`;grid.appendChild(box);return true}
@@ -12022,7 +12064,7 @@ function init(){forceRealtime();ensureFreightFields();renderFreights();enhanceDe
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(init,1900),{once:true});else setTimeout(init,800);
 [3200,6000,9500,14000].forEach(ms=>setTimeout(()=>{try{forceRealtime();ensureFreightFields();enhanceDelivery();ensureLgpdMenu();patchProductUI();installCatalogPatch();wrapSafePublish()}catch(e){console.warn(e)}},ms));
 document.addEventListener('click',ev=>{const pg=ev.target.closest?.('[data-page]')?.dataset.page;if(pg==='fretes')setTimeout(()=>{ensureFreightFields();renderFreights()},50);if(pg==='ecommerceEntregas')setTimeout(enhanceDelivery,80);if(pg==='lgpdPrivacidadeV860')setTimeout(renderLgpd,60);if(pg==='produtos')setTimeout(patchProductUI,80)},true);
-window.johnV860={version:'8.6.0',freightPublicRules,renderFreights,reconcileOnce,renderLgpd};
+window.johnV860={version:'8.6.1',freightPublicRules,renderFreights,reconcileOnce,renderLgpd};
 })();
 </script>
 </body>
