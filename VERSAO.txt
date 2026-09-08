@@ -1,2 +1,2 @@
-Caseirinho / John Sistema ERP V8.6.1
-Sincronização multiusuário sem exportação completa, feed incremental de pedidos e redução de tráfego.
+Caseirinho / John Sistema ERP V8.6.2
+HOTFIX: preserva Preço E-commerce ao editar descrição, limite, categoria e imagens; recupera preço já publicado quando versão anterior o apagou.
