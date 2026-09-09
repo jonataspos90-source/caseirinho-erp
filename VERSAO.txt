@@ -1,4 +1,5 @@
-John Sistema ERP V8.10.5
+John Sistema ERP V8.10.6
 Build: 2026-09-09
-Produção: estabilidade da fila de pedidos, redução de consultas duplicadas, compatibilidade de token e reconciliação de pagamento integral.
+Correção crítica: recuperação da inicialização/login; injeção segura do patch no último fechamento real do HTML; isolamento do cache do ERP para não apagar o cache da Loja; navegação e arquivos estáticos com atualização resiliente.
+Mantém production-stability-v8-10-5.js sem alteração.
 API compatível: 1.14.3

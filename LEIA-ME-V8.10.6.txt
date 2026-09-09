@@ -1,0 +1,68 @@
+JOHN SISTEMA ERP — V8.10.6 — RECUPERAÇÃO MANUAL
+====================================================
+
+SINTOMA CORRIGIDO
+- Tela de login abre, mas mostra:
+  "Não foi possível inicializar o acesso. Recarregue esta versão do sistema."
+- Botão Entrar não consegue inicializar corretamente.
+
+CAUSAS ENCONTRADAS
+1) O service-worker.js da V8.10.5 usava:
+   html.replace(/<\/body>/i, ...)
+   Isso injeta o script antes do PRIMEIRO </body> encontrado. Se existir </body>
+   dentro de uma string HTML de impressão/PDF, o JavaScript pode ser quebrado.
+
+2) O Service Worker apagava TODOS os caches do domínio ao ativar.
+   ERP e Loja estão no mesmo domínio jonataspos90-source.github.io, apenas em
+   caminhos diferentes. Cache Storage é compartilhado por origem.
+   A V8.10.6 apaga apenas caches cujo nome começa com john-erp-pwa-.
+
+O QUE SUBIR NO GITHUB — REPOSITÓRIO caseirinho-erp
+1. service-worker.js
+   -> SUBSTITUIR o arquivo atual.
+
+2. VERSAO.txt
+   -> SUBSTITUIR o arquivo atual.
+
+3. recuperar-erp-v8-10-6.html
+   -> ADICIONAR na raiz.
+
+NÃO ALTERAR
+- index.html
+- production-stability-v8-10-5.js
+- manifest.webmanifest
+- pasta icons
+- API
+- banco/dados
+
+PASSO A PASSO
+1. Abra jonataspos90-source/caseirinho-erp no GitHub.
+2. Substitua service-worker.js.
+3. Substitua VERSAO.txt.
+4. Adicione recuperar-erp-v8-10-6.html.
+5. Faça o commit dos 3 arquivos.
+6. Aguarde o GitHub Pages concluir.
+
+RECUPERAÇÃO NO CELULAR
+Após o GitHub Pages concluir, abra no Chrome:
+
+https://jonataspos90-source.github.io/caseirinho-erp/recuperar-erp-v8-10-6.html
+
+A página tenta ativar a V8.10.6 automaticamente e depois abre o ERP.
+
+IMPORTANTE
+- NÃO limpar dados do site.
+- NÃO limpar armazenamento.
+- NÃO excluir localStorage/IndexedDB.
+- NÃO desinstalar o app antes do teste.
+Isso preserva os dados e configurações locais.
+
+TESTES DE ACEITE
+[ ] Login abre sem a mensagem de falha de inicialização.
+[ ] Usuário existente consegue entrar.
+[ ] Botão Mostrar senha funciona.
+[ ] Dashboard abre.
+[ ] E-commerce > Pedidos recebidos abre.
+[ ] ERP continua enxergando a API.
+[ ] Loja continua abrindo normalmente.
+[ ] Fechar/reabrir o PWA mantém o funcionamento.

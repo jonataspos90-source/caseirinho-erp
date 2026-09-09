@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#101b49">
+<title>John Sistema ERP · Recuperação V8.10.6</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;min-height:100dvh;display:grid;place-items:center;padding:22px;background:linear-gradient(145deg,#07142e,#172967 62%,#392169);font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif;color:#17223b}
+.card{width:min(560px,100%);background:#fff;border-radius:28px;padding:28px;box-shadow:0 30px 90px #0006}
+.badge{display:inline-flex;padding:7px 10px;border-radius:999px;background:#eef2ff;color:#4338ca;font-size:12px;font-weight:900}
+h1{margin:16px 0 8px;font-size:30px}p{line-height:1.55;color:#64748b}
+.status{margin:18px 0;padding:14px;border-radius:14px;background:#f8fafc;border:1px solid #e2e8f0;font-weight:750}
+.ok{background:#ecfdf5;border-color:#86efac;color:#166534}.err{background:#fff1f2;border-color:#fda4af;color:#9f1239}
+button,a{display:block;width:100%;border:0;border-radius:14px;padding:13px 16px;text-align:center;text-decoration:none;font:inherit;font-weight:900;cursor:pointer}
+button{background:linear-gradient(135deg,#3478f6,#4d52ef);color:#fff}
+a{margin-top:9px;background:#eef2ff;color:#3730a3}
+small{display:block;margin-top:16px;color:#64748b;line-height:1.45}
+</style>
+</head>
+<body>
+<div class="card">
+  <span class="badge">RECUPERAÇÃO SEGURA · V8.10.6</span>
+  <h1>John Sistema ERP</h1>
+  <p>Esta página força a atualização do Service Worker sem apagar login salvo, banco local, configurações ou dados do navegador.</p>
+  <div id="status" class="status">Preparando a atualização...</div>
+  <button id="run" type="button">Atualizar ERP agora</button>
+  <a href="./?v=8106">Abrir o ERP</a>
+  <small>Não use “Limpar dados”, “Limpar armazenamento” ou “Excluir dados do site”. Esta recuperação não precisa disso.</small>
+</div>
+<script>
+(function(){
+'use strict';
+const status=document.getElementById('status');
+const btn=document.getElementById('run');
+let changing=false;
+
+function msg(text,kind){
+  status.textContent=text;
+  status.className='status'+(kind?' '+kind:'');
+}
+async function recover(){
+  btn.disabled=true;
+  msg('Buscando a V8.10.6...');
+  try{
+    if(!('serviceWorker' in navigator)){
+      msg('Seu navegador não suporta Service Worker. Abra o ERP novamente pelo Chrome.','err');
+      btn.disabled=false;
+      return;
+    }
+
+    navigator.serviceWorker.addEventListener('controllerchange',()=>{
+      if(changing)return;
+      changing=true;
+      msg('V8.10.6 ativada. Abrindo o ERP...','ok');
+      setTimeout(()=>location.replace('./?v=8106&t='+Date.now()),700);
+    });
+
+    const reg=await navigator.serviceWorker.register('./service-worker.js?v=8106',{
+      scope:'./',
+      updateViaCache:'none'
+    });
+    await reg.update();
+
+    if(reg.waiting){
+      reg.waiting.postMessage({type:'SKIP_WAITING'});
+      msg('Nova versão encontrada. Ativando...','ok');
+      return;
+    }
+
+    if(reg.installing){
+      msg('Instalando a V8.10.6...');
+      reg.installing.addEventListener('statechange',()=>{
+        if(reg.installing && reg.installing.state==='installed'){
+          reg.installing.postMessage({type:'SKIP_WAITING'});
+        }
+      });
+      return;
+    }
+
+    msg('Service Worker atualizado. Abrindo o ERP...','ok');
+    setTimeout(()=>location.replace('./?v=8106&t='+Date.now()),900);
+  }catch(e){
+    console.error(e);
+    msg('Não foi possível concluir automaticamente: '+(e.message||e)+'. Feche o ERP e tente novamente.','err');
+    btn.disabled=false;
+  }
+}
+btn.addEventListener('click',recover);
+setTimeout(recover,450);
+})();
+</script>
+</body>
+</html>
