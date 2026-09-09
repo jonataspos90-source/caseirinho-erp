@@ -1,3 +1,4 @@
-John Sistema ERP V8.10.1
-Build: 2026-09-08
-Hotfix: Cadastro de Pessoas transacional e sincronização confirmada
+John Sistema ERP V8.10.5
+Build: 2026-09-09
+Produção: estabilidade da fila de pedidos, redução de consultas duplicadas, compatibilidade de token e reconciliação de pagamento integral.
+API compatível: 1.14.3
