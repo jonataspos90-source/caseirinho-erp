@@ -75,9 +75,9 @@ function addCss(){if(cssApplied)return;cssApplied=true;const st=document.createE
 function stabilizeOrdersTable(){
   addCss();
   const headings=[...document.querySelectorAll('h1,h2,h3')];
-  const h=headings.find(x=>/Pedidos do E-?commerce|Fila de pedidos online/i.test(S(x.textContent)));
-  const root=h?.closest('section,.card,.panel,main,div')||document.body;
-  const tables=[...root.querySelectorAll('table')];
+  const active=headings.some(x=>/Pedidos do E-?commerce|Fila de pedidos online/i.test(S(x.textContent)));
+  if(!active)return;
+  const tables=[...document.querySelectorAll('table')];
   for(const t of tables){
     const text=S(t.textContent);
     if(/PEDIDO/i.test(text)&&/STATUS/i.test(text)&&/AÇÕES|ACOES/i.test(text)){
@@ -86,7 +86,8 @@ function stabilizeOrdersTable(){
     }
   }
 }
-const mo=new MutationObserver(()=>stabilizeOrdersTable());
+let stabilizeScheduled=false;
+const mo=new MutationObserver(()=>{if(stabilizeScheduled)return;stabilizeScheduled=true;setTimeout(()=>{stabilizeScheduled=false;stabilizeOrdersTable()},180)});
 if(document.documentElement)mo.observe(document.documentElement,{childList:true,subtree:true});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{bridgeDb();stabilizeOrdersTable()},{once:true});else stabilizeOrdersTable();
 setTimeout(stabilizeOrdersTable,1200);
