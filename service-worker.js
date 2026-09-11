@@ -1,10 +1,10 @@
-const CACHE='john-erp-pwa-v8.11.0-multiempresa';
+const CACHE='john-erp-pwa-v8.11.1-multiempresa';
 
 const MULTI='./multiempresa-v8-11-0.js';
 const STABILITY='./production-stability-v8-10-5.js';
 
-const MULTI_TAG='<script src="./multiempresa-v8-11-0.js?v=8110"></'+'script>';
-const STABILITY_TAG='<script src="./production-stability-v8-10-5.js?v=8110"></'+'script>';
+const MULTI_TAG='<script src="./multiempresa-v8-11-0.js?v=8111"></'+'script>';
+const STABILITY_TAG='<script src="./production-stability-v8-10-5.js?v=8111"></'+'script>';
 
 const SHELL=[
   './',

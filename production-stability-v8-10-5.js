@@ -218,7 +218,7 @@ function ensureMultiempresa(){
   }
 
   const s=document.createElement('script');
-  s.src='./multiempresa-v8-11-0.js?v=8110';
+  s.src='./multiempresa-v8-11-0.js?v=8111';
   s.async=false;
   s.dataset.johnMultiempresa='1';
   s.onerror=()=>console.warn(
@@ -231,6 +231,6 @@ function ensureMultiempresa(){
 ensureMultiempresa();
 
 console.info(
-  '[John ERP] estabilidade V8.10.5 preservada · Multiempresa V8.11.0'
+  '[John ERP] estabilidade V8.10.5 preservada · Multiempresa V8.11.1'
 );
 })();

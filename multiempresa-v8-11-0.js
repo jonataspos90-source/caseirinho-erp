@@ -4,7 +4,7 @@
 if(window.__JOHN_MULTIEMPRESA_8110__)return;
 window.__JOHN_MULTIEMPRESA_8110__=true;
 
-const VERSION='8.11.0';
+const VERSION='8.11.1';
 const API_DEFAULT='https://john-cloud-api-production.up.railway.app';
 const GLOBAL_TENANT_KEY='john_active_tenant_v1';
 const GLOBAL_KEYS=new Set([
@@ -155,18 +155,58 @@ function tokenAlive(token){
   const sess=parse(sessionStorage.getItem('pcp_sessao')||'null',null);
   const c=parse(localStorage.getItem('john_cloud_config_v1')||'{}',{});
 
+  // 1) Sessão individual válida sempre tem prioridade.
   if(sess?.cloudToken&&tokenAlive(sess.cloudToken)){
     c.apiKey=sess.cloudToken;
     c.storeSlug=tenantSlug||c.storeSlug||'';
     c.apiUrl=S(c.apiUrl||API_DEFAULT).replace(/\/+$/,'');
+    c.authMode='SESSION_V2';
     localStorage.setItem('john_cloud_config_v1',JSON.stringify(c));
     return;
   }
 
+  /*
+    2) Compatibilidade SOMENTE para a empresa original deste navegador.
+
+    A V8.11.0 copiava john_cloud_config_v1 para o namespace e logo depois
+    apagava apiKey quando ainda não havia uma sessão V2. O ERP legado
+    interpretava isso como "dispositivo sem token" e abria novamente o
+    fluxo de solicitação/aprovação.
+
+    A chave original continua preservada na entrada NÃO namespaced porque
+    migrateLegacyStorage() copia e não apaga. Recuperamos essa chave somente
+    quando o slug legado é exatamente o mesmo tenant ativo.
+
+    Um tenant novo jamais passa por esta condição e nunca recebe a chave
+    legada da empresa original.
+  */
+  const isOriginalLegacyTenant=!!(
+    tenantSlug &&
+    legacySlug &&
+    tenantSlug===legacySlug
+  );
+
+  if(isOriginalLegacyTenant&&S(legacy?.apiKey).trim()){
+    c.apiKey=S(legacy.apiKey).trim();
+    c.storeSlug=tenantSlug;
+    c.apiUrl=S(c.apiUrl||legacy.apiUrl||API_DEFAULT).replace(/\/+$/,'');
+    c.authMode='LEGACY_TRANSITION';
+    c.legacyTransition=true;
+    localStorage.setItem('john_cloud_config_v1',JSON.stringify(c));
+    return;
+  }
+
+  /*
+    3) Para qualquer outra empresa, não permitir reaproveitamento de
+    credencial local antiga. O login /erp-login emitirá uma sessão própria.
+  */
   if(c.apiKey){
     c.apiKey='';
-    localStorage.setItem('john_cloud_config_v1',JSON.stringify(c));
   }
+  c.storeSlug=tenantSlug||c.storeSlug||'';
+  c.authMode='TENANT_LOGIN_REQUIRED';
+  delete c.legacyTransition;
+  localStorage.setItem('john_cloud_config_v1',JSON.stringify(c));
 })();
 
 function esc(v){

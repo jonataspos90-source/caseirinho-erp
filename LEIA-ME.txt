@@ -1,0 +1,35 @@
+CORREÇÃO V8.11.1 — TOKEN DUPLICADO / AGUARDANDO APROVAÇÃO
+
+SUBSTITUIR NO REPOSITÓRIO caseirinho-erp:
+- multiempresa-v8-11-0.js
+- service-worker.js
+- production-stability-v8-10-5.js
+- VERSAO.txt
+
+A pasta tests é opcional no GitHub.
+
+NÃO ALTERAR:
+- index.html
+- API
+- Loja
+- Railway
+- Neon
+
+DEPOIS DO UPLOAD:
+1. aguarde o GitHub Pages publicar;
+2. feche todas as abas do ERP;
+3. abra novamente o ERP;
+4. pressione Ctrl+F5 uma vez;
+5. se necessário, recarregue uma segunda vez para o novo Service Worker assumir;
+6. faça login normalmente.
+
+NÃO:
+- gere novo token;
+- aprove novo token;
+- apague localStorage;
+- remova a ERP_API_KEY;
+- altere ALLOW_LEGACY_ERP_KEY.
+
+Esta é uma correção de transição. A credencial antiga é recuperada somente
+para o tenant original e somente enquanto a migração multiempresa não foi
+encerrada. Novos tenants não recebem essa credencial.

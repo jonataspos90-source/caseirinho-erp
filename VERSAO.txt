@@ -1,26 +1,26 @@
-John Sistema ERP V8.11.0 — Multiempresa
+John Sistema ERP V8.11.1 — Correção de transição Multiempresa
 Build: 2026-09-11
 
-Fase 2:
-- identificação da empresa por slug;
-- armazenamento local isolado por empresa;
-- sessionStorage isolado por empresa;
-- login em nuvem vinculado ao tenant;
-- token administrativo passa a ser a sessão daquele usuário;
-- primeiro MASTER criado por bootstrap temporário;
-- nome da empresa exibido no login e no ERP;
-- nenhuma listagem de outras empresas para o cliente;
-- compatibilidade com a operação atual preservada.
+Correção crítica e isolada:
+- evita solicitar/aprovar token novamente no tenant original;
+- preserva a sessão individual V2 quando ela existir;
+- recupera a credencial legada SOMENTE para o tenant original durante a transição;
+- novo tenant nunca herda a ERP_API_KEY/credencial da empresa original;
+- mantém os namespaces john:<tenant>:;
+- mantém a base legada original intacta para rollback;
+- força atualização do cache do Service Worker para V8.11.1.
 
-Arquitetura:
-- multiempresa-v8-11-0.js entra ANTES do script principal via Service Worker;
-- chaves pcp_* e john_* recebem namespace john:<tenant>:;
-- dados legados da empresa atual são copiados para seu namespace sem apagar os originais;
-- novos tenants NÃO recebem cópia do banco local antigo;
-- API esperada: 1.16.1+;
-- Schema: 12.
+NÃO ALTERA:
+- API;
+- Loja;
+- Financeiro;
+- PCP;
+- Estoque;
+- Pricing;
+- CRM;
+- Pedidos;
+- Produtos;
+- PostgreSQL.
 
-Importante:
-A V8.11.0 não altera Financeiro, PCP, Estoque, Pricing, CRM, Relatórios,
-Pedidos ou regras de negócio desses módulos. O isolamento ocorre na camada
-de identificação, autenticação, sessão e armazenamento.
+Após o primeiro login multiempresa concluído, o token individual de sessão
+volta a ter prioridade sobre a credencial legada.
