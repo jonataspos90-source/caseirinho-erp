@@ -1,5 +1,26 @@
-John Sistema ERP V8.10.6
-Build: 2026-09-09
-Correção crítica: recuperação da inicialização/login; injeção segura do patch no último fechamento real do HTML; isolamento do cache do ERP para não apagar o cache da Loja; navegação e arquivos estáticos com atualização resiliente.
-Mantém production-stability-v8-10-5.js sem alteração.
-API compatível: 1.14.3
+John Sistema ERP V8.11.0 — Multiempresa
+Build: 2026-09-11
+
+Fase 2:
+- identificação da empresa por slug;
+- armazenamento local isolado por empresa;
+- sessionStorage isolado por empresa;
+- login em nuvem vinculado ao tenant;
+- token administrativo passa a ser a sessão daquele usuário;
+- primeiro MASTER criado por bootstrap temporário;
+- nome da empresa exibido no login e no ERP;
+- nenhuma listagem de outras empresas para o cliente;
+- compatibilidade com a operação atual preservada.
+
+Arquitetura:
+- multiempresa-v8-11-0.js entra ANTES do script principal via Service Worker;
+- chaves pcp_* e john_* recebem namespace john:<tenant>:;
+- dados legados da empresa atual são copiados para seu namespace sem apagar os originais;
+- novos tenants NÃO recebem cópia do banco local antigo;
+- API esperada: 1.16.1+;
+- Schema: 12.
+
+Importante:
+A V8.11.0 não altera Financeiro, PCP, Estoque, Pricing, CRM, Relatórios,
+Pedidos ou regras de negócio desses módulos. O isolamento ocorre na camada
+de identificação, autenticação, sessão e armazenamento.
