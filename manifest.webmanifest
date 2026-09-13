@@ -1,8 +1,8 @@
 {
   "id": "./",
-  "name": "John Sistemas — Caseirinho ERP",
-  "short_name": "John ERP",
-  "description": "ERP Caseirinho integrado à API John Cloud e PostgreSQL.",
+  "name": "Caseirinho Massas Artesanais — Loja Online",
+  "short_name": "Caseirinho",
+  "description": "Loja online do Caseirinho integrada ao John ERP Cloud.",
   "lang": "pt-BR",
   "start_url": "./",
   "scope": "./",
@@ -12,11 +12,11 @@
     "minimal-ui"
   ],
   "orientation": "any",
-  "background_color": "#071225",
-  "theme_color": "#071225",
+  "background_color": "#fff8f5",
+  "theme_color": "#7b1438",
   "categories": [
-    "business",
-    "productivity"
+    "food",
+    "shopping"
   ],
   "icons": [
     {

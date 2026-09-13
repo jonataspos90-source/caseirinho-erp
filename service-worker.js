@@ -1,140 +1,71 @@
-const CACHE='john-erp-pwa-v8.11.1-multiempresa';
-
-const MULTI='./multiempresa-v8-11-0.js';
-const STABILITY='./production-stability-v8-10-5.js';
-
-const MULTI_TAG='<script src="./multiempresa-v8-11-0.js?v=8111"></'+'script>';
-const STABILITY_TAG='<script src="./production-stability-v8-10-5.js?v=8111"></'+'script>';
-
+const CACHE='caseirinho-loja-v9.1.0-customer-experience';
 const SHELL=[
   './',
   './index.html',
+  './styles.css',
+  './app.js',
   './manifest.webmanifest',
-  './offline.html',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/icon-maskable-512.png',
-  './icons/apple-touch-icon.png',
-  MULTI,
-  STABILITY
+  './icons/apple-touch-icon.png'
 ];
 
-async function cacheShell(){
-  const c=await caches.open(CACHE);
-  for(const url of SHELL){
-    try{
-      const r=await fetch(url,{cache:'reload'});
-      if(r.ok)await c.put(url,r.clone());
-    }catch(_){}
-  }
-}
-
-async function injectScripts(response){
-  if(!response)return response;
-
-  const ct=response.headers.get('content-type')||'';
-  if(!ct.includes('text/html'))return response;
-
-  let html=await response.text();
-
-  /*
-    Multiempresa precisa executar ANTES do script principal do ERP para
-    particionar localStorage/sessionStorage antes da leitura do DB_KEY.
-    Por isso entra antes do primeiro </head> real.
-  */
-  if(!html.includes('multiempresa-v8-11-0.js')){
-    const lower=html.toLowerCase();
-    const headPos=lower.indexOf('</head>');
-    html=headPos>=0
-      ?html.slice(0,headPos)+MULTI_TAG+html.slice(headPos)
-      :MULTI_TAG+html;
-  }
-
-  /*
-    Estabilidade permanece no final. Usamos o ÚLTIMO </body> para não
-    quebrar strings de impressão/PDF existentes dentro do ERP.
-  */
-  if(!html.includes('production-stability-v8-10-5.js')){
-    const lower=html.toLowerCase();
-    const bodyPos=lower.lastIndexOf('</body>');
-    html=bodyPos>=0
-      ?html.slice(0,bodyPos)+STABILITY_TAG+html.slice(bodyPos)
-      :html+STABILITY_TAG;
-  }
-
-  const h=new Headers(response.headers);
-  h.delete('content-length');
-  h.set('Cache-Control','no-cache');
-
-  return new Response(html,{
-    status:response.status,
-    statusText:response.statusText,
-    headers:h
-  });
-}
-
-self.addEventListener('install',e=>{
-  e.waitUntil(cacheShell().then(()=>self.skipWaiting()));
-});
-
-self.addEventListener('activate',e=>{
-  e.waitUntil(
-    caches.keys()
-      .then(keys=>Promise.all(
-        keys
-          .filter(
-            k=>k!==CACHE&&k.startsWith('john-erp-pwa-')
-          )
-          .map(k=>caches.delete(k))
-      ))
-      .then(()=>self.clients.claim())
-  );
-});
-
-self.addEventListener('message',e=>{
-  if(e.data&&e.data.type==='SKIP_WAITING'){
-    self.skipWaiting();
-  }
-});
-
-self.addEventListener('fetch',e=>{
-  const u=new URL(e.request.url);
-
-  if(u.origin!==self.location.origin)return;
-  if(e.request.method!=='GET')return;
-
-  if(e.request.mode==='navigate'){
-    e.respondWith((async()=>{
+self.addEventListener('install',event=>{
+  event.waitUntil((async()=>{
+    const cache=await caches.open(CACHE);
+    for(const url of SHELL){
       try{
-        const net=await fetch(e.request,{cache:'no-store'});
-        const out=await injectScripts(net);
+        const response=await fetch(url,{cache:'reload'});
+        if(response.ok)await cache.put(url,response.clone());
+      }catch(_){}
+    }
+    await self.skipWaiting();
+  })());
+});
 
-        if(out&&out.ok){
-          caches.open(CACHE)
-            .then(c=>c.put('./index.html',out.clone()))
-            .catch(()=>{});
-        }
-        return out;
+self.addEventListener('activate',event=>{
+  event.waitUntil((async()=>{
+    const keys=await caches.keys();
+    await Promise.all(
+      keys
+        .filter(k=>k.startsWith('caseirinho-loja-')&&k!==CACHE)
+        .map(k=>caches.delete(k))
+    );
+    await self.clients.claim();
+  })());
+});
+
+self.addEventListener('fetch',event=>{
+  const req=event.request;
+  if(req.method!=='GET')return;
+  const url=new URL(req.url);
+
+  // API e ViaCEP nunca passam pelo cache do PWA.
+  if(/john-cloud-api-production\.up\.railway\.app$/.test(url.host)||/viacep\.com\.br$/.test(url.host))return;
+
+  if(req.mode==='navigate'){
+    event.respondWith((async()=>{
+      try{
+        const net=await fetch(req,{cache:'no-store'});
+        if(net.ok)(await caches.open(CACHE)).put('./index.html',net.clone()).catch(()=>{});
+        return net;
       }catch(_){
-        const cached=
-          await caches.match('./index.html') ||
-          await caches.match('./offline.html');
-        return injectScripts(cached);
+        return (await caches.match('./index.html')) || Response.error();
       }
     })());
     return;
   }
 
-  e.respondWith(
-    fetch(e.request,{cache:'no-cache'})
-      .then(r=>{
-        if(r.ok){
-          caches.open(CACHE)
-            .then(c=>c.put(e.request,r.clone()))
-            .catch(()=>{});
-        }
-        return r;
-      })
-      .catch(()=>caches.match(e.request))
-  );
+  if(url.origin===self.location.origin){
+    event.respondWith((async()=>{
+      try{
+        const net=await fetch(req,{cache:'no-cache'});
+        if(net.ok)(await caches.open(CACHE)).put(req,net.clone()).catch(()=>{});
+        return net;
+      }catch(_){
+        return (await caches.match(req)) || Response.error();
+      }
+    })());
+  }
 });
