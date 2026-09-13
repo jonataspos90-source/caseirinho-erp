@@ -1,20 +1,30 @@
-Caseirinho Loja/App V9.1.0 — Experiência do Cliente
+John Sistema ERP V8.13.0 — Experiência do Cliente / Pedidos E-commerce
 Build: 2026-09-13
+API esperada: 1.16.3+
+Schema: 12
 
-Melhorias:
-- pedidos de entrega sempre exibem Horário: A combinar no checkout;
-- popup obrigatório informa que todo pedido de entrega terá frete;
-- frete conhecido mostra o valor antes do envio;
-- frete fora das regras informa que será cotado pelo ERP;
-- cotação enviada pelo ERP aparece no app com resposta Sim/Não;
-- se o cliente responder NÃO ao frete, o pedido é cancelado imediatamente;
-- o app mostra 'Pedido cancelado' e oferece 'Fazer novo pedido';
-- pedido aceito gera popup 'Seu pedido foi aceito!';
-- PIX aparece somente após o aceite, quando a forma de pagamento é PIX;
-- horário definido posteriormente pelo ERP retorna ao app e gera aviso;
-- Meus Pedidos ganhou cartões de status, frete, horário e PIX;
-- polling leve de pedidos a cada 20s somente para pedidos salvos neste aparelho;
-- rejeição também retorna ao cliente com mensagem.
+INCLUI TODA A V8.12.0
+- Administração da Plataforma / multiempresa;
+- painel do proprietário;
+- módulos por empresa;
+- suporte temporário e isolamento por tenant.
 
-Compatibilidade API: 1.16.3+
-Sem alteração de schema/banco.
+PEDIDOS RECEBIDOS DO E-COMMERCE
+- remove da tela os botões Editar, Excluir e Cancelar; mantém PDF para consulta/impressão do pedido;
+- frete pendente: somente Cotação;
+- cotação enviada: somente Aguardando cliente;
+- cliente recusou frete: pedido passa para Cancelado; não existe nova cotação no mesmo pedido;
+- cliente aceitou frete: somente Aceitar e Rejeitar;
+- pedido normal/pronto para decisão: Aceitar e Rejeitar;
+- aceito: somente botão desabilitado Aceito;
+- rejeitado: somente botão desabilitado Rejeitado;
+- filtros Data de, Data até e Status;
+- nova coluna Horário entrega;
+- após o aceite, horário pode ser informado pelo ERP e retorna ao app automaticamente.
+
+SEGURANÇA / PRODUÇÃO
+- nenhuma migration nova;
+- não altera schema PostgreSQL;
+- não muda telas Financeiro, Estoque, PCP, Pricing, Produtos ou Pedidos normais;
+- mudanças da fila estão isoladas em ecommercePedidosRecebidos;
+- exclusão lógica permanece disponível na API para compatibilidade/auditoria, mas não é exposta nesta tela.

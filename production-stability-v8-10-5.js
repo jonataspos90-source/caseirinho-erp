@@ -211,14 +211,14 @@ setTimeout(stabilizeOrdersTable,4000);
 */
 function ensureMultiempresa(){
   if(
-    window.__JOHN_MULTIEMPRESA_8110__ ||
+    window.__JOHN_MULTIEMPRESA_8120__ ||
     document.querySelector('script[data-john-multiempresa]')
   ){
     return;
   }
 
   const s=document.createElement('script');
-  s.src='./multiempresa-v8-11-0.js?v=8111';
+  s.src='./multiempresa-v8-12-0.js?v=8130';
   s.async=false;
   s.dataset.johnMultiempresa='1';
   s.onerror=()=>console.warn(
@@ -230,7 +230,43 @@ function ensureMultiempresa(){
 
 ensureMultiempresa();
 
+function ensurePlatformOwner(){
+  if(
+    window.__JOHN_PLATFORM_OWNER_8120__ ||
+    document.querySelector('script[data-john-platform-owner]')
+  )return;
+
+  const s=document.createElement('script');
+  s.src='./platform-admin-v8-12-0.js?v=8130';
+  s.async=false;
+  s.dataset.johnPlatformOwner='1';
+  s.onerror=()=>console.warn(
+    '[John ERP] painel do Proprietário não carregado; ERP operacional permanece disponível.'
+  );
+  document.head.appendChild(s);
+}
+
+ensurePlatformOwner();
+
+function ensureCustomerExperience(){
+  if(
+    window.__JOHN_ECOMMERCE_CX_8130__ ||
+    document.querySelector('script[data-john-customer-experience]')
+  )return;
+
+  const s=document.createElement('script');
+  s.src='./ecommerce-customer-experience-v8-13-0.js?v=8130';
+  s.async=false;
+  s.dataset.johnCustomerExperience='1';
+  s.onerror=()=>console.warn(
+    '[John ERP] experiência do cliente não carregada; ERP operacional permanece disponível.'
+  );
+  document.head.appendChild(s);
+}
+
+ensureCustomerExperience();
+
 console.info(
-  '[John ERP] estabilidade V8.10.5 preservada · Multiempresa V8.11.1'
+  '[John ERP] estabilidade preservada · Multiempresa/Plataforma V8.12.0 · Experiência V8.13.0'
 );
 })();
