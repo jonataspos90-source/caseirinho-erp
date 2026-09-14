@@ -3,7 +3,7 @@
 if(window.__JOHN_ECOMMERCE_CX_8130__)return;
 window.__JOHN_ECOMMERCE_CX_8130__=true;
 
-const VERSION='8.13.3';
+const VERSION='8.14.0';
 const INBOX_KEY='john_ecommerce_cloud_inbox_v1';
 const FILTER_KEY='john_ecommerce_cx_filters_v8130';
 const S=v=>String(v??'');
@@ -40,17 +40,17 @@ function exactTime(v){return /^([01]\d|2[0-3]):[0-5]\d$/.test(S(v).trim())}
 function orderTime(o){const h=S(o.horarioEntrega||o.horario||'').trim();return exactTime(h)?h:'A combinar'}
 
 function state(o){
-  const st=norm(o.status||'');
+  const st=norm(o.status||o.payload?.status||'');
   const integ=norm(o.statusIntegracao||o.integration_status||'');
   const freight=norm(o.freteStatus||'');
   const decision=norm(o.freteDecisaoCliente||'');
-  const p=linked(o.id);
+
   if(st==='REJEITADO'||integ==='REJEITADO'||o.rejeitado)return'REJEITADO';
   if(st==='CANCELADO'||integ==='CANCELADO'||decision==='REJEITADO'||st==='FRETE_RECUSADO_CLIENTE')return'CANCELADO';
-  if(p||st==='ACEITO'||['IMPORTANDO','IMPORTADO'].includes(integ)||o.erpPedidoId||o.erpNumero)return'ACEITO';
   if(st==='AGUARDANDO_ACEITE_ERP'||decision==='ACEITO')return'AGUARDANDO_ACEITE_ERP';
   if(st==='AGUARDANDO_CLIENTE_FRETE'||(freight==='COTADO'&&decision==='PENDENTE'))return'AGUARDANDO_CLIENTE_FRETE';
-  if(freight==='COTACAO_PENDENTE')return'COTACAO_PENDENTE';
+  if(freight==='COTACAO_PENDENTE'||st==='AGUARDANDO_COTACAO_FRETE')return'COTACAO_PENDENTE';
+  if(st==='ACEITO'||['IMPORTANDO','IMPORTADO'].includes(integ)||o.erpPedidoId||o.erpNumero)return'ACEITO';
   return'PENDENTE';
 }
 function stateLabel(s){return({
@@ -128,7 +128,6 @@ function ensureToolbar(){
   }
 }
 function quoteFn(){return window.johnV870Quote||window.johnV8Quote}
-function rejectFn(){return window.johnV83RejectOrder}
 function acceptFn(){return window.johnV8AcceptOrder}
 async function doQuote(id){
   const fn=quoteFn();if(typeof fn!=='function')return window.toast?.('Cotação indisponível.');
@@ -140,11 +139,45 @@ async function doQuote(id){
 }
 async function doAccept(id){
   const fn=acceptFn();if(typeof fn!=='function')return window.toast?.('Aceite indisponível.');
-  try{await fn(id)}catch(e){window.toast?.(e.message||'Não foi possível aceitar o pedido.')}finally{setTimeout(refreshAndRender,250)}
+  try{
+    await fn(id);
+  }catch(e){
+    window.toast?.(e.message||'Não foi possível aceitar o pedido.');
+  }finally{
+    setTimeout(()=>refreshAndRender(true),250);
+  }
 }
 async function doReject(id){
-  const fn=rejectFn();if(typeof fn!=='function')return window.toast?.('Rejeição indisponível.');
-  try{await fn(id)}catch(e){window.toast?.(e.message||'Não foi possível rejeitar o pedido.')}finally{setTimeout(refreshAndRender,250)}
+  const o=inbox().find(x=>S(x.id)===S(id));
+  if(!o)return window.toast?.('Pedido não localizado.');
+  const current=state(o);
+  if(!['PENDENTE','AGUARDANDO_ACEITE_ERP'].includes(current)){
+    return window.toast?.('Este pedido não está disponível para rejeição.');
+  }
+
+  const reason=prompt('Motivo interno da rejeição:','Pedido não aceito pelo estabelecimento.');
+  if(reason===null)return;
+  const mensagemCliente=prompt(
+    'Mensagem que o cliente verá no App:',
+    'Seu pedido não pôde ser aceito. Se desejar, faça um novo pedido.'
+  );
+  if(mensagemCliente===null)return;
+  if(!confirm('Confirmar a rejeição deste pedido?'))return;
+
+  try{
+    await admin('/api/v1/admin/store/orders/'+encodeURIComponent(id)+'/reject',{
+      method:'POST',
+      body:JSON.stringify({
+        reason:S(reason).trim()||'Pedido rejeitado pelo ERP',
+        mensagemCliente:S(mensagemCliente).trim()||'Seu pedido não pôde ser aceito.'
+      })
+    });
+    window.toast?.('Pedido rejeitado. O cliente receberá a atualização no App.');
+  }catch(e){
+    window.toast?.(e.message||'Não foi possível rejeitar o pedido.');
+  }finally{
+    setTimeout(()=>refreshAndRender(true),180);
+  }
 }
 function itemName(i){
   return S(i?.nome||i?.produtoNome||i?.descricao||i?.produto?.nome||i?.produtoId||'Produto');
@@ -219,7 +252,7 @@ function render(){
     ensureToolbar();
     const all=[...inbox()].sort((a,b)=>S(b.createdAt||b.criadoEm).localeCompare(S(a.createdAt||a.criadoEm)));
     updateKpis(all);const f=filters(),arr=all.filter(o=>matches(o,f));
-    tb.innerHTML=arr.map(o=>{const s=state(o),p=linked(o.id),created=S(o.createdAt||o.criadoEm||'').slice(0,16).replace('T',' ');return `<tr data-cx-state="${s}"><td>${esc(created)}</td><td><b>${esc(o.codigo||o.code||o.id)}</b>${p?.numero?`<br><small>ERP #${esc(p.numero)}</small>`:''}</td><td>${esc(o.cliente?.nome||'-')}<br><small>${esc(o.cliente?.telefone||'')}</small></td><td>${esc(o.modalidade||'-')}<br><small>${esc(o.entrega?.cidade||'')}</small></td><td>${freightHtml(o,s)}</td><td>${money(o.total)}</td><td><span class="john-cx-status ${s}">${esc(stateLabel(s))}</span></td><td>${timeHtml(o,s)}</td><td><div class="john-ecom-v8-actions">${actionHtml(o,s)}</div></td></tr>`}).join('')||'<tr><td colspan="9" class="empty">Nenhum pedido encontrado para os filtros selecionados.</td></tr>';
+    tb.innerHTML=arr.map(o=>{const s=state(o),created=S(o.createdAt||o.criadoEm||'').slice(0,16).replace('T',' '),erpNumber=o.erpNumero||o.erp_order_number||'';return `<tr data-cx-state="${s}"><td>${esc(created)}</td><td><b>${esc(o.codigo||o.code||o.id)}</b>${erpNumber?`<br><small>ERP #${esc(erpNumber)}</small>`:''}</td><td>${esc(o.cliente?.nome||'-')}<br><small>${esc(o.cliente?.telefone||'')}</small></td><td>${esc(o.modalidade||'-')}<br><small>${esc(o.entrega?.cidade||'')}</small></td><td>${freightHtml(o,s)}</td><td>${money(o.total)}</td><td><span class="john-cx-status ${s}">${esc(stateLabel(s))}</span></td><td>${timeHtml(o,s)}</td><td><div class="john-ecom-v8-actions">${actionHtml(o,s)}</div></td></tr>`}).join('')||'<tr><td colspan="9" class="empty">Nenhum pedido encontrado para os filtros selecionados.</td></tr>';
     tb.querySelectorAll('[data-cx-quote]').forEach(b=>b.onclick=()=>doQuote(b.dataset.cxQuote));
     tb.querySelectorAll('[data-cx-accept]').forEach(b=>b.onclick=()=>doAccept(b.dataset.cxAccept));
     tb.querySelectorAll('[data-cx-reject]').forEach(b=>b.onclick=()=>doReject(b.dataset.cxReject));
@@ -237,25 +270,46 @@ async function saveDeliveryTime(id,h,input){
     window.toast?.('Horário enviado ao app do cliente.');render();
   }catch(e){window.toast?.('Não foi possível salvar o horário: '+e.message)}finally{input.disabled=false}
 }
-const baseRefresh=window.johnV8RefreshOrders||window.johnV880RefreshOrders||window.johnV84RefreshOrders;
-async function pullServerOrders(){
-  try{
-    const r=await admin('/api/v1/admin/store/orders?status=TODOS&limit=1000');
-    if(Array.isArray(r?.orders)){
-      write(INBOX_KEY,r.orders.slice(-1000));
-      return r.orders;
+let pullBusy=null;
+let lastPullAt=0;
+async function pullServerOrders(force=false){
+  if(pullBusy)return pullBusy;
+  if(!force&&Date.now()-lastPullAt<1500)return inbox();
+
+  pullBusy=(async()=>{
+    try{
+      const r=await admin('/api/v1/admin/store/orders?status=TODOS&limit=1000');
+      if(Array.isArray(r?.orders)){
+        const rows=r.orders.slice(-1000);
+        write(INBOX_KEY,rows);
+        lastPullAt=Date.now();
+        return rows;
+      }
+    }catch(e){
+      console.warn('[John CX] lista autoritativa:',e);
+      window.toast?.('Não foi possível atualizar pedidos agora.');
+    }finally{
+      pullBusy=null;
     }
-  }catch(e){
-    console.warn('[John CX] lista autoritativa:',e);
-  }
-  return inbox();
+    return inbox();
+  })();
+
+  return pullBusy;
 }
 async function refreshAndRender(force=false){
-  try{if(typeof baseRefresh==='function')await baseRefresh(force)}catch(e){console.warn('[John CX] refresh legado:',e)}
-  await pullServerOrders();
-  render();return inbox();
+  await pullServerOrders(force);
+  render();
+  return inbox();
 }
 function install(){
+  window.johnEcommerceOrdersController={
+    version:VERSION,
+    render,
+    refresh:refreshAndRender,
+    state,
+    filters,
+    printPdf:printOrderPdf
+  };
   window.johnV8RenderOrders=render;
   window.johnV850RenderCloudOrdersStable=render;
   window.johnV8RefreshOrders=refreshAndRender;
@@ -263,7 +317,10 @@ function install(){
   window.johnV84RefreshOrders=refreshAndRender;
   window.johnCxRenderOrders813=render;
   window.johnCxRefreshOrders813=refreshAndRender;
-  ensureToolbar();render();
+  window.johnV8EditOrder=undefined;
+  window.johnV8DeleteOrder=undefined;
+  ensureToolbar();
+  render();
 }
 function addCss(){if(E('johnCx813Css'))return;const st=document.createElement('style');st.id='johnCx813Css';st.textContent=`
 #ecommercePedidosRecebidos .john-cx-filters{display:grid;grid-template-columns:140px 140px minmax(180px,1fr) 130px minmax(170px,1fr) minmax(160px,1fr) auto;gap:9px;align-items:end;padding:12px 16px;border-bottom:1px solid var(--border);background:linear-gradient(135deg,#fafafa,#f5f3ff)}
@@ -279,52 +336,8 @@ document.addEventListener('click',e=>{
   if(b)setTimeout(()=>{ensureToolbar();refreshAndRender(false)},120);
 });
 
-let legacyGuardBusy=false;
-function hasLegacyOrderActions(){
-  const root=E('ecommercePedidosRecebidos');
-  if(!root)return false;
-  return !!root.querySelector(
-    '.john-v88-delete-terminal,'+
-    'button[onclick*="johnV8EditOrder"],'+
-    'button[onclick*="johnV880DeleteCloudOrder"],'+
-    'button[onclick*="johnV83RejectOrder"],'+
-    'button[onclick*="johnV8AcceptOrder"]'
-  );
-}
-function guardLegacyOrderActions(){
-  if(legacyGuardBusy)return;
-  const page=E('ecommercePedidosRecebidos');
-  const tb=E('v8OrdersBody');
-  if(!page||!tb)return;
-
-  const hasLegacy=hasLegacyOrderActions();
-  const hasUnmanaged=[...tb.querySelectorAll('tr')].some(
-    tr=>tr.querySelector('td')&&!tr.dataset.cxState
-  );
-
-  if(!hasLegacy&&!hasUnmanaged)return;
-
-  legacyGuardBusy=true;
-  try{
-    page.querySelectorAll(
-      '.john-v88-delete-terminal,'+
-      'button[onclick*="johnV8EditOrder"],'+
-      'button[onclick*="johnV880DeleteCloudOrder"],'+
-      'button[onclick*="johnV83RejectOrder"],'+
-      'button[onclick*="johnV8AcceptOrder"]'
-    ).forEach(x=>x.remove());
-    render();
-  }finally{
-    setTimeout(()=>{legacyGuardBusy=false},80);
-  }
-}
-const legacyOrdersObserver=new MutationObserver(()=>guardLegacyOrderActions());
-setTimeout(()=>{
-  const tb=E('v8OrdersBody');
-  if(tb)legacyOrdersObserver.observe(tb,{childList:true,subtree:true});
-  guardLegacyOrderActions();
-},450);
-[1200,3000,7000,12000,20000].forEach(ms=>setTimeout(guardLegacyOrderActions,ms));
+// V8.14.0: a fila antiga foi aposentada no index.html.
+// Não há observador de DOM nem temporizadores reescrevendo botões nesta tela.
 
 console.info('[John ERP] Experiência do Cliente V'+VERSION+' ativa.');
 })();

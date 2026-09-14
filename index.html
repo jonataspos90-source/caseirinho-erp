@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <!-- John ERP V8.13.3: isolamento multiempresa carregado antes do ERP legado -->
-  <script src="./multiempresa-v8-12-0.js?v=8133"></script>
+  <!-- John ERP V8.14.0: isolamento multiempresa carregado antes do ERP legado -->
+  <script src="./multiempresa-v8-12-0.js?v=8140"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>John Sistema ERP · Caseirinho · V8.8.0</title>
+<title>John Sistema ERP · V8.14.0</title>
 <style>
 :root{
   --primary:#5b21b6;--primary2:#7c3aed;--soft:#f5f3ff;--ink:#1f2937;--muted:#6b7280;
@@ -8450,7 +8450,7 @@ function cfg(){
  db.config=db.config&&typeof db.config==='object'?db.config:{};
  const c=db.config.ecommerce=db.config.ecommerce&&typeof db.config.ecommerce==='object'?db.config.ecommerce:{};
  if(c.ativo===undefined)c.ativo=true;if(c.nomeLoja===undefined)c.nomeLoja='John E-commerce';if(c.subtitulo===undefined)c.subtitulo='Peça online com integração ao ERP';if(c.whatsapp===undefined)c.whatsapp='';
- if(c.permitirRetirada===undefined)c.permitirRetirada=true;if(c.permitirEntrega===undefined)c.permitirEntrega=true;if(c.freteFixo===undefined)c.freteFixo=0;if(c.pedidoMinimo===undefined)c.pedidoMinimo=0;if(c.antecedenciaPadraoDias===undefined)c.antecedenciaPadraoDias=0;if(c.importarAutomaticamente===undefined)c.importarAutomaticamente=true;
+ if(c.permitirRetirada===undefined)c.permitirRetirada=true;if(c.permitirEntrega===undefined)c.permitirEntrega=true;if(c.freteFixo===undefined)c.freteFixo=0;if(c.pedidoMinimo===undefined)c.pedidoMinimo=0;if(c.antecedenciaPadraoDias===undefined)c.antecedenciaPadraoDias=0;c.importarAutomaticamente=false;
  if(!Array.isArray(c.formasPagamento))c.formasPagamento=['A definir','PIX','Dinheiro','Cartão na entrega'];
  return c;
 }
@@ -8473,22 +8473,15 @@ function catalogo(){
 window.publicarCatalogoEcommerce=function(silencioso=false){const cat=catalogo();storage().setItem(CATALOG_KEY,JSON.stringify(cat));try{const bc=new BroadcastChannel(CHANNEL);bc.postMessage({type:'CATALOG_UPDATED',at:cat.publicadoEm});bc.close()}catch(_){};if(!silencioso&&typeof toast==='function')toast(`${cat.produtos.length} produto(s) publicado(s) no E-commerce.`);renderAdmin();return cat};
 function lerInbox(){try{return JSON.parse(storage().getItem(INBOX_KEY)||'[]')||[]}catch(_){return[]}}
 function salvarInbox(a){storage().setItem(INBOX_KEY,JSON.stringify(a));try{const bc=new BroadcastChannel(CHANNEL);bc.postMessage({type:'INBOX_UPDATED'});bc.close()}catch(_){}}
-function pessoaCliente(o){
- const tel=normPhone(o.cliente?.telefone),email=S(o.cliente?.email).trim().toLowerCase();let p=A(db.pessoas).find(x=>(tel&&normPhone(x.telefone||x.celular)===tel)||(email&&S(x.email).trim().toLowerCase()===email));
- if(p)return p;
- p={id:uidE(),nome:S(o.cliente?.nome).trim()||'Cliente E-commerce',tipo:'CLIENTE',telefone:S(o.cliente?.telefone).trim(),celular:S(o.cliente?.telefone).trim(),email:S(o.cliente?.email).trim(),cpf:'',cep:S(o.entrega?.cep),logradouro:S(o.entrega?.logradouro),numero:S(o.entrega?.numero),complemento:S(o.entrega?.complemento),bairro:S(o.entrega?.bairro),cidade:S(o.entrega?.cidade),uf:S(o.entrega?.uf).toUpperCase(),origemCadastro:'ECOMMERCE',status:'ATIVO',criadoEm:new Date().toISOString(),atualizadoEm:new Date().toISOString()};db.pessoas=A(db.pessoas);db.pessoas.push(p);return p;
-}
-function importarPedido(o){
- db.pedidos=A(db.pedidos);const existente=db.pedidos.find(p=>S(p.ecommercePedidoId)===S(o.id));if(existente)return existente;
- const itens=A(o.itens).map(i=>{const p=prod(i.produtoId||i.codigo);if(!p||!publicado(p))return null;const q=Math.max(0,N(i.quantidade)),pr=Math.max(0,N(i.precoUnitario));return p&&q>0?{produtoId:p.id,quantidade:q,precoUnitario:pr,total:q*pr}:null}).filter(Boolean);if(!itens.length)throw new Error('Pedido sem itens válidos/publicados.');
- const cli=pessoaCliente(o),subtotal=itens.reduce((s,i)=>s+i.total,0),frete=S(o.modalidade).toUpperCase()==='ENTREGA'?Math.max(0,N(o.valorFrete)):0,total=subtotal+frete,numero=db.pedidos.reduce((m,x)=>Math.max(m,N(x.numero)),0)+1,primeiro=itens[0],dataPedido=S(o.criadoEm).slice(0,10)||hoje();
- const ped={id:uidE(),numero,clienteId:cli.id,cliente:cli.nome,telefone:cli.telefone||cli.celular||'',itens,produtoId:primeiro.produtoId,quantidade:primeiro.quantidade,precoUnitario:primeiro.precoUnitario,dataPedido,modalidade:S(o.modalidade).toUpperCase()==='ENTREGA'?'ENTREGA':'RETIRADA',dataRetirada:S(o.modalidade).toUpperCase()==='RETIRADA'?S(o.dataAtendimento).slice(0,10):'',dataEnvio:S(o.modalidade).toUpperCase()==='ENTREGA'?S(o.dataAtendimento).slice(0,10):'',horarioEnvio:S(o.horario),freteId:'',distanciaKm:0,valorFrete:frete,subtotal,valorTotal:total,sinal:0,formaPagamento:S(o.formaPagamento)||'A definir',restante:total,status:'ABERTO',obs:`Pedido recebido pelo E-commerce · ${o.codigo||o.id}${o.observacao?' · '+o.observacao:''}`,origem:'ECOMMERCE',canalVenda:'ECOMMERCE',ecommercePedidoId:o.id,ecommerceCodigo:o.codigo||'',ecommerceRecebidoEm:o.criadoEm||new Date().toISOString(),enderecoEntrega:o.entrega||{},criadoEm:new Date().toISOString(),atualizadoEm:new Date().toISOString()};db.pedidos.push(ped);return ped;
-}
-window.sincronizarPedidosEcommerce=function(silencioso=false){
- const inbox=lerInbox();let importados=0,erros=0;inbox.forEach(o=>{if(o.status==='IMPORTADO')return;try{const p=importarPedido(o);o.status='IMPORTADO';o.erpPedidoId=p.id;o.erpNumero=p.numero;o.importadoEm=new Date().toISOString();o.erro='';importados++}catch(e){o.status='ERRO';o.erro=e.message||S(e);erros++}});if(importados||erros){salvarInbox(inbox);persist();try{renderAll?.()}catch(_){};publicarStatusPedidos();}
- if(!silencioso&&typeof toast==='function')toast(importados?`${importados} pedido(s) do E-commerce importado(s).`:erros?`${erros} pedido(s) com erro na integração.`:'Nenhum pedido novo no E-commerce.');renderAdmin();return{importados,erros};
+/* V8.14.0: importação automática antiga aposentada.
+   A fila canônica da API é controlada exclusivamente por
+   ecommerce-customer-experience-v8-13-0.js. */
+window.sincronizarPedidosEcommerce=async function(silencioso=true){
+  const ctl=window.johnEcommerceOrdersController;
+  if(ctl?.refresh)return ctl.refresh(!silencioso);
+  return {manual:true,retiredLegacyImporter:true};
 };
-function publicarStatusPedidos(){const st={atualizadoEm:new Date().toISOString(),pedidos:{}};A(db.pedidos).filter(p=>p.ecommercePedidoId).forEach(p=>st.pedidos[p.ecommercePedidoId]={codigo:p.ecommerceCodigo,numero:p.numero,status:p.status,total:p.valorTotal,atualizadoEm:p.atualizadoEm});storage().setItem(STATUS_KEY,JSON.stringify(st))}
+function publicarStatusPedidos(){return {retired:true}}
 function instalarCamposProduto(){
  const form=E('produtoForm');if(!form||E('produtoEcommerceBox'))return;
  const obs=E('produtoObs')?.closest('.field');const box=document.createElement('div');box.id='produtoEcommerceBox';box.className='field w12';box.innerHTML=`<div class="ecom-title">🛒 E-commerce</div><div class="grid">
@@ -8545,7 +8538,7 @@ function renderAdmin(){
 window.renderEcommerceAdmin=renderAdmin;
 function garantirMenu(){const items=document.querySelector('.john-module-group[data-module="comercial"] .john-module-items');if(!items)return false;let b=items.querySelector('[data-page="ecommerceAdmin"]');if(!b){b=document.createElement('button');b.type='button';b.className='john-special-nav';b.dataset.page='ecommerceAdmin';b.dataset.permissionPage='produtos';b.textContent='🛒 E-commerce';b.onclick=()=>{try{showPage('ecommerceAdmin')}catch(_){document.querySelectorAll('.page').forEach(x=>x.classList.add('hidden'));E('ecommerceAdmin')?.classList.remove('hidden')}renderAdmin()};items.appendChild(b)}return true}
 function marcarOrigemPedidos(){try{A(db.pedidos).forEach(p=>{if(!p.origem)p.origem='ERP'})}catch(_){}}
-function autoSync(){if(cfg().importarAutomaticamente)window.sincronizarPedidosEcommerce(true);publicarStatusPedidos()}
+function autoSync(){return window.johnEcommerceOrdersController?.refresh?.(false)||Promise.resolve({manual:true})}
 function init(){cfg();A(db.produtos).forEach(ecomProduto);marcarOrigemPedidos();instalarCamposProduto();wrapProdutoFns();criarPagina();garantirMenu();window.publicarCatalogoEcommerce(true);autoSync();renderAdmin();persist()}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(init,1600),{once:true});else setTimeout(init,500);
 [3200,6500,9500].forEach(ms=>setTimeout(()=>{try{garantirMenu();instalarCamposProduto();wrapProdutoFns();renderAdmin()}catch(e){console.error(e)}},ms));
@@ -8614,17 +8607,51 @@ function catalogFingerprint(payload){const clean=JSON.parse(JSON.stringify(paylo
 async function publishCatalog(cat,force=false){if(!configured())return null;const base=window.__johnPublicarEcomLocal||window.publicarCatalogoEcommerce;const data=cat||(typeof base==='function'?base(true):null);if(!data)return null;const payload=JSON.parse(JSON.stringify(data));payload.loja=payload.loja||{};payload.loja.antecedenciaPadraoDias=Math.max(0,N(db?.config?.ecommerce?.antecedenciaPadraoDias));const sig=catalogFingerprint(payload),key='john_cloud_catalog_sig_v71';if(!force&&storage().getItem(key)===sig)return{ok:true,skipped:true,reason:'catalogo_sem_alteracao'};const r=await cloudFetch('/api/v1/admin/store/catalog',{method:'PUT',body:JSON.stringify(payload)});storage().setItem(key,sig);return r}
 function readInbox(){try{return JSON.parse(storage().getItem(INBOX_KEY)||'[]')||[]}catch(_){return[]}}
 function writeInbox(x){storage().setItem(INBOX_KEY,JSON.stringify(x))}
-async function pullOrders(){if(!configured())return {recebidos:0,importados:0,erros:0};const c=cloudCfg(),r=await cloudFetch('/api/v1/admin/store/orders?status=PENDENTE&limit=500');let inbox=readInbox(),novos=0;for(const o of A(r.orders)){if(!inbox.some(x=>S(x.id)===S(o.id))){inbox.push({...o,status:'NOVO',cloud:true});novos++}}if(novos)writeInbox(inbox);
- const base=window.__johnSyncEcomLocal||window.sincronizarPedidosEcommerce;let resultado={importados:0,erros:0};if(typeof base==='function')resultado=base(true)||resultado;
- inbox=readInbox();for(const o of inbox.filter(x=>x.cloud)){try{if(o.status==='IMPORTADO')await cloudFetch('/api/v1/admin/store/orders/'+encodeURIComponent(o.id)+'/imported',{method:'POST',body:JSON.stringify({erpPedidoId:o.erpPedidoId||'',erpNumero:o.erpNumero||null})});else if(o.status==='ERRO')await cloudFetch('/api/v1/admin/store/orders/'+encodeURIComponent(o.id)+'/error',{method:'POST',body:JSON.stringify({error:o.erro||'Erro ao importar no ERP'})})}catch(e){console.error('Ack pedido cloud',e)}}
- return{recebidos:novos,...resultado};}
-async function pushStatuses(){if(!configured())return;const pedidos={};A(db?.pedidos).filter(p=>p.ecommercePedidoId).forEach(p=>pedidos[p.ecommercePedidoId]={status:p.status||'ABERTO',numero:p.numero,total:p.valorTotal,atualizadoEm:p.atualizadoEm});await cloudFetch('/api/v1/admin/store/orders/statuses',{method:'PUT',body:JSON.stringify({pedidos})})}
+async function pullOrders(){
+  if(!configured())return {recebidos:0,manual:true};
+  const ctl=window.johnEcommerceOrdersController;
+  if(ctl?.refresh){await ctl.refresh(false);return {recebidos:0,manual:true,canonical:true}}
+  return {recebidos:0,manual:true};
+}
+/* V8.14.0: pushStatuses automático aposentado. Mudanças de pedido usam endpoints
+   explícitos de aceitar/rejeitar/cotação/logística. */
+async function pushStatuses(){return {retired:true}}
 async function mirror(snapshot=false){if(!configured())return null;return cloudFetch('/api/v1/admin/sync/mirror',{method:'POST',body:JSON.stringify({db,snapshot})})}
 window.migrarBaseJohnParaNuvem=async function(){if(!configured())return setStatus('Configure URL e chave da API primeiro.','err');if(!confirm('Criar snapshot e enviar a base atual para o PostgreSQL em nuvem? Nenhum dado local será apagado.'))return;try{setStatus('Criando snapshot da base...','sync');await cloudFetch('/api/v1/admin/sync/snapshot',{method:'POST',body:JSON.stringify({db,note:'Snapshot antes da primeira migração do ERP HTML'})});setStatus('Espelhando registros no PostgreSQL...','sync');const r=await mirror(false);await publishCatalog(null,true);setStatus('Base enviada com snapshot de segurança.','ok');if(typeof toast==='function')toast('Migração inicial concluída. A base local foi preservada.');return r}catch(e){setStatus('Falha na migração: '+e.message,'err');console.error(e)}};
 window.baixarEspelhoNuvem=async function(){try{setStatus('Preparando exportação da nuvem...','sync');const r=await cloudFetch('/api/v1/admin/sync/export');const blob=new Blob([JSON.stringify(r.db,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='john_erp_nuvem_'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);setStatus('Espelho da nuvem exportado.','ok')}catch(e){setStatus(e.message,'err')}};
-window.sincronizarNuvemJohn=async function(silencioso=true){if(!configured()){if(!silencioso)setStatus('Nuvem ainda não configurada.','err');return null}try{setStatus('Sincronizando catálogo, pedidos e base...','sync');let cat=null;if(typeof window.__johnPublicarEcomLocal==='function')cat=window.__johnPublicarEcomLocal(true);else if(typeof window.publicarCatalogoEcommerce==='function')cat=window.publicarCatalogoEcommerce(true);await publishCatalog(cat,!silencioso);const ord=await pullOrders();await pushStatuses();if(cloudCfg().mirrorAuto)await mirror(false);setStatus(`Sincronizado · ${ord.recebidos||0} pedido(s) novo(s).`,'ok');try{window.renderEcommerceAdmin?.();window.renderAll?.()}catch(_){};if(!silencioso&&typeof toast==='function')toast('Nuvem sincronizada com sucesso.');return ord}catch(e){setStatus('Erro de sincronização: '+e.message,'err');console.error(e);if(!silencioso&&typeof toast==='function')toast('Falha na sincronização com a nuvem.')}};
-function wrapEcommerce(){if(typeof window.publicarCatalogoEcommerce==='function'&&!window.__johnPublicarEcomLocal){window.__johnPublicarEcomLocal=window.publicarCatalogoEcommerce;window.publicarCatalogoEcommerce=function(silencioso=false){const cat=window.__johnPublicarEcomLocal.apply(this,arguments);if(configured())publishCatalog(cat,!silencioso).then(()=>{if(!silencioso)setStatus('Catálogo publicado também na nuvem.','ok')}).catch(e=>setStatus('Catálogo local salvo, mas a nuvem falhou: '+e.message,'err'));return cat}}
- if(typeof window.sincronizarPedidosEcommerce==='function'&&!window.__johnSyncEcomLocal){window.__johnSyncEcomLocal=window.sincronizarPedidosEcommerce;window.sincronizarPedidosEcommerce=function(silencioso=false){const r=window.__johnSyncEcomLocal.apply(this,arguments);if(configured())pullOrders().then(()=>{try{window.renderEcommerceAdmin?.()}catch(_){}}).catch(e=>setStatus('Falha ao buscar pedidos da nuvem: '+e.message,'err'));return r}}
+window.sincronizarNuvemJohn=async function(silencioso=true){
+  if(!configured()){
+    if(!silencioso)setStatus('Nuvem ainda não configurada.','err');
+    return null;
+  }
+  try{
+    setStatus('Sincronizando catálogo e alterações...','sync');
+    let cat=null;
+    if(typeof window.__johnPublicarEcomLocal==='function')cat=window.__johnPublicarEcomLocal(true);
+    else if(typeof window.publicarCatalogoEcommerce==='function')cat=window.publicarCatalogoEcommerce(true);
+    await publishCatalog(cat,!silencioso);
+    const ord=await pullOrders();
+    setStatus('Sincronização concluída. Pedidos permanecem em aprovação manual.','ok');
+    if(!silencioso&&typeof toast==='function')toast('Nuvem sincronizada com sucesso.');
+    return ord;
+  }catch(e){
+    setStatus('Erro de sincronização: '+e.message,'err');
+    console.error(e);
+    if(!silencioso&&typeof toast==='function')toast('Falha na sincronização com a nuvem.');
+    return null;
+  }
+};
+function wrapEcommerce(){
+  if(typeof window.publicarCatalogoEcommerce==='function'&&!window.__johnPublicarEcomLocal){
+    window.__johnPublicarEcomLocal=window.publicarCatalogoEcommerce;
+    window.publicarCatalogoEcommerce=function(silencioso=false){
+      const cat=window.__johnPublicarEcomLocal.apply(this,arguments);
+      if(configured())publishCatalog(cat,!silencioso)
+        .then(()=>{if(!silencioso)setStatus('Catálogo publicado também na nuvem.','ok')})
+        .catch(e=>setStatus('Catálogo local salvo, mas a nuvem falhou: '+e.message,'err'));
+      return cat;
+    };
+  }
 }
 let mirrorTimer=null,autoTimer=null;
 function scheduleMirror(){/* V8.5: espelhamento completo somente manual; alterações usam fila incremental. */}
@@ -10974,105 +11001,10 @@ body.john-modern.john-compact .panel-body{padding:11px!important}body.john-moder
 <script id="john-ecommerce-order-sync-guard-v51">
 (function(){
 'use strict';
-if(window.__johnOrderSyncGuardV51)return;window.__johnOrderSyncGuardV51=true;return;
-const CLOUD_KEY='john_cloud_config_v1',INBOX_KEY='john_ecommerce_inbox_v1';
-const API_PADRAO='https://john-cloud-api-production.up.railway.app';
-const A=v=>Array.isArray(v)?v:[],S=v=>String(v??'');
-function storage(){try{return typeof __johnLocalStorage!=='undefined'?__johnLocalStorage:localStorage}catch(_){return localStorage}}
-function cfg(){let c={};try{c=JSON.parse(storage().getItem(CLOUD_KEY)||'{}')||{}}catch(_){};return{apiUrl:S(c.apiUrl||API_PADRAO).trim().replace(/\/+$/,''),storeSlug:S(c.storeSlug||'caseirinho').trim()||'caseirinho',apiKey:S(c.apiKey).trim(),autoSync:c.autoSync!==false,intervaloSeg:Math.max(15,Math.round(Number(c.intervaloSeg)||30))}}
-function actor(){try{return typeof usuarioAtual==='function'?(usuarioAtual()?.nome||usuarioAtual()?.login||'ERP'):'ERP'}catch(_){return'ERP'}}
-function readInbox(){try{return JSON.parse(storage().getItem(INBOX_KEY)||'[]')||[]}catch(_){return[]}}
-function writeInbox(v){storage().setItem(INBOX_KEY,JSON.stringify(v))}
-function badge(msg,tipo='ok'){
- let host=document.getElementById('johnOrderSyncGuard');
- const panel=document.getElementById('johnCloudPanel')?.querySelector('.panel-body');
- if(!host&&panel){host=document.createElement('div');host.id='johnOrderSyncGuard';panel.appendChild(host)}
- if(host)host.innerHTML=`<span class="john-order-sync-pill ${tipo}">🛒 ${msg}</span>`;
-}
-function status(msg,tipo='ok'){
- badge(msg,tipo);
- const el=document.getElementById('cloudStatusText');
- if(el&&tipo==='err'){el.textContent=msg;el.className='cloud-pill err'}
-}
-async function api(path,opt={}){
- const c=cfg();if(!c.apiKey)throw new Error('Chave da API não configurada neste arquivo do Caseirinho.');
- const method=S(opt.method||'GET').toUpperCase();
- let url=c.apiUrl+path;
- if(method==='GET')url+=(url.includes('?')?'&':'?')+'_johnNoCache='+Date.now();
- const headers={'Content-Type':'application/json','Authorization':'Bearer '+c.apiKey,'X-ERP-User':actor(),'Cache-Control':'no-cache','Pragma':'no-cache',...(opt.headers||{})};
- const r=await fetch(url,{...opt,method,headers,cache:'no-store'});
- let data={};try{data=await r.json()}catch(_){}
- if(!r.ok)throw new Error(data?.error||('HTTP '+r.status));return data;
-}
-async function ack(inbox){
- for(const o of inbox.filter(x=>x&&x.cloud)){try{
-   if(o.status==='IMPORTADO')await api('/api/v1/admin/store/orders/'+encodeURIComponent(o.id)+'/imported',{method:'POST',body:JSON.stringify({erpPedidoId:o.erpPedidoId||'',erpNumero:o.erpNumero||null})});
-   else if(o.status==='ERRO')await api('/api/v1/admin/store/orders/'+encodeURIComponent(o.id)+'/error',{method:'POST',body:JSON.stringify({error:o.erro||'Erro ao importar no ERP'})});
- }catch(e){console.warn('ACK pedido E-commerce:',e)}}
-}
-let executando=false,ultimaBusca=0;
-async function buscarPedidos(silencioso=true){
- if(executando)return {recebidos:0,importados:0,erros:0,ocupado:true};
- const c=cfg();if(!c.apiKey){status('Pedidos: informe a chave da API em Configurações','warn');return {recebidos:0,importados:0,erros:0,semChave:true}}
- executando=true;ultimaBusca=Date.now();
- try{
-  const r=await api('/api/v1/admin/store/orders?status=PENDENTE&limit=500');
-  let inbox=readInbox(),recebidos=0;
-  for(const o of A(r.orders)){
-   const existente=inbox.find(x=>S(x.id)===S(o.id));
-   if(!existente){inbox.push({...o,status:'NOVO',cloud:true});recebidos++}
-   else if(existente.status!=='IMPORTADO'){Object.assign(existente,o,{cloud:true,status:existente.status||'NOVO'})}
-  }
-  if(recebidos)writeInbox(inbox);
-  const base=window.__johnSyncEcomLocal;
-  let res={importados:0,erros:0};
-  if(typeof base==='function')res=base(true)||res;
-  else if(typeof window.sincronizarPedidosEcommerce==='function')res=window.sincronizarPedidosEcommerce(true)||res;
-  inbox=readInbox();await ack(inbox);
-  const pend=A(r.orders).length;
-  const msg=(res.importados||0)>0?`Pedidos: ${res.importados} importado(s) agora`:`Pedidos: monitoramento ativo · ${pend} pendente(s) na nuvem`;
-  status(msg,'ok');
-  if((res.importados||0)>0){
-    try{window.renderAll?.();window.renderEcommerceAdmin?.()}catch(_){}
-    if(typeof toast==='function')toast(`🛒 ${res.importados} pedido(s) do E-commerce recebido(s) no ERP.`);
-  }else if(!silencioso&&typeof toast==='function')toast(pend?'Pedido encontrado; aguardando importação.':'Nenhum pedido novo no E-commerce.');
-  return{recebidos,...res,pendentes:pend};
- }catch(e){status('Pedidos: falha na busca · '+e.message,'err');console.error('Sincronização prioritária de pedidos:',e);if(!silencioso&&typeof toast==='function')toast('Falha ao buscar pedidos do E-commerce: '+e.message);return{recebidos:0,importados:0,erros:1,error:e.message}}
- finally{executando=false}
-}
-window.sincronizarPedidosNuvemJohn=buscarPedidos;
-
-// O botão Sincronizar agora passa a priorizar pedidos. Catálogo/base continuam na rotina original.
-let originalFull=null;
-function instalarFull(){
- const f=window.sincronizarNuvemJohn;
- if(typeof f!=='function'||f.__johnOrderPriorityV51)return;
- originalFull=f;
- const w=async function(silencioso=true){
-   if(silencioso){try{return await originalFull.call(this,true)}catch(e){console.warn('Sincronização leve:',e);return{leve:true,error:e.message}}}
-   const ord=await buscarPedidos(false);
-   try{const full=await originalFull.call(this,false);return full||ord}catch(e){console.warn('Sincronização complementar:',e);return ord}
- };
- w.__johnOrderPriorityV51=true;window.sincronizarNuvemJohn=w;
-}
-
-let timer=null;
-function restart(){
- clearInterval(timer);const c=cfg();
- // V7.1: o sincronizador V5.2 é o único polling automático de pedidos; evita requisições duplicadas.
- badge(c.apiKey?(c.autoSync?'Pedidos: monitoramento automático ativo':'Pedidos: automático desativado'):'Pedidos: configure a chave da API',c.apiKey?'ok':'warn');
-}
-function gatilho(){setTimeout(()=>{instalarFull();restart()},350)}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(gatilho,3300),{once:true});else setTimeout(gatilho,1200);
-[5500,8500,12000].forEach(ms=>setTimeout(()=>{instalarFull();restart()},ms));
-// V7.1: focus/online/visibility são tratados pelo sincronizador definitivo V5.2 para não duplicar GETs.
-
-document.addEventListener('click',ev=>{
- const page=ev.target.closest('[data-page]')?.dataset.page;
- if(page==='pedidos'||page==='ecommerceAdmin')setTimeout(()=>buscarPedidos(true),180);
- if(ev.target.closest('#cloudSalvar'))setTimeout(()=>{restart();buscarPedidos(true)},250);
- if(ev.target.closest('#cloudSyncAgora'))setTimeout(()=>buscarPedidos(false),20);
-},true);
+if(window.__johnOrderSyncGuardV51)return;
+window.__johnOrderSyncGuardV51=true;
+/* APOSENTADO V8.14.0 — polling/ACK/importação desta geração foram removidos. */
+window.sincronizarPedidosNuvemJohn=(force=false)=>window.johnEcommerceOrdersController?.refresh?.(force)||Promise.resolve([]);
 })();
 </script>
 
@@ -11090,40 +11022,12 @@ document.addEventListener('click',ev=>{
 <script id="john-ecommerce-orders-definitive-v52">
 (function(){
 'use strict';
-if(window.__johnEcomOrdersDefinitiveV52)return;window.__johnEcomOrdersDefinitiveV52=true;
-const CLOUD_KEY='john_cloud_config_v1',INBOX_KEY='john_ecommerce_inbox_v1',API_PADRAO='https://john-cloud-api-production.up.railway.app';
-const A=v=>Array.isArray(v)?v:[],S=v=>String(v??''),N=v=>Number(v)||0,E=id=>document.getElementById(id);
-function st(){try{return typeof __johnLocalStorage!=='undefined'?__johnLocalStorage:localStorage}catch(_){return localStorage}}
-function esc(v){return S(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function money2(v){try{return typeof money==='function'?money(N(v)):N(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}catch(_){return 'R$ '+N(v).toFixed(2).replace('.',',')}}
-function cfg(){let c={};try{c=JSON.parse(st().getItem(CLOUD_KEY)||'{}')||{}}catch(_){};return{apiUrl:S(c.apiUrl||API_PADRAO).trim().replace(/\/+$/,''),storeSlug:S(c.storeSlug||'caseirinho').trim()||'caseirinho',apiKey:S(c.apiKey).trim(),autoSync:c.autoSync!==false,intervaloSeg:Math.max(15,Math.round(N(c.intervaloSeg)||30))}}
-function saveCfg(c){st().setItem(CLOUD_KEY,JSON.stringify(c))}
-function readInbox(){try{return JSON.parse(st().getItem(INBOX_KEY)||'[]')||[]}catch(_){return[]}}
-function writeInbox(v){st().setItem(INBOX_KEY,JSON.stringify(v))}
-function persistDB(){try{st().setItem(typeof DB_KEY!=='undefined'?DB_KEY:'pcp_app_v1',JSON.stringify(db));return true}catch(e){console.error(e);return false}}
-function actor(){try{return typeof usuarioAtual==='function'?(usuarioAtual()?.nome||usuarioAtual()?.login||'ERP'):'ERP'}catch(_){return'ERP'}}
-function uid(){try{return crypto.randomUUID()}catch(_){return 'ecom-'+Date.now().toString(36)+Math.random().toString(36).slice(2,10)}}
-function normPhone(v){return S(v).replace(/\D/g,'')}
-async function api(path,opt={}){const c=cfg();if(!c.apiKey)throw new Error('Chave da API não configurada neste navegador.');const method=S(opt.method||'GET').toUpperCase();let url=c.apiUrl+path;if(method==='GET')url+=(url.includes('?')?'&':'?')+'_johnV52='+Date.now();const r=await fetch(url,{...opt,method,headers:{'Content-Type':'application/json','Authorization':'Bearer '+c.apiKey,'X-ERP-User':actor(),'Cache-Control':'no-cache','Pragma':'no-cache',...(opt.headers||{})},cache:'no-store'});let data={};try{data=await r.json()}catch(_){}if(!r.ok)throw new Error(data?.error||('HTTP '+r.status));return data}
-function ensureBar(){const page=E('ecommerceAdmin');if(!page)return null;let bar=E('johnEcomCloudOrdersBar');if(bar)return bar;const panels=[...page.querySelectorAll('.panel')];const orderPanel=panels.find(p=>/Pedidos recebidos do E-commerce/i.test(p.textContent||''));bar=document.createElement('div');bar.id='johnEcomCloudOrdersBar';(orderPanel||page).insertAdjacentElement(orderPanel?'beforebegin':'afterbegin',bar);renderBar();return bar}
-function renderBar(msg,tipo){const bar=E('johnEcomCloudOrdersBar');if(!bar)return;const c=cfg(),inbox=readInbox(),pend=inbox.filter(o=>o.status!=='IMPORTADO').length;let text=msg||(c.apiKey?`Nuvem conectada · ${pend} pedido(s) aguardando/erro`:'API não conectada neste navegador');let cls=tipo||(c.apiKey?'ok':'warn');bar.innerHTML=`<div class="left"><span class="pill ${cls}">☁️ ${esc(text)}</span><span class="pill">🛒 ${inbox.length} pedido(s) conhecido(s)</span></div><div class="actions"><button class="btn secondary" type="button" id="johnEcomAtualizarV52">↻ Atualizar pedidos</button><button class="btn primary" type="button" id="johnEcomImportarV52">⬇ Importar pendentes</button></div>${c.apiKey?'':`<div class="quick-key"><b>Conectar pedidos:</b><input id="johnEcomQuickKeyV52" type="password" placeholder="Cole aqui a mesma Chave privada da API"><button class="btn primary" id="johnEcomSalvarKeyV52" type="button">Salvar e buscar</button></div>`}`;
-E('johnEcomAtualizarV52')?.addEventListener('click',()=>loadCloud(false));E('johnEcomImportarV52')?.addEventListener('click',()=>importPending(false));E('johnEcomSalvarKeyV52')?.addEventListener('click',()=>{const key=S(E('johnEcomQuickKeyV52')?.value).trim();if(!key)return alert('Informe a Chave privada da API.');const cur=cfg();saveCfg({...cur,apiKey:key,apiUrl:cur.apiUrl||API_PADRAO,storeSlug:cur.storeSlug||'caseirinho'});renderBar('Chave salva. Buscando pedidos...','ok');loadCloud(false)});}
-function findProduct(i){return A(db?.produtos).find(p=>S(p.id)===S(i.produtoId)||S(p.codigo)===S(i.codigo))}
-function findOrCreateCustomer(o){db.pessoas=A(db.pessoas);const tel=normPhone(o.cliente?.telefone),email=S(o.cliente?.email).trim().toLowerCase();let p=db.pessoas.find(x=>(tel&&normPhone(x.telefone||x.celular)===tel)||(email&&S(x.email).trim().toLowerCase()===email));if(p)return p;p={id:uid(),nome:S(o.cliente?.nome).trim()||'Cliente E-commerce',tipo:'CLIENTE',telefone:S(o.cliente?.telefone).trim(),celular:S(o.cliente?.telefone).trim(),email:S(o.cliente?.email).trim(),cpf:'',cep:S(o.entrega?.cep),logradouro:S(o.entrega?.logradouro),numero:S(o.entrega?.numero),complemento:S(o.entrega?.complemento),bairro:S(o.entrega?.bairro),cidade:S(o.entrega?.cidade),uf:S(o.entrega?.uf).toUpperCase(),origemCadastro:'ECOMMERCE',status:'ATIVO',criadoEm:new Date().toISOString(),atualizadoEm:new Date().toISOString()};db.pessoas.push(p);return p}
-function importOne(o){db.pedidos=A(db.pedidos);const ex=db.pedidos.find(p=>S(p.ecommercePedidoId)===S(o.id)||S(p.ecommerceCodigo)===S(o.codigo));if(ex)return ex;const itens=A(o.itens).map(i=>{const p=findProduct(i);if(!p)throw new Error(`Produto ${i.codigo||i.nome||i.produtoId} não encontrado no cadastro do ERP.`);const q=Math.max(0,N(i.quantidade));if(!(q>0))throw new Error(`Quantidade inválida em ${i.nome||p.nome}.`);const pr=Math.max(0,N(i.precoUnitario));return{produtoId:p.id,quantidade:q,precoUnitario:pr,total:q*pr}});if(!itens.length)throw new Error('Pedido sem itens.');const cli=findOrCreateCustomer(o),subtotal=itens.reduce((s,i)=>s+i.total,0),frete=S(o.modalidade).toUpperCase()==='ENTREGA'?Math.max(0,N(o.valorFrete)):0,total=N(o.total)||subtotal+frete,numero=db.pedidos.reduce((m,x)=>Math.max(m,N(x.numero)),0)+1,primeiro=itens[0],dataPedido=S(o.criadoEm).slice(0,10)||new Date().toISOString().slice(0,10),modal=S(o.modalidade).toUpperCase()==='ENTREGA'?'ENTREGA':'RETIRADA',dataAt=S(o.dataAtendimento).slice(0,10);const ped={id:uid(),numero,clienteId:cli.id,cliente:cli.nome,telefone:cli.telefone||cli.celular||'',itens,produtoId:primeiro.produtoId,quantidade:primeiro.quantidade,precoUnitario:primeiro.precoUnitario,dataPedido,modalidade:modal,dataRetirada:modal==='RETIRADA'?dataAt:'',dataEnvio:modal==='ENTREGA'?dataAt:'',horarioEnvio:S(o.horario),freteId:'',distanciaKm:0,valorFrete:frete,subtotal,valorTotal:total,sinal:0,formaPagamento:S(o.formaPagamento)||'A definir',restante:total,status:'ABERTO',obs:`Pedido recebido pelo E-commerce · ${o.codigo||o.id}${o.observacao?' · '+o.observacao:''}`,origem:'ECOMMERCE',canalVenda:'ECOMMERCE',ecommercePedidoId:o.id,ecommerceCodigo:o.codigo||'',ecommerceRecebidoEm:o.criadoEm||new Date().toISOString(),enderecoEntrega:o.entrega||{},criadoEm:new Date().toISOString(),atualizadoEm:new Date().toISOString()};db.pedidos.push(ped);try{typeof registrarLog==='function'&&registrarLog('pedidos','IMPORTAÇÃO E-COMMERCE',`${o.codigo||o.id} → Pedido ERP ${String(numero).padStart(6,'0')}`)}catch(_){}return ped}
-async function ack(o){try{if(o.status==='IMPORTADO')await api('/api/v1/admin/store/orders/'+encodeURIComponent(o.id)+'/imported',{method:'POST',body:JSON.stringify({erpPedidoId:o.erpPedidoId||'',erpNumero:o.erpNumero||null})});else if(o.status==='ERRO')await api('/api/v1/admin/store/orders/'+encodeURIComponent(o.id)+'/error',{method:'POST',body:JSON.stringify({error:o.erro||'Erro ao importar no ERP'})})}catch(e){console.warn('ACK V5.2',e)}}
-function renderOrders(){ensureBar();const tb=E('ecomPedidosTabela');if(!tb)return;const inbox=[...readInbox()].sort((a,b)=>S(b.criadoEm).localeCompare(S(a.criadoEm)));tb.innerHTML=inbox.map(o=>{const stt=o.status||o.statusIntegracao||'NOVO',cls=stt==='IMPORTADO'?'':stt==='ERRO'?'john-cloud-erro':'john-cloud-pendente';return `<tr class="${cls}"><td>${esc(S(o.criadoEm).slice(0,16).replace('T',' '))}</td><td><b>${esc(o.codigo||o.id)}</b></td><td>${esc(o.cliente?.nome||'-')}<br><small>${esc(o.cliente?.telefone||'')}</small></td><td>${esc(o.modalidade||'-')}</td><td>${money2(o.total)}</td><td>${esc(o.formaPagamento||'-')}</td><td class="${stt==='IMPORTADO'?'ecom-status-ok':stt==='ERRO'?'ecom-status-err':'ecom-status-new'}">${esc(stt)}</td><td>${o.erpNumero?String(o.erpNumero).padStart(6,'0'):'-'}</td><td>${o.erro?`<span class="status-warn">${esc(o.erro)}</span>`:(A(o.itens).length)+' item(ns)'}</td></tr>`}).join('')||'<tr><td colspan="9" class="empty">Nenhum pedido encontrado. Clique em “Atualizar pedidos”.</td></tr>';renderBar()}
-let busy=false;
-async function loadCloud(silencioso=true){ensureBar();const c=cfg();if(!c.apiKey){renderBar('API não conectada neste navegador','warn');renderOrders();return{semChave:true}}if(busy)return{ocupado:true};busy=true;renderBar('Consultando PostgreSQL...','ok');try{const r=await api('/api/v1/admin/store/orders?status=TODOS&limit=500'),local=readInbox(),map=new Map(local.map(o=>[S(o.id),o]));for(const cloud of A(r.orders)){const prev=map.get(S(cloud.id))||{},server=S(cloud.statusIntegracao).toUpperCase(),localStatus=S(prev.status).toUpperCase();const status=localStatus==='IMPORTADO'?'IMPORTADO':server==='IMPORTADO'?'IMPORTADO':server==='ERRO'?(localStatus==='IMPORTADO'?'IMPORTADO':'ERRO'):(localStatus==='ERRO'?'ERRO':'NOVO');map.set(S(cloud.id),{...prev,...cloud,cloud:true,status,erro:cloud.erro||prev.erro||''})}writeInbox([...map.values()]);renderOrders();const pend=[...map.values()].filter(o=>o.status!=='IMPORTADO').length;renderBar(`PostgreSQL atualizado · ${A(r.orders).length} pedido(s) · ${pend} não importado(s)`,'ok');const auto=db?.config?.ecommerce?.importarAutomaticamente!==false;if(auto&&pend)await importPending(true);return{total:A(r.orders).length,pendentes:pend}}catch(e){renderBar('Falha ao consultar pedidos: '+e.message,'err');renderOrders();if(!silencioso&&typeof toast==='function')toast('Falha ao consultar pedidos: '+e.message);return{error:e.message}}finally{busy=false}}
-async function importPending(silencioso=true){let inbox=readInbox(),imp=0,err=0;for(const o of inbox){if(o.status==='IMPORTADO')continue;try{const p=importOne(o);o.status='IMPORTADO';o.erpPedidoId=p.id;o.erpNumero=p.numero;o.importadoEm=new Date().toISOString();o.erro='';imp++;}catch(e){o.status='ERRO';o.erro=e.message||S(e);err++;}writeInbox(inbox);persistDB();await ack(o)}try{typeof renderAll==='function'&&renderAll()}catch(e){console.warn(e)}try{typeof window.renderEcommerceAdmin==='function'&&window.renderEcommerceAdmin()}catch(_){}renderOrders();renderBar(imp?`${imp} pedido(s) importado(s) para o ERP`:err?`${err} pedido(s) com erro — veja a coluna Detalhe`:'Nenhum pedido pendente','ok');if(!silencioso&&typeof toast==='function')toast(imp?`🛒 ${imp} pedido(s) do E-commerce importado(s).`:err?`${err} pedido(s) com erro de importação.`:'Nenhum pedido pendente.');return{importados:imp,erros:err}}
-window.johnAtualizarPedidosDefinitivo=loadCloud;window.johnImportarPedidosDefinitivo=importPending;
-function wrapRender(){const f=window.renderEcommerceAdmin;if(typeof f==='function'&&!f.__johnV52){const w=function(){const r=f.apply(this,arguments);setTimeout(renderOrders,0);return r};w.__johnV52=true;window.renderEcommerceAdmin=w}}
-function init(){ensureBar();wrapRender();renderOrders();setTimeout(()=>loadCloud(true),500)}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(init,2600),{once:true});else setTimeout(init,1200);
-[4500,7500,11000].forEach(ms=>setTimeout(()=>{ensureBar();wrapRender();renderOrders()},ms));
-document.addEventListener('click',ev=>{const page=ev.target.closest('[data-page]')?.dataset.page;if(page==='ecommerceAdmin'){setTimeout(()=>{ensureBar();renderOrders();loadCloud(true)},220)}if(ev.target.closest('#cloudSalvar'))setTimeout(()=>loadCloud(true),350);if(ev.target.closest('#cloudSyncAgora'))setTimeout(()=>loadCloud(false),30)},true);
-window.addEventListener('focus',()=>{if(!document.hidden)loadCloud(true)});window.addEventListener('online',()=>loadCloud(true));document.addEventListener('visibilitychange',()=>{if(!document.hidden)loadCloud(true)});
-let timer=null;/* V8.5: consulta legado somente ao abrir/solicitar; fila atual usa o monitor V8.3. */
+if(window.__johnEcomOrdersDefinitiveV52)return;
+window.__johnEcomOrdersDefinitiveV52=true;
+/* APOSENTADO V8.14.0 — não consulta, importa ou confirma pedidos. */
+window.johnAtualizarPedidosDefinitivo=(force=false)=>
+  window.johnEcommerceOrdersController?.refresh?.(force)||Promise.resolve([]);
+window.johnImportarPedidosDefinitivo=()=>Promise.resolve({retired:true,manualApproval:true});
 })();
 </script>
 
@@ -11138,44 +11042,14 @@ let timer=null;/* V8.5: consulta legado somente ao abrir/solicitar; fila atual u
 <script id="john-v6-performance-orders">
 (function(){
 'use strict';
-if(window.__johnV6PerfOrders)return;window.__johnV6PerfOrders=true;
-const CLOUD_KEY='john_cloud_config_v1',INBOX_KEY='john_ecommerce_inbox_v1',API_DEFAULT='https://john-cloud-api-production.up.railway.app';
-const A=v=>Array.isArray(v)?v:[],S=v=>String(v??''),N=v=>Number(v)||0,E=id=>document.getElementById(id);
-function st(){try{return typeof __johnLocalStorage!=='undefined'?__johnLocalStorage:localStorage}catch(_){return localStorage}}
-function esc(v){return S(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function cfg(){let c={};try{c=JSON.parse(st().getItem(CLOUD_KEY)||'{}')||{}}catch(_){};return{apiUrl:S(c.apiUrl||API_DEFAULT).trim().replace(/\/+$/,''),apiKey:S(c.apiKey).trim(),storeSlug:S(c.storeSlug||'caseirinho').trim()||'caseirinho',autoSync:c.autoSync!==false,intervaloSeg:Math.max(15,N(c.intervaloSeg)||30),incrementalAuto:c.incrementalAuto===true}}
-function inbox(){try{return JSON.parse(st().getItem(INBOX_KEY)||'[]')||[]}catch(_){return[]}}
-function saveInbox(v){st().setItem(INBOX_KEY,JSON.stringify(v||[]))}
-function actor(){try{return typeof usuarioAtual==='function'?(usuarioAtual()?.nome||usuarioAtual()?.login||'ERP'):'ERP'}catch(_){return'ERP'}}
-function uid(){try{return crypto.randomUUID()}catch(_){return 'ecom-'+Date.now().toString(36)+Math.random().toString(36).slice(2,9)}}
-function norm(v){return S(v).replace(/\D/g,'')}
-function moneyV6(v){try{return typeof money==='function'?money(N(v)):N(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}catch(_){return 'R$ '+N(v).toFixed(2).replace('.',',')}}
-async function api(path,opt={},tries=2){const c=cfg();if(!c.apiKey)throw new Error('Chave da API não configurada.');let last;for(let i=0;i<=tries;i++){try{const method=S(opt.method||'GET').toUpperCase(),ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),12000);let url=c.apiUrl+path;if(method==='GET')url+=(url.includes('?')?'&':'?')+'_v6='+Date.now();const r=await fetch(url,{...opt,method,signal:ctl.signal,cache:'no-store',headers:{'Content-Type':'application/json','Authorization':'Bearer '+c.apiKey,'X-ERP-User':actor(),'Cache-Control':'no-cache',...(opt.headers||{})}});clearTimeout(timer);let data={};try{data=await r.json()}catch(_){}if(!r.ok){const er=new Error(data?.error||('HTTP '+r.status));er.status=r.status;throw er}return data}catch(e){last=e;if(i<tries)await new Promise(r=>setTimeout(r,450*(i+1)))}}throw last}
-function orderByCloudId(id){return A(db?.pedidos).find(p=>S(p.ecommercePedidoId)===S(id)||S(p.ecommerceCodigo)===S(id))}
-function cloudById(id){return inbox().find(o=>S(o.id)===S(id)||S(o.codigo)===S(id))}
-function productFor(i){return A(db?.produtos).find(p=>S(p.id)===S(i.produtoId)||S(p.codigo)===S(i.codigo))}
-function customerFor(o){db.pessoas=A(db.pessoas);const tel=norm(o.cliente?.telefone),email=S(o.cliente?.email).trim().toLowerCase();let p=db.pessoas.find(x=>(tel&&norm(x.telefone||x.celular)===tel)||(email&&S(x.email).trim().toLowerCase()===email));if(p)return p;p={id:uid(),nome:S(o.cliente?.nome).trim()||'Cliente E-commerce',tipo:'CLIENTE',telefone:S(o.cliente?.telefone).trim(),celular:S(o.cliente?.telefone).trim(),email:S(o.cliente?.email).trim(),cpf:'',cep:S(o.entrega?.cep),logradouro:S(o.entrega?.logradouro),numero:S(o.entrega?.numero),complemento:S(o.entrega?.complemento),bairro:S(o.entrega?.bairro),cidade:S(o.entrega?.cidade),uf:S(o.entrega?.uf).toUpperCase(),origemCadastro:'ECOMMERCE',status:'ATIVO',criadoEm:new Date().toISOString(),atualizadoEm:new Date().toISOString()};db.pessoas.push(p);return p}
-function importSingle(o){db.pedidos=A(db.pedidos);const existing=orderByCloudId(o.id);if(existing)return existing;const items=A(o.itens).map(i=>{const p=productFor(i);if(!p)throw new Error(`Produto ${i.codigo||i.nome||i.produtoId} não encontrado no ERP.`);const q=N(i.quantidade);if(!(q>0))throw new Error(`Quantidade inválida em ${i.nome||p.nome}.`);const pr=Math.max(0,N(i.precoUnitario));return{produtoId:p.id,quantidade:q,precoUnitario:pr,total:q*pr}});if(!items.length)throw new Error('Pedido sem itens.');const cli=customerFor(o),subtotal=items.reduce((s,i)=>s+i.total,0),frete=S(o.modalidade).toUpperCase()==='ENTREGA'?Math.max(0,N(o.valorFrete)):0,total=N(o.total)||subtotal+frete,numPedido=db.pedidos.reduce((m,x)=>Math.max(m,N(x.numero)),0)+1,first=items[0],data=S(o.criadoEm).slice(0,10)||new Date().toISOString().slice(0,10),modal=S(o.modalidade).toUpperCase()==='ENTREGA'?'ENTREGA':'RETIRADA',at=S(o.dataAtendimento).slice(0,10);const p={id:uid(),numero:numPedido,clienteId:cli.id,cliente:cli.nome,telefone:cli.telefone||cli.celular||'',itens:items,produtoId:first.produtoId,quantidade:first.quantidade,precoUnitario:first.precoUnitario,dataPedido:data,modalidade:modal,dataRetirada:modal==='RETIRADA'?at:'',dataEnvio:modal==='ENTREGA'?at:'',horarioEnvio:S(o.horario),valorFrete:frete,subtotal,valorTotal:total,sinal:0,formaPagamento:S(o.formaPagamento)||'A definir',restante:total,status:'ABERTO',obs:`Pedido recebido pelo E-commerce · ${o.codigo||o.id}${o.observacao?' · '+o.observacao:''}`,origem:'ECOMMERCE',canalVenda:'ECOMMERCE',ecommercePedidoId:o.id,ecommerceCodigo:o.codigo||'',ecommerceRecebidoEm:o.criadoEm||new Date().toISOString(),enderecoEntrega:o.entrega||{},criadoEm:new Date().toISOString(),atualizadoEm:new Date().toISOString()};db.pedidos.push(p);try{typeof registrarLog==='function'&&registrarLog('pedidos','ACEITAR PEDIDO E-COMMERCE',`${o.codigo||o.id} → Pedido ${String(numPedido).padStart(6,'0')}`)}catch(_){}return p}
-async function ackImported(o,p){await api('/api/v1/admin/store/orders/'+encodeURIComponent(o.id)+'/imported',{method:'POST',body:JSON.stringify({erpPedidoId:p.id,erpNumero:p.numero})})}
-async function accept(id,edit=false){const o=cloudById(id);if(!o)return;try{const p=importSingle(o),arr=inbox(),x=arr.find(v=>S(v.id)===S(o.id));if(x){x.status='IMPORTADO';x.erpPedidoId=p.id;x.erpNumero=p.numero;x.rejeitado=false;x.erro='';x.importadoEm=new Date().toISOString()}saveInbox(arr);if(typeof save==='function')save();else st().setItem(typeof DB_KEY!=='undefined'?DB_KEY:'pcp_app_v1',JSON.stringify(db));await ackImported(o,p);try{window.johnAtualizarPedidosDefinitivo?.(true)}catch(_){}if(typeof toast==='function')toast(`Pedido ${o.codigo||o.id} aceito e criado no ERP.`);if(edit){try{showPage('pedidos')}catch(_){}setTimeout(()=>window.editarPedido?.(p.id),120)}}catch(e){if(typeof toast==='function')toast('Não foi possível aceitar o pedido: '+e.message,'erro');else alert(e.message)}}
-function pdfOnline(id){const o=cloudById(id),p=o&&orderByCloudId(o.id);if(p&&typeof imprimirPedido==='function')return imprimirPedido(p.id);if(!o)return;const rows=A(o.itens).map(i=>`<tr><td>${esc(i.codigo||'')}</td><td>${esc(i.nome||'')}</td><td>${N(i.quantidade)}</td><td>${moneyV6(i.precoUnitario)}</td><td>${moneyV6(i.total||N(i.quantidade)*N(i.precoUnitario))}</td></tr>`).join('');const body=`<h1>Pedido E-commerce</h1><p><b>Código online:</b> ${esc(o.codigo||o.id)}</p><p><b>Cliente:</b> ${esc(o.cliente?.nome||'-')} · ${esc(o.cliente?.telefone||'')}</p><p><b>Modalidade:</b> ${esc(o.modalidade||'-')} · <b>Pagamento:</b> ${esc(o.formaPagamento||'-')}</p><table><thead><tr><th>Código</th><th>Produto</th><th>Qtd.</th><th>Unit.</th><th>Total</th></tr></thead><tbody>${rows}</tbody></table><h2>Total: ${moneyV6(o.total)}</h2>`;if(typeof janelaImpressao==='function')janelaImpressao('Pedido E-commerce',body);else{const w=open('','_blank');w.document.write(body);w.print()}}
-async function editOrder(id){const o=cloudById(id);if(!o)return;let p=orderByCloudId(o.id);if(!p){if(!confirm('Este pedido ainda não foi aceito. Deseja aceitar e abrir para edição?'))return;return accept(id,true)}try{showPage('pedidos')}catch(_){}setTimeout(()=>window.editarPedido?.(p.id),120)}
-async function removeOrder(id){const o=cloudById(id);if(!o)return;const p=orderByCloudId(o.id);if(p){if(!confirm('Excluir este pedido do fluxo ativo? Para preservar o histórico do E-commerce, ele será CANCELADO e continuará auditável.'))return;p.status='CANCELADO';p.ecommerceExcluido=true;p.ecommerceExcluidoEm=new Date().toISOString();p.atualizadoEm=new Date().toISOString();try{typeof registrarLog==='function'&&registrarLog('pedidos','CANCELAR/EXCLUIR PEDIDO E-COMMERCE',`${o.codigo||o.id} · Pedido ${String(p.numero).padStart(6,'0')}`)}catch(_){}if(typeof save==='function')save();try{await api('/api/v1/admin/store/orders/statuses',{method:'PUT',body:JSON.stringify({pedidos:{[o.id]:{status:'CANCELADO',numero:p.numero,total:p.valorTotal,atualizadoEm:p.atualizadoEm}}})})}catch(e){console.warn(e)}const arr=inbox(),x=arr.find(v=>S(v.id)===S(o.id));if(x){x.excluido=true;x.status='IMPORTADO'}saveInbox(arr);if(typeof toast==='function')toast('Pedido cancelado e preservado no histórico.');return}
- if(!confirm('Excluir/rejeitar este pedido antes de aceitar? Ele continuará registrado na nuvem para auditoria, marcado como rejeitado.'))return;const arr=inbox(),x=arr.find(v=>S(v.id)===S(o.id));if(x){x.rejeitado=true;x.status='REJEITADO';x.erro='[REJEITADO] Pedido rejeitado pelo ERP em '+new Date().toLocaleString('pt-BR')}saveInbox(arr);try{await api('/api/v1/admin/store/orders/'+encodeURIComponent(o.id)+'/error',{method:'POST',body:JSON.stringify({error:x?.erro||'[REJEITADO] Pedido rejeitado pelo ERP'})})}catch(e){console.warn(e)}if(typeof toast==='function')toast('Pedido rejeitado. O histórico foi preservado.');enhanceTable()}
-function enhanceTable(){const tb=E('ecomPedidosTabela');if(!tb)return;const table=tb.closest('table'),head=table?.querySelector('thead tr');if(head&&!head.querySelector('.john-ecom-actions-head'))head.insertAdjacentHTML('beforeend','<th class="john-ecom-actions-head">Ações</th>');const arr=inbox();[...tb.querySelectorAll('tr')].forEach(tr=>{if(tr.querySelector('.john-ecom-actions-cell'))return;const tds=tr.querySelectorAll('td');if(tds.length<2)return;const code=S(tds[1].textContent).trim(),o=arr.find(x=>S(x.codigo||x.id)===code);if(!o)return;const p=orderByCloudId(o.id),rejected=!!o.rejeitado||S(o.erro).startsWith('[REJEITADO]');if(rejected)tr.classList.add('john-rejected');const cell=document.createElement('td');cell.className='john-ecom-actions-cell';let buttons='';if(!p&&!rejected)buttons+=`<button class="btn primary" data-ecom-act="accept" data-id="${esc(o.id)}">Aceitar</button>`;if(!p&&!rejected)buttons+=`<button class="btn secondary" data-ecom-act="edit" data-id="${esc(o.id)}">Aceitar e editar</button>`;if(p)buttons+=`<button class="btn secondary" data-ecom-act="edit" data-id="${esc(o.id)}">Editar</button>`;buttons+=`<button class="btn print" data-ecom-act="pdf" data-id="${esc(o.id)}">PDF</button>`;buttons+=`<button class="btn danger" data-ecom-act="remove" data-id="${esc(o.id)}">Excluir</button>`;cell.innerHTML=`<div class="john-ecom-actions">${buttons}</div>`;tr.appendChild(cell)});}
-window.johnAceitarPedidoEcommerceV6=accept;window.johnPdfPedidoEcommerceV6=pdfOnline;window.johnEditarPedidoEcommerceV6=editOrder;window.johnExcluirPedidoEcommerceV6=removeOrder;
-document.addEventListener('click',e=>{const b=e.target.closest('[data-ecom-act]');if(!b)return;e.preventDefault();const id=b.dataset.id,act=b.dataset.ecomAct;if(act==='accept')accept(id,false);if(act==='edit')editOrder(id);if(act==='pdf')pdfOnline(id);if(act==='remove')removeOrder(id)},true);
-const tbObserver=new MutationObserver(()=>{clearTimeout(window.__johnV6Table);window.__johnV6Table=setTimeout(enhanceTable,30)});function observe(){const tb=E('ecomPedidosTabela');if(tb&&!tb.dataset.v6obs){tb.dataset.v6obs='1';tbObserver.observe(tb,{childList:true});enhanceTable()}}
-
-// PERFORMANCE V7.1: sincronismo silencioso não republica catálogo, não executa renderAll
-// e só envia status dos pedidos quando o mapa realmente mudou.
-let fullSync=null,lastStatusSig='';
-function installPerf(){const f=window.sincronizarNuvemJohn;if(typeof f!=='function'||f.__johnPerfV71)return;fullSync=f;const light=async function(silencioso=true){if(!silencioso)return fullSync.apply(this,arguments);const c=cfg();if(!c.apiKey)return null;try{if(c.incrementalAuto&&typeof window.johnCloudFlushIncremental==='function')await window.johnCloudFlushIncremental(true);const map={};A(db?.pedidos).filter(p=>p.ecommercePedidoId).forEach(p=>map[p.ecommercePedidoId]={status:p.status||'ABERTO',numero:p.numero,total:p.valorTotal,atualizadoEm:p.atualizadoEm});const sig=JSON.stringify(map);if(Object.keys(map).length&&sig!==lastStatusSig){await api('/api/v1/admin/store/orders/statuses',{method:'PUT',body:JSON.stringify({pedidos:map})},1);lastStatusSig=sig}return{leve:true}}catch(e){console.warn('Sync leve V7.1:',e);return{leve:true,error:e.message}}};light.__johnPerfV71=true;window.sincronizarNuvemJohn=light;}
-function perfBadge(){const panel=E('johnCloudPanel'),host=panel?.querySelector('.cloud-status');if(!host)return;let b=E('johnPerfBadge');if(!b){b=document.createElement('span');b.id='johnPerfBadge';b.className='cloud-pill ok';host.appendChild(b)}b.textContent='⚡ Modo desempenho ativo'}
-function init(){installPerf();observe();perfBadge();setTimeout(()=>{try{window.johnAtualizarPedidosDefinitivo?.(true)}catch(_){}},500)}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(init,3200),{once:true});else setTimeout(init,1200);
-[4800,8000,12000,18000].forEach(ms=>setTimeout(()=>{installPerf();observe();enhanceTable();perfBadge()},ms));
-document.addEventListener('click',e=>{const page=e.target.closest('[data-page]')?.dataset.page;if(page==='ecommerceAdmin')setTimeout(()=>{observe();enhanceTable()},250);if(e.target.closest('#cloudSalvar'))setTimeout(()=>{installPerf();perfBadge()},400)},true);
+if(window.__johnV6PerfOrders)return;
+window.__johnV6PerfOrders=true;
+/* APOSENTADO V8.14.0.
+   Sem auto-import, editar, excluir, cancelar, observer de tabela ou push de status. */
+window.johnAceitarPedidoEcommerceV6=(id)=>window.johnV8AcceptOrder?.(id);
+window.johnPdfPedidoEcommerceV6=(id)=>window.johnEcommerceOrdersController?.printPdf?.(id);
+window.johnEditarPedidoEcommerceV6=()=>window.toast?.('Use a fila canônica do E-commerce.');
+window.johnExcluirPedidoEcommerceV6=()=>window.toast?.('A exclusão da operação foi aposentada.');
 })();
 </script>
 
@@ -11269,7 +11143,7 @@ document.addEventListener('click',e=>{const page=e.target.closest('[data-page]')
 <script id="john-ecommerce-v8-integrado">
 (function(){'use strict';if(window.__johnEcommerceV8)return;window.__johnEcommerceV8=true;
 const E=id=>document.getElementById(id),A=v=>Array.isArray(v)?v:[],S=v=>String(v??''),N=v=>Number(v)||0;
-const DBK=typeof DB_KEY!=='undefined'?DB_KEY:'pcp_app_v1', CK='john_cloud_config_v1', IK='john_ecommerce_inbox_v1';
+const DBK=typeof DB_KEY!=='undefined'?DB_KEY:'pcp_app_v1', CK='john_cloud_config_v1', IK='john_ecommerce_cloud_inbox_v1';
 function st(){try{return typeof __johnLocalStorage!=='undefined'?__johnLocalStorage:localStorage}catch(_){return localStorage}}
 function persist(){try{st().setItem(DBK,JSON.stringify(db));return true}catch(e){console.error(e);return false}}
 function uid(){try{return crypto.randomUUID()}catch(_){return 'id-'+Date.now().toString(36)+Math.random().toString(36).slice(2)}}
@@ -11298,7 +11172,7 @@ const rp=window.renderPessoas;if(typeof rp==='function'&&!rp.__v8){window.render
 // Cria páginas dedicadas do módulo E-commerce.
 function page(id,title,sub,html){let p=E(id);if(p)return p;p=document.createElement('section');p.id=id;p.className='page hidden';p.innerHTML=`<div class="topbar"><div><h1>${title}</h1><div class="subtitle">${sub}</div></div></div>${html}`;(document.querySelector('main.main')||document.querySelector('.main')).appendChild(p);return p}
 function ensurePages(){
- page('ecommercePedidosRecebidos','Pedidos do E-commerce','Aprovação manual, edição, PDF, rejeição e cotação de frete.','<div class="john-ecom-v8-kpis"><div class="john-ecom-v8-kpi"><small>Aguardando decisão</small><b id="v8OrdNew">0</b></div><div class="john-ecom-v8-kpi"><small>Aguardando frete</small><b id="v8OrdFreight">0</b></div><div class="john-ecom-v8-kpi"><small>Aceitos</small><b id="v8OrdOk">0</b></div><div class="john-ecom-v8-kpi"><small>Rejeitados/cancelados</small><b id="v8OrdNo">0</b></div></div><div class="panel"><div class="panel-head"><h2>Fila de pedidos online</h2><div class="actions"><button class="btn secondary" onclick="johnV8RefreshOrders()">Atualizar</button></div></div><div class="table-wrap"><table><thead><tr><th>Data</th><th>Pedido</th><th>Cliente</th><th>Modalidade</th><th>Frete</th><th>Total</th><th>Status</th><th>Ações</th></tr></thead><tbody id="v8OrdersBody"></tbody></table></div></div>');
+ page('ecommercePedidosRecebidos','Pedidos do E-commerce','Fila integrada e autoritativa: cotação, aceite, rejeição, PDF e acompanhamento do cliente.','<div class="john-ecom-v8-kpis"><div class="john-ecom-v8-kpi"><small>Aguardando decisão</small><b id="v8OrdNew">0</b></div><div class="john-ecom-v8-kpi"><small>Aguardando frete</small><b id="v8OrdFreight">0</b></div><div class="john-ecom-v8-kpi"><small>Aceitos</small><b id="v8OrdOk">0</b></div><div class="john-ecom-v8-kpi"><small>Rejeitados/cancelados</small><b id="v8OrdNo">0</b></div></div><div class="panel"><div class="panel-head"><h2>Fila de pedidos online</h2><div class="actions"><button class="btn secondary" onclick="johnV8RefreshOrders()">Atualizar</button></div></div><div class="table-wrap"><table><thead><tr><th>Data</th><th>Pedido</th><th>Cliente</th><th>Modalidade</th><th>Frete</th><th>Total</th><th>Status</th><th>Horário entrega</th><th>Ações</th></tr></thead><tbody id="v8OrdersBody"></tbody></table></div></div>');
  page('ecommercePreCadastros','Pré-cadastros do E-commerce','Dados informados na loja aguardando revisão antes de atualizar a base de clientes.','<div class="john-ecom-v8-note"><b>Regra:</b> o cadastro é reconhecido exclusivamente pelo WhatsApp. Se já existir, você revisa um De/Para e aprova a atualização; o nome atual fica protegido e não é alterado pelo App.</div><div class="panel"><div class="panel-head"><h2>Cadastros aguardando aprovação</h2><div class="actions"><button class="btn secondary" onclick="johnV8LoadPre()">Atualizar</button></div></div><div class="table-wrap"><table><thead><tr><th>Data</th><th>Nome</th><th>WhatsApp</th><th>E-mail</th><th>Endereço</th><th>Situação</th><th>Ações</th></tr></thead><tbody id="v8PreBody"></tbody></table></div></div>');
  page('ecommerceEntregas','Entregas e Fretes do E-commerce','Configure dias disponíveis, cidades atendidas com frete padrão e cotação fora da área.','<div class="panel"><div class="panel-head"><h2>Disponibilidade</h2></div><div class="panel-body"><div class="grid"><div class="field w12"><label>Dias disponíveis para ENTREGA</label><div id="v8DiasEntrega" class="john-ecom-v8-days"></div></div><div class="field w12"><label>Dias disponíveis para RETIRADA</label><div id="v8DiasRetirada" class="john-ecom-v8-days"></div></div><div class="field w6"><label>Cidades com frete padrão</label><textarea id="v8Cidades" rows="4" placeholder="Uma cidade por linha"></textarea><small>Padrão: Ferraz de Vasconcelos, Poá e Suzano.</small></div><div class="field"><label>Frete padrão</label><input id="v8FreteFixo" type="number" min="0" step="0.01"></div><div class="field"><label>Fora da área</label><select id="v8Cotacao"><option value="SIM">Deixar pendente para cotação</option><option value="NAO">Aplicar frete padrão</option></select></div></div><div class="actions"><button class="btn primary" onclick="johnV8SaveDelivery()">Salvar e publicar</button></div></div></div>');
  page('ecommercePricing','Pricing do E-commerce','O Preço E-commerce é independente do ERP e é o valor oficial publicado na Loja.','<div class="panel"><div class="panel-head"><h2>Precificação online</h2><div class="actions"><button class="btn primary" onclick="johnV8SaveEcomPricing()">Salvar e publicar</button></div></div><div class="table-wrap"><table><thead><tr><th>Código</th><th>Produto</th><th>Preço ERP · referência</th><th>Preço E-commerce</th><th>Publicar</th></tr></thead><tbody id="v8PricingBody"></tbody></table></div></div>');
@@ -11318,18 +11192,81 @@ function menu(){const nav=document.querySelector('.nav.john-modular-nav,.nav');i
 
 function inbox(){try{return JSON.parse(st().getItem(IK)||'[]')||[]}catch(_){return[]}}
 function saveInbox(a){st().setItem(IK,JSON.stringify(a))}
-async function refreshOrders(){try{if(typeof window.johnAtualizarPedidosDefinitivo==='function')await window.johnAtualizarPedidosDefinitivo(true);else{const r=await api('/api/v1/admin/store/orders?status=PENDENTE&limit=500');let a=inbox();for(const o of A(r.orders)){let x=a.find(v=>S(v.id)===S(o.id));x?Object.assign(x,o,{cloud:true}):a.push({...o,cloud:true,status:o.status||'NOVO'})}saveInbox(a)}}catch(e){console.warn(e)}renderOrders()}
-function ordState(o){return S(o.status||o.statusIntegracao||'NOVO').toUpperCase()}
-function renderOrders(){const tb=E('v8OrdersBody');if(!tb)return;const arr=[...inbox()].reverse(),linked=id=>A(db.pedidos).find(p=>S(p.ecommercePedidoId)===S(id));let a=0,f=0,ok=0,no=0;arr.forEach(o=>{const p=linked(o.id),s=ordState(o);if(o.freteStatus==='COTACAO_PENDENTE')f++;else if(p)ok++;else if(o.rejeitado||['REJEITADO','CANCELADO'].includes(s))no++;else a++});E('v8OrdNew').textContent=a;E('v8OrdFreight').textContent=f;E('v8OrdOk').textContent=ok;E('v8OrdNo').textContent=no;
- tb.innerHTML=arr.map(o=>{const p=linked(o.id),s=ordState(o),quote=o.freteStatus==='COTACAO_PENDENTE';let acts='';if(quote)acts+=`<button class="btn primary" onclick="johnV8Quote('${esc(o.id)}')">Cotar frete</button>`;if(!p&&!quote&&!o.rejeitado&&!['REJEITADO','CANCELADO'].includes(s))acts+=`<button class="btn primary" onclick="johnV8AcceptOrder('${esc(o.id)}');setTimeout(johnV8RenderOrders,250)">Aceitar</button>`;acts+=`<button class="btn secondary" onclick="johnV8EditOrder('${esc(o.id)}')">Editar</button><button class="btn print" onclick="johnV8PdfOrder('${esc(o.id)}')">PDF</button><button class="btn danger" onclick="johnV8DeleteOrder('${esc(o.id)}');setTimeout(johnV8RenderOrders,250)">${p?'Excluir/Cancelar':'Rejeitar'}</button>`;return `<tr><td>${esc(S(o.criadoEm).slice(0,16).replace('T',' '))}</td><td><b>${esc(o.codigo||o.id)}</b></td><td>${esc(o.cliente?.nome||'-')}<br><small>${esc(o.cliente?.telefone||'')}</small></td><td>${esc(o.modalidade||'-')}<br><small>${esc(o.entrega?.cidade||'')}</small></td><td>${quote?'<span class="status-warn">Pendente cotação</span>':money8(o.valorFrete)}</td><td>${money8(o.total)}</td><td>${esc(p?.status||s)}</td><td><div class="john-ecom-v8-actions">${acts}</div></td></tr>`}).join('')||'<tr><td colspan="8" class="empty">Nenhum pedido online.</td></tr>'}
+async function refreshOrders(){
+  if(window.johnEcommerceOrdersController?.refresh){
+    return window.johnEcommerceOrdersController.refresh(true);
+  }
+}
+function ordState(o){
+  return window.johnEcommerceOrdersController?.state?.(o)||S(o.status||o.statusIntegracao||'NOVO').toUpperCase();
+}
+function renderOrders(){
+  return window.johnEcommerceOrdersController?.render?.();
+}
 function clientMatchForOrder(o){const ph=norm(o?.cliente?.telefone),em=S(o?.cliente?.email).trim().toLowerCase();return A(db.pessoas).find(p=>isCliente(p)&&((ph&&norm(p.telefone)===ph)||(em&&S(p.email).trim().toLowerCase()===em)))||null}
-async function acceptOrderV8(id){const o=inbox().find(x=>S(x.id)===S(id));if(!o)return;if(!clientMatchForOrder(o)){const go=confirm('Este cliente ainda não foi aprovado na base. Abra Pré-cadastros para aprovar antes de aceitar o pedido?');if(go)openPage('ecommercePreCadastros',loadPre);return}if(typeof window.johnAceitarPedidoEcommerceV6==='function'){await window.johnAceitarPedidoEcommerceV6(id,false);setTimeout(renderOrders,250);return}alert('A rotina de aceite do pedido não está disponível.')}
-function ensureOrderEditModal(){if(E('johnV8OrderEditOverlay'))return;const o=document.createElement('div');o.id='johnV8OrderEditOverlay';o.className='hidden';o.innerHTML=`<div class="john-api-modal"><div class="head"><div><b>✏️ Editar pedido recebido do E-commerce</b><div class="subtitle">Antes do aceite: ajuste data, horário, pagamento, observação e endereço. Depois do aceite, a edição completa é feita pelo pedido normal do ERP.</div></div><button class="btn secondary" type="button" id="v8OrdEditClose">Fechar</button></div><div class="body"><input id="v8OrdEditId" type="hidden"><div class="grid"><div class="field"><label>Data atendimento</label><input id="v8OrdEditDate" type="date"></div><div class="field"><label>Horário</label><input id="v8OrdEditTime" type="time"></div><div class="field w6"><label>Forma de pagamento</label><input id="v8OrdEditPay"></div><div class="field w12"><label>Observação</label><textarea id="v8OrdEditObs" rows="3"></textarea></div><div class="field w6"><label>CEP</label><input id="v8OrdEditCep"></div><div class="field w6"><label>Logradouro</label><input id="v8OrdEditStreet"></div><div class="field"><label>Número</label><input id="v8OrdEditNumber"></div><div class="field"><label>Bairro</label><input id="v8OrdEditDistrict"></div><div class="field w6"><label>Cidade</label><input id="v8OrdEditCity"></div><div class="field"><label>UF</label><input id="v8OrdEditUf" maxlength="2"></div><div class="field w6"><label>Complemento</label><input id="v8OrdEditComp"></div></div><div class="actions"><button class="btn primary" type="button" id="v8OrdEditSave">Salvar alterações</button></div></div></div>`;document.body.appendChild(o);E('v8OrdEditClose').onclick=()=>o.classList.add('hidden');E('v8OrdEditSave').onclick=savePendingOrderEdit}
-function editOrderV8(id){const linked=A(db.pedidos).find(p=>S(p.ecommercePedidoId)===S(id));if(linked){if(typeof window.johnEditarPedidoEcommerceV6==='function')return window.johnEditarPedidoEcommerceV6(id);return}const o=inbox().find(x=>S(x.id)===S(id));if(!o)return;ensureOrderEditModal();E('v8OrdEditId').value=id;E('v8OrdEditDate').value=S(o.dataAtendimento).slice(0,10);E('v8OrdEditTime').value=S(o.horario);E('v8OrdEditPay').value=S(o.formaPagamento);E('v8OrdEditObs').value=S(o.observacao);const en=o.entrega||{};E('v8OrdEditCep').value=S(en.cep);E('v8OrdEditStreet').value=S(en.logradouro);E('v8OrdEditNumber').value=S(en.numero);E('v8OrdEditDistrict').value=S(en.bairro);E('v8OrdEditCity').value=S(en.cidade);E('v8OrdEditUf').value=S(en.uf);E('v8OrdEditComp').value=S(en.complemento);E('johnV8OrderEditOverlay').classList.remove('hidden')}
-async function savePendingOrderEdit(){const id=S(E('v8OrdEditId').value),a=inbox(),o=a.find(x=>S(x.id)===id);if(!o)return;const patch={dataAtendimento:E('v8OrdEditDate').value,horario:E('v8OrdEditTime').value,formaPagamento:S(E('v8OrdEditPay').value).trim(),observacao:S(E('v8OrdEditObs').value).trim(),entrega:{...(o.entrega||{}),cep:S(E('v8OrdEditCep').value).trim(),logradouro:S(E('v8OrdEditStreet').value).trim(),numero:S(E('v8OrdEditNumber').value).trim(),bairro:S(E('v8OrdEditDistrict').value).trim(),cidade:S(E('v8OrdEditCity').value).trim(),uf:S(E('v8OrdEditUf').value).trim().toUpperCase(),complemento:S(E('v8OrdEditComp').value).trim()}};try{const r=await api('/api/v1/admin/store/orders/'+encodeURIComponent(id),{method:'PATCH',body:JSON.stringify(patch)});Object.assign(o,r.order||patch);saveInbox(a);E('johnV8OrderEditOverlay').classList.add('hidden');renderOrders();if(typeof toast==='function')toast('Pedido E-commerce atualizado.')}catch(e){alert('Não foi possível editar o pedido: '+e.message)}}
-function pdfOrderV8(id){if(typeof window.johnPdfPedidoEcommerceV6==='function')return window.johnPdfPedidoEcommerceV6(id);alert('PDF do pedido indisponível.')}
-async function deleteOrderV8(id){const linked=A(db.pedidos).find(p=>S(p.ecommercePedidoId)===S(id));if(linked){if(typeof window.johnExcluirPedidoEcommerceV6==='function')return window.johnExcluirPedidoEcommerceV6(id);return}const a=inbox(),o=a.find(x=>S(x.id)===S(id));if(!o)return;const reason=prompt('Motivo da rejeição do pedido:','Pedido não aceito pelo estabelecimento.');if(reason===null)return;if(!confirm('Confirmar rejeição? O pedido permanecerá no histórico com status REJEITADO.'))return;try{await api('/api/v1/admin/store/orders/'+encodeURIComponent(id)+'/reject',{method:'POST',body:JSON.stringify({reason:S(reason).trim()||'Pedido rejeitado pelo ERP'})});o.status='REJEITADO';o.rejeitado=true;o.erro=S(reason).trim();saveInbox(a);renderOrders();if(typeof toast==='function')toast('Pedido rejeitado e mantido no histórico.')}catch(e){alert('Não foi possível rejeitar: '+e.message)}}
-function hideLegacyEcommerceSections(){const p=E('ecommerceAdmin');if(!p)return;[...p.querySelectorAll('.panel')].forEach(x=>{const h=S(x.querySelector('h2')?.textContent);if(/Produtos publicados|Pedidos recebidos do E-commerce/i.test(h))x.style.display='none'});const auto=E('ecomAutoImport');if(auto){auto.checked=false;auto.disabled=true;const f=auto.closest('.field');if(f&&!f.querySelector('.v8-manual-note')){const s=document.createElement('small');s.className='v8-manual-note';s.textContent='Aprovação manual ativada. Use E-commerce → Pedidos recebidos.';f.appendChild(s)}}}
+function productForOrderItem(i){return A(db?.produtos).find(p=>S(p.id)===S(i?.produtoId)||S(p.codigo)===S(i?.codigo))}
+function localOrderByCloudId(id){return A(db?.pedidos).find(p=>S(p.ecommercePedidoId)===S(id))||null}
+function buildAcceptedLocalOrder(o,reserved,client){
+  db.pedidos=A(db.pedidos);
+  const existing=localOrderByCloudId(o.id);if(existing)return existing;
+  const items=A(o.itens).map(i=>{
+    const p=productForOrderItem(i);
+    if(!p)throw new Error(`Produto ${i?.codigo||i?.nome||i?.produtoId||''} não encontrado no ERP.`);
+    const q=N(i?.quantidade);if(!(q>0))throw new Error(`Quantidade inválida em ${i?.nome||p.nome}.`);
+    const price=Math.max(0,N(i?.precoUnitario));
+    return{produtoId:p.id,quantidade:q,precoUnitario:price,total:N(i?.total)||(q*price)};
+  });
+  if(!items.length)throw new Error('Pedido sem itens.');
+  const subtotal=N(o.subtotal)||items.reduce((a,x)=>a+N(x.total),0);
+  const modal=S(o.modalidade).toUpperCase()==='ENTREGA'?'ENTREGA':'RETIRADA';
+  const freight=modal==='ENTREGA'?Math.max(0,N(o.valorFrete)):0;
+  const total=N(o.total)||subtotal+freight;
+  const first=items[0],today=new Date().toISOString().slice(0,10),serviceDate=S(o.dataAtendimento).slice(0,10);
+  const now=new Date().toISOString();
+  const order={
+    id:S(reserved.erpPedidoId),numero:N(reserved.erpNumero),
+    clienteId:client.id,cliente:client.nome,telefone:client.telefone||client.celular||'',
+    itens:items,produtoId:first.produtoId,quantidade:first.quantidade,precoUnitario:first.precoUnitario,
+    dataPedido:S(o.criadoEm||o.createdAt).slice(0,10)||today,
+    modalidade:modal,dataRetirada:modal==='RETIRADA'?serviceDate:'',dataEnvio:modal==='ENTREGA'?serviceDate:'',
+    horarioEnvio:S(o.horarioEntrega||o.horario||'A combinar'),valorFrete:freight,subtotal,valorTotal:total,
+    sinal:0,formaPagamento:S(o.formaPagamento)||'A definir',restante:total,status:'ABERTO',
+    obs:`Pedido recebido pelo E-commerce · ${o.codigo||o.id}${o.observacao?' · '+o.observacao:''}`,
+    origem:'ECOMMERCE',canalVenda:'ECOMMERCE',ecommercePedidoId:o.id,ecommerceCodigo:o.codigo||'',
+    ecommerceRecebidoEm:o.criadoEm||o.createdAt||now,enderecoEntrega:o.entrega||{},criadoEm:now,atualizadoEm:now
+  };
+  db.pedidos.push(order);return order;
+}
+async function acceptOrderV8(id){
+  const o=inbox().find(x=>S(x.id)===S(id));if(!o)return;
+  const client=clientMatchForOrder(o);
+  if(!client){
+    const go=confirm('Este cliente ainda não foi aprovado na base. Abra Pré-cadastros para aprovar antes de aceitar o pedido?');
+    if(go)openPage('ecommercePreCadastros',loadPre);
+    return;
+  }
+  // Valida produtos ANTES de registrar o aceite no servidor.
+  for(const i of A(o.itens)){
+    if(!productForOrderItem(i))return alert(`Produto ${i?.codigo||i?.nome||i?.produtoId||''} não encontrado no ERP.`);
+    if(!(N(i?.quantidade)>0))return alert('Pedido possui item com quantidade inválida.');
+  }
+  if(!A(o.itens).length)return alert('Pedido sem itens.');
+  try{
+    const reserved=await api('/api/v1/admin/store/orders/'+encodeURIComponent(id)+'/accept',{method:'POST',body:JSON.stringify({})});
+    const local=buildAcceptedLocalOrder(o,reserved,client);
+    if(!persist())throw new Error('Não foi possível salvar o pedido localmente.');
+    await api('/api/v1/admin/store/orders/'+encodeURIComponent(id)+'/imported',{method:'POST',body:JSON.stringify({erpPedidoId:local.id,erpNumero:local.numero})});
+    try{typeof registrarLog==='function'&&registrarLog('pedidos','ACEITAR PEDIDO E-COMMERCE',`${o.codigo||o.id} → Pedido ${String(local.numero).padStart(6,'0')}`)}catch(_){}
+    if(typeof toast==='function')toast(`Pedido ${o.codigo||o.id} aceito e criado no ERP.`);
+    await window.johnEcommerceOrdersController?.refresh?.(true);
+  }catch(e){
+    try{await api('/api/v1/admin/store/orders/'+encodeURIComponent(id)+'/error',{method:'POST',body:JSON.stringify({error:e.message||S(e)})})}catch(_){}
+    alert('Não foi possível aceitar o pedido: '+(e.message||e));
+  }
+}
+function pdfOrderV8(id){return window.johnEcommerceOrdersController?.printPdf?.(id)}
+
+function hideLegacyEcommerceSections(){const p=E('ecommerceAdmin');if(!p)return;[...p.querySelectorAll('.panel')].forEach(x=>{const h=S(x.querySelector('h2')?.textContent);if(/Produtos publicados|Pedidos recebidos do E-commerce/i.test(h))x.style.display='none'});const auto=E('ecomAutoImport');if(auto){auto.checked=false;auto.disabled=true;const f=auto.closest('.field');if(f){f.style.display='none';f.setAttribute('aria-hidden','true')}}}
 function enhanceUserTokenAccess(){try{if(!['MASTER','ADMINISTRADOR'].includes(S(usuarioAtual?.()?.perfil).toUpperCase()))return;document.querySelectorAll('#pessoasTabela tr').forEach(tr=>{if(tr.querySelector('.v8-token-btn'))return;const edit=tr.querySelector('button[onclick*="editarPessoa"]');if(!edit)return;const m=S(edit.getAttribute('onclick')).match(/editarPessoa\(['\"]([^'\"]+)/);if(!m)return;const pid=m[1],u=A(db.usuarios).find(x=>S(x.pessoaId)===S(pid));if(!u)return;const b=document.createElement('button');b.type='button';b.className='btn secondary v8-token-btn';b.textContent='🔑 Token';b.onclick=()=>{editarPessoa(pid);setTimeout(()=>{try{const panel=E('pessoaApiTokenPanel');panel?.scrollIntoView({behavior:'smooth',block:'center'});if(typeof carregarTokensUsuario==='function')carregarTokensUsuario(true)}catch(e){console.error(e)}},180)};edit.insertAdjacentElement('afterend',b)})}catch(e){console.error(e)}}
 async function quote(id){const a=inbox(),o=a.find(x=>S(x.id)===S(id));if(!o)return;const val=prompt(`Informe o valor do frete para ${o.entrega?.cidade||'esta localidade'}:`,o.valorFrete||'');if(val===null)return;const v=N(S(val).replace(',','.'));try{const r=await api('/api/v1/admin/store/orders/'+encodeURIComponent(id)+'/shipping-quote',{method:'PUT',body:JSON.stringify({valorFrete:v})});Object.assign(o,{valorFrete:r.valorFrete,total:r.total,freteStatus:r.freteStatus,status:r.status,freteMensagem:r.mensagemWhatsApp});saveInbox(a);renderOrders();const phone=norm(r.telefone||o.cliente?.telefone);const num=phone.startsWith('55')?phone:'55'+phone;const url='https://wa.me/'+num+'?text='+encodeURIComponent(r.mensagemWhatsApp||'');if(confirm('Frete salvo. Deseja abrir o WhatsApp com a mensagem pronta para o cliente?'))window.open(url,'_blank')}catch(e){alert('Não foi possível salvar a cotação: '+e.message)}}
 let preCache=[];
@@ -11354,7 +11291,7 @@ function quickToggle(id){const p=A(db.produtos).find(x=>S(x.id)===S(id));if(!p)r
 function wrapCatalog(){const install=()=>{const base=window.__johnPublicarEcomLocal;if(typeof base!=='function'||base.__v8)return false;const fn=function(silent=false){const cat=base.apply(this,arguments);const c=ecfg();cat.version=6;cat.loja={...(cat.loja||{}),diasEntregaSemana:c.diasEntregaSemana,diasRetiradaSemana:c.diasRetiradaSemana,localidadesFretePadrao:c.localidadesFretePadrao,freteCotacaoForaArea:c.freteCotacaoForaArea!==false};A(cat.produtos).forEach(cp=>{const p=A(db.produtos).find(x=>S(x.id)===S(cp.id));if(!p)return;const e=eprod(p);if(N(e.precoEcommerce)>0){cp.precoRegular=N(e.precoEcommerce);cp.preco=N(e.precoEcommerce)}cp.precoModo='ECOMMERCE';cp.precoEcommerce=N(e.precoEcommerce);cp.precoERP=N(p.precoVenda)});return cat};fn.__v8=true;window.__johnPublicarEcomLocal=fn;return true};install();[1200,3000,6000,10000].forEach(ms=>setTimeout(install,ms))}
 function manualApproval(){const c=ecfg();c.modoAprovacaoPedidos='MANUAL';c.importarAutomaticamente=false;persist()}
 function init(){ecfg();A(db.pessoas).forEach(p=>{if(p.ehCliente===undefined)p.ehCliente=p.tipo==='CLIENTE';if(p.ehUsuario===undefined)p.ehUsuario=A(db.usuarios).some(u=>S(u.pessoaId)===S(p.id));p.tipos=[...(p.ehCliente?['CLIENTE']:[]),...(p.ehUsuario?['USUARIO']:[])]});A(db.produtos).forEach(eprod);manualApproval();installPessoaUI();ensurePages();menu();wrapCatalog();hideLegacyEcommerceSections();enhanceUserTokenAccess();hideLegacyEcommerceSections();enhanceUserTokenAccess();renderDelivery();renderPricing();renderProducts();setTimeout(refreshOrders,500);persist()}
-window.johnV8AcceptOrder=acceptOrderV8;window.johnV8EditOrder=editOrderV8;window.johnV8PdfOrder=pdfOrderV8;window.johnV8DeleteOrder=deleteOrderV8;window.johnV8RefreshOrders=refreshOrders;window.johnV8RenderOrders=renderOrders;window.johnV8Quote=quote;window.johnV8LoadPre=loadPre;window.johnV8ApprovePre=approvePre;window.johnV8RejectPre=rejectPre;window.johnV8SaveDelivery=saveDelivery;window.johnV8RenderProducts=renderProducts;window.johnV8QuickToggle=quickToggle;window.johnV8SaveEcomPricing=savePricing;window.johnV8ReplicatePrices=replicatePrices;
+window.johnV8AcceptOrder=acceptOrderV8;window.johnV8PdfOrder=pdfOrderV8;window.johnV8RefreshOrders=(force=false)=>window.johnEcommerceOrdersController?.refresh?.(force)||Promise.resolve([]);window.johnV8RenderOrders=()=>window.johnEcommerceOrdersController?.render?.();window.johnV8Quote=quote;window.johnV8LoadPre=loadPre;window.johnV8ApprovePre=approvePre;window.johnV8RejectPre=rejectPre;window.johnV8SaveDelivery=saveDelivery;window.johnV8RenderProducts=renderProducts;window.johnV8QuickToggle=quickToggle;window.johnV8SaveEcomPricing=savePricing;window.johnV8ReplicatePrices=replicatePrices;
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(init,1800),{once:true});else setTimeout(init,600);[3500,7000,11000].forEach(ms=>setTimeout(()=>{try{installPessoaUI();ensurePages();menu();wrapCatalog();hideLegacyEcommerceSections();enhanceUserTokenAccess()}catch(e){console.error(e)}},ms));
 })();
 </script>
@@ -11392,7 +11329,7 @@ body.john-modern [id^="ecommerce"] .john-ecom-v8-kpi{background:linear-gradient(
 (function(){
 'use strict';
 if(window.__johnV841Realtime)return;window.__johnV841Realtime=true;
-const CLOUD='john_cloud_config_v1',INBOX='john_ecommerce_inbox_v1',SEEN='john_ecommerce_seen_v82',CURSOR='john_cloud_changes_cursor_v841';
+const CLOUD='john_cloud_config_v1',INBOX='john_ecommerce_cloud_inbox_v1',SEEN='john_ecommerce_seen_v82',CURSOR='john_cloud_changes_cursor_v841';
 const A=v=>Array.isArray(v)?v:[],S=v=>String(v??''),E=id=>document.getElementById(id);
 let timer=null,orderTimer=null,pullBusy=false,sendBusy=false,badgeTimer=null,renderTimer=null;
 function st(){try{return typeof __johnLocalStorage!=='undefined'?__johnLocalStorage:localStorage}catch(_){return localStorage}}
@@ -11439,7 +11376,14 @@ function pending(o){const s=S(o.statusIntegracao||o.integration_status||o.status
 function updateMenuCount(n){document.querySelectorAll('[data-page="ecommercePedidosRecebidos"]').forEach(b=>{let x=b.querySelector('#johnEcomNewCount');if(n){if(!x){x=document.createElement('span');x.id='johnEcomNewCount';b.appendChild(x)}x.textContent=n}else x?.remove()})}
 function ensurePopup(){if(E('johnNewOrderOverlay'))return;const ov=document.createElement('div');ov.id='johnNewOrderOverlay';ov.innerHTML='<div id="johnNewOrderCard"><div class="head"><b style="font-size:20px">🛒 Novo pedido do E-commerce</b><div style="opacity:.85;margin-top:4px">Pedido recebido pela base central e disponível em todos os dispositivos.</div></div><div class="body" id="johnNewOrderBody"></div></div>';document.body.appendChild(ov)}
 function showNextPopup(markCurrent=false){ensurePopup();const ss=seen(),arr=readInbox().filter(pending).sort((a,b)=>S(a.criadoEm).localeCompare(S(b.criadoEm)));if(markCurrent&&window.__johnPopupOrderId){ss.add(window.__johnPopupOrderId);saveSeen(ss)}const o=arr.find(x=>!ss.has(S(x.id)));updateMenuCount(arr.length);if(!o){E('johnNewOrderOverlay').classList.remove('show');window.__johnPopupOrderId='';return}window.__johnPopupOrderId=S(o.id);const total=Number(o.total||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});E('johnNewOrderBody').innerHTML=`<div><b>Pedido:</b> ${S(o.codigo||o.id)}</div><div class="order-kpis"><div><small>Cliente</small><br><b>${S(o.cliente?.nome||'-')}</b><br>${S(o.cliente?.telefone||'')}</div><div><small>Total</small><br><b>${total}</b><br>${S(o.modalidade||'-')}</div></div><div><b>Data:</b> ${S(o.criadoEm||'').slice(0,16).replace('T',' ')}</div><div class="actions"><button class="btn primary" id="johnOpenNewOrder">Abrir fila de pedidos</button><button class="btn secondary" id="johnSeenNextOrder">Marcar visto e próximo</button></div>`;E('johnOpenNewOrder').onclick=()=>{ss.add(S(o.id));saveSeen(ss);E('johnNewOrderOverlay').classList.remove('show');try{typeof showPage==='function'&&showPage('ecommercePedidosRecebidos')}catch(_){};setTimeout(()=>window.johnV8RenderOrders?.(),60)};E('johnSeenNextOrder').onclick=()=>showNextPopup(true);E('johnNewOrderOverlay').classList.add('show')}
-async function pollOrders(){if(!cfg().apiKey||document.hidden)return;try{const r=await api('/api/v1/admin/store/orders?status=TODOS&limit=500&_ts='+Date.now());const old=readInbox(),by=new Map(old.map(x=>[S(x.id),x]));for(const o of A(r.orders))by.set(S(o.id),{...(by.get(S(o.id))||{}),...o});const arr=[...by.values()].sort((a,b)=>S(a.criadoEm).localeCompare(S(b.criadoEm)));writeInbox(arr);try{window.johnV8RenderOrders?.()}catch(_){};showNextPopup(false)}catch(e){console.warn('Pedidos V8.4.1',e)}}
+async function pollOrders(){
+  if(document.hidden)return[];
+  const c=window.johnEcommerceOrdersController;
+  if(!c?.refresh)return[];
+  const rows=await c.refresh(false);
+  showNextPopup(false);
+  return rows;
+}
 function fixPersonRoles(){const p=E('pessoaId')&&A(db?.pessoas).find(x=>S(x.id)===S(E('pessoaId').value));if(!p)return;const cli=!!E('pessoaEhCliente')?.checked,usr=!!E('pessoaEhUsuario')?.checked;p.ehCliente=cli;p.ehUsuario=usr;p.tipos=[...(cli?['CLIENTE']:[]),...(usr?['USUARIO']:[])];p.tipo=cli?'CLIENTE':'USUARIO';p.atualizadoEm=new Date().toISOString();persist()}
 document.addEventListener('submit',ev=>{if(ev.target?.id==='pessoaForm')queueMicrotask(()=>{fixPersonRoles();syncNow()})},false);
 function start(){try{const c=JSON.parse(st().getItem(CLOUD)||'{}')||{};if(c.apiKey){c.incrementalAuto=true;c.autoSync=true;st().setItem(CLOUD,JSON.stringify(c))}}catch(_){}clearInterval(timer);clearInterval(orderTimer);window.johnV850Pull?.(true);timer=null;orderTimer=null;window.sincronizarNuvemJohn=async()=>window.johnV850SyncNow?.();}
@@ -11475,71 +11419,31 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 @media(max-width:760px){#ecommercePedidosRecebidos .table-wrap{overflow-x:auto!important;-webkit-overflow-scrolling:touch}#ecommercePedidosRecebidos table{min-width:920px}#ecommercePedidosRecebidos .topbar{padding-left:58px}.john-module-chevron{font-size:16px!important;line-height:1!important}}
 </style>
 <script id="john-v83-critical-sync-fix">
-(function(){'use strict';
-const E=id=>document.getElementById(id),S=v=>String(v??''),A=v=>Array.isArray(v)?v:[],N=v=>Number(v)||0;
-function terminalCloud(o){const a=S(o?.statusIntegracao||o?.integration_status).toUpperCase(),b=S(o?.status).toUpperCase();if(a==='REJEITADO'||b==='REJEITADO'||o?.rejeitado)return'REJEITADO';if(a==='CANCELADO'||b==='CANCELADO')return'CANCELADO';return''}
-function cloudState(o){return terminalCloud(o)||S(o?.status||o?.statusIntegracao||o?.integration_status||'NOVO').toUpperCase()}
-function linked(o){return A(window.db?.pedidos||db?.pedidos).find(p=>S(p.ecommercePedidoId)===S(o?.id))}
-function localInbox(){try{return JSON.parse(localStorage.getItem('john_ecommerce_cloud_inbox_v1')||'[]')||[]}catch(_){return[]}}
-function saveLocalInbox(a){try{localStorage.setItem('john_ecommerce_cloud_inbox_v1',JSON.stringify(a||[]))}catch(_){}}
-function esc(v){return S(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
-function money(v){return N(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}
-function syncLinkedTerminal(o){const t=terminalCloud(o),p=linked(o);if(!t||!p)return false;if(S(p.status).toUpperCase()===t)return false;p.status=t;p.statusEcommerce=t;p.atualizadoEm=o.updated_at||o.atualizadoEm||new Date().toISOString();p.ecommerceTerminal=true;p.ecommerceMotivoRecusa=o.motivoRecusa||o.erro||p.ecommerceMotivoRecusa||'';try{localStorage.setItem(typeof DB_KEY!=='undefined'?DB_KEY:'pcp_app_v1',JSON.stringify(db))}catch(_){}return true}
-function statusHtml(s){if(s==='REJEITADO')return'<span class="john-terminal-pill rejected">REJEITADO</span>';if(s==='CANCELADO')return'<span class="john-terminal-pill cancelled">CANCELADO</span>';if(['IMPORTADO','ACEITO','EM_PRODUCAO','PRONTO','ENTREGUE','RETIRADO'].includes(s))return'<span class="john-terminal-pill ok">'+esc(s.replaceAll('_',' '))+'</span>';return'<span class="john-terminal-pill new">'+esc(s.replaceAll('_',' '))+'</span>'}
-function renderAuthoritative(){
- const tb=E('v8OrdersBody');if(!tb)return;
- const arr=localInbox().slice().sort((a,b)=>S(b.criadoEm||b.created_at).localeCompare(S(a.criadoEm||a.created_at)));
- let n=0,f=0,ok=0,no=0,changed=false;
- for(const o of arr){const st=cloudState(o);if(syncLinkedTerminal(o))changed=true;if(o.freteStatus==='COTACAO_PENDENTE'&&!['REJEITADO','CANCELADO'].includes(st))f++;else if(['REJEITADO','CANCELADO'].includes(st))no++;else if(linked(o)||['IMPORTADO','ACEITO','EM_PRODUCAO','PRONTO','ENTREGUE','RETIRADO'].includes(st))ok++;else n++}
- if(E('v8OrdNew'))E('v8OrdNew').textContent=n;if(E('v8OrdFreight'))E('v8OrdFreight').textContent=f;if(E('v8OrdOk'))E('v8OrdOk').textContent=ok;if(E('v8OrdNo'))E('v8OrdNo').textContent=no;
- tb.innerHTML=arr.map(o=>{
-   const p=linked(o),st=cloudState(o),isTerminal=['REJEITADO','CANCELADO'].includes(st),needsQuote=o.freteStatus==='COTACAO_PENDENTE'&&!isTerminal;
-   let acts='';
-   if(needsQuote)acts+=`<button class="btn primary" onclick="johnV8Quote('${esc(o.id)}')">Cotar frete</button>`;
-   if(!p&&!needsQuote&&!isTerminal)acts+=`<button class="btn primary" onclick="johnV8AcceptOrder('${esc(o.id)}')">Aceitar</button>`;
-   if(!isTerminal)acts+=`<button class="btn secondary" onclick="johnV8EditOrder('${esc(o.id)}')">Editar</button>`;
-   acts+=`<button class="btn print" onclick="johnV8PdfOrder('${esc(o.id)}')">PDF</button>`;
-   if(!isTerminal)acts+=`<button class="btn danger" onclick="johnV83RejectOrder('${esc(o.id)}')">${p?'Cancelar pedido':'Rejeitar'}</button>`;else acts+=`<button class="btn secondary" disabled>${st}</button>`;
-   const rowcls=st==='REJEITADO'?'john-terminal-rejected':st==='CANCELADO'?'john-terminal-cancelled':'';
-   return `<tr class="${rowcls}"><td>${esc(S(o.criadoEm||o.created_at).slice(0,16).replace('T',' '))}</td><td><b>${esc(o.codigo||o.id)}</b></td><td>${esc(o.cliente?.nome||'-')}<br><small>${esc(o.cliente?.telefone||'')}</small></td><td>${esc(o.modalidade||'-')}<br><small>${esc(o.entrega?.cidade||'')}</small></td><td>${needsQuote?'<span class="status-warn">Pendente cotação</span>':money(o.valorFrete)}</td><td>${money(o.total)}</td><td>${statusHtml(st)}${o.emAnalisePor&&!isTerminal?'<br><small>🔒 '+esc(o.emAnalisePor)+'</small>':''}</td><td><div class="john-ecom-v8-actions">${acts}</div></td></tr>`
- }).join('')||'<tr><td colspan="8" class="empty">Nenhum pedido online.</td></tr>';
- if(changed){try{window.renderPedidosNovo?.()}catch(_){}}
+(function(){
+'use strict';
+/*
+  V8.14.0 — FILA E-COMMERCE LEGADA APOSENTADA.
+  Este bloco antigo não consulta, renderiza, rejeita nem cancela pedidos online.
+  A única compatibilidade preservada aqui é o filtro "Origem" da tela normal de Pedidos.
+  A fila Pedidos do E-commerce é responsabilidade exclusiva de
+  ecommerce-customer-experience-v8-13-0.js.
+*/
+const E=id=>document.getElementById(id);
+function installOriginFilter(){
+  const st=E('pedidoFiltroStatus');
+  if(!st||E('pedidoFiltroOrigem'))return;
+  const field=document.createElement('div');
+  field.className='field';
+  field.innerHTML='<label>Origem</label><select id="pedidoFiltroOrigem"><option value="TODOS">Todos</option><option value="ERP">ERP</option><option value="ECOMMERCE">E-commerce</option></select>';
+  st.closest('.field')?.insertAdjacentElement('afterend',field);
+  E('pedidoFiltroOrigem').onchange=()=>window.renderPedidosNovo?.();
 }
-async function api(path,opt={}){let c={};for(const k of ['john_cloud_config_v71','john_cloud_config']){try{const x=JSON.parse(localStorage.getItem(k)||'{}');if(x&&Object.keys(x).length){c=x;break}}catch(_){}}const base=S(c.apiUrl||'https://john-cloud-api-production.up.railway.app').replace(/\/$/,'');const token=S(c.apiKey||c.token);if(!token)throw new Error('Credencial da nuvem não configurada.');const r=await fetch(base+path,{...opt,cache:'no-store',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token,'X-ERP-User':S(window.usuarioAtual?.nome||window.sessao?.nome||'ERP'),'Cache-Control':'no-store',...(opt.headers||{})}});let d={};try{d=await r.json()}catch(_){}if(!r.ok){const e=new Error(d.error||('HTTP '+r.status));e.status=r.status;throw e}return d}
-const ORDER_CURSOR_KEY='john_ecommerce_orders_cursor_v861';
-function orderCursor(){return sessionStorage.getItem(ORDER_CURSOR_KEY)||localStorage.getItem(ORDER_CURSOR_KEY)||''}
-function setOrderCursor(v){if(!v)return;sessionStorage.setItem(ORDER_CURSOR_KEY,S(v));localStorage.setItem(ORDER_CURSOR_KEY,S(v))}
-function mergeOrders(items){const old=localInbox(),by=new Map(old.map(x=>[S(x.id),x]));for(const o of A(items))by.set(S(o.id),{...(by.get(S(o.id))||{}),...o});const arr=[...by.values()].sort((a,b)=>S(a.criadoEm||a.created_at).localeCompare(S(b.criadoEm||b.created_at)));saveLocalInbox(arr);for(const o of A(items))syncLinkedTerminal(o);return arr}
-async function refresh(forceFull=false){
- try{
-  let cursor=orderCursor();
-  if(forceFull||!cursor){
-   const r=await api('/api/v1/admin/store/orders?status=TODOS&limit=1000&_v861='+Date.now()),arr=A(r.orders);
-   saveLocalInbox(arr);for(const o of arr)syncLinkedTerminal(o);setOrderCursor(r.serverTime||new Date().toISOString());renderAuthoritative();return arr;
-  }
-  let loops=0,changed=[];
-  do{
-   const r=await api('/api/v1/admin/store/orders/changes?since='+encodeURIComponent(cursor)+'&limit=250&_v861='+Date.now());
-   const items=A(r.orders);if(items.length){mergeOrders(items);changed.push(...items)}
-   cursor=S(r.nextCursor||r.serverTime||cursor);setOrderCursor(cursor);
-   if(!r.hasMore)break;
-  }while(++loops<5);
-  if(changed.length)renderAuthoritative();
-  return changed;
- }catch(e){
-  if(e.status===404){try{const r=await api('/api/v1/admin/store/orders?status=TODOS&limit=1000&_fallback='+Date.now()),arr=A(r.orders);saveLocalInbox(arr);for(const o of arr)syncLinkedTerminal(o);setOrderCursor(r.serverTime||new Date().toISOString());renderAuthoritative();return arr}catch(x){console.warn('Fallback pedidos V8.6.1',x);return[]}}
-  console.warn('Atualização incremental de pedidos V8.6.1',e);return[];
- }
+function init(){installOriginFilter()}
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded',()=>setTimeout(init,400),{once:true});
+}else{
+  setTimeout(init,120);
 }
-window.johnV83RejectOrder=async function(id){
- const arr=localInbox(),o=arr.find(x=>S(x.id)===S(id));if(!o)return;const p=linked(o);
- if(p){if(!confirm('Cancelar este pedido aceito? Ele continuará no histórico e o cancelamento será refletido em todos os aparelhos.'))return;try{await api('/api/v1/admin/store/orders/statuses',{method:'PUT',body:JSON.stringify({pedidos:{[id]:{status:'CANCELADO'}}})});p.status='CANCELADO';p.statusEcommerce='CANCELADO';p.atualizadoEm=new Date().toISOString();try{localStorage.setItem(typeof DB_KEY!=='undefined'?DB_KEY:'pcp_app_v1',JSON.stringify(db))}catch(_){}await refresh();window.renderPedidosNovo?.();window.toast?.('Pedido cancelado em todos os dispositivos.')}catch(e){alert('Não foi possível cancelar: '+e.message)}return}
- const reason=prompt('Motivo da rejeição:','Pedido não aceito pelo estabelecimento.');if(reason===null)return;if(!confirm('Confirmar rejeição? Esta decisão será registrada na nuvem e respeitada por todos os aparelhos.'))return;try{await api('/api/v1/admin/store/orders/'+encodeURIComponent(id)+'/reject',{method:'POST',body:JSON.stringify({reason:S(reason).trim()||'Pedido rejeitado pelo ERP'})});await refresh();window.toast?.('Pedido REJEITADO e sincronizado.')}catch(e){alert('Não foi possível rejeitar: '+e.message)}
-};
-window.johnV8RenderOrders=renderAuthoritative;window.johnV8RefreshOrders=refresh;
-function installOriginFilter(){const st=E('pedidoFiltroStatus');if(!st||E('pedidoFiltroOrigem'))return;const field=document.createElement('div');field.className='field';field.innerHTML='<label>Origem</label><select id="pedidoFiltroOrigem"><option value="TODOS">Todos</option><option value="ERP">ERP</option><option value="ECOMMERCE">E-commerce</option></select>';st.closest('.field')?.insertAdjacentElement('afterend',field);E('pedidoFiltroOrigem').onchange=()=>window.renderPedidosNovo?.()}
-function init(){installOriginFilter();refresh(true);setInterval(()=>{if(!document.hidden)refresh(false)},8000);setInterval(()=>{if(!document.hidden)refresh(true)},30*60*1000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh(false)});window.addEventListener('focus',()=>refresh(false));setTimeout(renderAuthoritative,350)}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(init,1400),{once:true});else setTimeout(init,500);
 })();
 </script>
 
@@ -11677,20 +11581,23 @@ async function loadTokens(){const tb=E('ac84Tokens');if(!tb)return;const u=user(
 window.johnV84Revoke=async function(id){if(!confirm('Revogar este token? Somente o dispositivo que usa este token perderá o acesso.'))return;try{await api('/api/v1/admin/tokens/'+encodeURIComponent(id)+'/revoke',{method:'POST'});window.toast?.('Token revogado.');loadTokens()}catch(e){alert('Falha ao revogar: '+e.message)}};
 window.johnV84Reactivate=async function(id){try{await api('/api/v1/admin/tokens/'+encodeURIComponent(id)+'/reactivate',{method:'POST'});window.toast?.('Token reativado.');loadTokens()}catch(e){alert('Falha ao reativar: '+e.message)}};
 
-/* Pedido online: rejeitar/cancelar sem excluir lista */
-function saveInbox(arr){for(const k of IK)try{st().setItem(k,JSON.stringify(arr))}catch(_){}}
-async function refreshOrders(){try{if(typeof window.johnV8RefreshOrders==='function')return await window.johnV8RefreshOrders(false);const r=await api('/api/v1/admin/store/orders?status=TODOS&limit=300&_legacy=1');saveInbox(A(r.orders));window.johnV8RenderOrders?.();return A(r.orders)}catch(e){console.error('E-commerce pedidos',e);return[]}}
-async function reject(id){let arr=[];try{arr=JSON.parse(st().getItem(IK[0])||'[]')||[]}catch(_){}const p=A(db?.pedidos).find(x=>S(x.ecommercePedidoId)===S(id));if(p){if(!confirm('Cancelar este pedido aceito? O pedido ficará no histórico e não será apagado.'))return;try{await api('/api/v1/admin/store/orders/statuses',{method:'PUT',body:JSON.stringify({pedidos:{[id]:{status:'CANCELADO'}}})});p.status='CANCELADO';p.statusEcommerce='CANCELADO';p.atualizadoEm=new Date().toISOString();H().persist?.('cancelamento e-commerce');await refreshOrders();window.renderPedidosNovo?.();window.toast?.('Pedido cancelado e preservado em todos os dispositivos.')}catch(e){alert('Falha ao cancelar: '+e.message)}return}
- const reason=prompt('Motivo interno da rejeição:','Pedido não aceito pelo estabelecimento.');if(reason===null)return;const mensagemCliente=prompt('Mensagem que o cliente verá no App:','Seu pedido não pôde ser aceito. Entre em contato conosco se precisar de ajuda.');if(mensagemCliente===null)return;if(!confirm('Confirmar rejeição? O cliente receberá o status REJEITADO e a mensagem informada.'))return;try{await api('/api/v1/admin/store/orders/'+encodeURIComponent(id)+'/reject',{method:'POST',body:JSON.stringify({reason:S(reason).trim()||'Pedido rejeitado pelo ERP',mensagemCliente:S(mensagemCliente).trim()||'Seu pedido não pôde ser aceito.'})});await refreshOrders();window.toast?.('Pedido rejeitado. O App receberá o motivo destinado ao cliente.')}catch(e){alert('Falha ao rejeitar: '+e.message)}}
-window.johnV83RejectOrder=reject;window.johnV8DeleteOrder=reject;window.johnV84RefreshOrders=refreshOrders;
+
+/* Pedidos E-commerce V8.14.0:
+   renderização, filtros, atualização e rejeição pertencem exclusivamente ao
+   controlador consolidado. Este adaptador existe apenas para módulos antigos
+   que ainda chamam refreshOrders(). */
+async function refreshOrders(force=false){
+  const c=window.johnEcommerceOrdersController;
+  if(c?.refresh)return c.refresh(force);
+  return [];
+}
 
 /* Menu do E-commerce */
 function menu(){const g=document.querySelector('.john-module-group[data-module="ecommerce"]'),items=g?.querySelector('.john-module-items');if(!g||!items)return;const ch=g.querySelector('.john-module-chevron');if(ch){ch.textContent='▶';ch.style.fontSize='12px'}const add=(id,label,fn)=>{let b=items.querySelector(`[data-page="${id}"]`);if(!b){b=document.createElement('button');b.type='button';b.className='john-special-nav';b.dataset.page=id;b.dataset.permissionPage='produtos';b.textContent=label;b.onclick=fn;items.appendChild(b)}};add('ecommerceProdutosOnline','🌐 Produtos Online',()=>{ensureOnline();open('ecommerceProdutosOnline');loadOnline()});add('ecommerceAcessoV84','🔐 Token / Links / Acesso',()=>{ensureAccess();open('ecommerceAcessoV84');renderAccess()})}
 function init(){normalizeKeys();ensureOnline();ensureAccess();menu();if(typeof window.__johnPublicarEcomLocal==='function'){window.publicarCatalogoEcommerce=function(silent=false){safePublish(silent).catch(e=>{console.error(e);if(!silent)alert('Falha ao publicar catálogo: '+e.message)});try{return window.__johnPublicarEcomLocal(true)}catch(_){return null}}}}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(init,3500),{once:true});else setTimeout(init,2000);[5200,8200,11800].forEach(ms=>setTimeout(init,ms));new MutationObserver(()=>menu()).observe(document.documentElement,{childList:true,subtree:true});window.addEventListener('focus',()=>{normalizeKeys();refreshOrders()});
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(init,3500),{once:true});else setTimeout(init,2000);[5200,8200,11800].forEach(ms=>setTimeout(init,ms));new MutationObserver(()=>menu()).observe(document.documentElement,{childList:true,subtree:true});window.addEventListener('focus',()=>{normalizeKeys();window.johnEcommerceOrdersController?.refresh(false)});
 window.johnV84Cloud={cfg,saveCfg,api,pub,safePublish,loadOnline,renderOnline,refreshOrders,renderAccess};
 })();
-
 </script>
 <script id="john-v84-ui">
 (function(){
@@ -11747,7 +11654,7 @@ function response(pack){return new Response(pack.body,{status:pack.status,status
 async function fetchPack(input,init={},timeout=28000){const ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),timeout);try{const clean={...init,signal:ctl.signal};const r=await nativeFetch(input,clean),body=await r.text();return{body,status:r.status,statusText:r.statusText,headers:[...r.headers.entries()]}}finally{clearTimeout(tm)}}
 function markOk(label='Online · sincronizado'){const el=E('cloudStatusText');if(el&&(!/pendente|erro|falha/i.test(el.textContent)||/falha ao buscar pedidos/i.test(el.textContent))){el.textContent=label;el.className='cloud-pill ok'}const rt=E('johnRealtimeBadge');if(rt&&!/enviando/i.test(rt.textContent||''))rt.textContent='● Online · tempo real'}
 async function coalesced(input,init,ttl){const key=methodOf(input,init)+'|'+normUrl(urlOf(input)),c=brief.get(key);if(c&&now()-c.at<ttl)return response(c.pack);if(flights.has(key))return response(await flights.get(key));const p=fetchPack(input,init).then(pack=>{if(pack.status>=200&&pack.status<300){brief.set(key,{at:now(),pack});markOk()}return pack}).finally(()=>flights.delete(key));flights.set(key,p);return response(await p)}
-window.fetch=async function(input,init={}){const url=urlOf(input),method=methodOf(input,init);if(listOrders(url,method))return coalesced(input,init,2500);if(changes(url,method))return coalesced(input,init,1200);if(imported(url,method)){const key=normUrl(url)+'|'+S(init?.body);const ok=ackOk.get(key);if(ok&&now()-ok<10*60*1000)return new Response(JSON.stringify({ok:true,alreadyImported:true,clientDeduped:true}),{status:200,headers:{'Content-Type':'application/json'}});if(ackFlights.has(key))return response(await ackFlights.get(key));const p=fetchPack(input,init).then(pack=>{if(pack.status>=200&&pack.status<300)ackOk.set(key,now());return pack}).finally(()=>ackFlights.delete(key));ackFlights.set(key,p);return response(await p)}return nativeFetch(input,init)};
+window.fetch=async function(input,init={}){const url=urlOf(input),method=methodOf(input,init);/* V8.14: a fila de pedidos não usa cache/coalescência do transporte; o controlador canônico coordena as leituras. */if(changes(url,method))return coalesced(input,init,1200);if(imported(url,method)){const key=normUrl(url)+'|'+S(init?.body);const ok=ackOk.get(key);if(ok&&now()-ok<10*60*1000)return new Response(JSON.stringify({ok:true,alreadyImported:true,clientDeduped:true}),{status:200,headers:{'Content-Type':'application/json'}});if(ackFlights.has(key))return response(await ackFlights.get(key));const p=fetchPack(input,init).then(pack=>{if(pack.status>=200&&pack.status<300)ackOk.set(key,now());return pack}).finally(()=>ackFlights.delete(key));ackFlights.set(key,p);return response(await p)}return nativeFetch(input,init)};
 
 function cloud(){return window.johnV84Cloud||null}
 async function admin(path,opt={}){const c=cloud();if(c?.api)return c.api(path,opt);let cfg={};try{cfg=JSON.parse((typeof __johnLocalStorage!=='undefined'?__johnLocalStorage:localStorage).getItem('john_cloud_config_v1')||'{}')||{}}catch(_){};const api=S(cfg.apiUrl||'https://john-cloud-api-production.up.railway.app').replace(/\/+$/,''),token=S(cfg.apiKey||cfg.token);if(!token)throw new Error('Token da API não configurado.');const r=await fetch(api+path,{...opt,cache:'no-store',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token,'X-ERP-User':'ERP','Cache-Control':'no-store',...(opt.headers||{})}});let j={};try{j=await r.json()}catch(_){}if(!r.ok)throw new Error(j.error||('HTTP '+r.status));return j}
@@ -11953,10 +11860,12 @@ window.renderPedidosNovo=function(){
  requestAnimationFrame(()=>{if(wrap){wrap.scrollLeft=sx;wrap.scrollTop=sy;wrap.dataset.manualHorizontal='1'}if(Math.abs(window.scrollY-wy)>3)window.scrollTo({top:wy,behavior:'auto'})});
 };
 
-/* E-commerce queue: do not rewrite identical rows every 5 seconds. */
-const cloudOrdersBase=window.johnV8RenderOrders;
-window.johnV850RenderCloudOrdersStable=function(){const tb=E('v8OrdersBody');if(!tb||typeof cloudOrdersBase!=='function')return;let raw='';try{raw=S(st().getItem('john_ecommerce_cloud_inbox_v1'))+'|'+S(st().getItem('john_ecommerce_inbox_v1'))}catch(_){};if(raw===cloudOrdersKey)return;cloudOrdersKey=raw;const w=tb.closest('.table-wrap'),sx=w?.scrollLeft||0,sy=w?.scrollTop||0;cloudOrdersBase();requestAnimationFrame(()=>{if(w){w.scrollLeft=sx;w.scrollTop=sy}})};
-window.johnV8RenderOrders=window.johnV850RenderCloudOrdersStable;
+/* Pedidos E-commerce V8.14.0:
+   esta camada profissional não captura nem substitui mais o renderer da fila.
+   O controlador consolidado preserva scroll e é a única autoridade visual. */
+window.johnV850RenderCloudOrdersStable=function(){
+  return window.johnEcommerceOrdersController?.render?.();
+};
 
 /* ================== PREÇO E-COMMERCE INDEPENDENTE ================== */
 function ecom(p){p.ecommerce=p.ecommerce&&typeof p.ecommerce==='object'?p.ecommerce:{};return p.ecommerce}
@@ -12219,7 +12128,6 @@ window.johnV870={validWhatsapp,formatWhatsapp,renderPending,renderCampaign,rende
 #ecommerceGradesV88 .v88-grade-card h3{margin:0 0 6px}.v88-grade-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.v88-grade-tags span{padding:5px 8px;border-radius:999px;background:#ede9fe;color:#5b21b6;font-size:11px;font-weight:800}
 #ecommerceProdutosOnline .v88-online-note{margin-top:10px;padding:10px 12px;border:1px solid #93c5fd;background:#eff6ff;color:#1e40af;border-radius:12px;font-size:12px;font-weight:750}
 #ecommerceProdutosOnline #on88Images{background:linear-gradient(135deg,#0f766e,#14b8a6);color:#fff}
-.john-v88-delete-terminal{margin-left:4px!important}
 @media(max-width:900px){#ecommerceGradesV88 .v88-grade-grid{grid-template-columns:1fr}}
 </style>
 <script id="john-v880-canonical-ecommerce">
@@ -12288,23 +12196,22 @@ window.johnV880DeleteGrade=async function(id){const g=grades().find(x=>S(x.id)==
 async function suggestGrades(){const used=new Set(grades().flatMap(g=>A(g.variantes).map(v=>S(v.produtoId)))),groups=new Map();for(const p of eligibleGradeProducts()){if(used.has(S(p.id)))continue;const label=variantLabel(p.nome);if(!label)continue;const base=baseName(p.nome),cat=S(ecom(p).categoriaId||ecom(p).categoria||'');const key=(base+'|'+cat).toLowerCase();if(!groups.has(key))groups.set(key,{base,items:[]});groups.get(key).items.push({p,label})}let created=0;for(const g of groups.values()){const uniq=[...new Set(g.items.map(x=>x.label))];if(g.items.length<2||uniq.length<2)continue;grades().push({id:'grade_'+uid(),nome:g.base||g.items[0].p.nome,descricao:'',tipoOpcao:'TAMANHO',tituloOpcao:'Tamanho',produtoCapaId:g.items[0].p.id,variantes:g.items.map((x,i)=>({produtoId:x.p.id,rotulo:x.label,ordem:i+1})),ativo:true,atualizadoEm:new Date().toISOString(),atualizadoPor:actor()});created++}if(!created)return window.toast?.('Não encontrei novos conjuntos claros de tamanhos para sugerir. Você pode criar a grade manualmente.');await syncDb();renderGrades();await canonicalPublish(true);window.toast?.(`${created} grade(s) sugerida(s), salva(s) e publicada(s). Revise os agrupamentos.`)}
 function ensureGradeMenu(){ensureGradePage();const items=document.querySelector('.john-module-group[data-module="ecommerce"] .john-module-items');if(!items)return;let b=items.querySelector('[data-page="ecommerceGradesV88"]');if(!b){b=document.createElement('button');b.type='button';b.className='john-special-nav';b.dataset.page='ecommerceGradesV88';b.dataset.permissionPage='produtos';b.textContent='🧩 Grades / Variações';b.onclick=()=>{try{showPage?.('ecommerceGradesV88')}catch(_){document.querySelectorAll('.page').forEach(x=>x.classList.add('hidden'));E('ecommerceGradesV88')?.classList.remove('hidden')}renderGrades();renderGradeChooser()};items.appendChild(b)}}
 
-/* ---------- EXCLUSÃO DE PEDIDOS MULTI-DISPOSITIVO ---------- */
-function inbox(){for(const k of ORDER_KEYS){try{const a=JSON.parse(st().getItem(k)||'[]');if(Array.isArray(a))return a}catch(_){}}return[]}
-function saveInbox(a){for(const k of ORDER_KEYS)try{st().setItem(k,JSON.stringify(A(a)))}catch(_){}}
-function removeInbox(id){const a=inbox().filter(x=>S(x.id)!==S(id));saveInbox(a);return a}
-window.johnV880DeleteCloudOrder=async function(id){if(!confirm('Excluir este pedido da operação em todos os dispositivos? O registro continuará preservado no PostgreSQL para auditoria.'))return;try{await admin('/api/v1/admin/store/orders/'+encodeURIComponent(id),{method:'DELETE',body:JSON.stringify({reason:'Excluído da operação pelo ERP'})});removeInbox(id);await refreshOrdersV88(true);window.toast?.('Pedido removido da operação em todos os dispositivos.')}catch(e){alert('Não foi possível excluir o pedido: '+e.message)}};
+/* ---------- PEDIDOS NORMAIS DO ERP ---------- */
+/* A exclusão abaixo pertence à tela normal de Pedidos do ERP.
+   Ela NÃO cria ação na fila Pedidos do E-commerce. */
 window.excluirPedido=async function(id){const p=A(db?.pedidos).find(x=>S(x.id)===S(id));if(!p)return;if(!confirm(`Excluir o pedido nº ${String(p.numero||0).padStart(6,'0')}? A exclusão será sincronizada com os outros dispositivos.`))return;try{if(p.ecommercePedidoId)await admin('/api/v1/admin/store/orders/'+encodeURIComponent(p.ecommercePedidoId),{method:'DELETE',body:JSON.stringify({reason:'Pedido excluído no ERP'})});db.pedidos=A(db.pedidos).filter(x=>S(x.id)!==S(id));persistDb();window.johnCloudCapturarAlteracoes?.();await window.johnCloudFlushIncremental?.(true);await window.johnV850SyncNow?.();try{window.renderPedidosNovo?.()}catch(_){try{window.renderAll?.()}catch(__){}}window.toast?.('Pedido excluído e sincronizado com os outros dispositivos.')}catch(e){alert('A exclusão não foi concluída: '+e.message)}};
-let orderBusy=false;
-function orderCursor(){return sessionStorage.getItem('john_orders_cursor_v880')||''}function setOrderCursor(v){if(v)sessionStorage.setItem('john_orders_cursor_v880',S(v))}
-async function refreshOrdersV88(forceFull=false){if(orderBusy)return[];orderBusy=true;try{let a=inbox(),cursor=orderCursor();if(forceFull||!cursor){const r=await admin('/api/v1/admin/store/orders?status=TODOS&limit=1000&_v880='+Date.now());a=A(r.orders);saveInbox(a);setOrderCursor(r.serverTime||new Date().toISOString());try{window.johnV8RenderOrders?.()}catch(_){}decorateTerminalDeletes();return a}let loops=0,changed=[];do{const r=await admin('/api/v1/admin/store/orders/changes?since='+encodeURIComponent(cursor)+'&limit=250&_v880='+Date.now());for(const o of A(r.orders)){if(o.deleted||S(o.operation).toUpperCase()==='DELETE'||S(o.status).toUpperCase()==='EXCLUIDO')a=a.filter(x=>S(x.id)!==S(o.id));else{const i=a.findIndex(x=>S(x.id)===S(o.id));if(i>=0)a[i]={...a[i],...o};else a.push(o)}changed.push(o)}cursor=S(r.nextCursor||r.serverTime||cursor);setOrderCursor(cursor);if(!r.hasMore)break}while(++loops<5);if(changed.length){saveInbox(a);try{window.johnV8RenderOrders?.()}catch(_){}decorateTerminalDeletes()}return changed}catch(e){console.warn('Pedidos V8.8:',e);return[]}finally{orderBusy=false}}
-window.johnV880RefreshOrders=refreshOrdersV88;window.johnV8RefreshOrders=refreshOrdersV88;window.johnV84RefreshOrders=refreshOrdersV88;
-function decorateTerminalDeletes(){const tb=E('v8OrdersBody');if(!tb)return;const a=inbox();for(const tr of tb.querySelectorAll('tr')){if(tr.dataset.v88delete)continue;const code=S(tr.children[1]?.textContent).trim(),o=a.find(x=>S(x.codigo||x.code||x.id)===code);if(!o)continue;const s=S(o.status||o.statusIntegracao).toUpperCase();if(!['REJEITADO','CANCELADO'].includes(s))continue;const acts=tr.querySelector('.john-ecom-v8-actions');if(!acts)continue;const b=document.createElement('button');b.className='btn danger john-v88-delete-terminal';b.type='button';b.textContent='Excluir da operação';b.onclick=()=>window.johnV880DeleteCloudOrder(o.id);acts.appendChild(b);tr.dataset.v88delete='1'}}
 
-function init(){ensureGradePage();ensureGradeMenu();installCanonicalPublish();setTimeout(()=>refreshOrdersV88(true),1800);setTimeout(decorateTerminalDeletes,2500)}
+/* V8.14.0: fila E-commerce legada V8.8 aposentada.
+   Sem polling, sem renderer e sem ações destrutivas na fila recebida. */
+function legacyOrdersRefreshV880(force=false){
+  return window.johnEcommerceOrdersController?.refresh?.(force)||Promise.resolve([]);
+}
+
+function init(){ensureGradePage();ensureGradeMenu();installCanonicalPublish()}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(init,1200),{once:true});else setTimeout(init,600);
-[3000,7000,12000,19000,24000].forEach(ms=>setTimeout(()=>{installCanonicalPublish();ensureGradeMenu();decorateTerminalDeletes()},ms));
-setInterval(()=>refreshOrdersV88(false),9000);window.addEventListener('focus',()=>refreshOrdersV88(false));window.addEventListener('online',()=>refreshOrdersV88(true));
-window.JohnV880={canonicalPublish,publishImages,recoverMissingPrices,refreshOrders:refreshOrdersV88,grades,applyGrades,renderGrades,renderGradeChooser,eligibleGradeProducts};
+[3000,7000,12000,19000,24000].forEach(ms=>setTimeout(()=>{installCanonicalPublish();ensureGradeMenu()},ms));
+
+window.JohnV880={canonicalPublish,publishImages,recoverMissingPrices,refreshOrders:legacyOrdersRefreshV880,grades,applyGrades,renderGrades,renderGradeChooser,eligibleGradeProducts};
 })();
 </script>
 \n<style id="john-v890-style">
@@ -12327,7 +12234,7 @@ async function admin(path,opt={}){const c=cloudCfg();if(!c.token)throw new Error
 (function installNetworkCoordinator(){if(window.__johnV890Fetch)return;window.__johnV890Fetch=true;const native=window.fetch.bind(window),cache=new Map();let batchScheduled=null,batchWaiters=[],batchChanges=new Map(),lastBatchAt=0,batchRunning=false;async function safeNative(url,opt,tries=2){let last;for(let i=0;i<tries;i++){try{const r=await native(url,opt);if(r.status<500||i===tries-1)return r;last=new Error('HTTP '+r.status)}catch(e){last=e;if(i===tries-1)throw e}await new Promise(res=>setTimeout(res,300*(i+1)))}throw last}function normalized(url){try{const u=new URL(S(url),location.href);for(const k of [...u.searchParams.keys()])if(/^_(?:v|ts|t|v\d+)/i.test(k))u.searchParams.delete(k);return u.pathname+'?'+u.searchParams.toString()}catch(_){return S(url)}}async function cachedFetch(url,opt,ttl){const key=(opt?.method||'GET')+' '+normalized(url),now=Date.now(),hit=cache.get(key);if(hit&&now-hit.at<ttl){if(hit.promise)return (await hit.promise).clone();return new Response(hit.text,{status:hit.status,headers:hit.headers})}const p=safeNative(url,opt,2).then(async r=>{const text=await r.clone().text(),h={};r.headers.forEach((v,k)=>h[k]=v);cache.set(key,{at:Date.now(),text,status:r.status,headers:h});return new Response(text,{status:r.status,headers:h})}).finally(()=>{const x=cache.get(key);if(x?.promise)delete x.promise});cache.set(key,{at:now,promise:p});return (await p).clone()}
 function scheduleBatch(url,opt,body){if(batchRunning||batchScheduled)return;const wait=Math.max(250,1200-(Date.now()-lastBatchAt));batchScheduled=setTimeout(async()=>{batchScheduled=null;if(batchRunning)return;batchRunning=true;const changes=[...batchChanges.values()];batchChanges.clear();const waiters=batchWaiters.splice(0);try{const payload={...body,changes,batchId:'v890-'+Date.now()};const r=await safeNative(url,{...opt,body:JSON.stringify(payload)},2);const text=await r.clone().text(),h={};r.headers.forEach((v,k)=>h[k]=v);lastBatchAt=Date.now();for(const w of waiters)w.resolve(new Response(text,{status:r.status,headers:h}))}catch(e){for(const w of waiters)w.reject(e)}finally{batchRunning=false;if(batchChanges.size||batchWaiters.length)scheduleBatch(url,opt,body)}},wait)}
 function batchFetch(url,opt){let body={};try{body=JSON.parse(S(opt?.body)||'{}')}catch(_){};for(const ch of A(body.changes)){const key=S(ch.eventId||[ch.kind,ch.entityType||ch.objectKey,ch.entityId,ch.operation].join('|'));batchChanges.set(key,ch)}return new Promise((resolve,reject)=>{batchWaiters.push({resolve,reject});scheduleBatch(url,opt,body)})}
-window.fetch=function(input,opt={}){const url=typeof input==='string'?input:S(input?.url),method=S(opt?.method||input?.method||'GET').toUpperCase();if(url.includes('/api/v1/admin/sync/batch')&&method==='POST')return batchFetch(input,opt);if(url.includes('/api/v1/admin/store/orders')&&method==='GET'&&!url.includes('/orders/') )return cachedFetch(input,opt,5000);if(url.includes('/api/v1/admin/sync/export')&&method==='GET')return cachedFetch(input,opt,30000);if(url.includes('/api/v1/admin/sync/changes')&&method==='GET')return cachedFetch(input,opt,3000);return native(input,opt)};
+window.fetch=function(input,opt={}){const url=typeof input==='string'?input:S(input?.url),method=S(opt?.method||input?.method||'GET').toUpperCase();if(url.includes('/api/v1/admin/sync/batch')&&method==='POST')return batchFetch(input,opt);/* V8.14: pedidos nunca usam cache HTTP local; controlador canônico faz coalescência. */if(url.includes('/api/v1/admin/sync/export')&&method==='GET')return cachedFetch(input,opt,30000);if(url.includes('/api/v1/admin/sync/changes')&&method==='GET')return cachedFetch(input,opt,3000);return native(input,opt)};
 })();
 function installLegacySyncGuard(){const base=window.johnV850SyncNow;if(typeof base!=='function'||base.__v890guard)return;let running=null,last=0;const guarded=function(force=false){const now=Date.now();if(running)return running;if(!force&&now-last<4000)return Promise.resolve({throttled:true});running=Promise.resolve(base.apply(this,arguments)).finally(()=>{last=Date.now();running=null});return running};guarded.__v890guard=true;window.johnV850SyncNow=guarded;window.sincronizarNuvemJohn=()=>guarded(true)}
 
@@ -12513,10 +12420,10 @@ setTimeout(enforce,600);
 })();
 </script>
 
-  <!-- John ERP V8.13.3: módulos críticos carregados diretamente; SW fica apenas como PWA/cache -->
-  <script src="./production-stability-v8-10-5.js?v=8133"></script>
-  <script src="./platform-admin-v8-12-0.js?v=8133"></script>
-  <script src="./ecommerce-customer-experience-v8-13-0.js?v=8133"></script>
+  <!-- John ERP V8.14.0: módulos críticos carregados diretamente; SW fica apenas como PWA/cache -->
+  <script src="./production-stability-v8-10-5.js?v=8140"></script>
+  <script src="./platform-admin-v8-12-0.js?v=8140"></script>
+  <script src="./ecommerce-customer-experience-v8-13-0.js?v=8140"></script>
 </body>
 <!-- JOHN ERP V8.6.2 HOTFIX: preserve ecommerce price on product metadata edits -->
 </html>

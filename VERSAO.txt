@@ -1,49 +1,53 @@
-John Sistema ERP V8.13.3 — Experiência do Cliente / Pedidos E-commerce
-Build: 2026-09-13
-API esperada: 1.16.3+
+John Sistema ERP V8.14.0 — Consolidação Multiempresa / Pedidos E-commerce
+Build: 2026-09-14
+API esperada: 1.16.7
 Schema: 12
 
-INCLUI TODA A V8.12.0
-- Administração da Plataforma / multiempresa;
-- painel do proprietário;
-- módulos por empresa;
-- suporte temporário e isolamento por tenant.
+MULTIEMPRESA
+- O endereço do ERP sem parâmetro abre sempre a empresa proprietária Caseirinho.
+- Cada cliente recebe um link exclusivo no padrão:
+  .../caseirinho-erp/?empresa=john-nome-da-empresa
+- A empresa não pode ser trocada manualmente pela tela de login.
+- A antiga tela pública de primeiro acesso/token de ativação foi aposentada.
+- Empresa sem usuário MASTER mostra somente "Empresa ainda não liberada".
+- O primeiro MASTER é criado pela Administração da Plataforma.
+- A Administração da Plataforma exibe e copia o link exclusivo do ERP e da Loja.
+- Novas empresas recebem sugestão de slug john-<empresa>.
+- PWA/atalho preserva o tenant no start_url.
+- Storage do ERP permanece isolado por tenant.
+- Sessão assinada continua vinculada ao tenant; alterar a URL não reutiliza credenciais de outra empresa.
 
 PEDIDOS RECEBIDOS DO E-COMMERCE
-- remove da tela os botões Editar, Excluir e Cancelar; mantém PDF para consulta/impressão do pedido;
-- frete pendente: somente Cotação;
-- cotação enviada: somente Aguardando cliente;
-- cliente recusou frete: pedido passa para Cancelado; não existe nova cotação no mesmo pedido;
-- cliente aceitou frete: somente Aceitar e Rejeitar;
-- pedido normal/pronto para decisão: Aceitar e Rejeitar;
-- aceito: somente botão desabilitado Aceito;
-- rejeitado: somente botão desabilitado Rejeitado;
-- filtros Data de, Data até e Status;
-- nova coluna Horário entrega;
-- após o aceite, horário pode ser informado pelo ERP e retorna ao app automaticamente.
+- A API é a única fonte autoritativa para status e informações da fila.
+- Existe somente um controlador visual da fila: ecommerce-customer-experience-v8-13-0.js.
+- Renderers/pollings legados V8.3/V8.4/V8.5/V8.8 que competiam com a tela foram aposentados ou delegados.
+- Não aparecem Editar, Cancelar pedido nem Excluir da operação.
+- Frete pendente: Cotação + PDF.
+- Cotação enviada: Alterar cotação + Aguardando cliente + PDF.
+- Cliente aceitou novo frete: Aceitar + PDF + Rejeitar.
+- Após Aceito, Rejeitado ou Cancelado: nenhuma ação na fila.
+- Horário de entrega é informado em coluna própria e retorna ao App.
+- Filtros: Data de, Data até, Cliente, Modalidade, Status e Ações.
+- Atualização da fila usa uma única consulta autoritativa com coalescência, evitando renderizações concorrentes.
 
-SEGURANÇA / PRODUÇÃO
-- nenhuma migration nova;
-- não altera schema PostgreSQL;
-- não muda telas Financeiro, Estoque, PCP, Pricing, Produtos ou Pedidos normais;
-- mudanças da fila estão isoladas em ecommercePedidosRecebidos;
-- exclusão lógica permanece disponível na API para compatibilidade/auditoria, mas não é exposta nesta tela.
+SESSÃO / TOKEN
+- Erros funcionais 403 não apagam a credencial do navegador.
+- Token de dispositivo continua persistente até revogação.
+- Sessão V2 expirada exige novo login, não um novo token de ativação da empresa.
+- O Proprietário da Plataforma é descoberto novamente após o login seguro.
 
-- Token do ERP: o token deste navegador permanece salvo por empresa e só volta a ser solicitado se estiver realmente revogado/expirado.
-- Erros 403 de autorização de uma funcionalidade não apagam mais o token do navegador.
-- Se o marcador local de ativação sumir, mas a credencial ainda estiver salva, o ERP reconstrói o marcador sem pedir o token novamente.
-- E-commerce: enquanto o cliente ainda não respondeu, o ERP pode usar "Alterar cotação"; o novo valor gera uma nova revisão para o app.
+PRODUÇÃO
+- Sem migration nova.
+- Schema PostgreSQL permanece 12.
+- Financeiro, Estoque, PCP, Pricing e demais módulos de negócio não foram reescritos por esta consolidação.
 
-- Status após aceite do frete pelo cliente: "Cliente aceitou novo frete", com cor própria.
-- Nesse status, Ações mostra somente: Aceitar, PDF e Rejeitar.
-- Após Aceito, Rejeitado ou Cancelado, não há botões de ação nesta fila.
-- A fila não exibe Excluir nem Cancelar pedido.
-- Novos filtros: nome do cliente, modalidade, status e tipo de ação, além de data de/até.
-- A atualização da fila consulta a lista autoritativa no servidor para recuperar pedidos que não chegaram ao cache local do ERP.
-- Mantido o ajuste V8.13.1 de persistência do token do navegador.
 
-- Correção estrutural: módulos Multiempresa, Administração da Plataforma e Experiência do E-commerce passam a ser carregados diretamente pelo index.html.
-- O funcionamento não depende mais da primeira interceptação do Service Worker para essas funções.
-- A fila bloqueia/remove novamente ações legadas inseridas por timers antigos do ERP.
-- 'Excluir da operação', Editar e Cancelar pedido não reaparecem mesmo quando rotinas antigas renderizam a tabela.
-- Ao entrar em Pedidos E-commerce, a tela busca primeiro a lista autoritativa da API.
+IMPORTAÇÃO LEGADA APOSENTADA
+- john-ecommerce-order-sync-guard-v51 não executa mais polling/ACK/importação.
+- john-ecommerce-orders-definitive-v52 não importa pedidos nem pede chave rápida.
+- john-v6-performance-orders não renderiza botões, não observa a tabela e não altera status.
+- john-ecommerce-erp-v1 preserva apenas catálogo/configuração; a importação automática de pedidos foi removida.
+- john-cloud-api-postgres-v1 não importa pedidos nem envia mapa de status automaticamente.
+- O aceite manual usa /accept -> cria o pedido local com número reservado pelo servidor -> /imported.
+- A caixa de pedidos canônica é john_ecommerce_cloud_inbox_v1.
+- GET da fila de pedidos não usa mais cache de 5 segundos do coordenador V8.9.

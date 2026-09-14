@@ -4,7 +4,7 @@
 if(window.__JOHN_MULTIEMPRESA_8120__)return;
 window.__JOHN_MULTIEMPRESA_8120__=true;
 
-const VERSION='8.13.1';
+const VERSION='8.14.0';
 const API_DEFAULT='https://john-cloud-api-production.up.railway.app';
 const GLOBAL_TENANT_KEY='john_active_tenant_v1';
 const GLOBAL_KEYS=new Set([
@@ -51,18 +51,21 @@ function legacyCloud(){
 }
 
 const fromUrl=urlTenant();
-const remembered=normSlug(rawGet(localStorage,GLOBAL_TENANT_KEY)||'');
 const legacy=legacyCloud();
 const legacySlug=normSlug(legacy.storeSlug||'');
-const tenantSlug=fromUrl||remembered||legacySlug||'';
+/*
+  V8.14.0:
+  - link sem ?empresa= SEMPRE abre a empresa proprietária "caseirinho";
+  - clientes usam exclusivamente o link com ?empresa=<slug>;
+  - nunca reaproveitamos a última empresa lembrada/legada para decidir o tenant.
+*/
+const tenantSlug=fromUrl||'caseirinho';
 
-if(tenantSlug){
-  rawSet(localStorage,GLOBAL_TENANT_KEY,tenantSlug);
-}
+rawSet(localStorage,GLOBAL_TENANT_KEY,tenantSlug);
 
 window.__JOHN_TENANT__={
   slug:tenantSlug,
-  source:fromUrl?'url':remembered?'remembered':legacySlug?'legacy':'none',
+  source:fromUrl?'url':'default',
   name:'',
   id:'',
   ready:false
@@ -437,137 +440,45 @@ function tenantPanel(){
 function showTenantChooser(){
   const p=tenantPanel();
   if(!p)return;
-
   loginInputsEnabled(false);
-  setLoginError('');
-
+  setLoginError('Este acesso exige o link exclusivo da empresa.');
   p.innerHTML=`
-    <b style="font-size:13px">Identifique sua empresa</b>
-    <div style="margin-top:5px;color:#64748b">
-      Informe o código fornecido pela John Sistemas.
-    </div>
-    <div style="display:flex;gap:7px;margin-top:10px">
-      <input id="johnTenantInput" autocomplete="organization"
-        placeholder="codigo-da-empresa"
-        style="flex:1;padding:9px;border:1px solid #cbd5e1;border-radius:9px">
-      <button id="johnTenantContinue" type="button"
-        style="border:0;border-radius:9px;padding:9px 12px;background:#6d28d9;color:#fff;font-weight:800">
-        Continuar
-      </button>
-    </div>`;
-
-  const go=()=>{
-    const slug=normSlug(document.getElementById('johnTenantInput')?.value||'');
-    if(!slug){
-      setLoginError('Informe o código da empresa.');
-      return;
-    }
-
-    rawSet(localStorage,GLOBAL_TENANT_KEY,slug);
-    const u=new URL(location.href);
-    u.searchParams.set('empresa',slug);
-    location.replace(u.toString());
-  };
-
-  document.getElementById('johnTenantContinue').onclick=go;
-  document.getElementById('johnTenantInput').onkeydown=e=>{
-    if(e.key==='Enter'){
-      e.preventDefault();
-      go();
-    }
-  };
-}
-
-function activationHtml(identity){
-  return `
-    <div id="johnBootstrapPanel"
-      style="margin-top:12px;padding:14px;border:1px solid #c4b5fd;border-radius:12px;background:#f5f3ff">
-      <b style="color:#4c1d95">Primeiro acesso da empresa</b>
-      <div style="margin:5px 0 10px;color:#64748b">
-        Crie o primeiro usuário MASTER. O código de ativação expira e só pode ser usado uma vez.
-      </div>
-      <label>Nome do responsável</label>
-      <input id="johnBootName" style="margin-bottom:8px">
-      <label>Login MASTER</label>
-      <input id="johnBootLogin" autocomplete="username" style="margin-bottom:8px">
-      <label>E-mail</label>
-      <input id="johnBootEmail" type="email" style="margin-bottom:8px">
-      <label>Senha</label>
-      <input id="johnBootPassword" type="password" autocomplete="new-password" style="margin-bottom:8px">
-      <label>Confirmar senha</label>
-      <input id="johnBootPassword2" type="password" autocomplete="new-password" style="margin-bottom:8px">
-      <label>Código de ativação</label>
-      <input id="johnBootToken" type="password" autocomplete="off" style="margin-bottom:10px">
-      <button id="johnBootCreate" class="btn primary" type="button" style="width:100%">
-        Ativar empresa e criar MASTER
-      </button>
-      <div id="johnBootStatus" style="margin-top:8px"></div>
+    <b style="font-size:13px;color:#b45309">Link empresarial obrigatório</b>
+    <div style="margin-top:6px;color:#64748b">
+      Use o endereço exclusivo fornecido pela John Sistemas. Por segurança,
+      esta tela não permite escolher ou trocar a empresa manualmente.
     </div>`;
 }
 
-async function createMaster(){
-  const status=document.getElementById('johnBootStatus');
-  const btn=document.getElementById('johnBootCreate');
-
-  const nome=S(document.getElementById('johnBootName')?.value).trim();
-  const login=S(document.getElementById('johnBootLogin')?.value).trim().toLowerCase();
-  const email=S(document.getElementById('johnBootEmail')?.value).trim();
-  const senha=S(document.getElementById('johnBootPassword')?.value);
-  const senha2=S(document.getElementById('johnBootPassword2')?.value);
-  const bootstrapToken=S(document.getElementById('johnBootToken')?.value).trim();
-
-  if(nome.length<2||login.length<3||senha.length<8||!bootstrapToken){
-    if(status)status.textContent='Preencha nome, login, senha com pelo menos 8 caracteres e código de ativação.';
-    return;
-  }
-  if(senha!==senha2){
-    if(status)status.textContent='As senhas não coincidem.';
-    return;
-  }
-
-  if(btn){
-    btn.disabled=true;
-    btn.textContent='Ativando...';
-  }
-
+function applyTenantManifest(){
+  const link=document.querySelector('link[rel="manifest"]');
+  if(!link||!window.__JOHN_TENANT__?.slug)return;
   try{
-    await api(tenantPath('/bootstrap/master'),{
-      method:'POST',
-      body:JSON.stringify({
-        bootstrapToken,
-        nome,
-        login,
-        senha,
-        email
-      })
-    });
-
-    if(status){
-      status.style.color='#166534';
-      status.textContent='Empresa ativada. Agora entre com o login MASTER criado.';
+    if(window.__JOHN_TENANT_MANIFEST_URL__){
+      URL.revokeObjectURL(window.__JOHN_TENANT_MANIFEST_URL__);
     }
-
-    document.getElementById('johnBootstrapPanel')?.remove();
-    loginInputsEnabled(true);
-    const lu=document.getElementById('loginUsuario');
-    if(lu)lu.value=login;
-    const lp=document.getElementById('loginSenha');
-    if(lp){
-      lp.value='';
-      lp.focus();
-    }
-
-    await loadIdentity();
+    const name=S(window.__JOHN_TENANT__.name||window.__JOHN_TENANT__.slug||'Empresa');
+    const manifest={
+      name:`John Sistema ERP · ${name}`,
+      short_name:(`John ERP · ${name}`).slice(0,30),
+      start_url:`./?empresa=${encodeURIComponent(window.__JOHN_TENANT__.slug)}`,
+      scope:'./',
+      display:'standalone',
+      background_color:'#ede9fe',
+      theme_color:'#5b21b6',
+      orientation:'any',
+      icons:[
+        {src:'./icons/icon-192.png',sizes:'192x192',type:'image/png'},
+        {src:'./icons/icon-512.png',sizes:'512x512',type:'image/png'},
+        {src:'./icons/icon-maskable-512.png',sizes:'512x512',type:'image/png',purpose:'maskable any'}
+      ]
+    };
+    const blob=new Blob([JSON.stringify(manifest)],{type:'application/manifest+json'});
+    const url=URL.createObjectURL(blob);
+    window.__JOHN_TENANT_MANIFEST_URL__=url;
+    link.href=url;
   }catch(e){
-    if(status){
-      status.style.color='#b91c1c';
-      status.textContent=e.message;
-    }
-  }finally{
-    if(btn){
-      btn.disabled=false;
-      btn.textContent='Ativar empresa e criar MASTER';
-    }
+    console.warn('[John Multiempresa] manifest dinâmico:',e);
   }
 }
 
@@ -607,20 +518,29 @@ async function loadIdentity(){
             ${esc(window.__JOHN_TENANT__.slug)}
           </span>
         </div>
-        ${x.needsBootstrap?activationHtml(x):''}`;
+        ${x.needsBootstrap?`
+          <div style="margin-top:12px;padding:12px;border:1px solid #fed7aa;border-radius:10px;background:#fff7ed;color:#9a3412">
+            <b>Empresa ainda não liberada.</b>
+            <div style="margin-top:4px">
+              O primeiro administrador deve ser criado pelo Proprietário da Plataforma.
+              Nenhum token de ativação é solicitado nesta tela.
+            </div>
+          </div>`:''}`;
     }
 
     document.title='John Sistema ERP · '+window.__JOHN_TENANT__.name;
+    applyTenantManifest();
 
     if(x.needsBootstrap){
       loginInputsEnabled(false);
-      const b=document.getElementById('johnBootCreate');
-      if(b)b.onclick=createMaster;
+      setLoginError('Empresa aguardando liberação pelo administrador da plataforma.');
     }else{
       loginInputsEnabled(true);
+      setLoginError('');
     }
 
     renderTenantBadge();
+    window.dispatchEvent(new CustomEvent('john:tenant-identity',{detail:window.__JOHN_TENANT__}));
     return x;
   }catch(e){
     window.__JOHN_TENANT__.ready=false;
@@ -630,20 +550,10 @@ async function loadIdentity(){
       p.innerHTML=`
         <b style="color:#b91c1c">Empresa não localizada ou indisponível.</b>
         <div style="margin-top:7px">${esc(e.message)}</div>
-        <button id="johnChangeTenant" type="button"
-          style="margin-top:9px;border:0;border-radius:9px;padding:8px 10px;background:#e2e8f0;font-weight:800">
-          Informar outra empresa
-        </button>`;
+        <div style="margin-top:9px;color:#64748b">
+          Confira o link exclusivo recebido da John Sistemas ou contate o administrador.
+        </div>`;
     }
-
-    const c=document.getElementById('johnChangeTenant');
-    if(c)c.onclick=()=>{
-      rawRemove(localStorage,GLOBAL_TENANT_KEY);
-      const u=new URL(location.href);
-      u.searchParams.delete('empresa');
-      u.searchParams.delete('tenant');
-      location.replace(u.toString());
-    };
 
     return null;
   }
@@ -767,6 +677,7 @@ async function enterSupportSession(){
     }
 
     setLoginError('');
+    window.dispatchEvent(new CustomEvent('john:session-ready',{detail:{tenant:tenantSlug,support:true}}));
     return true;
   }catch(e){
     console.warn('[John Multiempresa] suporte:',e);
@@ -796,7 +707,7 @@ function installDynamicLogin(){
       return;
     }
     if(window.__JOHN_TENANT__.needsBootstrap){
-      setLoginError('Ative a empresa antes do primeiro login.');
+      setLoginError('Empresa ainda não liberada. Contate o administrador da plataforma.');
       return;
     }
     if(!l||!p){
@@ -863,6 +774,7 @@ function installDynamicLogin(){
       if(typeof inicializarAplicacaoAposLogin==='function'){
         setTimeout(inicializarAplicacaoAposLogin,0);
       }
+      window.dispatchEvent(new CustomEvent('john:session-ready',{detail:{tenant:tenantSlug,support:false}}));
     }catch(e){
       console.warn('[John Multiempresa] login:',e);
 

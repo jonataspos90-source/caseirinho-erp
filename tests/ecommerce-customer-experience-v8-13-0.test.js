@@ -6,10 +6,7 @@ const cx=fs.readFileSync('ecommerce-customer-experience-v8-13-0.js','utf8');
 const sw=fs.readFileSync('service-worker.js','utf8');
 
 test('fila não expõe editar excluir ou cancelar pedido',()=>{
-  const actions=cx.slice(
-    cx.indexOf('function actionHtml'),
-    cx.indexOf('function freightHtml')
-  );
+  const actions=cx.slice(cx.indexOf('function actionHtml'),cx.indexOf('function freightHtml'));
   assert.doesNotMatch(actions,/Editar|Excluir|Cancelar pedido/);
   assert.doesNotMatch(actions,/data-cx-delete|data-cx-cancel/);
 });
@@ -20,37 +17,25 @@ test('cliente que aceitou novo frete recebe status próprio',()=>{
   assert.match(cx,/background:#cffafe/);
 });
 
-test('frete aprovado pelo cliente mostra somente aceitar PDF e rejeitar',()=>{
-  const actions=cx.slice(
-    cx.indexOf('function actionHtml'),
-    cx.indexOf('function freightHtml')
-  );
+test('frete aprovado mostra somente aceitar PDF e rejeitar',()=>{
+  const actions=cx.slice(cx.indexOf('function actionHtml'),cx.indexOf('function freightHtml'));
   assert.match(actions,/if\(s==='AGUARDANDO_ACEITE_ERP'\).*data-cx-accept.*\$\{pdf\}.*data-cx-reject/s);
   assert.match(actions,/const pdf=.*data-cx-pdf/s);
 });
 
 test('aceito rejeitado e cancelado ficam sem ações',()=>{
-  const actions=cx.slice(
-    cx.indexOf('function actionHtml'),
-    cx.indexOf('function freightHtml')
-  );
+  const actions=cx.slice(cx.indexOf('function actionHtml'),cx.indexOf('function freightHtml'));
   assert.match(actions,/\['ACEITO','REJEITADO','CANCELADO'\]\.includes\(s\).*john-cx-no-action/s);
 });
 
 test('enquanto cliente não respondeu ERP pode alterar cotação',()=>{
-  const actions=cx.slice(
-    cx.indexOf('function actionHtml'),
-    cx.indexOf('function freightHtml')
-  );
+  const actions=cx.slice(cx.indexOf('function actionHtml'),cx.indexOf('function freightHtml'));
   assert.match(actions,/Alterar cotação/);
   assert.match(actions,/AGUARDANDO_CLIENTE_FRETE/);
 });
 
-test('PDF continua disponível nos pontos operacionais antes da decisão final',()=>{
-  const actions=cx.slice(
-    cx.indexOf('function actionHtml'),
-    cx.indexOf('function freightHtml')
-  );
+test('PDF continua disponível antes da decisão final',()=>{
+  const actions=cx.slice(cx.indexOf('function actionHtml'),cx.indexOf('function freightHtml'));
   assert.match(actions,/data-cx-pdf/);
   assert.match(cx,/function printOrderPdf/);
 });
@@ -64,7 +49,7 @@ test('filtros completos existem',()=>{
   assert.match(cx,/johnCxAction/);
 });
 
-test('filtro de ações diferencia cotação decisão e sem ação',()=>{
+test('filtro de ações diferencia etapas',()=>{
   assert.match(cx,/function actionType/);
   assert.match(cx,/COTAR/);
   assert.match(cx,/AGUARDANDO_CLIENTE/);
@@ -83,17 +68,29 @@ test('horário de entrega continua fora da coluna ações',()=>{
   assert.match(cx,/data-cx-time/);
 });
 
-test('service worker injeta plataforma e experiência V8.13.3',()=>{
+test('service worker injeta módulos V8.14.0',()=>{
   assert.match(sw,/platform-admin-v8-12-0\.js/);
   assert.match(sw,/ecommerce-customer-experience-v8-13-0\.js/);
-  assert.match(sw,/john-erp-pwa-v8\.13\.3-direct-modules/);
+  assert.match(sw,/john-erp-pwa-v8\.14\.0-consolidated/);
+});
+
+test('V8.14 não usa observer/timers para corrigir a fila antiga',()=>{
+  assert.doesNotMatch(cx,/function guardLegacyOrderActions/);
+  assert.doesNotMatch(cx,/MutationObserver/);
+  assert.match(cx,/johnEcommerceOrdersController/);
+});
+
+test('status é decidido pela API e não por pedido local vinculado',()=>{
+  const block=cx.slice(cx.indexOf('function state(o)'),cx.indexOf('function stateLabel'));
+  assert.doesNotMatch(block,/linked\(o\.id\)/);
+  assert.match(block,/AGUARDANDO_ACEITE_ERP/);
+  assert.match(block,/AGUARDANDO_CLIENTE_FRETE/);
 });
 
 
-test('ações legadas são escondidas e removidas se timers antigos tentarem voltar',()=>{
-  assert.match(cx,/function guardLegacyOrderActions/);
-  assert.match(cx,/john-v88-delete-terminal/);
-  assert.match(cx,/button\[onclick\*="johnV8EditOrder"\]/);
-  assert.match(cx,/button\[onclick\*="johnV83RejectOrder"\]/);
-  assert.match(cx,/MutationObserver/);
+test('rejeição é responsabilidade do controlador consolidado',()=>{
+  assert.match(cx,/async function doReject/);
+  assert.match(cx,/\/reject/);
+  assert.doesNotMatch(cx,/function rejectFn/);
+  assert.doesNotMatch(cx,/johnV83RejectOrder/);
 });

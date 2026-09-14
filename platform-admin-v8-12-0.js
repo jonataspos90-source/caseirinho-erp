@@ -4,8 +4,26 @@
 if(window.__JOHN_PLATFORM_OWNER_8120__)return;
 window.__JOHN_PLATFORM_OWNER_8120__=true;
 
-const VERSION='8.12.0';
+const VERSION='8.14.0';
 const API_DEFAULT='https://john-cloud-api-production.up.railway.app';
+const ERP_PUBLIC_BASE='https://jonataspos90-source.github.io/caseirinho-erp/';
+const STORE_PUBLIC_BASE='https://jonataspos90-source.github.io/caseirinho-loja/';
+
+function tenantUrl(base,slug){
+  const u=new URL(base);
+  u.searchParams.set('empresa',S(slug));
+  return u.toString();
+}
+function erpUrl(slug){return tenantUrl(ERP_PUBLIC_BASE,slug)}
+function storeUrl(slug){return tenantUrl(STORE_PUBLIC_BASE,slug)}
+async function copyText(value,message){
+  try{
+    await navigator.clipboard.writeText(S(value));
+    toast(message||'Link copiado.');
+  }catch(_){
+    prompt('Copie o link:',S(value));
+  }
+}
 const MODULES=[
   ['dashboard','Dashboard'],
   ['pessoas','Pessoas'],
@@ -128,10 +146,10 @@ function style(){
     font-weight:800!important;margin:0!important}.jpo-check input{width:auto!important}
   .jpo-sep{border:0;border-top:1px solid #d4efe9;margin:14px 0}
   .jpo-list{display:grid;gap:10px}
-  .jpo-tenant{display:grid;grid-template-columns:minmax(190px,1.4fr) 105px 95px 80px auto;gap:10px;align-items:center;
+  .jpo-tenant{display:grid;grid-template-columns:minmax(220px,1.5fr) 105px 95px 80px minmax(260px,1.2fr) auto;gap:10px;align-items:center;
     padding:12px;border:1px solid #b8eee3;border-radius:14px;background:#fbfffe}
   .jpo-tenant.current{box-shadow:inset 0 0 0 2px rgba(20,184,166,.18)}
-  .jpo-name{font-weight:950;font-size:15px}.jpo-slug{font-size:10px;color:#6f9d95;margin-top:3px}
+  .jpo-name{font-weight:950;font-size:15px}.jpo-slug{font-size:10px;color:#6f9d95;margin-top:3px}.jpo-links{font-size:10px;color:#0f766e;line-height:1.4;word-break:break-all}.jpo-link-actions{display:flex;gap:5px;margin-top:5px;flex-wrap:wrap}
   .jpo-badge{display:inline-flex;padding:5px 8px;border-radius:999px;font-size:10px;font-weight:950}
   .jpo-badge.ok{background:#dcfce7;color:#15803d}.jpo-badge.off{background:#ffe4e6;color:#be123c}
   .jpo-badge.exp{background:#ffedd5;color:#c2410c}.jpo-meta{font-size:11px;color:#476f68;font-weight:800}
@@ -257,6 +275,7 @@ function statusBadge(t){
 
 function tenantRow(t){
   const current=S(t.slug)===S(window.__JOHN_TENANT__?.slug);
+  const erp=erpUrl(t.slug),store=storeUrl(t.slug);
   return `
     <div class="jpo-tenant ${current?'current':''}" data-tenant-id="${esc(t.id)}">
       <div>
@@ -266,6 +285,14 @@ function tenantRow(t){
       <div>${statusBadge(t)}<div class="jpo-slug">${esc(t.planCode)}</div></div>
       <div class="jpo-meta">${t.userCount}/${t.maxUsers||'—'}<div class="jpo-slug">usuários</div></div>
       <div class="jpo-meta">${t.moduleCount}/${t.moduleTotal}<div class="jpo-slug">módulos</div></div>
+      <div class="jpo-links">
+        <div><b>ERP:</b> ${esc(erp)}</div>
+        <div><b>Loja:</b> ${esc(store)}</div>
+        <div class="jpo-link-actions">
+          <button class="jpo-btn" data-act="copy-erp" data-id="${esc(t.id)}">Copiar ERP</button>
+          <button class="jpo-btn" data-act="copy-store" data-id="${esc(t.id)}">Copiar Loja</button>
+        </div>
+      </div>
       <div class="jpo-row-actions">
         <button class="jpo-btn dark" data-act="enter" data-id="${esc(t.id)}" ${t.userCount<1?'disabled':''}>Entrar</button>
         <button class="jpo-btn" data-act="edit" data-id="${esc(t.id)}">Editar</button>
@@ -431,10 +458,7 @@ async function saveTenant(){
         method:'POST',body:JSON.stringify(body)
       });
       toast('Empresa criada com MASTER inicial.');
-
-      if(x.bootstrap?.token){
-        showTokenModal(x.bootstrap.token,x.bootstrap.expiresAt);
-      }
+      if(x?.tenant)showLinksModal(x.tenant);
     }
 
     clearForm();
@@ -446,26 +470,27 @@ async function saveTenant(){
   }
 }
 
-function showTokenModal(token,expiresAt){
+function showLinksModal(t){
   const box=document.createElement('div');
-  box.id='jpoTokenModal';
+  box.id='jpoLinksModal';
   box.style.cssText='position:absolute;inset:0;z-index:4;background:rgba(15,23,42,.65);display:grid;place-items:center;padding:20px';
+  const erp=erpUrl(t.slug),store=storeUrl(t.slug);
   box.innerHTML=`
-    <div class="jpo-card" style="width:min(560px,96%);background:#fff">
-      <h3>Código temporário</h3>
-      <p style="font-size:12px;color:#64748b">Guarde este código. Ele não será exibido novamente.</p>
-      <div class="jpo-token">${esc(token)}</div>
-      <div style="font-size:10px;color:#64748b;margin-top:7px">Expira: ${esc(expiresAt||'')}</div>
-      <div style="display:flex;gap:8px;margin-top:12px">
-        <button class="jpo-btn primary" id="jpoCopyToken">Copiar</button>
-        <button class="jpo-btn" id="jpoCloseToken">Fechar</button>
+    <div class="jpo-card" style="width:min(720px,96%);background:#fff">
+      <h3>Empresa criada com links exclusivos</h3>
+      <p style="font-size:12px;color:#64748b">Envie somente os links abaixo ao cliente. Não é necessário token de ativação.</p>
+      <div class="jpo-field"><label>ERP</label><input id="jpoErpLink" readonly value="${esc(erp)}"></div>
+      <div class="jpo-field"><label>Loja E-commerce</label><input id="jpoStoreLink" readonly value="${esc(store)}"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+        <button class="jpo-btn primary" id="jpoCopyErp">Copiar ERP</button>
+        <button class="jpo-btn primary" id="jpoCopyStore">Copiar Loja</button>
+        <button class="jpo-btn" id="jpoCloseLinks">Fechar</button>
       </div>
     </div>`;
   document.getElementById('johnPlatformModal')?.appendChild(box);
-  document.getElementById('jpoCloseToken').onclick=()=>box.remove();
-  document.getElementById('jpoCopyToken').onclick=async()=>{
-    try{await navigator.clipboard.writeText(token);toast('Código copiado.')}catch(_){toast('Não foi possível copiar automaticamente.')}
-  };
+  document.getElementById('jpoCloseLinks').onclick=()=>box.remove();
+  document.getElementById('jpoCopyErp').onclick=()=>copyText(erp,'Link do ERP copiado.');
+  document.getElementById('jpoCopyStore').onclick=()=>copyText(store,'Link da Loja copiado.');
 }
 
 async function createInitialMaster(t){
@@ -493,9 +518,7 @@ async function supportEnter(t){
       method:'POST',
       body:'{}'
     });
-    const u=new URL(location.href);
-    u.search='';
-    u.searchParams.set('empresa',t.slug);
+    const u=new URL(erpUrl(t.slug));
     u.hash='john-support='+encodeURIComponent(x.token);
     window.open(u.toString(),'_blank','noopener');
     toast('Modo Suporte aberto em nova aba por 60 minutos.');
@@ -536,7 +559,7 @@ function wire(){
   const slug=document.getElementById('jpoSlug');
   if(name&&slug){
     name.addEventListener('input',()=>{
-      if(!state.editing&&!slug.dataset.touched)slug.value=slugify(name.value);
+      if(!state.editing&&!slug.dataset.touched){const base=slugify(name.value);slug.value=base?('john-'+base).slice(0,63):'';}
     });
     slug.addEventListener('input',()=>slug.dataset.touched='1');
   }
@@ -548,6 +571,8 @@ function wire(){
     if(!t)return;
 
     const act=b.dataset.act;
+    if(act==='copy-erp')return copyText(erpUrl(t.slug),'Link do ERP copiado.');
+    if(act==='copy-store')return copyText(storeUrl(t.slug),'Link da Loja copiado.');
     if(act==='edit')return fillEdit(t);
     if(act==='enter')return supportEnter(t);
     if(act==='master')return createInitialMaster(t);
@@ -624,8 +649,11 @@ let attempts=0;
 const timer=setInterval(async()=>{
   attempts++;
   const ok=await discover();
-  if(ok||attempts>35)clearInterval(timer);
-},700);
+  if(ok||attempts>150)clearInterval(timer);
+},2000);
+
+window.addEventListener('john:session-ready',()=>setTimeout(discover,50));
+window.addEventListener('john:tenant-identity',()=>setTimeout(discover,100));
 
 if(document.readyState!=='loading'){
   discover();
