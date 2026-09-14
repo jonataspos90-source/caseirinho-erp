@@ -3,7 +3,7 @@
 if(window.__JOHN_ECOMMERCE_CX_8130__)return;
 window.__JOHN_ECOMMERCE_CX_8130__=true;
 
-const VERSION='8.13.0';
+const VERSION='8.13.2';
 const INBOX_KEY='john_ecommerce_cloud_inbox_v1';
 const FILTER_KEY='john_ecommerce_cx_filters_v8130';
 const S=v=>String(v??'');
@@ -55,18 +55,35 @@ function state(o){
 }
 function stateLabel(s){return({
   PENDENTE:'Aguardando decisão',COTACAO_PENDENTE:'Frete a cotar',AGUARDANDO_CLIENTE_FRETE:'Aguardando cliente',
-  AGUARDANDO_ACEITE_ERP:'Frete aprovado',FRETE_RECUSADO_CLIENTE:'Cancelado',ACEITO:'Aceito',REJEITADO:'Rejeitado',CANCELADO:'Cancelado'
+  AGUARDANDO_ACEITE_ERP:'Cliente aceitou novo frete',FRETE_RECUSADO_CLIENTE:'Cancelado',ACEITO:'Aceito',REJEITADO:'Rejeitado',CANCELADO:'Cancelado'
 })[s]||s}
-function filters(){return read(FILTER_KEY,{from:'',to:'',status:'TODOS'})}
+function actionType(o,s=state(o)){
+  if(s==='COTACAO_PENDENTE')return'COTAR';
+  if(s==='AGUARDANDO_CLIENTE_FRETE')return'AGUARDANDO_CLIENTE';
+  if(s==='PENDENTE'||s==='AGUARDANDO_ACEITE_ERP')return'DECIDIR';
+  return'SEM_ACAO';
+}
+function filters(){return read(FILTER_KEY,{from:'',to:'',customer:'',modality:'TODOS',status:'TODOS',action:'TODOS'})}
 function saveFilters(){
-  const x={from:S(E('johnCxFrom')?.value),to:S(E('johnCxTo')?.value),status:S(E('johnCxStatus')?.value||'TODOS')};
+  const x={
+    from:S(E('johnCxFrom')?.value),
+    to:S(E('johnCxTo')?.value),
+    customer:S(E('johnCxCustomer')?.value),
+    modality:S(E('johnCxModality')?.value||'TODOS'),
+    status:S(E('johnCxStatus')?.value||'TODOS'),
+    action:S(E('johnCxAction')?.value||'TODOS')
+  };
   write(FILTER_KEY,x);render();
 }
 function matches(o,f){
-  const d=dateOf(o),s=state(o);
+  const d=dateOf(o),s=state(o),name=norm(o.cliente?.nome||''),mode=norm(o.modalidade||''),act=actionType(o,s);
   if(f.from&&d&&d<f.from)return false;
   if(f.to&&d&&d>f.to)return false;
+  if(f.customer&&name&&!name.includes(norm(f.customer)))return false;
+  if(f.customer&&!name)return false;
+  if(f.modality&&f.modality!=='TODOS'&&mode!==norm(f.modality))return false;
   if(f.status&&f.status!=='TODOS'&&s!==f.status)return false;
+  if(f.action&&f.action!=='TODOS'&&act!==f.action)return false;
   return true;
 }
 function ensureToolbar(){
@@ -76,11 +93,33 @@ function ensureToolbar(){
     const panel=page.querySelector('.panel');
     if(!panel)return;
     box=document.createElement('div');box.id='johnCxOrdersFilters';box.className='john-cx-filters';
-    box.innerHTML=`<div><label>Data de</label><input id="johnCxFrom" type="date"></div><div><label>Data até</label><input id="johnCxTo" type="date"></div><div><label>Status</label><select id="johnCxStatus"><option value="TODOS">Todos</option><option value="PENDENTE">Aguardando decisão</option><option value="COTACAO_PENDENTE">Frete a cotar</option><option value="AGUARDANDO_CLIENTE_FRETE">Aguardando cliente</option><option value="AGUARDANDO_ACEITE_ERP">Frete aprovado</option><option value="ACEITO">Aceito</option><option value="REJEITADO">Rejeitado</option><option value="CANCELADO">Cancelado</option></select></div><button class="btn secondary" id="johnCxClearFilters" type="button">Limpar filtros</button>`;
+    box.innerHTML=`
+      <div><label>Data de</label><input id="johnCxFrom" type="date"></div>
+      <div><label>Data até</label><input id="johnCxTo" type="date"></div>
+      <div><label>Cliente</label><input id="johnCxCustomer" type="search" placeholder="Nome do cliente"></div>
+      <div><label>Modalidade</label><select id="johnCxModality"><option value="TODOS">Todas</option><option value="ENTREGA">Entrega</option><option value="RETIRADA">Retirada</option></select></div>
+      <div><label>Status</label><select id="johnCxStatus"><option value="TODOS">Todos</option><option value="PENDENTE">Aguardando decisão</option><option value="COTACAO_PENDENTE">Frete a cotar</option><option value="AGUARDANDO_CLIENTE_FRETE">Aguardando cliente</option><option value="AGUARDANDO_ACEITE_ERP">Cliente aceitou novo frete</option><option value="ACEITO">Aceito</option><option value="REJEITADO">Rejeitado</option><option value="CANCELADO">Cancelado</option></select></div>
+      <div><label>Ações</label><select id="johnCxAction"><option value="TODOS">Todas</option><option value="COTAR">Cotação</option><option value="AGUARDANDO_CLIENTE">Aguardando cliente</option><option value="DECIDIR">Aceitar / Rejeitar</option><option value="SEM_ACAO">Sem ação</option></select></div>
+      <button class="btn secondary" id="johnCxClearFilters" type="button">Limpar filtros</button>`;
     const head=panel.querySelector('.panel-head');head?head.insertAdjacentElement('afterend',box):panel.prepend(box);
-    const f=filters();E('johnCxFrom').value=f.from||'';E('johnCxTo').value=f.to||'';E('johnCxStatus').value=f.status||'TODOS';
-    E('johnCxFrom').onchange=saveFilters;E('johnCxTo').onchange=saveFilters;E('johnCxStatus').onchange=saveFilters;
-    E('johnCxClearFilters').onclick=()=>{E('johnCxFrom').value='';E('johnCxTo').value='';E('johnCxStatus').value='TODOS';saveFilters()};
+    const f=filters();
+    E('johnCxFrom').value=f.from||'';
+    E('johnCxTo').value=f.to||'';
+    E('johnCxCustomer').value=f.customer||'';
+    E('johnCxModality').value=f.modality||'TODOS';
+    E('johnCxStatus').value=f.status||'TODOS';
+    E('johnCxAction').value=f.action||'TODOS';
+    E('johnCxFrom').onchange=saveFilters;
+    E('johnCxTo').onchange=saveFilters;
+    E('johnCxCustomer').oninput=saveFilters;
+    E('johnCxModality').onchange=saveFilters;
+    E('johnCxStatus').onchange=saveFilters;
+    E('johnCxAction').onchange=saveFilters;
+    E('johnCxClearFilters').onclick=()=>{
+      E('johnCxFrom').value='';E('johnCxTo').value='';E('johnCxCustomer').value='';
+      E('johnCxModality').value='TODOS';E('johnCxStatus').value='TODOS';E('johnCxAction').value='TODOS';
+      saveFilters();
+    };
   }
   const thead=page.querySelector('table thead tr');
   if(thead&&thead.dataset.cx813!=='1'){
@@ -149,17 +188,16 @@ function actionHtml(o,s){
   const id=esc(o.id);
   const pdf=`<button class="btn print" type="button" data-cx-pdf="${id}">PDF</button>`;
   if(s==='COTACAO_PENDENTE')return `<button class="btn primary" type="button" data-cx-quote="${id}">Cotação</button>${pdf}`;
-  if(s==='AGUARDANDO_CLIENTE_FRETE')return `<button class="btn secondary" type="button" disabled>Aguardando cliente</button>${pdf}`;
-  if(s==='PENDENTE'||s==='AGUARDANDO_ACEITE_ERP')return `<button class="btn primary" type="button" data-cx-accept="${id}">Aceitar</button><button class="btn danger" type="button" data-cx-reject="${id}">Rejeitar</button>${pdf}`;
-  if(s==='ACEITO')return `<button class="btn primary" type="button" disabled>Aceito</button>${pdf}`;
-  if(s==='REJEITADO')return `<button class="btn danger" type="button" disabled>Rejeitado</button>${pdf}`;
-  if(s==='CANCELADO')return `<button class="btn danger" type="button" disabled>Cancelado</button>${pdf}`;
-  return `<button class="btn secondary" type="button" disabled>${esc(stateLabel(s))}</button>${pdf}`;
+  if(s==='AGUARDANDO_CLIENTE_FRETE')return `<button class="btn secondary" type="button" data-cx-quote="${id}">Alterar cotação</button><button class="btn secondary" type="button" disabled>Aguardando cliente</button>${pdf}`;
+  if(s==='AGUARDANDO_ACEITE_ERP')return `<button class="btn primary" type="button" data-cx-accept="${id}">Aceitar</button>${pdf}<button class="btn danger" type="button" data-cx-reject="${id}">Rejeitar</button>`;
+  if(s==='PENDENTE')return `<button class="btn primary" type="button" data-cx-accept="${id}">Aceitar</button>${pdf}<button class="btn danger" type="button" data-cx-reject="${id}">Rejeitar</button>`;
+  if(['ACEITO','REJEITADO','CANCELADO'].includes(s))return '<span class="john-cx-no-action">—</span>';
+  return '<span class="john-cx-no-action">—</span>';
 }
 function freightHtml(o,s){
   if(s==='COTACAO_PENDENTE')return '<span class="john-cx-warn">Pendente cotação</span>';
   if(s==='AGUARDANDO_CLIENTE_FRETE')return `${money(o.valorFrete)}<br><small>Aguardando cliente</small>`;
-  if(s==='AGUARDANDO_ACEITE_ERP')return `${money(o.valorFrete)}<br><small class="john-cx-ok">Cliente aceitou</small>`;
+  if(s==='AGUARDANDO_ACEITE_ERP')return `${money(o.valorFrete)}<br><small class="john-cx-ok">Cliente aceitou novo frete</small>`;
   if(s==='FRETE_RECUSADO_CLIENTE'||s==='CANCELADO')return `${money(o.valorFrete)}<br><small class="john-cx-warn">Pedido cancelado</small>`;
   return delivery(o)?money(o.valorFrete):'-';
 }
@@ -200,8 +238,21 @@ async function saveDeliveryTime(id,h,input){
   }catch(e){window.toast?.('Não foi possível salvar o horário: '+e.message)}finally{input.disabled=false}
 }
 const baseRefresh=window.johnV8RefreshOrders||window.johnV880RefreshOrders||window.johnV84RefreshOrders;
+async function pullServerOrders(){
+  try{
+    const r=await admin('/api/v1/admin/store/orders?status=TODOS&limit=1000');
+    if(Array.isArray(r?.orders)){
+      write(INBOX_KEY,r.orders.slice(-1000));
+      return r.orders;
+    }
+  }catch(e){
+    console.warn('[John CX] lista autoritativa:',e);
+  }
+  return inbox();
+}
 async function refreshAndRender(force=false){
-  try{if(typeof baseRefresh==='function')await baseRefresh(force)}catch(e){console.warn('[John CX] refresh:',e)}
+  try{if(typeof baseRefresh==='function')await baseRefresh(force)}catch(e){console.warn('[John CX] refresh legado:',e)}
+  await pullServerOrders();
   render();return inbox();
 }
 function install(){
@@ -215,10 +266,10 @@ function install(){
   ensureToolbar();render();
 }
 function addCss(){if(E('johnCx813Css'))return;const st=document.createElement('style');st.id='johnCx813Css';st.textContent=`
-#ecommercePedidosRecebidos .john-cx-filters{display:grid;grid-template-columns:160px 160px minmax(190px,1fr) auto;gap:9px;align-items:end;padding:12px 16px;border-bottom:1px solid var(--border);background:linear-gradient(135deg,#fafafa,#f5f3ff)}
+#ecommercePedidosRecebidos .john-cx-filters{display:grid;grid-template-columns:140px 140px minmax(180px,1fr) 130px minmax(170px,1fr) minmax(160px,1fr) auto;gap:9px;align-items:end;padding:12px 16px;border-bottom:1px solid var(--border);background:linear-gradient(135deg,#fafafa,#f5f3ff)}
 #ecommercePedidosRecebidos .john-cx-filters label{font-size:10px;font-weight:900;margin-bottom:4px}#ecommercePedidosRecebidos .john-cx-filters input,#ecommercePedidosRecebidos .john-cx-filters select{height:38px;padding:7px 9px}
 #ecommercePedidosRecebidos table{min-width:1120px!important;table-layout:auto!important}#ecommercePedidosRecebidos th,#ecommercePedidosRecebidos td{font-size:10px!important;padding:7px!important;vertical-align:middle!important}#ecommercePedidosRecebidos .john-ecom-v8-actions{display:flex!important;gap:6px!important;flex-wrap:wrap!important;min-width:160px}
-#ecommercePedidosRecebidos .john-cx-status{display:inline-flex;padding:5px 7px;border-radius:99px;font-weight:900;background:#e2e8f0;color:#334155}#ecommercePedidosRecebidos .john-cx-status.ACEITO{background:#dcfce7;color:#166534}#ecommercePedidosRecebidos .john-cx-status.REJEITADO,#ecommercePedidosRecebidos .john-cx-status.CANCELADO{background:#fee2e2;color:#991b1b}#ecommercePedidosRecebidos .john-cx-status.AGUARDANDO_CLIENTE_FRETE{background:#ffedd5;color:#9a3412}#ecommercePedidosRecebidos .john-cx-status.AGUARDANDO_ACEITE_ERP{background:#dbeafe;color:#1d4ed8}#ecommercePedidosRecebidos .john-cx-status.FRETE_RECUSADO_CLIENTE{background:#fef3c7;color:#92400e}.john-cx-warn{color:#b45309;font-weight:900}.john-cx-ok{color:#15803d;font-weight:900}.john-cx-muted{color:#64748b}.john-cx-time{display:grid;gap:3px;min-width:105px}.john-cx-time input{height:34px;padding:5px 7px}.john-cx-time small{color:#64748b}
+#ecommercePedidosRecebidos .john-cx-status{display:inline-flex;padding:5px 7px;border-radius:99px;font-weight:900;background:#e2e8f0;color:#334155}#ecommercePedidosRecebidos .john-cx-status.ACEITO{background:#dcfce7;color:#166534}#ecommercePedidosRecebidos .john-cx-status.REJEITADO,#ecommercePedidosRecebidos .john-cx-status.CANCELADO{background:#fee2e2;color:#991b1b}#ecommercePedidosRecebidos .john-cx-status.AGUARDANDO_CLIENTE_FRETE{background:#ffedd5;color:#9a3412}#ecommercePedidosRecebidos .john-cx-status.AGUARDANDO_ACEITE_ERP{background:#cffafe;color:#0e7490;box-shadow:inset 0 0 0 1px #67e8f9}#ecommercePedidosRecebidos .john-cx-status.FRETE_RECUSADO_CLIENTE{background:#fef3c7;color:#92400e}.john-cx-no-action{color:#94a3b8;font-weight:900}.john-cx-warn{color:#b45309;font-weight:900}.john-cx-ok{color:#15803d;font-weight:900}.john-cx-muted{color:#64748b}.john-cx-time{display:grid;gap:3px;min-width:105px}.john-cx-time input{height:34px;padding:5px 7px}.john-cx-time small{color:#64748b}
 @media(max-width:800px){#ecommercePedidosRecebidos .john-cx-filters{grid-template-columns:1fr 1fr}#ecommercePedidosRecebidos .john-cx-filters>*{min-width:0}}
 `;document.head.appendChild(st)}
 addCss();

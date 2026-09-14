@@ -41,9 +41,9 @@ test('módulos da policy são aplicados à navegação',()=>{
 });
 
 test('service worker V8.13 preserva multiempresa e painel da V8.12',()=>{
-  assert.match(sw,/multiempresa-v8-12-0\.js\?v=8130/);
-  assert.match(sw,/platform-admin-v8-12-0\.js\?v=8130/);
-  assert.match(sw,/john-erp-pwa-v8\.13\.0-customer-experience/);
+  assert.match(sw,/multiempresa-v8-12-0\.js\?v=8132/);
+  assert.match(sw,/platform-admin-v8-12-0\.js\?v=8132/);
+  assert.match(sw,/john-erp-pwa-v8\.13\.2-customer-experience/);
 });
 
 test('estabilidade existente permanece e possui fallback dos novos módulos',()=>{

@@ -1,4 +1,4 @@
-John Sistema ERP V8.13.0 — Experiência do Cliente / Pedidos E-commerce
+John Sistema ERP V8.13.2 — Experiência do Cliente / Pedidos E-commerce
 Build: 2026-09-13
 API esperada: 1.16.3+
 Schema: 12
@@ -28,3 +28,16 @@ SEGURANÇA / PRODUÇÃO
 - não muda telas Financeiro, Estoque, PCP, Pricing, Produtos ou Pedidos normais;
 - mudanças da fila estão isoladas em ecommercePedidosRecebidos;
 - exclusão lógica permanece disponível na API para compatibilidade/auditoria, mas não é exposta nesta tela.
+
+- Token do ERP: o token deste navegador permanece salvo por empresa e só volta a ser solicitado se estiver realmente revogado/expirado.
+- Erros 403 de autorização de uma funcionalidade não apagam mais o token do navegador.
+- Se o marcador local de ativação sumir, mas a credencial ainda estiver salva, o ERP reconstrói o marcador sem pedir o token novamente.
+- E-commerce: enquanto o cliente ainda não respondeu, o ERP pode usar "Alterar cotação"; o novo valor gera uma nova revisão para o app.
+
+- Status após aceite do frete pelo cliente: "Cliente aceitou novo frete", com cor própria.
+- Nesse status, Ações mostra somente: Aceitar, PDF e Rejeitar.
+- Após Aceito, Rejeitado ou Cancelado, não há botões de ação nesta fila.
+- A fila não exibe Excluir nem Cancelar pedido.
+- Novos filtros: nome do cliente, modalidade, status e tipo de ação, além de data de/até.
+- A atualização da fila consulta a lista autoritativa no servidor para recuperar pedidos que não chegaram ao cache local do ERP.
+- Mantido o ajuste V8.13.1 de persistência do token do navegador.

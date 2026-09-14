@@ -4,7 +4,7 @@
 if(window.__JOHN_MULTIEMPRESA_8120__)return;
 window.__JOHN_MULTIEMPRESA_8120__=true;
 
-const VERSION='8.12.0';
+const VERSION='8.13.1';
 const API_DEFAULT='https://john-cloud-api-production.up.railway.app';
 const GLOBAL_TENANT_KEY='john_active_tenant_v1';
 const GLOBAL_KEYS=new Set([
@@ -241,15 +241,32 @@ if(
   }
 
   /*
-    3) Para qualquer outra empresa, não permitir reaproveitamento de
-    credencial local antiga. O login /erp-login emitirá uma sessão própria.
+    3) Token de DISPOSITIVO informado/gerado para este tenant permanece
+    neste navegador até ser revogado explicitamente no servidor.
+
+    Sessões assinadas do login continuam temporárias. A diferença evita que
+    o ERP volte a pedir o token em todo acesso sem permitir que uma sessão
+    expirada vire credencial permanente.
   */
-  if(c.apiKey){
-    c.apiKey='';
+  const persistedToken=S(c.apiKey).trim();
+  const persistedPayload=tokenPayload(persistedToken);
+  const looksSignedSession=!!(persistedPayload?.tenantId);
+
+  if(persistedToken&&!looksSignedSession){
+    c.apiKey=persistedToken;
+    c.storeSlug=tenantSlug||c.storeSlug||'';
+    c.apiUrl=S(c.apiUrl||API_DEFAULT).replace(/\/+$/,'');
+    c.authMode='DEVICE_TOKEN';
+    c.deviceTokenPersistent=true;
+    localStorage.setItem('john_cloud_config_v1',JSON.stringify(c));
+    return;
   }
+
+  if(c.apiKey)c.apiKey='';
   c.storeSlug=tenantSlug||c.storeSlug||'';
   c.authMode='TENANT_LOGIN_REQUIRED';
   delete c.legacyTransition;
+  delete c.deviceTokenPersistent;
   localStorage.setItem('john_cloud_config_v1',JSON.stringify(c));
 })();
 
