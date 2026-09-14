@@ -3,7 +3,7 @@
 if(window.__JOHN_ECOMMERCE_CX_8130__)return;
 window.__JOHN_ECOMMERCE_CX_8130__=true;
 
-const VERSION='8.13.2';
+const VERSION='8.13.3';
 const INBOX_KEY='john_ecommerce_cloud_inbox_v1';
 const FILTER_KEY='john_ecommerce_cx_filters_v8130';
 const S=v=>String(v??'');
@@ -274,6 +274,57 @@ function addCss(){if(E('johnCx813Css'))return;const st=document.createElement('s
 `;document.head.appendChild(st)}
 addCss();
 setTimeout(install,350);setTimeout(install,1600);setTimeout(()=>refreshAndRender(false),2600);
-document.addEventListener('click',e=>{const b=e.target.closest?.('[data-page="ecommercePedidosRecebidos"]');if(b)setTimeout(()=>{ensureToolbar();render()},120)});
+document.addEventListener('click',e=>{
+  const b=e.target.closest?.('[data-page="ecommercePedidosRecebidos"]');
+  if(b)setTimeout(()=>{ensureToolbar();refreshAndRender(false)},120);
+});
+
+let legacyGuardBusy=false;
+function hasLegacyOrderActions(){
+  const root=E('ecommercePedidosRecebidos');
+  if(!root)return false;
+  return !!root.querySelector(
+    '.john-v88-delete-terminal,'+
+    'button[onclick*="johnV8EditOrder"],'+
+    'button[onclick*="johnV880DeleteCloudOrder"],'+
+    'button[onclick*="johnV83RejectOrder"],'+
+    'button[onclick*="johnV8AcceptOrder"]'
+  );
+}
+function guardLegacyOrderActions(){
+  if(legacyGuardBusy)return;
+  const page=E('ecommercePedidosRecebidos');
+  const tb=E('v8OrdersBody');
+  if(!page||!tb)return;
+
+  const hasLegacy=hasLegacyOrderActions();
+  const hasUnmanaged=[...tb.querySelectorAll('tr')].some(
+    tr=>tr.querySelector('td')&&!tr.dataset.cxState
+  );
+
+  if(!hasLegacy&&!hasUnmanaged)return;
+
+  legacyGuardBusy=true;
+  try{
+    page.querySelectorAll(
+      '.john-v88-delete-terminal,'+
+      'button[onclick*="johnV8EditOrder"],'+
+      'button[onclick*="johnV880DeleteCloudOrder"],'+
+      'button[onclick*="johnV83RejectOrder"],'+
+      'button[onclick*="johnV8AcceptOrder"]'
+    ).forEach(x=>x.remove());
+    render();
+  }finally{
+    setTimeout(()=>{legacyGuardBusy=false},80);
+  }
+}
+const legacyOrdersObserver=new MutationObserver(()=>guardLegacyOrderActions());
+setTimeout(()=>{
+  const tb=E('v8OrdersBody');
+  if(tb)legacyOrdersObserver.observe(tb,{childList:true,subtree:true});
+  guardLegacyOrderActions();
+},450);
+[1200,3000,7000,12000,20000].forEach(ms=>setTimeout(guardLegacyOrderActions,ms));
+
 console.info('[John ERP] Experiência do Cliente V'+VERSION+' ativa.');
 })();

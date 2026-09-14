@@ -1,4 +1,4 @@
-John Sistema ERP V8.13.2 — Experiência do Cliente / Pedidos E-commerce
+John Sistema ERP V8.13.3 — Experiência do Cliente / Pedidos E-commerce
 Build: 2026-09-13
 API esperada: 1.16.3+
 Schema: 12
@@ -41,3 +41,9 @@ SEGURANÇA / PRODUÇÃO
 - Novos filtros: nome do cliente, modalidade, status e tipo de ação, além de data de/até.
 - A atualização da fila consulta a lista autoritativa no servidor para recuperar pedidos que não chegaram ao cache local do ERP.
 - Mantido o ajuste V8.13.1 de persistência do token do navegador.
+
+- Correção estrutural: módulos Multiempresa, Administração da Plataforma e Experiência do E-commerce passam a ser carregados diretamente pelo index.html.
+- O funcionamento não depende mais da primeira interceptação do Service Worker para essas funções.
+- A fila bloqueia/remove novamente ações legadas inseridas por timers antigos do ERP.
+- 'Excluir da operação', Editar e Cancelar pedido não reaparecem mesmo quando rotinas antigas renderizam a tabela.
+- Ao entrar em Pedidos E-commerce, a tela busca primeiro a lista autoritativa da API.

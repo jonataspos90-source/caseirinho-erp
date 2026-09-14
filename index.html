@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+  <!-- John ERP V8.13.3: isolamento multiempresa carregado antes do ERP legado -->
+  <script src="./multiempresa-v8-12-0.js?v=8133"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>John Sistema ERP · Caseirinho · V8.8.0</title>
@@ -12510,6 +12512,11 @@ window.addEventListener('john:cloud-applied',ev=>{if((ev.detail?.types||[]).incl
 setTimeout(enforce,600);
 })();
 </script>
+
+  <!-- John ERP V8.13.3: módulos críticos carregados diretamente; SW fica apenas como PWA/cache -->
+  <script src="./production-stability-v8-10-5.js?v=8133"></script>
+  <script src="./platform-admin-v8-12-0.js?v=8133"></script>
+  <script src="./ecommerce-customer-experience-v8-13-0.js?v=8133"></script>
 </body>
 <!-- JOHN ERP V8.6.2 HOTFIX: preserve ecommerce price on product metadata edits -->
 </html>

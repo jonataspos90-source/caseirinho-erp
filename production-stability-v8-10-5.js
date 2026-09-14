@@ -218,7 +218,7 @@ function ensureMultiempresa(){
   }
 
   const s=document.createElement('script');
-  s.src='./multiempresa-v8-12-0.js?v=8132';
+  s.src='./multiempresa-v8-12-0.js?v=8133';
   s.async=false;
   s.dataset.johnMultiempresa='1';
   s.onerror=()=>console.warn(
@@ -237,7 +237,7 @@ function ensurePlatformOwner(){
   )return;
 
   const s=document.createElement('script');
-  s.src='./platform-admin-v8-12-0.js?v=8132';
+  s.src='./platform-admin-v8-12-0.js?v=8133';
   s.async=false;
   s.dataset.johnPlatformOwner='1';
   s.onerror=()=>console.warn(
@@ -255,7 +255,7 @@ function ensureCustomerExperience(){
   )return;
 
   const s=document.createElement('script');
-  s.src='./ecommerce-customer-experience-v8-13-0.js?v=8132';
+  s.src='./ecommerce-customer-experience-v8-13-0.js?v=8133';
   s.async=false;
   s.dataset.johnCustomerExperience='1';
   s.onerror=()=>console.warn(
@@ -267,6 +267,6 @@ function ensureCustomerExperience(){
 ensureCustomerExperience();
 
 console.info(
-  '[John ERP] estabilidade preservada · Multiempresa/Plataforma V8.12.0 · Experiência V8.13.2'
+  '[John ERP] estabilidade preservada · Multiempresa/Plataforma V8.12.0 · Experiência V8.13.3'
 );
 })();

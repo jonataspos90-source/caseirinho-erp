@@ -83,8 +83,17 @@ test('horário de entrega continua fora da coluna ações',()=>{
   assert.match(cx,/data-cx-time/);
 });
 
-test('service worker injeta plataforma e experiência V8.13.2',()=>{
+test('service worker injeta plataforma e experiência V8.13.3',()=>{
   assert.match(sw,/platform-admin-v8-12-0\.js/);
   assert.match(sw,/ecommerce-customer-experience-v8-13-0\.js/);
-  assert.match(sw,/john-erp-pwa-v8\.13\.2-customer-experience/);
+  assert.match(sw,/john-erp-pwa-v8\.13\.3-direct-modules/);
+});
+
+
+test('ações legadas são escondidas e removidas se timers antigos tentarem voltar',()=>{
+  assert.match(cx,/function guardLegacyOrderActions/);
+  assert.match(cx,/john-v88-delete-terminal/);
+  assert.match(cx,/button\[onclick\*="johnV8EditOrder"\]/);
+  assert.match(cx,/button\[onclick\*="johnV83RejectOrder"\]/);
+  assert.match(cx,/MutationObserver/);
 });
