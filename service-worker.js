@@ -1,4 +1,4 @@
-const CACHE='john-erp-pwa-v8.14.0-consolidated';
+const CACHE='john-erp-pwa-v8.16.0-management-pricing';
 
 const MULTI='./multiempresa-v8-12-0.js';
 const STABILITY='./production-stability-v8-10-5.js';
@@ -10,7 +10,8 @@ const STABILITY_TAG='<script src="./production-stability-v8-10-5.js?v=8140"></'+
 const PLATFORM_TAG='<script src="./platform-admin-v8-12-0.js?v=8140"></'+'script>';
 const EXPERIENCE_TAG='<script src="./ecommerce-customer-experience-v8-13-0.js?v=8140"></'+'script>';
 
-const SHELL=['./','./index.html','./manifest.webmanifest','./offline.html','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable-512.png','./icons/apple-touch-icon.png',MULTI,STABILITY,PLATFORM,EXPERIENCE];
+const SHELL=['./','./index.html',
+  './commerce-engine-v8-15-0.js','./management-engine-v8-16-0.js','./manifest.webmanifest','./offline.html','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable-512.png','./icons/apple-touch-icon.png',MULTI,STABILITY,PLATFORM,EXPERIENCE];
 
 async function cacheShell(){const c=await caches.open(CACHE);for(const url of SHELL){try{const r=await fetch(url,{cache:'reload'});if(r.ok)await c.put(url,r.clone())}catch(_){}}}
 function injectBefore(html,needle,tag){if(html.includes(needle))return html;const low=html.toLowerCase(),p=low.lastIndexOf('</body>');return p>=0?html.slice(0,p)+tag+html.slice(p):html+tag}
