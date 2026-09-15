@@ -2226,6 +2226,10 @@ function imprimirSimulacaoRendimento(){
 
 
 
+
+<!-- V8.16.1 · restauração definitiva de Categorias/Produtos E-commerce -->
+<script src="ecommerce-recovery-v8-16-1.js"></script>
+
 </body><!-- JOHN ERP V8.6.2 HOTFIX: preserve ecommerce price on product metadata edits -->
 </html>`);w.document.close();w.focus();w.print();
 }
@@ -12413,7 +12417,7 @@ setInterval(refresh,1200);setTimeout(refresh,200);
 
 <script id="john-v8103-general-control">
 (function(){'use strict';
-window.JOHN_ERP_VERSION='8.10.4';
+window.JOHN_ERP_VERSION='8.16.1';
 function enforce(){try{const dbx=window.db||db,ctl=dbx?.ecommerceGeralControl,cats=dbx?.config?.ecommerce?.categorias;if(!ctl||typeof ctl.ativo!=='boolean'||!Array.isArray(cats))return;const g=cats.find(x=>String(x?.id||'').toUpperCase()==='GERAL');if(g&&g.ativo!==ctl.ativo){g.ativo=ctl.ativo;try{(typeof save==='function'?save:()=>{})()}catch(_){}}}catch(_){}}
 window.addEventListener('john:cloud-applied',ev=>{if((ev.detail?.types||[]).includes('config')||(ev.detail?.types||[]).includes('ecommerceGeralControl'))setTimeout(enforce,20)});
 setTimeout(enforce,600);
