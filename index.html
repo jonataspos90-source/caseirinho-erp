@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <!-- John ERP V8.15.0: isolamento multiempresa carregado antes do ERP legado -->
-  <script src="./multiempresa-v8-12-0.js?v=8180"></script>
+  <!-- John ERP V8.14.0: isolamento multiempresa carregado antes do ERP legado -->
+  <script src="./multiempresa-v8-12-0.js?v=8140"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>John Sistema ERP · V8.14.0</title>
+<title>John Sistema ERP · V8.19.0 Clean Rebuild</title>
 <style>
 :root{
   --primary:#5b21b6;--primary2:#7c3aed;--soft:#f5f3ff;--ink:#1f2937;--muted:#6b7280;
@@ -799,7 +799,6 @@ hr{border-top:1px dashed #cbd5e1}
 .nav.john-modular-nav > .john-module-group button[data-page],
 .nav.john-modular-nav > .john-module-group .john-special-nav{visibility:visible!important;pointer-events:auto!important}
 </style>
-  <link rel="stylesheet" href="./john-next-v8-17.css?v=8180">
 </head>
 <body>
 
@@ -1596,7 +1595,7 @@ hr{border-top:1px dashed #cbd5e1}
 <script>
 const DB_KEY='pcp_app_v1';
 /* Inicialização central segura: mantém bases antigas e cria toda coleção ausente antes de qualquer leitura. */
-var db;
+let db;
 try{
   const armazenado=JSON.parse(__johnLocalStorage.getItem(DB_KEY)||'null');
   db=armazenado&&typeof armazenado==='object'&&!Array.isArray(armazenado)?armazenado:{};
@@ -1604,7 +1603,6 @@ try{
   console.error('Falha ao ler a base local:',erro);
   db={};
 }
-window.db=db;
 const COLECOES_DB=['produtos','entradas','fichas','transformacoes','vendas','producoes','pedidos','inventarios','promocoes','separacoes','lojas','fretes','contasConsumo','baixasInternas','pessoas','usuarios','logs','programacoesProducao','fluxoCaixa'];
 COLECOES_DB.forEach(chave=>{if(!Array.isArray(db[chave]))db[chave]=[]});
 if(!db.config||typeof db.config!=='object'||Array.isArray(db.config))db.config={};
@@ -1680,7 +1678,7 @@ const MODULO_NOMES={dashboard:'Dashboard',produtos:'Produtos',manutencaoMargem:'
 const hashSenha=s=>{let h=2166136261;for(const c of String(s)){h^=c.charCodeAt(0);h=Math.imul(h,16777619)}return (h>>>0).toString(36)};
 function permissoesPerfil(perfil){const base=Object.fromEntries(MODULOS.map(m=>[m,{ver:false,criar:false,editar:false,excluir:false}]));const all=()=>Object.values(base).forEach(p=>Object.assign(p,{ver:true,criar:true,editar:true,excluir:true}));if(perfil==='MASTER'||perfil==='ADMINISTRADOR')all();if(perfil==='PRODUÇÃO'){['dashboard','fichas','transformacoes','producao','gestaoProducao','separacao','pedidos'].forEach(m=>Object.assign(base[m],{ver:true,criar:true,editar:true,excluir:false}));base.estoque.ver=true;base.inventario.ver=true;base.kardex.ver=true}if(perfil==='ESTOQUE'){['dashboard','produtos','entradas','estoque','inventario','kardex','vendas','transformacoes'].forEach(m=>Object.assign(base[m],{ver:true,criar:true,editar:true,excluir:false}))}if(perfil==='COMERCIAL'){['dashboard','estoque','kardex','vendas','pedidos','pricing','promocoes'].forEach(m=>Object.assign(base[m],{ver:true,criar:true,editar:true,excluir:false}))}if(perfil==='CONSULTA')MODULOS.forEach(m=>base[m].ver=m!=='config');return base}
 if(!db.usuarios.length)db.usuarios.push({id:'master',pessoaId:'master-person',nome:'Usuário Master',login:'master',senhaHash:hashSenha(location.protocol==='file:'?'master123':('locked-'+((globalThis.crypto&&typeof crypto.randomUUID==='function')?crypto.randomUUID():(Date.now()+Math.random()).toString(36)))),perfil:'MASTER',status:'ATIVO',validade:'',permissoes:permissoesPerfil('MASTER')});if(!db.pessoas.some(p=>p.id==='master-person'))db.pessoas.unshift({id:'master-person',nome:'Usuário Master',cpf:'',cep:'',logradouro:'',numero:'',complemento:'',bairro:'',cidade:'',uf:'',email:'',criadoEm:new Date().toISOString(),atualizadoEm:new Date().toISOString()});db.usuarios.forEach(u=>{if(!u.pessoaId){let p=db.pessoas.find(x=>x.nome===u.nome);if(!p){p={id:uid(),nome:u.nome,cpf:'',cep:'',logradouro:'',numero:'',complemento:'',bairro:'',cidade:'',uf:'',email:'',criadoEm:new Date().toISOString(),atualizadoEm:new Date().toISOString()};db.pessoas.push(p)}u.pessoaId=p.id}});
-var sessao=null,sessionTimer=null; window.sessao=sessao;
+let sessao=null,sessionTimer=null;
 function usuarioAtual(){return sessao?db.usuarios.find(u=>u.id===sessao.usuarioId):null}
 function registrarLog(modulo,acao,detalhes=''){const u=usuarioAtual();db.logs.unshift({id:uid(),data:new Date().toISOString(),usuario:u?.nome||'Sistema',modulo:MODULO_NOMES[modulo]||modulo,acao,detalhes});db.logs=db.logs.slice(0,1000);__johnLocalStorage.setItem(DB_KEY,JSON.stringify(db))}
 function permissao(modulo,acao='ver'){const u=usuarioAtual();if(!u)return false;if(u.perfil==='MASTER')return true;return Boolean(u.permissoes?.[modulo]?.[acao])}
@@ -1701,15 +1699,15 @@ function inicializarAplicacaoAposLogin(){
   try{montarSeletorDashboard?.()}catch(e){}
   try{aplicarAcessos()}catch(e){}
 }
-function login(){if(!db||typeof db!=='object'){try{db=JSON.parse(__johnLocalStorage.getItem(DB_KEY)||'{}')||{}}catch(_){db={}}}db.usuarios=Array.isArray(db.usuarios)?db.usuarios:[];window.db=db;const login=$('loginUsuario').value.trim().toLowerCase(),senha=$('loginSenha').value,u=db.usuarios.find(x=>x.login.toLowerCase()===login);if(!u||u.senhaHash!==hashSenha(senha)){ $('loginErro').textContent='Login ou senha inválidos.';return }if(u.status!=='ATIVO'){ $('loginErro').textContent='Usuário inativo.';return }if(u.validade&&u.validade<new Date().toISOString().slice(0,10)){ $('loginErro').textContent='Acesso expirado.';return }sessao={usuarioId:u.id,inicio:new Date().toISOString()};window.sessao=sessao;__johnSessionStorage.setItem('pcp_sessao',JSON.stringify(sessao));$('loginScreen').classList.add('hidden');aplicarAcessos();resetSessionTimer();registrarLog('seguranca','LOGIN','Acesso realizado');/* Observadores globais mantidos suspensos para evitar travamento */setTimeout(inicializarAplicacaoAposLogin,0)}
-function logout(){if(sessao)registrarLog('seguranca','LOGOUT','Sessão encerrada');sessao=null;window.sessao=null;__johnSessionStorage.removeItem('pcp_sessao');clearTimeout(sessionTimer);$('loginSenha').value='';$('loginScreen').classList.remove('hidden')}
+function login(){const login=$('loginUsuario').value.trim().toLowerCase(),senha=$('loginSenha').value,u=db.usuarios.find(x=>x.login.toLowerCase()===login);if(!u||u.senhaHash!==hashSenha(senha)){ $('loginErro').textContent='Login ou senha inválidos.';return }if(u.status!=='ATIVO'){ $('loginErro').textContent='Usuário inativo.';return }if(u.validade&&u.validade<new Date().toISOString().slice(0,10)){ $('loginErro').textContent='Acesso expirado.';return }sessao={usuarioId:u.id,inicio:new Date().toISOString()};__johnSessionStorage.setItem('pcp_sessao',JSON.stringify(sessao));$('loginScreen').classList.add('hidden');aplicarAcessos();resetSessionTimer();registrarLog('seguranca','LOGIN','Acesso realizado');/* Observadores globais mantidos suspensos para evitar travamento */setTimeout(inicializarAplicacaoAposLogin,0)}
+function logout(){if(sessao)registrarLog('seguranca','LOGOUT','Sessão encerrada');sessao=null;__johnSessionStorage.removeItem('pcp_sessao');clearTimeout(sessionTimer);$('loginSenha').value='';$('loginScreen').classList.remove('hidden')}
 
 $('loginEntrar').onclick=function(e){if(e){e.preventDefault();e.stopPropagation();}login()};
 $('loginSenha').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();login()}});
 $('loginUsuario').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();login()}});
 $('loginMostrarSenha').onclick=function(e){if(e){e.preventDefault();e.stopPropagation();}const campo=$('loginSenha'),mostrar=campo.type==='password';campo.type=mostrar?'text':'password';this.textContent=mostrar?'🙈 Ocultar senha':'👁 Mostrar senha';campo.focus()};
 
-const antiga=__johnSessionStorage.getItem('pcp_sessao');if(antiga){try{sessao=JSON.parse(antiga);if(!usuarioAtual())sessao=null}catch{sessao=null}}window.sessao=sessao;
+const antiga=__johnSessionStorage.getItem('pcp_sessao');if(antiga){try{sessao=JSON.parse(antiga);if(!usuarioAtual())sessao=null}catch{sessao=null}}
 function moduloDoElemento(el){return el.closest('.page')?.id||'sistema'}
 function acaoDoElemento(el){const txt=(el.textContent||'').toLowerCase();if(txt.includes('excluir')||txt.includes('apagar'))return'excluir';if(txt.includes('editar')||txt.includes('alterar'))return'editar';return'criar'}
 document.addEventListener('click',e=>{const el=e.target.closest('button,label.btn');if(!el||el.id==='loginEntrar'||el.classList.contains('logout-btn'))return;const mod=moduloDoElemento(el);if(mod==='sistema')return;const ac=acaoDoElemento(el);if(!permissao(mod,ac)){e.preventDefault();e.stopImmediatePropagation();toast('Você não possui permissão para esta ação.');registrarLog(mod,'ACESSO NEGADO',`${ac}: ${(el.textContent||'ação').trim()}`)}},true);
@@ -2224,7 +2222,12 @@ function imprimirSimulacaoRendimento(){
   const s=ultimaSimulacaoRendimento,p=produto(s.produtoId),linhas=s.itens.map(i=>{const pi=produto(i.produtoId);return `<tr><td>${pi?.codigo||'-'} · ${pi?.nome||'-'}</td><td>${pi?.unidade||'-'}</td><td>${num(i.qtdOriginal)}</td><td>${num(i.qtdNova)}</td><td>${money(i.custoTotal)}</td></tr>`}).join('');
   const w=window.open('','_blank');w.document.write(`<html><head><title>Receita recalculada</title><style>body{font-family:Arial;padding:28px;color:#172033}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{border:1px solid #ccd3df;padding:9px;text-align:left}th{background:#eef2ff}h1{margin-bottom:4px}.meta{color:#596579}</style></head><body><h1>Receita recalculada — ${p?.nome||'-'}</h1><div class="meta">Rendimento original: ${num(s.original)} ${s.unidade} | Rendimento desejado: ${num(s.desejado)} ${s.unidade} | Fator: ${s.fator.toLocaleString('pt-BR',{maximumFractionDigits:6})}</div><table><thead><tr><th>Componente</th><th>Unidade</th><th>Qtd. original</th><th>Qtd. recalculada</th><th>Custo</th></tr></thead><tbody>${linhas}</tbody><tfoot><tr><th colspan="4">Custo total estimado</th><th>${money(s.total)}</th></tr></tfoot></table><p><b>Custo por unidade:</b> ${money(s.unit)}</p>
 
-</body></html>`);w.document.close();w.focus();w.print();
+
+
+
+
+</body><!-- JOHN ERP V8.6.2 HOTFIX: preserve ecommerce price on product metadata edits -->
+</html>`);w.document.close();w.focus();w.print();
 }
 if($('simFicha'))$('simFicha').addEventListener('change',atualizarDadosSimuladorRendimento);
 if($('simRendimentoDesejado'))$('simRendimentoDesejado').addEventListener('input',()=>calcularRendimentoDesejado(false));
@@ -2654,7 +2657,7 @@ function limparTudo(){
     db=criarBaseVaziaSegura();
     __johnLocalStorage.setItem(DB_KEY,JSON.stringify(db));
     __johnSessionStorage.setItem('pcp_sessao',JSON.stringify({usuarioId:'master',inicio:new Date().toISOString()}));
-    sessao={usuarioId:'master',inicio:new Date().toISOString()};window.sessao=sessao;
+    sessao={usuarioId:'master',inicio:new Date().toISOString()};
     try{renderAll()}catch(erro){console.error('A base foi limpa, mas uma tela não pôde ser redesenhada:',erro)}
     try{novaLoja()}catch(erro){}
     try{novaContaConsumo()}catch(erro){}
@@ -11303,7 +11306,7 @@ function setErr(m){const e=document.getElementById('loginErro');if(e)e.textConte
 function normalizeCloudDb(x){x=x&&typeof x==='object'&&!Array.isArray(x)?x:{};const cols=['produtos','entradas','fichas','transformacoes','vendas','producoes','pedidos','inventarios','promocoes','separacoes','lojas','fretes','contasConsumo','baixasInternas','pessoas','usuarios','logs','programacoesProducao','fluxoCaixa'];cols.forEach(k=>{if(!Array.isArray(x[k]))x[k]=[]});if(!x.config||typeof x.config!=='object'||Array.isArray(x.config))x.config={};return x}
 async function cloudLogin(loginValue,password){const r=await fetch(API+'/api/v1/public/store/'+encodeURIComponent(SLUG)+'/erp-login',{method:'POST',cache:'no-store',headers:{'Content-Type':'application/json','Cache-Control':'no-cache'},body:JSON.stringify({login:loginValue,senha:password})});let j={};try{j=await r.json()}catch(_){}if(!r.ok)throw new Error(j.error||('HTTP '+r.status));const d=await fetch(API+'/api/v1/public/store/'+encodeURIComponent(SLUG)+'/erp-session',{cache:'no-store',headers:{'Authorization':'Bearer '+j.token,'Cache-Control':'no-cache'}});let x={};try{x=await d.json()}catch(_){}if(!d.ok)throw new Error(x.error||('HTTP '+d.status));return {...j,...x}}
 const original=window.login;
-window.login=login=async function(){const user=document.getElementById('loginUsuario'),pass=document.getElementById('loginSenha'),btn=document.getElementById('loginEntrar');const l=(user?.value||'').trim().toLowerCase(),p=pass?.value||'';if(!l||!p){setErr('Informe login e senha.');return}setErr('Validando acesso na nuvem...');if(btn){btn.disabled=true;btn.textContent='Entrando...'}try{const c=await cloudLogin(l,p);db=normalizeCloudDb(c.db);window.db=db;try{__johnLocalStorage.setItem(DB_KEY,JSON.stringify(db))}catch(_){}const u=(db.usuarios||[]).find(x=>String(x.id)===String(c.userId))||(db.usuarios||[]).find(x=>String(x.login||'').toLowerCase()===l);if(!u)throw new Error('Usuário autenticado, mas não localizado na base sincronizada.');sessao={usuarioId:u.id,inicio:new Date().toISOString(),cloud:true};window.sessao=sessao;__johnSessionStorage.setItem('pcp_sessao',JSON.stringify(sessao));setErr('');document.getElementById('loginScreen')?.classList.add('hidden');aplicarAcessos();resetSessionTimer();registrarLog('seguranca','LOGIN','Acesso realizado pela nuvem');setTimeout(inicializarAplicacaoAposLogin,0)}catch(e){console.warn('Login nuvem:',e);if(typeof original==='function'){const before=document.getElementById('loginErro')?.textContent;original();const after=document.getElementById('loginErro')?.textContent;if(after==='Login ou senha inválidos.'||after===before)setErr(e.message+' Verifique se a API 1.7 foi publicada e se a base foi sincronizada.')}else setErr(e.message)}finally{if(btn){btn.disabled=false;btn.textContent='Entrar'}}};
+window.login=login=async function(){const user=document.getElementById('loginUsuario'),pass=document.getElementById('loginSenha'),btn=document.getElementById('loginEntrar');const l=(user?.value||'').trim().toLowerCase(),p=pass?.value||'';if(!l||!p){setErr('Informe login e senha.');return}setErr('Validando acesso na nuvem...');if(btn){btn.disabled=true;btn.textContent='Entrando...'}try{const c=await cloudLogin(l,p);db=normalizeCloudDb(c.db);try{__johnLocalStorage.setItem(DB_KEY,JSON.stringify(db))}catch(_){}const u=(db.usuarios||[]).find(x=>String(x.id)===String(c.userId))||(db.usuarios||[]).find(x=>String(x.login||'').toLowerCase()===l);if(!u)throw new Error('Usuário autenticado, mas não localizado na base sincronizada.');sessao={usuarioId:u.id,inicio:new Date().toISOString(),cloud:true};__johnSessionStorage.setItem('pcp_sessao',JSON.stringify(sessao));setErr('');document.getElementById('loginScreen')?.classList.add('hidden');aplicarAcessos();resetSessionTimer();registrarLog('seguranca','LOGIN','Acesso realizado pela nuvem');setTimeout(inicializarAplicacaoAposLogin,0)}catch(e){console.warn('Login nuvem:',e);if(typeof original==='function'){const before=document.getElementById('loginErro')?.textContent;original();const after=document.getElementById('loginErro')?.textContent;if(after==='Login ou senha inválidos.'||after===before)setErr(e.message+' Verifique se a API 1.7 foi publicada e se a base foi sincronizada.')}else setErr(e.message)}finally{if(btn){btn.disabled=false;btn.textContent='Entrar'}}};
 function rebind(){const b=document.getElementById('loginEntrar');if(!b)return;b.onclick=e=>{e?.preventDefault();e?.stopPropagation();window.login()}}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',rebind,{once:true});else rebind();setTimeout(rebind,300);setTimeout(rebind,1200);
 })();
@@ -11656,8 +11659,7 @@ window.fetch=async function(input,init={}){const url=urlOf(input),method=methodO
 function cloud(){return window.johnV84Cloud||null}
 async function admin(path,opt={}){const c=cloud();if(c?.api)return c.api(path,opt);let cfg={};try{cfg=JSON.parse((typeof __johnLocalStorage!=='undefined'?__johnLocalStorage:localStorage).getItem('john_cloud_config_v1')||'{}')||{}}catch(_){};const api=S(cfg.apiUrl||'https://john-cloud-api-production.up.railway.app').replace(/\/+$/,''),token=S(cfg.apiKey||cfg.token);if(!token)throw new Error('Token da API não configurado.');const r=await fetch(api+path,{...opt,cache:'no-store',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token,'X-ERP-User':'ERP','Cache-Control':'no-store',...(opt.headers||{})}});let j={};try{j=await r.json()}catch(_){}if(!r.ok)throw new Error(j.error||('HTTP '+r.status));return j}
 function dbRef(){try{return typeof db!=='undefined'?db:null}catch(_){return null}}
-function anexosImagemCloud(prod){return A(prod?.anexos).map(a=>S(a?.conteudo||a?.url||a?.href||'')).filter(x=>x&&(/^data:image\//i.test(x)||/^https?:/i.test(x)))}
-function dataImages(p,cp){const e=p?.ecommerce&&typeof p.ecommerce==='object'?p.ecommerce:{};const src=[cp?.imagem,...A(cp?.imagens),e.imagem,...A(e.imagens),p?.imagem,...A(p?.imagens),...anexosImagemCloud(p)].filter(Boolean);return [...new Set(src)]}
+function dataImages(p,cp){const e=p?.ecommerce&&typeof p.ecommerce==='object'?p.ecommerce:{};const src=[cp?.imagem,...A(cp?.imagens),e.imagem,...A(e.imagens),p?.imagem,...A(p?.imagens)].filter(Boolean);return [...new Set(src)]}
 function isData(x){return /^data:image\/(?:jpeg|png|webp|gif);base64,/i.test(S(x))}
 async function mediaFirst(cat){let uploaded=0,reused=0,withLocal=0;const errors=[];for(const cp of A(cat.produtos)){const p=A(dbRef()?.produtos).find(x=>S(x.id)===S(cp.id))||A(dbRef()?.produtos).find(x=>S(x.codigo)===S(cp.codigo));const e=p?(p.ecommerce=p.ecommerce||{}):null;const sources=dataImages(p,cp),remote=sources.filter(x=>!isData(x)&&/^https?:/i.test(S(x))),datas=sources.filter(isData).slice(0,5);if(datas.length)withLocal++;const urls=[...remote];for(let i=0;i<datas.length;i++){try{const ext=(datas[i].match(/^data:image\/([^;]+)/i)?.[1]||'png').replace('jpeg','jpg');const r=await admin('/api/v1/admin/store/media',{method:'POST',body:JSON.stringify({dataUrl:datas[i],filename:`${S(cp.codigo||cp.id||'produto')}_${i+1}.${ext}`,productId:S(cp.id)})});if(r.url&&!urls.includes(r.url))urls.push(r.url);r.reused?reused++:uploaded++}catch(err){errors.push(`${cp.nome||cp.codigo||cp.id}: ${err.message}`)}}if(urls.length){cp.imagem=urls[0];cp.imagens=urls.slice(0,5);if(e){e.imagem=cp.imagem;e.imagens=[...cp.imagens]}}}
  if(errors.length)throw new Error('Falha ao confirmar imagem(ns): '+errors.slice(0,3).join(' | ')+(errors.length>3?` (+${errors.length-3})`:''));
@@ -12164,8 +12166,7 @@ function applyGrades(cat){const gs=grades().filter(g=>g.ativo!==false);cat.loja=
 
 /* ---------- IMAGENS: cadastro -> PostgreSQL -> catálogo ---------- */
 function isData(x){return /^data:image\/(?:jpeg|png|webp|gif);base64,/i.test(S(x))}
-function anexosImagem(prod){return A(prod?.anexos).map(a=>S(a?.conteudo||a?.url||a?.href||'')).filter(x=>x&&(/^data:image\//i.test(x)||/^https?:/i.test(x)))}
-function productSources(p,cp){const e=ecom(p),all=[cp?.imagem,...A(cp?.imagens),e.imagem,...A(e.imagens),p?.imagem,...A(p?.imagens),...anexosImagem(p)].filter(Boolean);return[...new Set(all)]}
+function productSources(p,cp){const e=ecom(p),all=[cp?.imagem,...A(cp?.imagens),e.imagem,...A(e.imagens),p?.imagem,...A(p?.imagens)].filter(Boolean);return[...new Set(all)]}
 async function mediaFirst(cat,onlyIds=null){let uploaded=0,reused=0,changed=0;const errors=[],filter=onlyIds?new Set(A(onlyIds).map(S)):null;for(const cp of A(cat.produtos)){if(filter&&!filter.has(S(cp.id)))continue;const p=A(db?.produtos).find(x=>S(x.id)===S(cp.id))||A(db?.produtos).find(x=>S(x.codigo)===S(cp.codigo));if(!p)continue;const e=ecom(p),sources=productSources(p,cp),urls=sources.filter(x=>/^https?:/i.test(S(x))),datas=sources.filter(isData).slice(0,5);for(let i=0;i<datas.length;i++){try{const ext=(datas[i].match(/^data:image\/([^;]+)/i)?.[1]||'png').replace('jpeg','jpg'),r=await admin('/api/v1/admin/store/media',{method:'POST',body:JSON.stringify({dataUrl:datas[i],filename:`${S(cp.codigo||cp.id||'produto')}_${i+1}.${ext}`,productId:S(cp.id)})});if(r.url&&!urls.includes(r.url))urls.push(r.url);r.reused?reused++:uploaded++}catch(err){errors.push(`${cp.nome||cp.codigo}: ${err.message}`)}}if(urls.length){const next=urls.slice(0,5);if(S(cp.imagem)!==S(next[0])||JSON.stringify(A(cp.imagens))!==JSON.stringify(next))changed++;cp.imagem=next[0];cp.imagens=next;e.imagem=next[0];e.imagens=[...next]}}
  if(errors.length)throw new Error('Falha ao enviar imagem(ns): '+errors.slice(0,3).join(' | ')+(errors.length>3?` (+${errors.length-3})`:''));if(changed)await syncDb();return{uploaded,reused,changed}}
 
@@ -12412,22 +12413,18 @@ setInterval(refresh,1200);setTimeout(refresh,200);
 
 <script id="john-v8103-general-control">
 (function(){'use strict';
-window.JOHN_ERP_VERSION='8.16.1';
+window.JOHN_ERP_VERSION='8.10.4';
 function enforce(){try{const dbx=window.db||db,ctl=dbx?.ecommerceGeralControl,cats=dbx?.config?.ecommerce?.categorias;if(!ctl||typeof ctl.ativo!=='boolean'||!Array.isArray(cats))return;const g=cats.find(x=>String(x?.id||'').toUpperCase()==='GERAL');if(g&&g.ativo!==ctl.ativo){g.ativo=ctl.ativo;try{(typeof save==='function'?save:()=>{})()}catch(_){}}}catch(_){}}
 window.addEventListener('john:cloud-applied',ev=>{if((ev.detail?.types||[]).includes('config')||(ev.detail?.types||[]).includes('ecommerceGeralControl'))setTimeout(enforce,20)});
 setTimeout(enforce,600);
 })();
 </script>
 
-  <!-- John ERP V8.15.0: módulos críticos carregados diretamente; SW fica apenas como PWA/cache -->
-  <script src="./ecommerce-recovery-v8-16-1.js?v=8180"></script>
-  <script src="./production-stability-v8-10-5.js?v=8180"></script>
-  <script src="./platform-admin-v8-12-0.js?v=8180"></script>
-  <script src="./ecommerce-customer-experience-v8-13-0.js?v=8180"></script>
-  <script src="./commerce-engine-v8-15-0.js?v=8180"></script>
-  <script src="./management-engine-v8-16-0.js?v=8180"></script>
-  <script src="./john-next-v8-17.js?v=8180"></script>
-  <script src="./catalog-deep-recovery-v8-18-1.js?v=8181"></script>
+  <!-- John ERP V8.14.0: módulos críticos carregados diretamente; SW fica apenas como PWA/cache -->
+  <script src="./production-stability-v8-10-5.js?v=8140"></script>
+  <script src="./platform-admin-v8-12-0.js?v=8140"></script>
+  <script src="./ecommerce-customer-experience-v8-13-0.js?v=8140"></script>
+  <script src="./server-catalog-hydration-v8-19.js?v=8190"></script>
 </body>
 <!-- JOHN ERP V8.6.2 HOTFIX: preserve ecommerce price on product metadata edits -->
 </html>

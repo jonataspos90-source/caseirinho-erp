@@ -1,0 +1,75 @@
+JOHN SISTEMA ERP V8.19.0 — CLEAN REBUILD
+Relatório de verificação
+Data: 15/09/2026
+
+ESTRATÉGIA
+- Reconstruído sobre o núcleo consolidado V8.14.0 de 14/09/2026.
+- Não carrega os motores concorrentes adicionados nas V8.15–V8.18.
+- Adiciona somente server-catalog-hydration-v8-19.js, em modo leitura do catálogo público.
+
+INTEGRIDADE CONFIRMADA NO POSTGRESQL / NEON
+- Tenant: caseirinho / john-default.
+- Categorias publicadas encontradas: 6.
+  Nhoque, Panqueca, Tortas, Pães, Molhos e Salgados.
+- Produtos no storefront_catalog: 33.
+- Produtos com categoria: 33/33.
+- Produtos com imagem: 33/33.
+- O espelho ERP havia perdido os metadados de categoria/imagem; o storefront público permaneceu íntegro.
+
+TESTES AUTOMATIZADOS
+- 89 testes Node executados.
+- 89 aprovados.
+- 0 falhas.
+
+ÁREAS COBERTAS PELOS TESTES
+- Dashboard
+- Produtos / cadastro / manutenção
+- Entradas
+- Estoque
+- Patrimônio
+- Inventário
+- Kardex
+- Vendas
+- Fluxo de caixa
+- Ficha técnica
+- Transformações
+- Produção
+- Gestão de produção
+- Separação
+- Pedidos
+- Convênio
+- Lojas
+- Contas de consumo
+- Transferência interna
+- Perdas
+- DRE Real
+- Fretes
+- Manutenção de margem
+- Pricing
+- Promoções
+- Pessoas
+- Despesas manuais
+- Freelancers / relatórios
+- Configurações
+- Multiempresa / isolamento por tenant
+- Token / persistência / 403 funcional
+- Fila canônica de pedidos E-commerce
+- Categorias da Loja
+- Produtos Online
+- Publicação canônica / imagens
+- Hidratação de categorias e imagens do servidor
+
+TESTE ESPECÍFICO DE RECUPERAÇÃO
+- Fixture equivalente ao ambiente: 6 categorias e 33 produtos.
+- Resultado: 6/6 categorias recuperadas.
+- 33/33 produtos recuperaram categoria.
+- 33/33 produtos recuperaram imagem.
+- O recuperador NÃO executa PUT/DELETE no catálogo e NÃO altera o PostgreSQL automaticamente.
+
+SINTAXE
+- 101 blocos JavaScript inline do index.html: todos válidos.
+- Scripts externos principais: todos válidos no node --check.
+
+LIMITAÇÃO DO AMBIENTE DE TESTE
+- O ambiente de execução bloqueou navegação Chromium para localhost/file, então não foi possível executar cliques reais em navegador automatizado aqui.
+- Para compensar, foram executados testes estruturais/funcionais de rotas, funções críticas e controladores, além da validação direta dos dados no PostgreSQL.

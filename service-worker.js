@@ -1,17 +1,18 @@
-const CACHE='john-erp-pwa-v8.18.1-layout-v2';
+const CACHE='john-erp-pwa-v8.19.0-clean-rebuild';
 
 const MULTI='./multiempresa-v8-12-0.js';
 const STABILITY='./production-stability-v8-10-5.js';
 const PLATFORM='./platform-admin-v8-12-0.js';
 const EXPERIENCE='./ecommerce-customer-experience-v8-13-0.js';
+const HYDRATE='./server-catalog-hydration-v8-19.js';
 
-const MULTI_TAG='<script src="./multiempresa-v8-12-0.js?v=8180"></'+'script>';
-const STABILITY_TAG='<script src="./production-stability-v8-10-5.js?v=8180"></'+'script>';
-const PLATFORM_TAG='<script src="./platform-admin-v8-12-0.js?v=8180"></'+'script>';
-const EXPERIENCE_TAG='<script src="./ecommerce-customer-experience-v8-13-0.js?v=8180"></'+'script>';
+const MULTI_TAG='<script src="./multiempresa-v8-12-0.js?v=8190"></'+'script>';
+const STABILITY_TAG='<script src="./production-stability-v8-10-5.js?v=8190"></'+'script>';
+const PLATFORM_TAG='<script src="./platform-admin-v8-12-0.js?v=8190"></'+'script>';
+const EXPERIENCE_TAG='<script src="./ecommerce-customer-experience-v8-13-0.js?v=8190"></'+'script>';
+const HYDRATE_TAG='<script src="./server-catalog-hydration-v8-19.js?v=8190"></'+'script>';
 
-const SHELL=['./','./index.html',
-  './commerce-engine-v8-15-0.js','./management-engine-v8-16-0.js','./ecommerce-recovery-v8-16-1.js','./john-next-v8-17.css','./john-next-v8-17.js','./manifest.webmanifest','./offline.html','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable-512.png','./icons/apple-touch-icon.png',MULTI,STABILITY,PLATFORM,EXPERIENCE];
+const SHELL=['./','./index.html',HYDRATE,'./manifest.webmanifest','./offline.html','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable-512.png','./icons/apple-touch-icon.png',MULTI,STABILITY,PLATFORM,EXPERIENCE];
 
 async function cacheShell(){const c=await caches.open(CACHE);for(const url of SHELL){try{const r=await fetch(url,{cache:'reload'});if(r.ok)await c.put(url,r.clone())}catch(_){}}}
 function injectBefore(html,needle,tag){if(html.includes(needle))return html;const low=html.toLowerCase(),p=low.lastIndexOf('</body>');return p>=0?html.slice(0,p)+tag+html.slice(p):html+tag}
@@ -21,6 +22,7 @@ async function injectScripts(response){
   html=injectBefore(html,'production-stability-v8-10-5.js',STABILITY_TAG);
   html=injectBefore(html,'platform-admin-v8-12-0.js',PLATFORM_TAG);
   html=injectBefore(html,'ecommerce-customer-experience-v8-13-0.js',EXPERIENCE_TAG);
+  html=injectBefore(html,'server-catalog-hydration-v8-19.js',HYDRATE_TAG);
   const h=new Headers(response.headers);h.delete('content-length');h.set('Cache-Control','no-cache');return new Response(html,{status:response.status,statusText:response.statusText,headers:h});
 }
 self.addEventListener('install',e=>e.waitUntil(cacheShell().then(()=>self.skipWaiting())));

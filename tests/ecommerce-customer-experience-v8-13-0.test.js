@@ -68,10 +68,11 @@ test('horário de entrega continua fora da coluna ações',()=>{
   assert.match(cx,/data-cx-time/);
 });
 
-test('service worker injeta módulos V8.14.0',()=>{
+test('service worker injeta módulos consolidados no clean rebuild',()=>{
   assert.match(sw,/platform-admin-v8-12-0\.js/);
   assert.match(sw,/ecommerce-customer-experience-v8-13-0\.js/);
-  assert.match(sw,/john-erp-pwa-v8\.14\.0-consolidated/);
+  assert.match(sw,/john-erp-pwa-v8\.19\.0-clean-rebuild/);
+  assert.match(sw,/server-catalog-hydration-v8-19\.js/);
 });
 
 test('V8.14 não usa observer/timers para corrigir a fila antiga',()=>{

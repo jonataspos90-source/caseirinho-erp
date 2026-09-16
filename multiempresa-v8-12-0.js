@@ -618,7 +618,6 @@ async function enterSupportSession(){
 
     storePolicy(c.policy||null);
     db=normalizeCloudDb(c.db);
-    window.db=db;
     localStorage.setItem('pcp_app_v1',JSON.stringify(db));
 
     const proxy=(db.usuarios||[]).find(
@@ -644,7 +643,7 @@ async function enterSupportSession(){
     };
     localStorage.setItem('john_cloud_config_v1',JSON.stringify(cloud));
 
-    window.sessao={
+    sessao={
       usuarioId:proxy.id,
       inicio:new Date().toISOString(),
       cloud:true,
@@ -655,12 +654,12 @@ async function enterSupportSession(){
       support:true,
       supportByName:S(c.supportByName||current?.supportByName||'Suporte John Sistemas')
     };
-    sessionStorage.setItem('pcp_sessao',JSON.stringify(window.sessao));
+    sessionStorage.setItem('pcp_sessao',JSON.stringify(sessao));
 
     window.__JOHN_SUPPORT_MODE__={
       active:true,
-      by:window.sessao.supportByName,
-      tenant:window.sessao.tenantName
+      by:sessao.supportByName,
+      tenant:sessao.tenantName
     };
 
     document.getElementById('loginScreen')?.classList.add('hidden');
@@ -727,7 +726,6 @@ function installDynamicLogin(){
 
       // O servidor retornou exclusivamente a base do tenant autenticado.
       db=normalizeCloudDb(c.db);
-      window.db=db;
       localStorage.setItem('pcp_app_v1',JSON.stringify(db));
 
       const u=(db.usuarios||[]).find(
@@ -744,7 +742,7 @@ function installDynamicLogin(){
 
       saveSessionCloudConfig(c);
 
-      window.sessao={
+      sessao={
         usuarioId:u.id,
         inicio:new Date().toISOString(),
         cloud:true,
@@ -754,7 +752,7 @@ function installDynamicLogin(){
         tenantName:S(c.tenant?.name||window.__JOHN_TENANT__.name)
       };
 
-      sessionStorage.setItem('pcp_sessao',JSON.stringify(window.sessao));
+      sessionStorage.setItem('pcp_sessao',JSON.stringify(sessao));
 
       setLoginError('');
       document.getElementById('loginScreen')?.classList.add('hidden');
@@ -765,7 +763,7 @@ function installDynamicLogin(){
         registrarLog(
           'seguranca',
           'LOGIN',
-          'Acesso multiempresa · '+S(window.sessao?.tenantSlug)
+          'Acesso multiempresa · '+S(sessao.tenantSlug)
         );
       }
 

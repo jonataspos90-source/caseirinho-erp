@@ -1,0 +1,36 @@
+JOHN ERP V8.19.0 CLEAN REBUILD — NÃO É PATCH SOBRE A V8.18
+
+Esta versão deve substituir o núcleo atual do ERP.
+Ela foi reconstruída sobre a V8.14.0 consolidada e testada.
+
+ANTES DE PUBLICAR
+No repositório caseirinho-erp, remova os seguintes arquivos antigos se existirem:
+- commerce-engine-v8-15-0.js
+- management-engine-v8-16-0.js
+- ecommerce-recovery-v8-16-1.js
+- john-next-v8-17.js
+- john-next-v8-17.css
+- catalog-deep-recovery-v8-18-1.js
+
+Esses arquivos NÃO são usados pela V8.19 e foram justamente retirados do runtime para evitar concorrência entre renderizadores.
+
+NÃO REMOVA:
+- manifest.webmanifest
+- offline.html
+- robots.txt
+- .nojekyll
+- pasta icons
+Esses ativos já existentes no GitHub permanecem válidos.
+
+DEPOIS
+1. Envie todos os arquivos deste ZIP para a raiz do repositório.
+2. Aguarde o GitHub Pages concluir.
+3. Faça Ctrl+Shift+R no desktop.
+4. Faça login.
+5. Aguarde alguns segundos: o ERP consulta o catálogo público e restaura localmente categorias/imagens.
+6. Abra E-commerce > Categorias da Loja.
+7. Devem aparecer: Nhoque, Panqueca, Tortas, Pães, Molhos e Salgados, além da visão Geral.
+8. Abra Produtos Online: os 33 produtos publicados devem manter categoria e imagem.
+
+IMPORTANTE
+Não use 'Publicar catálogo' antes de confirmar visualmente que categorias e imagens foram restauradas.
