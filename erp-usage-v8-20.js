@@ -1,6 +1,6 @@
 (function(){'use strict';
 if(window.__JOHN_ERP_USAGE_820__)return;window.__JOHN_ERP_USAGE_820__=true;
-const VERSION='8.20.0', S=v=>String(v??''), A=v=>Array.isArray(v)?v:[], N=v=>Number(v)||0;
+const VERSION='8.22.5', S=v=>String(v??''), A=v=>Array.isArray(v)?v:[], N=v=>Number(v)||0;
 const E=id=>document.getElementById(id);
 function cfg(){let c={};try{c=JSON.parse(localStorage.getItem('john_cloud_config_v1')||'{}')||{}}catch(_){}return{api:S(c.apiUrl||'https://john-cloud-api-production.up.railway.app').replace(/\/+$/,''),token:S(c.apiKey||c.token||''),slug:S(window.__JOHN_TENANT__?.slug||c.storeSlug||'caseirinho').trim().toLowerCase()||'caseirinho'}}
 function clientId(){const k='john_erp_usage_client_v820';let id='';try{id=S(localStorage.getItem(k)||'')}catch(_){}if(!id){id='erp-'+(crypto.randomUUID?.()||Date.now().toString(36)+'-'+Math.random().toString(36).slice(2));try{localStorage.setItem(k,id)}catch(_){}}return id}
