@@ -1,0 +1,47 @@
+JOHN ERP NEXT V8.17.0
+=====================
+
+OBJETIVO
+- Modernizar a navegação e o visual sem reescrever as telas operacionais existentes.
+- Preservar pedidos, E-commerce, Pricing, PCP, Financeiro, multiempresa e integrações já existentes.
+- Incorporar as correções V8.16.2 de login/db e recuperação de imagens.
+
+PRINCIPAIS MUDANCAS
+1. Central de Modulos John na tela inicial.
+2. Modulos agrupados em cards recolhiveis usando os botoes reais do ERP.
+3. Busca global / Ctrl+K preservada e integrada ao novo cabeçalho.
+4. Cabeçalho John ERP Next com acesso rapido a modulos, indicadores e tema.
+5. Saude operacional na tela inicial:
+   - produtos online;
+   - produtos E-commerce sem foto;
+   - produtos sem preco E-commerce;
+   - estoque abaixo do minimo;
+   - pedidos pendentes;
+   - categorias ativas.
+6. Acessos rapidos para Produto, Pedido, Producao, Entrada, Caixa e Relatorios.
+7. Identidade John em verde/azul, sem copiar o layout visual da Bluesoft.
+8. Tema claro/escuro e responsividade preservados.
+9. Protecao adicional da referencia da base db no navegador.
+10. Recuperacao de imagem a partir dos anexos de produto preservada da V8.16.2.
+
+PUBLICACAO
+- Esta versao altera somente o ERP.
+- Nao e necessario republicar API ou Loja por causa do novo visual.
+- Envie TODO o conteudo deste pacote para a raiz do repositorio do ERP, substituindo arquivos de mesmo nome.
+- Aguarde o GitHub Pages/deploy concluir.
+- Ao abrir, se aparecer aviso "Nova versao do ERP disponivel", clique em Atualizar.
+- Se o celular mantiver a versao antiga, feche e reabra o PWA depois da atualizacao.
+
+VALIDACAO RECOMENDADA
+1. Login.
+2. Central de Modulos no Dashboard.
+3. Pedidos.
+4. E-commerce > Categorias da Loja.
+5. E-commerce > Produtos E-commerce.
+6. E-commerce > Produtos Online.
+7. Imagens dos produtos.
+8. Pricing.
+9. PCP / Producao.
+10. Financeiro.
+
+VERSAO: 8.17.0

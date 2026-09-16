@@ -1,1 +1,2 @@
-ERP V8.16.2 - Correção login db + recuperação de fotos ecommerce
+John ERP Next V8.17.0
+Base cumulativa: V8.16.2 + estabilização de login/fotos + nova Central de Módulos John.
