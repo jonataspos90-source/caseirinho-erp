@@ -5,6 +5,7 @@ window.__JOHN_STRICT_MEDIA_825__=true;
 
 const S=v=>String(v??'');
 const CLOUD_KEY='john_cloud_config_v1';
+const pendingRemoteUrls=[];
 
 function storage(){
   try{return typeof __johnLocalStorage!=='undefined'?__johnLocalStorage:localStorage}
@@ -116,6 +117,21 @@ async function mediaCompress(file){
   }
   return localCompress(file);
 }
+function previewRemoteUrl(url){
+  const old=document.getElementById('produtoEcomImagem');
+  if(old&&!old.value)old.value=url;
+  const g=document.getElementById('produtoEcomGaleria');
+  if(!g)return;
+  if(g.querySelector(`[data-strict-media-url="${CSS.escape(url)}"]`))return;
+  if(g.children.length===1&&/Nenhuma foto/i.test(g.textContent||''))g.innerHTML='';
+  const card=document.createElement('div');
+  card.className='media-card';
+  card.dataset.strictMediaUrl=url;
+  card.innerHTML='<span class="principal">SERVIDOR</span><img alt="Foto salva no servidor"><div class="media-actions"><small>Foto vinculada ao salvar</small></div>';
+  const img=card.querySelector('img');
+  if(img)img.src=url;
+  g.appendChild(card);
+}
 function addRemoteUrl(url){
   try{
     if(typeof imageState!=='undefined'&&Array.isArray(imageState)){
@@ -123,7 +139,39 @@ function addRemoteUrl(url){
       return true;
     }
   }catch(_){}
-  return false;
+  if(!pendingRemoteUrls.includes(url))pendingRemoteUrls.push(url);
+  previewRemoteUrl(url);
+  return true;
+}
+function currentProduct(){
+  const id=S(document.getElementById('produtoId')?.value);
+  if(id){
+    try{if(typeof produto==='function'){const p=produto(id);if(p)return p}}catch(_){}
+  }
+  try{
+    const code=S(document.getElementById('produtoCodigo')?.value);
+    const name=S(document.getElementById('produtoNome')?.value);
+    if(typeof db!=='undefined'&&Array.isArray(db?.produtos)){
+      return db.produtos.find(p=>S(p.id)===id)||db.produtos.find(p=>S(p.codigo)===code)||[...db.produtos].reverse().find(p=>S(p.nome)===name)||null;
+    }
+  }catch(_){}
+  return null;
+}
+function persistPendingUrls(){
+  if(!pendingRemoteUrls.length)return true;
+  const p=currentProduct();
+  if(!p)return false;
+  const e=p.ecommerce=p.ecommerce&&typeof p.ecommerce==='object'?p.ecommerce:{};
+  const atuais=Array.isArray(e.imagens)?e.imagens.filter(Boolean):[];
+  const merged=[...new Set([...atuais,...pendingRemoteUrls])].slice(0,5);
+  e.imagens=merged;
+  e.imagem=merged[0]||'';
+  p.atualizadoEm=new Date().toISOString();
+  try{if(typeof save==='function')save()}catch(_){}
+  try{if(typeof persist==='function')persist()}catch(_){}
+  try{if(typeof renderImages==='function')renderImages()}catch(_){}
+  pendingRemoteUrls.splice(0,pendingRemoteUrls.length);
+  return true;
 }
 async function strictUploadImages(ev){
   const input=ev?.target||document.getElementById('produtoEcomArquivos');
@@ -143,7 +191,7 @@ async function strictUploadImages(ev){
       });
       const url=publicMediaUrl(response?.url);
       if(!url)throw new Error('A API não retornou uma URL pública para a imagem.');
-      if(!addRemoteUrl(url))throw new Error('A foto chegou ao servidor, mas o cadastro do produto não está pronto para recebê-la. Reabra o produto e tente novamente.');
+      addRemoteUrl(url);
       saved++;
     }catch(err){
       console.error('[John ERP 8.22.5] upload de mídia:',err);
@@ -177,7 +225,25 @@ function intercept(ev){
   });
 }
 
+function installSubmitBridge(){
+  if(document.documentElement.dataset.strictMediaSubmitBridge==='1')return;
+  document.documentElement.dataset.strictMediaSubmitBridge='1';
+  document.addEventListener('submit',ev=>{
+    if(ev.target?.id!=='produtoForm'||!pendingRemoteUrls.length)return;
+    setTimeout(()=>{
+      if(persistPendingUrls()){
+        setStatus('Foto vinculada ao produto e salva no servidor.');
+        try{window.publicarCatalogoEcommerce?.(true)}catch(_){}
+        try{window.renderEcommerceAdmin?.()}catch(_){}
+      }else{
+        setStatus('A foto está salva no servidor, mas não consegui localizar o produto para vinculá-la.',true);
+      }
+    },220);
+  },true);
+}
+
 try{window.uploadImages=strictUploadImages}catch(_){}
 document.addEventListener('change',intercept,true);
-window.JohnStrictMedia825={upload:strictUploadImages};
+installSubmitBridge();
+window.JohnStrictMedia825={upload:strictUploadImages,persistPending:persistPendingUrls};
 })();
