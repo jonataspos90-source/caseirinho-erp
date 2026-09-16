@@ -1,11 +1,11 @@
-const CACHE='john-erp-pwa-v8.17.1-next-login';
+const CACHE='john-erp-pwa-v8.17.2-session-rootfix';
 
 const MULTI='./multiempresa-v8-12-0.js';
 const STABILITY='./production-stability-v8-10-5.js';
 const PLATFORM='./platform-admin-v8-12-0.js';
 const EXPERIENCE='./ecommerce-customer-experience-v8-13-0.js';
 
-const MULTI_TAG='<script src="./multiempresa-v8-12-0.js?v=8171"></'+'script>';
+const MULTI_TAG='<script src="./multiempresa-v8-12-0.js?v=8172"></'+'script>';
 const STABILITY_TAG='<script src="./production-stability-v8-10-5.js?v=8140"></'+'script>';
 const PLATFORM_TAG='<script src="./platform-admin-v8-12-0.js?v=8140"></'+'script>';
 const EXPERIENCE_TAG='<script src="./ecommerce-customer-experience-v8-13-0.js?v=8140"></'+'script>';

@@ -1,1 +1,1 @@
-ERP V8.17.1 - John ERP Next · correção definitiva de sessão/login + cache
+John ERP Next V8.17.2 - correção estrutural de sessão no login multiempresa

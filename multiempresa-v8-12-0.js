@@ -644,7 +644,7 @@ async function enterSupportSession(){
     };
     localStorage.setItem('john_cloud_config_v1',JSON.stringify(cloud));
 
-    sessao={
+    window.sessao={
       usuarioId:proxy.id,
       inicio:new Date().toISOString(),
       cloud:true,
@@ -655,13 +655,12 @@ async function enterSupportSession(){
       support:true,
       supportByName:S(c.supportByName||current?.supportByName||'Suporte John Sistemas')
     };
-    window.sessao=sessao;
-    sessionStorage.setItem('pcp_sessao',JSON.stringify(sessao));
+    sessionStorage.setItem('pcp_sessao',JSON.stringify(window.sessao));
 
     window.__JOHN_SUPPORT_MODE__={
       active:true,
-      by:sessao.supportByName,
-      tenant:sessao.tenantName
+      by:window.sessao.supportByName,
+      tenant:window.sessao.tenantName
     };
 
     document.getElementById('loginScreen')?.classList.add('hidden');
@@ -745,7 +744,7 @@ function installDynamicLogin(){
 
       saveSessionCloudConfig(c);
 
-      sessao={
+      window.sessao={
         usuarioId:u.id,
         inicio:new Date().toISOString(),
         cloud:true,
@@ -755,8 +754,7 @@ function installDynamicLogin(){
         tenantName:S(c.tenant?.name||window.__JOHN_TENANT__.name)
       };
 
-      window.sessao=sessao;
-    sessionStorage.setItem('pcp_sessao',JSON.stringify(sessao));
+      sessionStorage.setItem('pcp_sessao',JSON.stringify(window.sessao));
 
       setLoginError('');
       document.getElementById('loginScreen')?.classList.add('hidden');
@@ -767,7 +765,7 @@ function installDynamicLogin(){
         registrarLog(
           'seguranca',
           'LOGIN',
-          'Acesso multiempresa · '+S(sessao.tenantSlug)
+          'Acesso multiempresa · '+S(window.sessao?.tenantSlug)
         );
       }
 
