@@ -22,13 +22,13 @@ function makeGroup(id,icon,name,defs,open){
 function patchVersion(){window.JOHN_ERP_VERSION=VERSION;document.documentElement.dataset.johnNext='8221';const a=document.getElementById('jnActiveArea');if(a)a.textContent=S(a.textContent).replace(/\b8\.18\.0\b|\b8\.21\.1\b|\b8\.22\.0\b/g,VERSION)}
 function refreshHub(){try{window.johnNext?.renderHub?.()}catch(_){}patchVersion()}
 function install(){
- const a=makeGroup('motorcomercial','🚀','Motor Comercial',motor,t=>window.JohnCommerce822?.open?.(t));
- const b=makeGroup('centralgerencial','📊','Central Gerencial',gerencial,t=>window.JohnManagement822?.open?.(t));
- if(a||b)refreshHub();else patchVersion();
+ makeGroup('motorcomercial','🚀','Motor Comercial',motor,t=>window.JohnCommerce822?.open?.(t));
+ makeGroup('centralgerencial','📊','Central Gerencial',gerencial,t=>window.JohnManagement822?.open?.(t));
+ refreshHub();
 }
 [300,900,1800,3200,5000,7500].forEach(ms=>setTimeout(install,ms));
 window.addEventListener('john:session-ready',()=>setTimeout(install,150));
 window.addEventListener('john:cloud-applied',()=>setTimeout(install,200));
-document.addEventListener('click',e=>{if(e.target.closest?.('#johnNextHub,.nav,.jn-side-home'))setTimeout(()=>{install();refreshHub()},120)},true);
+document.addEventListener('click',e=>{if(e.target.closest?.('#johnNextHub,.nav,.jn-side-home'))setTimeout(install,120)},true);
 window.JohnCentralModules8221={install,version:VERSION};
 })();
