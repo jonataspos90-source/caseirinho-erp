@@ -1,31 +1,56 @@
-const CACHE='john-erp-pwa-v8.22.0-gestao-completa';
+const CACHE='john-erp-pwa-v8.22.1-central-hotfix';
 
 const MULTI='./multiempresa-v8-12-0.js';
 const STABILITY='./production-stability-v8-10-5.js';
 const PLATFORM='./platform-admin-v8-12-0.js';
 const EXPERIENCE='./ecommerce-customer-experience-v8-13-0.js';
 const HYDRATE='./server-catalog-hydration-v8-19.js';
+const NEXTJS='./john-next-v8-17.js';
+const NEXTCSS='./john-next-v8-17.css';
 const COMMERCE='./commerce-engine-v8-22-0.js';
 const MANAGEMENT='./management-engine-v8-22-0.js';
 const USAGE='./erp-usage-v8-20.js';
+const SYNC='./caseirinho-commerce-sync-v8-21.js';
+const DEEP='./catalog-deep-recovery-v8-18-1.js';
+const CENTRAL_FIX='./central-modules-hotfix-v8-22-1.js';
+const USAGE_FIX='./erp-usage-v8-22-1.js';
 
-const MULTI_TAG='<script src="./multiempresa-v8-12-0.js?v=8190"></'+'script>';
-const STABILITY_TAG='<script src="./production-stability-v8-10-5.js?v=8190"></'+'script>';
-const PLATFORM_TAG='<script src="./platform-admin-v8-12-0.js?v=8190"></'+'script>';
-const EXPERIENCE_TAG='<script src="./ecommerce-customer-experience-v8-13-0.js?v=8190"></'+'script>';
-const HYDRATE_TAG='<script src="./server-catalog-hydration-v8-19.js?v=8190"></'+'script>';
+const MULTI_TAG='<script src="./multiempresa-v8-12-0.js?v=8221"></'+'script>';
+const STABILITY_TAG='<script src="./production-stability-v8-10-5.js?v=8221"></'+'script>';
+const PLATFORM_TAG='<script src="./platform-admin-v8-12-0.js?v=8221"></'+'script>';
+const EXPERIENCE_TAG='<script src="./ecommerce-customer-experience-v8-13-0.js?v=8221"></'+'script>';
+const HYDRATE_TAG='<script src="./server-catalog-hydration-v8-19.js?v=8221"></'+'script>';
+const NEXTJS_TAG='<script src="./john-next-v8-17.js?v=8221"></'+'script>';
+const NEXTCSS_TAG='<link rel="stylesheet" href="./john-next-v8-17.css?v=8221">';
+const COMMERCE_TAG='<script src="./commerce-engine-v8-22-0.js?v=8221"></'+'script>';
+const MANAGEMENT_TAG='<script src="./management-engine-v8-22-0.js?v=8221"></'+'script>';
+const USAGE_TAG='<script src="./erp-usage-v8-20.js?v=8221"></'+'script>';
+const SYNC_TAG='<script src="./caseirinho-commerce-sync-v8-21.js?v=8221"></'+'script>';
+const DEEP_TAG='<script src="./catalog-deep-recovery-v8-18-1.js?v=8221"></'+'script>';
+const CENTRAL_FIX_TAG='<script src="./central-modules-hotfix-v8-22-1.js?v=8221"></'+'script>';
+const USAGE_FIX_TAG='<script src="./erp-usage-v8-22-1.js?v=8221"></'+'script>';
 
-const SHELL=['./','./index.html',HYDRATE,COMMERCE,MANAGEMENT,USAGE,'./manifest.webmanifest','./offline.html','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable-512.png','./icons/apple-touch-icon.png',MULTI,STABILITY,PLATFORM,EXPERIENCE];
+const SHELL=['./','./index.html','./manifest.webmanifest','./offline.html','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable-512.png','./icons/apple-touch-icon.png',MULTI,STABILITY,PLATFORM,EXPERIENCE,HYDRATE,NEXTJS,NEXTCSS,COMMERCE,MANAGEMENT,USAGE,SYNC,DEEP,CENTRAL_FIX,USAGE_FIX];
 
 async function cacheShell(){const c=await caches.open(CACHE);for(const url of SHELL){try{const r=await fetch(url,{cache:'reload'});if(r.ok)await c.put(url,r.clone())}catch(_){}}}
 function injectBefore(html,needle,tag){if(html.includes(needle))return html;const low=html.toLowerCase(),p=low.lastIndexOf('</body>');return p>=0?html.slice(0,p)+tag+html.slice(p):html+tag}
+function injectHead(html,needle,tag){if(html.includes(needle))return html;const low=html.toLowerCase(),p=low.lastIndexOf('</head>');return p>=0?html.slice(0,p)+tag+html.slice(p):tag+html}
 async function injectScripts(response){
   if(!response)return response;const ct=response.headers.get('content-type')||'';if(!ct.includes('text/html'))return response;let html=await response.text();
-  if(!html.includes('multiempresa-v8-12-0.js')){const low=html.toLowerCase(),p=low.indexOf('</head>');html=p>=0?html.slice(0,p)+MULTI_TAG+html.slice(p):MULTI_TAG+html}
+  html=injectHead(html,'multiempresa-v8-12-0.js',MULTI_TAG);
+  html=injectHead(html,'john-next-v8-17.css',NEXTCSS_TAG);
   html=injectBefore(html,'production-stability-v8-10-5.js',STABILITY_TAG);
   html=injectBefore(html,'platform-admin-v8-12-0.js',PLATFORM_TAG);
   html=injectBefore(html,'ecommerce-customer-experience-v8-13-0.js',EXPERIENCE_TAG);
   html=injectBefore(html,'server-catalog-hydration-v8-19.js',HYDRATE_TAG);
+  html=injectBefore(html,'john-next-v8-17.js',NEXTJS_TAG);
+  html=injectBefore(html,'commerce-engine-v8-22-0.js',COMMERCE_TAG);
+  html=injectBefore(html,'management-engine-v8-22-0.js',MANAGEMENT_TAG);
+  html=injectBefore(html,'erp-usage-v8-20.js',USAGE_TAG);
+  html=injectBefore(html,'caseirinho-commerce-sync-v8-21.js',SYNC_TAG);
+  html=injectBefore(html,'catalog-deep-recovery-v8-18-1.js',DEEP_TAG);
+  html=injectBefore(html,'central-modules-hotfix-v8-22-1.js',CENTRAL_FIX_TAG);
+  html=injectBefore(html,'erp-usage-v8-22-1.js',USAGE_FIX_TAG);
   const h=new Headers(response.headers);h.delete('content-length');h.set('Cache-Control','no-cache');return new Response(html,{status:response.status,statusText:response.statusText,headers:h});
 }
 self.addEventListener('install',e=>e.waitUntil(cacheShell().then(()=>self.skipWaiting())));
