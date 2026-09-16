@@ -1,4 +1,4 @@
-const CACHE='john-erp-pwa-v8.22.2-central-only';
+const CACHE='john-erp-pwa-v8.22.3-ui-catalog-sync';
 
 const MULTI='./multiempresa-v8-12-0.js';
 const STABILITY='./production-stability-v8-10-5.js';
@@ -15,20 +15,20 @@ const DEEP='./catalog-deep-recovery-v8-18-1.js';
 const CENTRAL_FIX='./central-modules-hotfix-v8-22-2.js';
 const USAGE_FIX='./erp-usage-v8-22-1.js';
 
-const MULTI_TAG='<script src="./multiempresa-v8-12-0.js?v=8222"></'+'script>';
-const STABILITY_TAG='<script src="./production-stability-v8-10-5.js?v=8222"></'+'script>';
-const PLATFORM_TAG='<script src="./platform-admin-v8-12-0.js?v=8222"></'+'script>';
-const EXPERIENCE_TAG='<script src="./ecommerce-customer-experience-v8-13-0.js?v=8222"></'+'script>';
-const HYDRATE_TAG='<script src="./server-catalog-hydration-v8-19.js?v=8222"></'+'script>';
-const NEXTJS_TAG='<script src="./john-next-v8-17.js?v=8222"></'+'script>';
-const NEXTCSS_TAG='<link rel="stylesheet" href="./john-next-v8-17.css?v=8222">';
-const COMMERCE_TAG='<script src="./commerce-engine-v8-22-0.js?v=8222"></'+'script>';
-const MANAGEMENT_TAG='<script src="./management-engine-v8-22-0.js?v=8222"></'+'script>';
-const USAGE_TAG='<script src="./erp-usage-v8-20.js?v=8222"></'+'script>';
-const SYNC_TAG='<script src="./caseirinho-commerce-sync-v8-21.js?v=8222"></'+'script>';
-const DEEP_TAG='<script src="./catalog-deep-recovery-v8-18-1.js?v=8222"></'+'script>';
-const CENTRAL_FIX_TAG='<script src="./central-modules-hotfix-v8-22-2.js?v=8222"></'+'script>';
-const USAGE_FIX_TAG='<script src="./erp-usage-v8-22-1.js?v=8222"></'+'script>';
+const MULTI_TAG='<script src="./multiempresa-v8-12-0.js?v=8223"></'+'script>';
+const STABILITY_TAG='<script src="./production-stability-v8-10-5.js?v=8223"></'+'script>';
+const PLATFORM_TAG='<script src="./platform-admin-v8-12-0.js?v=8223"></'+'script>';
+const EXPERIENCE_TAG='<script src="./ecommerce-customer-experience-v8-13-0.js?v=8223"></'+'script>';
+const HYDRATE_TAG='<script src="./server-catalog-hydration-v8-19.js?v=8223"></'+'script>';
+const NEXTJS_TAG='<script src="./john-next-v8-17.js?v=8223"></'+'script>';
+const NEXTCSS_TAG='<link rel="stylesheet" href="./john-next-v8-17.css?v=8223">';
+const COMMERCE_TAG='<script src="./commerce-engine-v8-22-0.js?v=8223"></'+'script>';
+const MANAGEMENT_TAG='<script src="./management-engine-v8-22-0.js?v=8223"></'+'script>';
+const USAGE_TAG='<script src="./erp-usage-v8-20.js?v=8223"></'+'script>';
+const SYNC_TAG='<script src="./caseirinho-commerce-sync-v8-21.js?v=8223"></'+'script>';
+const DEEP_TAG='<script src="./catalog-deep-recovery-v8-18-1.js?v=8223"></'+'script>';
+const CENTRAL_FIX_TAG='<script src="./central-modules-hotfix-v8-22-2.js?v=8223"></'+'script>';
+const USAGE_FIX_TAG='<script src="./erp-usage-v8-22-1.js?v=8223"></'+'script>';
 
 const SHELL=['./','./index.html','./manifest.webmanifest','./offline.html','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable-512.png','./icons/apple-touch-icon.png',MULTI,STABILITY,PLATFORM,EXPERIENCE,HYDRATE,NEXTJS,NEXTCSS,COMMERCE,MANAGEMENT,USAGE,SYNC,DEEP,CENTRAL_FIX,USAGE_FIX];
 
@@ -51,9 +51,9 @@ async function injectScripts(response){
   html=injectBefore(html,'catalog-deep-recovery-v8-18-1.js',DEEP_TAG);
   html=injectBefore(html,'central-modules-hotfix-v8-22-2.js',CENTRAL_FIX_TAG);
   html=injectBefore(html,'erp-usage-v8-22-1.js',USAGE_FIX_TAG);
-  const h=new Headers(response.headers);h.delete('content-length');h.set('Cache-Control','no-cache');return new Response(html,{status:response.status,statusText:response.statusText,headers:h});
+  const h=new Headers(response.headers);h.delete('content-length');h.set('Cache-Control','no-cache, no-store, must-revalidate');return new Response(html,{status:response.status,statusText:response.statusText,headers:h});
 }
 self.addEventListener('install',e=>e.waitUntil(cacheShell().then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE&&k.startsWith('john-erp-pwa-')).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
 self.addEventListener('message',e=>{if(e.data&&e.data.type==='SKIP_WAITING')self.skipWaiting()});
-self.addEventListener('fetch',e=>{const u=new URL(e.request.url);if(u.origin!==self.location.origin||e.request.method!=='GET')return;if(e.request.mode==='navigate'){e.respondWith((async()=>{try{const net=await fetch(e.request,{cache:'no-store'}),out=await injectScripts(net);if(out&&out.ok)caches.open(CACHE).then(c=>c.put('./index.html',out.clone())).catch(()=>{});return out}catch(_){const cached=await caches.match('./index.html')||await caches.match('./offline.html');return injectScripts(cached)}})());return}e.respondWith(fetch(e.request,{cache:'no-cache'}).then(r=>{if(r.ok)caches.open(CACHE).then(c=>c.put(e.request,r.clone())).catch(()=>{});return r}).catch(()=>caches.match(e.request)))});
+self.addEventListener('fetch',e=>{const u=new URL(e.request.url);if(u.origin!==self.location.origin||e.request.method!=='GET')return;if(e.request.mode==='navigate'){e.respondWith((async()=>{try{const net=await fetch(e.request,{cache:'no-store'}),out=await injectScripts(net);if(out&&out.ok)caches.open(CACHE).then(c=>c.put('./index.html',out.clone())).catch(()=>{});return out}catch(_){const cached=await caches.match('./index.html')||await caches.match('./offline.html');return injectScripts(cached)}})());return}e.respondWith(fetch(e.request,{cache:'no-store'}).then(r=>{if(r.ok)caches.open(CACHE).then(c=>c.put(e.request,r.clone())).catch(()=>{});return r}).catch(()=>caches.match(e.request)))});
