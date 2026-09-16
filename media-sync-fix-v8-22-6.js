@@ -1,12 +1,12 @@
 (function(){
 'use strict';
-if(window.__JOHN_MEDIA_SYNC_FIX_8226__)return;
-window.__JOHN_MEDIA_SYNC_FIX_8226__=true;
+if(window.__JOHN_MEDIA_SYNC_FIX_8227__)return;
+window.__JOHN_MEDIA_SYNC_FIX_8227__=true;
 
 const S=v=>String(v??'');
 const A=v=>Array.isArray(v)?v:[];
 const CLOUD_KEY='john_cloud_config_v1';
-const VERSION='8.22.6';
+const VERSION='8.22.7';
 
 function storage(){
   try{return typeof __johnLocalStorage!=='undefined'?__johnLocalStorage:localStorage}
@@ -83,8 +83,9 @@ function resolveProduct(){
 }
 function galleryRemoteUrls(){
   const out=[];
-  document.querySelectorAll('#produtoEcomGaleria [data-strict-media-url]').forEach(card=>{
-    const u=S(card.dataset.strictMediaUrl||card.querySelector('img')?.src).trim();
+  document.querySelectorAll('#produtoEcomGaleria [data-strict-media-url], #produtoEcomGaleria img').forEach(node=>{
+    const card=node.closest?.('[data-strict-media-url]');
+    const u=S(card?.dataset?.strictMediaUrl||node.src).trim();
     if(stableUrl(u)&&!out.includes(u))out.push(u);
   });
   const direct=S(document.getElementById('produtoEcomImagem')?.value).trim();
@@ -118,6 +119,26 @@ function cleanProductImages(p,preferred=[]){
   }
   return before!==JSON.stringify({imagem:e.imagem||'',imagens:A(e.imagens)});
 }
+function status(msg,error=false){
+  const el=document.getElementById('produtoEcomUploadStatus');
+  if(!el)return;
+  el.textContent=msg;
+  el.style.color=error?'#b42318':'#15803d';
+}
+function clearStaleErrorForCurrentProduct(){
+  const el=document.getElementById('produtoEcomUploadStatus');
+  if(!el)return false;
+  const text=S(el.textContent);
+  const stale=/não conseguiu localizar o produto|não foi salva|publicação não foi concluída|conexão autenticada/i.test(text);
+  if(!stale)return false;
+  const p=resolveProduct();
+  const remote=A(p?.ecommerce?.imagens).filter(stableUrl);
+  if(!remote.length&&stableUrl(p?.ecommerce?.imagem))remote.push(p.ecommerce.imagem);
+  if(!remote.length)return false;
+  el.textContent=`${remote.length} foto(s) vinculada(s) ao produto e salva(s) no servidor.`;
+  el.style.color='#15803d';
+  return true;
+}
 function cleanupAllRemoteProducts(){
   const d=dbRef();if(!d||!Array.isArray(d.produtos))return 0;
   let changed=0;
@@ -129,13 +150,8 @@ function cleanupAllRemoteProducts(){
     else if(hasRemote){const spec=matchingRequiredSpec(p);if(spec)spec.imagem=''}
   }
   if(changed)persistDb(d);
+  clearStaleErrorForCurrentProduct();
   return changed;
-}
-function status(msg,error=false){
-  const el=document.getElementById('produtoEcomUploadStatus');
-  if(!el)return;
-  el.textContent=msg;
-  el.style.color=error?'#b42318':'#15803d';
 }
 async function publishNow(){
   installAdminFallback();
@@ -151,11 +167,12 @@ function attachUploadedImages(p,urls){
   persistDb(d);
   try{if(typeof renderImages==='function')renderImages()}catch(_){}
   try{window.renderEcomProducts?.()}catch(_){}
+  status(`${urls.length} foto(s) vinculada(s) ao produto e salva(s) no servidor.`);
   return true;
 }
 function installSubmitRescue(){
-  if(document.documentElement.dataset.mediaSyncFix8226==='1')return;
-  document.documentElement.dataset.mediaSyncFix8226='1';
+  if(document.documentElement.dataset.mediaSyncFix8227==='1')return;
+  document.documentElement.dataset.mediaSyncFix8227='1';
   document.addEventListener('submit',ev=>{
     if(ev.target?.id!=='produtoForm')return;
     const p=resolveProduct();
@@ -179,14 +196,15 @@ function installSubmitRescue(){
 }
 function reconcileSoon(){
   installAdminFallback();
-  [60,250,650,1200].forEach(ms=>setTimeout(()=>cleanupAllRemoteProducts(),ms));
+  [60,250,650,1200].forEach(ms=>setTimeout(()=>{cleanupAllRemoteProducts();clearStaleErrorForCurrentProduct()},ms));
 }
 
 installAdminFallback();
 installSubmitRescue();
 reconcileSoon();
-window.addEventListener('john:storefront-hydrated',()=>setTimeout(()=>{cleanupAllRemoteProducts();installAdminFallback()},180));
-window.addEventListener('john:cloud-applied',()=>setTimeout(()=>{cleanupAllRemoteProducts();installAdminFallback()},180));
-document.addEventListener('DOMContentLoaded',()=>setTimeout(()=>{cleanupAllRemoteProducts();installAdminFallback();installSubmitRescue()},350),{once:true});
-window.JohnMediaSyncFix8226={version:VERSION,reconcile:cleanupAllRemoteProducts,publish:publishNow};
+window.addEventListener('john:storefront-hydrated',()=>setTimeout(()=>{cleanupAllRemoteProducts();installAdminFallback();clearStaleErrorForCurrentProduct()},180));
+window.addEventListener('john:cloud-applied',()=>setTimeout(()=>{cleanupAllRemoteProducts();installAdminFallback();clearStaleErrorForCurrentProduct()},180));
+document.addEventListener('click',()=>setTimeout(clearStaleErrorForCurrentProduct,0),true);
+document.addEventListener('DOMContentLoaded',()=>setTimeout(()=>{cleanupAllRemoteProducts();installAdminFallback();installSubmitRescue();clearStaleErrorForCurrentProduct()},350),{once:true});
+window.JohnMediaSyncFix8227={version:VERSION,reconcile:cleanupAllRemoteProducts,publish:publishNow,clearStatus:clearStaleErrorForCurrentProduct};
 })();
