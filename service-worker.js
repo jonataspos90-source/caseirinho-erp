@@ -1,4 +1,4 @@
-const CACHE='john-erp-pwa-v8.18.0-layout-v2';
+const CACHE='john-erp-pwa-v8.18.1-layout-v2';
 
 const MULTI='./multiempresa-v8-12-0.js';
 const STABILITY='./production-stability-v8-10-5.js';

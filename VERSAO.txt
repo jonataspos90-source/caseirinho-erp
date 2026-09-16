@@ -1,1 +1,1 @@
-John ERP Next V8.18.0 - Layout V2 + correção de renderização
+John ERP Next V8.18.1 - Reparo profundo de categorias e imagens E-commerce
