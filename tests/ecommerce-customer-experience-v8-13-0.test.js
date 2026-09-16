@@ -71,7 +71,7 @@ test('horário de entrega continua fora da coluna ações',()=>{
 test('service worker injeta módulos consolidados no clean rebuild',()=>{
   assert.match(sw,/platform-admin-v8-12-0\.js/);
   assert.match(sw,/ecommerce-customer-experience-v8-13-0\.js/);
-  assert.match(sw,/john-erp-pwa-v8\.20\.0-evolucao-segura/);
+  assert.match(sw,/john-erp-pwa-v8\.22\.0-gestao-completa/);
   assert.match(sw,/server-catalog-hydration-v8-19\.js/);
 });
 

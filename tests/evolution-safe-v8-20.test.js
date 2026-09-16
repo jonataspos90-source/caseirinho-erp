@@ -4,14 +4,14 @@ const fs=require('node:fs');
 const path=require('node:path');
 const root=path.resolve(__dirname,'..');
 const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
-const commerce=fs.readFileSync(path.join(root,'commerce-engine-v8-15-0.js'),'utf8');
-const management=fs.readFileSync(path.join(root,'management-engine-v8-16-0.js'),'utf8');
+const commerce=fs.readFileSync(path.join(root,'commerce-engine-v8-22-0.js'),'utf8');
+const management=fs.readFileSync(path.join(root,'management-engine-v8-22-0.js'),'utf8');
 const usage=fs.readFileSync(path.join(root,'erp-usage-v8-20.js'),'utf8');
 
 test('Motor Comercial está isolado do cadastro de categorias/catálogo',()=>{
   assert.doesNotMatch(commerce,/config\.ecommerce\.categorias/);
   assert.doesNotMatch(commerce,/replaceCatalog/);
-  assert.match(commerce,/Motor Comercial do E-commerce/);
+  assert.match(commerce,/Motor Comercial/);
   assert.match(commerce,/CROSS_SELL/);
 });
 

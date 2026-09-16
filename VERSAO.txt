@@ -1,7 +1,33 @@
-JOHN SISTEMA ERP · V8.21.1
+JOHN SISTEMA ERP · V8.22.0 · GESTÃO COMPLETA
 
-- Motor Comercial abre na área central.
-- Central Gerencial abre na área central.
-- Sem botões flutuantes/modais para esses módulos.
-- Sincronização ERP → E-commerce mantida.
-- Catálogo alvo: 35 produtos, incluindo Pão Caseiro e Rosquinha Trançada com Açúcar.
+Esta versão consolida as melhorias aprovadas como funcionalidades visíveis e operacionais.
+
+Motor Comercial como módulo central:
+- Visão Geral
+- Upsell / Cross-sell com foto, vigência, margem mínima e quantidade máxima
+- Combos inteligentes
+- Cupons com vigência e desconto máximo
+- Fidelidade
+- Capacidade diária
+- Carrinhos abandonados
+- Relacionamento: favoritos e recompra
+- Avaliações
+- Sincronização API → Loja ao salvar
+
+Central Gerencial como módulo central:
+- Cockpit do Gestor
+- Pricing Multicanal: Loja, E-commerce, WhatsApp, iFood e 99Food
+- Taxas parametrizadas, motoboy e logística
+- Central de Alertas e Exceções
+- Previsão de demanda, PCP e compras inteligentes
+- Financeiro Gerencial: margem por canal, fluxo 7/15/30/60/90, orçado x realizado, fechamento, conciliação e centros de custo
+- Workflow de Aprovações
+- Automações SE → ENTÃO com execução
+- Lotes, validade, FEFO, rastreabilidade e perdas
+- Tarefas, checklists e manutenção de equipamentos
+- Pergunte ao John
+- Saúde do sistema e auditoria
+
+Catálogo:
+- Mantém a hidratação autoritativa de categorias/imagens do PostgreSQL.
+- Mantém garantia de Pão Caseiro e Rosquinha Trançada com Açúcar para completar 35 produtos online.

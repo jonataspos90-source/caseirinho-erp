@@ -7086,9 +7086,28 @@ const MODULOS=[
   {page:'ecommerceOperacaoV890',rotulo:'🚚 Operação / Entregas',perm:'produtos'},
   {page:'ecommercePricing',rotulo:'💲 Pricing do E-commerce',perm:'pricing'}]},
  {id:'motorcomercial',icone:'🚀',nome:'Motor Comercial',itens:[
-  {special:'commerceEngine',rotulo:'🚀 Abrir Motor Comercial',perm:'produtos'}]},
+  {special:'commerce_dash',rotulo:'📈 Visão Geral',perm:'produtos'},
+  {special:'commerce_offers',rotulo:'🎯 Upsell / Cross-sell',perm:'produtos'},
+  {special:'commerce_combos',rotulo:'🧺 Combos Inteligentes',perm:'produtos'},
+  {special:'commerce_coupons',rotulo:'🏷️ Cupons',perm:'produtos'},
+  {special:'commerce_loyalty',rotulo:'⭐ Fidelidade',perm:'produtos'},
+  {special:'commerce_capacity',rotulo:'🏭 Capacidade',perm:'produtos'},
+  {special:'commerce_abandoned',rotulo:'🛒 Carrinhos Abandonados',perm:'produtos'},
+  {special:'commerce_relationship',rotulo:'❤️ Relacionamento',perm:'produtos'},
+  {special:'commerce_ratings',rotulo:'⭐ Avaliações',perm:'produtos'}]},
  {id:'centralgerencial',icone:'📊',nome:'Central Gerencial',itens:[
-  {special:'managementEngine',rotulo:'📊 Abrir Central Gerencial',perm:'dashboard'},
+  {special:'management_cockpit',rotulo:'🎛️ Cockpit do Gestor',perm:'dashboard'},
+  {special:'management_pricing',rotulo:'💲 Pricing Multicanal',perm:'pricing'},
+  {special:'management_fees',rotulo:'🛵 iFood / 99 / Taxas',perm:'pricing'},
+  {special:'management_alerts',rotulo:'🚨 Alertas e Exceções',perm:'dashboard'},
+  {special:'management_pcp',rotulo:'🏭 PCP + Compras Inteligentes',perm:'fichas'},
+  {special:'management_finance',rotulo:'🏦 Financeiro Gerencial',perm:'fluxoCaixa'},
+  {special:'management_approval',rotulo:'✅ Aprovações',perm:'config'},
+  {special:'management_automation',rotulo:'⚡ Automações SE → ENTÃO',perm:'config'},
+  {special:'management_quality',rotulo:'🧪 Lotes / FEFO / Perdas',perm:'estoque'},
+  {special:'management_ops',rotulo:'📝 Tarefas / Manutenção',perm:'dashboard'},
+  {special:'management_assistant',rotulo:'🤖 Pergunte ao John',perm:'dashboard'},
+  {special:'management_health',rotulo:'🩺 Saúde / Auditoria',perm:'config'},
   {page:'usoAppV87',rotulo:'🟢 Uso do App',perm:'dashboard'},
   {page:'acessosSistemaV85',rotulo:'🔐 Acessos e Segurança',perm:'config'}]},
  {id:'estoque',icone:'📦',nome:'Estoque e Operações',itens:[
@@ -7205,8 +7224,8 @@ function criarEspecial(def){
   else if(def.special==='manFicha')abrirManutencao('ficha');
   else if(def.special==='margemIdeal'&&typeof window.abrirMargemIdeal==='function')window.abrirMargemIdeal();
   else if(def.special==='mixProdutos')abrirMixComercial();
-  else if(def.special==='commerceEngine')window.JohnCommerceEngine815?.open?.();
-  else if(def.special==='managementEngine')window.JohnManagementEngine816?.open?.();
+  else if(def.special.startsWith('commerce_'))window.JohnCommerce822?.open?.(def.special.slice(9));
+  else if(def.special.startsWith('management_'))window.JohnManagement822?.open?.(def.special.slice(11));
   else if(def.special.startsWith('rel_'))abrirRelatorioMenu(def.special.slice(4));
  });
  return b;
@@ -12443,8 +12462,8 @@ setTimeout(enforce,600);
   <script src="./server-catalog-hydration-v8-19.js?v=8190"></script>
 
   <!-- John ERP V8.20.0: evoluções isoladas sobre núcleo estável -->
-  <script src="./commerce-engine-v8-15-0.js?v=8211"></script>
-  <script src="./management-engine-v8-16-0.js?v=8211"></script>
+  <script src="./commerce-engine-v8-22-0.js?v=8220"></script>
+  <script src="./management-engine-v8-22-0.js?v=8220"></script>
   <script src="./erp-usage-v8-20.js?v=8200"></script>
   <script src="./caseirinho-commerce-sync-v8-21.js?v=8211"></script>
 </body>

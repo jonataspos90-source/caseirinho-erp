@@ -43,7 +43,7 @@ test('módulos da policy são aplicados à navegação',()=>{
 test('service worker V8.14 preserva multiempresa e painel consolidado',()=>{
   assert.match(sw,/multiempresa-v8-12-0\.js\?v=8190/);
   assert.match(sw,/platform-admin-v8-12-0\.js\?v=8190/);
-  assert.match(sw,/john-erp-pwa-v8\.20\.0-evolucao-segura/);
+  assert.match(sw,/john-erp-pwa-v8\.22\.0-gestao-completa/);
 });
 
 test('estabilidade existente permanece e possui fallback dos módulos',()=>{

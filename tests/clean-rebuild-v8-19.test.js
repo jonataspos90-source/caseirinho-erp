@@ -68,7 +68,7 @@ test('hidratação V8.19 é somente recuperação de leitura do catálogo públi
 });
 
 test('evoluções seguras são reincorporadas e scripts que competiam com catálogo/layout continuam fora',()=>{
-  for(const f of ['commerce-engine-v8-15-0.js','management-engine-v8-16-0.js','erp-usage-v8-20.js']){
+  for(const f of ['commerce-engine-v8-22-0.js','management-engine-v8-22-0.js','erp-usage-v8-20.js']){
     assert.match(html,new RegExp(f.replaceAll('.','\\.')));
   }
   for(const f of ['ecommerce-recovery-v8-16-1.js','john-next-v8-17.js','catalog-deep-recovery-v8-18-1.js']){
@@ -77,9 +77,9 @@ test('evoluções seguras são reincorporadas e scripts que competiam com catál
 });
 
 test('service worker força cache V8.20 e preserva hidratação + evoluções isoladas',()=>{
-  assert.match(sw,/john-erp-pwa-v8\.20\.0-evolucao-segura/);
+  assert.match(sw,/john-erp-pwa-v8\.22\.0-gestao-completa/);
   assert.match(sw,/server-catalog-hydration-v8-19\.js/);
-  assert.match(sw,/commerce-engine-v8-15-0\.js/);
-  assert.match(sw,/management-engine-v8-16-0\.js/);
+  assert.match(sw,/commerce-engine-v8-22-0\.js/);
+  assert.match(sw,/management-engine-v8-22-0\.js/);
   assert.match(sw,/erp-usage-v8-20\.js/);
 });

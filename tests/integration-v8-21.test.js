@@ -4,8 +4,8 @@ const fs=require('node:fs');
 const path=require('node:path');
 const root=path.resolve(__dirname,'..');
 const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
-const commerce=fs.readFileSync(path.join(root,'commerce-engine-v8-15-0.js'),'utf8');
-const management=fs.readFileSync(path.join(root,'management-engine-v8-16-0.js'),'utf8');
+const commerce=fs.readFileSync(path.join(root,'commerce-engine-v8-22-0.js'),'utf8');
+const management=fs.readFileSync(path.join(root,'management-engine-v8-22-0.js'),'utf8');
 const sync=fs.readFileSync(path.join(root,'caseirinho-commerce-sync-v8-21.js'),'utf8');
 
 test('menu lateral contém módulos E-commerce, Motor Comercial e Central Gerencial',()=>{
@@ -16,9 +16,9 @@ test('menu lateral contém módulos E-commerce, Motor Comercial e Central Gerenc
 });
 
 test('motores expõem API global e sincronizam com o E-commerce',()=>{
-  assert.match(commerce,/window\.JohnCommerceEngine815=/);
+  assert.match(commerce,/window\.JohnCommerce822=/);
   assert.match(commerce,/syncEcommerce/);
-  assert.match(management,/window\.JohnManagementEngine816=/);
+  assert.match(management,/window\.JohnManagement822=/);
   assert.match(management,/syncEcommerce/);
 });
 

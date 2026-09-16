@@ -1,12 +1,12 @@
-const CACHE='john-erp-pwa-v8.20.0-evolucao-segura';
+const CACHE='john-erp-pwa-v8.22.0-gestao-completa';
 
 const MULTI='./multiempresa-v8-12-0.js';
 const STABILITY='./production-stability-v8-10-5.js';
 const PLATFORM='./platform-admin-v8-12-0.js';
 const EXPERIENCE='./ecommerce-customer-experience-v8-13-0.js';
 const HYDRATE='./server-catalog-hydration-v8-19.js';
-const COMMERCE='./commerce-engine-v8-15-0.js';
-const MANAGEMENT='./management-engine-v8-16-0.js';
+const COMMERCE='./commerce-engine-v8-22-0.js';
+const MANAGEMENT='./management-engine-v8-22-0.js';
 const USAGE='./erp-usage-v8-20.js';
 
 const MULTI_TAG='<script src="./multiempresa-v8-12-0.js?v=8190"></'+'script>';
