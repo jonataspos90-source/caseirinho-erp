@@ -78,7 +78,15 @@ function patchVersion(){
  const a=document.getElementById('jnActiveArea');
  if(a)a.textContent=S(a.textContent).replace(/\b8\.(?:18\.0|21\.1|22\.0|22\.1|22\.2)\b/g,VERSION);
 }
-function refreshHub(){try{window.johnNext?.renderHub?.()}catch(_){}patchVersion()}
+function hubNeedsRefresh(){
+ const hub=document.getElementById('johnNextHub');
+ if(!hub)return true;
+ return !hub.querySelector('.jn-module-card[data-jn-group="motorcomercial"]')||!hub.querySelector('.jn-module-card[data-jn-group="centralgerencial"]');
+}
+function refreshHub(){
+ try{if(hubNeedsRefresh())window.johnNext?.renderHub?.()}catch(_){}
+ patchVersion();
+}
 function install(){
  ensureNextCss();installStyle();
  makeGroup('motorcomercial','🚀','Motor Comercial',motor,t=>window.JohnCommerce822?.open?.(t));
@@ -88,6 +96,6 @@ function install(){
 [0,120,350,750,1400,2600,4500,7000].forEach(ms=>setTimeout(install,ms));
 window.addEventListener('john:session-ready',()=>setTimeout(install,60));
 window.addEventListener('john:cloud-applied',()=>setTimeout(install,80));
-document.addEventListener('click',e=>{if(e.target.closest?.('#johnNextHub,.nav,.jn-side-home,#jnHomeBtn'))setTimeout(install,60)},true);
+document.addEventListener('click',e=>{if(e.target.closest?.('.jn-side-home,#jnHomeBtn'))setTimeout(install,120)},true);
 window.JohnCentralModules8223={install,refreshHub,version:VERSION};
 })();
