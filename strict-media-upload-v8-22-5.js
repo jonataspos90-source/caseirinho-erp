@@ -156,8 +156,8 @@ async function strictUploadImages(ev){
 
   if(errors.length){
     const first=errors[0].replace(/^[^:]+:\s*/, '');
-    setStatus(`${saved} foto(s) salva(s). ${errors.length} falharam: ${first}`,true);
-    notify('Não foi possível salvar a foto: '+first);
+    setStatus(`${saved} foto(s) salva(s). ${errors.length} falharam: ${first}. Nenhuma imagem local foi usada.`,true);
+    notify('A foto não foi salva: '+first);
   }else{
     setStatus(`${saved} foto(s) salva(s) no servidor. Agora salve/publice o produto.`);
     notify('Foto salva no servidor com sucesso.');
@@ -172,7 +172,7 @@ function intercept(ev){
   strictUploadImages(ev).catch(err=>{
     console.error('[John ERP 8.22.5] upload estrito:',err);
     const msg=err?.message||String(err);
-    setStatus('Falha ao enviar a foto: '+msg,true);
+    setStatus('Falha ao enviar a foto: '+msg+'. Nenhuma imagem local foi usada.',true);
     notify('A foto não foi salva: '+msg);
   });
 }
