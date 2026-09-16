@@ -1,2 +1,1 @@
-John ERP Next V8.17.0
-Base cumulativa: V8.16.2 + estabilização de login/fotos + nova Central de Módulos John.
+ERP V8.17.1 - John ERP Next · correção definitiva de sessão/login + cache

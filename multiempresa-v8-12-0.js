@@ -655,6 +655,7 @@ async function enterSupportSession(){
       support:true,
       supportByName:S(c.supportByName||current?.supportByName||'Suporte John Sistemas')
     };
+    window.sessao=sessao;
     sessionStorage.setItem('pcp_sessao',JSON.stringify(sessao));
 
     window.__JOHN_SUPPORT_MODE__={
@@ -754,7 +755,8 @@ function installDynamicLogin(){
         tenantName:S(c.tenant?.name||window.__JOHN_TENANT__.name)
       };
 
-      sessionStorage.setItem('pcp_sessao',JSON.stringify(sessao));
+      window.sessao=sessao;
+    sessionStorage.setItem('pcp_sessao',JSON.stringify(sessao));
 
       setLoginError('');
       document.getElementById('loginScreen')?.classList.add('hidden');
