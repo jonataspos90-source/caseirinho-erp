@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <!-- John ERP V8.15.0: isolamento multiempresa carregado antes do ERP legado -->
-  <script src="./multiempresa-v8-12-0.js?v=8172"></script>
+  <script src="./multiempresa-v8-12-0.js?v=8180"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>John Sistema ERP · V8.14.0</title>
@@ -799,7 +799,7 @@ hr{border-top:1px dashed #cbd5e1}
 .nav.john-modular-nav > .john-module-group button[data-page],
 .nav.john-modular-nav > .john-module-group .john-special-nav{visibility:visible!important;pointer-events:auto!important}
 </style>
-  <link rel="stylesheet" href="./john-next-v8-17.css?v=8170">
+  <link rel="stylesheet" href="./john-next-v8-17.css?v=8180">
 </head>
 <body>
 
@@ -2224,16 +2224,7 @@ function imprimirSimulacaoRendimento(){
   const s=ultimaSimulacaoRendimento,p=produto(s.produtoId),linhas=s.itens.map(i=>{const pi=produto(i.produtoId);return `<tr><td>${pi?.codigo||'-'} · ${pi?.nome||'-'}</td><td>${pi?.unidade||'-'}</td><td>${num(i.qtdOriginal)}</td><td>${num(i.qtdNova)}</td><td>${money(i.custoTotal)}</td></tr>`}).join('');
   const w=window.open('','_blank');w.document.write(`<html><head><title>Receita recalculada</title><style>body{font-family:Arial;padding:28px;color:#172033}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{border:1px solid #ccd3df;padding:9px;text-align:left}th{background:#eef2ff}h1{margin-bottom:4px}.meta{color:#596579}</style></head><body><h1>Receita recalculada — ${p?.nome||'-'}</h1><div class="meta">Rendimento original: ${num(s.original)} ${s.unidade} | Rendimento desejado: ${num(s.desejado)} ${s.unidade} | Fator: ${s.fator.toLocaleString('pt-BR',{maximumFractionDigits:6})}</div><table><thead><tr><th>Componente</th><th>Unidade</th><th>Qtd. original</th><th>Qtd. recalculada</th><th>Custo</th></tr></thead><tbody>${linhas}</tbody><tfoot><tr><th colspan="4">Custo total estimado</th><th>${money(s.total)}</th></tr></tfoot></table><p><b>Custo por unidade:</b> ${money(s.unit)}</p>
 
-
-
-
-
-
-<!-- V8.16.1 · restauração definitiva de Categorias/Produtos E-commerce -->
-<script src="ecommerce-recovery-v8-16-1.js"></script>
-
-</body><!-- JOHN ERP V8.6.2 HOTFIX: preserve ecommerce price on product metadata edits -->
-</html>`);w.document.close();w.focus();w.print();
+</body></html>`);w.document.close();w.focus();w.print();
 }
 if($('simFicha'))$('simFicha').addEventListener('change',atualizarDadosSimuladorRendimento);
 if($('simRendimentoDesejado'))$('simRendimentoDesejado').addEventListener('input',()=>calcularRendimentoDesejado(false));
@@ -12429,12 +12420,13 @@ setTimeout(enforce,600);
 </script>
 
   <!-- John ERP V8.15.0: módulos críticos carregados diretamente; SW fica apenas como PWA/cache -->
-  <script src="./production-stability-v8-10-5.js?v=8140"></script>
-  <script src="./platform-admin-v8-12-0.js?v=8140"></script>
-  <script src="./ecommerce-customer-experience-v8-13-0.js?v=8140"></script>
-  <script src="./commerce-engine-v8-15-0.js?v=8150"></script>
-  <script src="./management-engine-v8-16-0.js?v=8160"></script>
-  <script src="./john-next-v8-17.js?v=8170"></script>
+  <script src="./ecommerce-recovery-v8-16-1.js?v=8180"></script>
+  <script src="./production-stability-v8-10-5.js?v=8180"></script>
+  <script src="./platform-admin-v8-12-0.js?v=8180"></script>
+  <script src="./ecommerce-customer-experience-v8-13-0.js?v=8180"></script>
+  <script src="./commerce-engine-v8-15-0.js?v=8180"></script>
+  <script src="./management-engine-v8-16-0.js?v=8180"></script>
+  <script src="./john-next-v8-17.js?v=8180"></script>
 </body>
 <!-- JOHN ERP V8.6.2 HOTFIX: preserve ecommerce price on product metadata edits -->
 </html>

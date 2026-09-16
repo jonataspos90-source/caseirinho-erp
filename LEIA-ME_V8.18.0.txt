@@ -1,0 +1,30 @@
+JOHN ERP NEXT V8.18.0 — LAYOUT V2
+
+Objetivos desta versão:
+1. Corrigir definitivamente a exibição de código JavaScript bruto no conteúdo central.
+2. Sidebar enxuta: Central de Módulos, Mais Acessados e Recentes.
+3. Todos os módulos organizados na área central em cards expansíveis.
+4. Dashboard antigo não fica mais aparecendo abaixo da Central de Módulos.
+5. Telas internas continuam usando as regras e formulários originais do ERP.
+6. Visual uniforme John em painéis, topbars e tabelas.
+7. Mantidas correções de login/sessão, E-commerce, categorias, produtos e fotos.
+
+PUBLICAÇÃO
+- Subir SOMENTE este ERP no repositório caseirinho-erp.
+- Substituir todos os arquivos de mesmo nome.
+- Aguardar GitHub Pages.
+- Fazer Ctrl+Shift+R no desktop.
+- No PWA/celular, fechar completamente e abrir novamente.
+
+VALIDAÇÃO SUGERIDA
+1. Login
+2. Central de Módulos
+3. Mais Acessados na lateral
+4. Abrir Produtos
+5. Abrir Pedidos
+6. E-commerce > Categorias da Loja
+7. E-commerce > Produtos E-commerce
+8. Produtos Online / fotos
+9. Pricing
+10. PCP
+11. Financeiro
