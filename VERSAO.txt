@@ -1,33 +1,37 @@
-JOHN SISTEMA ERP · V8.22.0 · GESTÃO COMPLETA
+JOHN SISTEMA ERP · V8.22.2 · MÓDULOS CENTRAIS
 
-Esta versão consolida as melhorias aprovadas como funcionalidades visíveis e operacionais.
+CORREÇÃO DE NAVEGAÇÃO
+- Motor Comercial deixa de ficar visível no menu lateral.
+- Central Gerencial deixa de ficar visível no menu lateral.
+- Os dois continuam cadastrados internamente para que a Central de Módulos consiga montar seus cards e funções.
+- Ao abrir uma função do Motor Comercial ou da Central Gerencial, o conteúdo é exibido na área central do ERP.
+- Aplicado no PC e no App/PWA com invalidação do cache anterior.
 
-Motor Comercial como módulo central:
+MOTOR COMERCIAL
 - Visão Geral
-- Upsell / Cross-sell com foto, vigência, margem mínima e quantidade máxima
-- Combos inteligentes
-- Cupons com vigência e desconto máximo
+- Upsell / Cross-sell
+- Combos Inteligentes
+- Cupons
 - Fidelidade
-- Capacidade diária
-- Carrinhos abandonados
-- Relacionamento: favoritos e recompra
+- Capacidade
+- Carrinhos Abandonados
+- Relacionamento
 - Avaliações
-- Sincronização API → Loja ao salvar
 
-Central Gerencial como módulo central:
+CENTRAL GERENCIAL
 - Cockpit do Gestor
-- Pricing Multicanal: Loja, E-commerce, WhatsApp, iFood e 99Food
-- Taxas parametrizadas, motoboy e logística
-- Central de Alertas e Exceções
-- Previsão de demanda, PCP e compras inteligentes
-- Financeiro Gerencial: margem por canal, fluxo 7/15/30/60/90, orçado x realizado, fechamento, conciliação e centros de custo
-- Workflow de Aprovações
-- Automações SE → ENTÃO com execução
-- Lotes, validade, FEFO, rastreabilidade e perdas
-- Tarefas, checklists e manutenção de equipamentos
+- Pricing Multicanal
+- iFood / 99 / Taxas
+- Alertas e Exceções
+- PCP + Compras Inteligentes
+- Financeiro Gerencial
+- Aprovações
+- Automações
+- Lotes / FEFO / Perdas
+- Tarefas / Manutenção
 - Pergunte ao John
-- Saúde do sistema e auditoria
+- Saúde / Auditoria
 
-Catálogo:
-- Mantém a hidratação autoritativa de categorias/imagens do PostgreSQL.
-- Mantém garantia de Pão Caseiro e Rosquinha Trançada com Açúcar para completar 35 produtos online.
+INTEGRAÇÃO
+- Mantida API/PostgreSQL/Loja como fonte integrada.
+- Ajustes de produto inativo e quantidade mínima dependem da API 1.18.1 preparada junto desta entrega.
