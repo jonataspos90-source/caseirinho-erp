@@ -19,6 +19,7 @@ jobs:
         run: |
           node --check central-modules-hotfix-v8-22-2.js
           node --check caseirinho-commerce-sync-v8-21.js
+          node --check strict-media-upload-v8-22-5.js
           node --check erp-usage-v8-22-1.js
           node --check commerce-engine-v8-22-0.js
           node --check management-engine-v8-22-0.js

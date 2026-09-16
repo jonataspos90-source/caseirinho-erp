@@ -8,7 +8,7 @@ const central=fs.readFileSync(path.join(root,'central-modules-hotfix-v8-22-2.js'
 const usage=fs.readFileSync(path.join(root,'erp-usage-v8-22-1.js'),'utf8');
 
 test('PWA injeta módulos centrais e recuperação mesmo sobre shell antigo',()=>{
-  assert.match(sw,/john-erp-pwa-v8\.22\.3-ui-catalog-sync/);
+  assert.match(sw,/john-erp-pwa-v8\.22\.5-persistent-media/);
   assert.match(sw,/commerce-engine-v8-22-0\.js/);
   assert.match(sw,/management-engine-v8-22-0\.js/);
   assert.match(sw,/catalog-deep-recovery-v8-18-1\.js/);
