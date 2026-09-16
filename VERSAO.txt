@@ -1,8 +1,1 @@
-John ERP V8.16.1 - Recuperação Categorias e Produtos E-commerce
-- Categorias da Loja fixas no módulo E-commerce
-- Produtos E-commerce fixos no módulo E-commerce
-- Produtos Online mantidos no módulo E-commerce
-- Recuperação do último catálogo válido salvo no navegador
-- Restauração de categoria, preço, imagens, disponibilidade e flag publicar
-- Bloqueio de publicação vazia acidental
-- Preserva Motor Comercial V8.15 e Gestão/Pricing V8.16
+ERP V8.16.2 - Correção login db + recuperação de fotos ecommerce

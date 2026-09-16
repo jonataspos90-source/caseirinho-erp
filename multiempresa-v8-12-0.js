@@ -618,6 +618,7 @@ async function enterSupportSession(){
 
     storePolicy(c.policy||null);
     db=normalizeCloudDb(c.db);
+    window.db=db;
     localStorage.setItem('pcp_app_v1',JSON.stringify(db));
 
     const proxy=(db.usuarios||[]).find(
@@ -726,6 +727,7 @@ function installDynamicLogin(){
 
       // O servidor retornou exclusivamente a base do tenant autenticado.
       db=normalizeCloudDb(c.db);
+      window.db=db;
       localStorage.setItem('pcp_app_v1',JSON.stringify(db));
 
       const u=(db.usuarios||[]).find(
