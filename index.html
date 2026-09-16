@@ -5,7 +5,7 @@
   <script src="./multiempresa-v8-12-0.js?v=8140"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>John Sistema ERP · V8.19.0 Clean Rebuild</title>
+<title>John Sistema ERP · V8.21.1 Módulos Centrais</title>
 <style>
 :root{
   --primary:#5b21b6;--primary2:#7c3aed;--soft:#f5f3ff;--ink:#1f2937;--muted:#6b7280;
@@ -7077,6 +7077,20 @@ const MODULOS=[
  {id:'pricing',icone:'💲',nome:'Pricing',itens:[
   {page:'pricing',rotulo:'💲 Precificação de Produtos'},
   {page:'promocoes',rotulo:'🎯 Promoções'}]},
+ {id:'ecommerce',icone:'🌐',nome:'E-commerce',itens:[
+  {page:'ecommerceAdmin',rotulo:'🌐 Painel / Configurações',perm:'produtos'},
+  {page:'ecommercePedidosRecebidos',rotulo:'📥 Pedidos recebidos',perm:'pedidos'},
+  {page:'ecommerceCategorias',rotulo:'🗂️ Categorias da Loja',perm:'produtos'},
+  {page:'ecommerceProdutos',rotulo:'🛍️ Produtos E-commerce',perm:'produtos'},
+  {page:'ecommerceGradesV88',rotulo:'🧩 Grades / Variações',perm:'produtos'},
+  {page:'ecommerceOperacaoV890',rotulo:'🚚 Operação / Entregas',perm:'produtos'},
+  {page:'ecommercePricing',rotulo:'💲 Pricing do E-commerce',perm:'pricing'}]},
+ {id:'motorcomercial',icone:'🚀',nome:'Motor Comercial',itens:[
+  {special:'commerceEngine',rotulo:'🚀 Abrir Motor Comercial',perm:'produtos'}]},
+ {id:'centralgerencial',icone:'📊',nome:'Central Gerencial',itens:[
+  {special:'managementEngine',rotulo:'📊 Abrir Central Gerencial',perm:'dashboard'},
+  {page:'usoAppV87',rotulo:'🟢 Uso do App',perm:'dashboard'},
+  {page:'acessosSistemaV85',rotulo:'🔐 Acessos e Segurança',perm:'config'}]},
  {id:'estoque',icone:'📦',nome:'Estoque e Operações',itens:[
   {page:'entradas',rotulo:'🚚 Entrada de Produtos'},
   {page:'estoque',rotulo:'📚 Estoque'},
@@ -7191,6 +7205,8 @@ function criarEspecial(def){
   else if(def.special==='manFicha')abrirManutencao('ficha');
   else if(def.special==='margemIdeal'&&typeof window.abrirMargemIdeal==='function')window.abrirMargemIdeal();
   else if(def.special==='mixProdutos')abrirMixComercial();
+  else if(def.special==='commerceEngine')window.JohnCommerceEngine815?.open?.();
+  else if(def.special==='managementEngine')window.JohnManagementEngine816?.open?.();
   else if(def.special.startsWith('rel_'))abrirRelatorioMenu(def.special.slice(4));
  });
  return b;
@@ -12425,6 +12441,12 @@ setTimeout(enforce,600);
   <script src="./platform-admin-v8-12-0.js?v=8140"></script>
   <script src="./ecommerce-customer-experience-v8-13-0.js?v=8140"></script>
   <script src="./server-catalog-hydration-v8-19.js?v=8190"></script>
+
+  <!-- John ERP V8.20.0: evoluções isoladas sobre núcleo estável -->
+  <script src="./commerce-engine-v8-15-0.js?v=8211"></script>
+  <script src="./management-engine-v8-16-0.js?v=8211"></script>
+  <script src="./erp-usage-v8-20.js?v=8200"></script>
+  <script src="./caseirinho-commerce-sync-v8-21.js?v=8211"></script>
 </body>
 <!-- JOHN ERP V8.6.2 HOTFIX: preserve ecommerce price on product metadata edits -->
 </html>

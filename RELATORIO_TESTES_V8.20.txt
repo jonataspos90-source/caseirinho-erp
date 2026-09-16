@@ -1,0 +1,51 @@
+JOHN SISTEMA ERP V8.20.0 — RELATÓRIO DE REGRESSÃO
+
+Resultado automatizado: 93 testes aprovados / 0 falhas.
+
+Cobertura validada:
+- Dashboard
+- Produtos e cadastro
+- Entradas
+- Estoque
+- Patrimônio
+- Inventário
+- Kardex
+- Vendas
+- Fluxo de Caixa
+- Fichas Técnicas
+- Transformações
+- Produção / PCP / Gestão da Produção
+- Separação
+- Pedidos
+- Convênio
+- Lojas
+- Contas de consumo
+- Transferências internas
+- Perdas
+- DRE
+- Fretes
+- Manutenção de margem
+- Pricing e Promoções
+- Pessoas
+- Despesas manuais
+- Freelancers
+- Relatórios
+- Configuração
+- Multiempresa
+- Token e sessão
+- Pedidos E-commerce / frete / aceite / rejeição / PDF
+- Categorias da Loja
+- Produtos Online e imagens
+- Hidratação do catálogo PostgreSQL
+- Motor Comercial isolado do catálogo
+- Central Gerencial / Pricing Multicanal isolado do catálogo
+- Telemetria ERP + Loja/App separada
+- Service Worker/cache V8.20
+
+Banco verificado antes da reconstrução:
+- 6 categorias originais preservadas no catálogo: Nhoque, Panqueca, Tortas, Pães, Molhos, Salgados.
+- 33 produtos online com categoria.
+- 33 produtos online com imagem.
+
+Observação:
+Os testes acima são regressões automatizadas de estrutura/contratos/funções. Após publicação, recomenda-se validar no navegador: login, abertura de páginas, cadastro de teste, publicação do catálogo, pedido E-commerce e atualização de Uso do App.

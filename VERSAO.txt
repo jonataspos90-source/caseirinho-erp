@@ -1,13 +1,7 @@
-John Sistema ERP V8.19.0 CLEAN REBUILD
-Build: 15/09/2026
-Base funcional: V8.14.0 consolidada (14/09/2026)
-API esperada: 1.16.7+
-Schema: 12
+JOHN SISTEMA ERP · V8.21.1
 
-Objetivo: reconstrução limpa após regressões de interface/E-commerce das versões posteriores.
-- Mantém módulos e controladores funcionais da V8.14.
-- Remove do runtime os motores concorrentes V8.15–V8.18.
-- Recupera categorias e imagens a partir do catálogo público autoritativo.
-- Não recria nem apaga dados do PostgreSQL.
-- PostgreSQL validado: 6 categorias; 33 produtos; 33/33 categorizados; 33/33 com imagem.
-- Testes: 89/89 aprovados.
+- Motor Comercial abre na área central.
+- Central Gerencial abre na área central.
+- Sem botões flutuantes/modais para esses módulos.
+- Sincronização ERP → E-commerce mantida.
+- Catálogo alvo: 35 produtos, incluindo Pão Caseiro e Rosquinha Trançada com Açúcar.
