@@ -1,0 +1,26 @@
+name: Test John ERP
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Syntax check
+        run: |
+          node --check central-modules-hotfix-v8-22-2.js
+          node --check erp-usage-v8-22-1.js
+          node --check commerce-engine-v8-22-0.js
+          node --check management-engine-v8-22-0.js
+          node --check service-worker.js
+      - name: Regression tests
+        run: node --test tests/*.test.js
