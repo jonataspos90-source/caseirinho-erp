@@ -16,6 +16,7 @@ const RECOVERY='./ecommerce-recovery-v8-16-1.js';
 const DEEP='./catalog-deep-recovery-v8-18-1.js';
 const CENTRAL_FIX='./central-modules-hotfix-v8-22-2.js';
 const USAGE_FIX='./erp-usage-v8-22-1.js';
+const RELEASE='./release-consistency-v8-22-5.js';
 
 const MULTI_TAG='<script src="./multiempresa-v8-12-0.js?v=8225"></'+'script>';
 const STABILITY_TAG='<script src="./production-stability-v8-10-5.js?v=8225"></'+'script>';
@@ -33,8 +34,9 @@ const RECOVERY_TAG='<script src="./ecommerce-recovery-v8-16-1.js?v=8225"></'+'sc
 const DEEP_TAG='<script src="./catalog-deep-recovery-v8-18-1.js?v=8225"></'+'script>';
 const CENTRAL_FIX_TAG='<script src="./central-modules-hotfix-v8-22-2.js?v=8225"></'+'script>';
 const USAGE_FIX_TAG='<script src="./erp-usage-v8-22-1.js?v=8225"></'+'script>';
+const RELEASE_TAG='<script src="./release-consistency-v8-22-5.js?v=8225"></'+'script>';
 
-const SHELL=['./','./index.html','./manifest.webmanifest','./offline.html','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable-512.png','./icons/apple-touch-icon.png',MULTI,STABILITY,PLATFORM,EXPERIENCE,HYDRATE,NEXTJS,NEXTCSS,COMMERCE,MANAGEMENT,USAGE,SYNC,STRICT_MEDIA,RECOVERY,DEEP,CENTRAL_FIX,USAGE_FIX];
+const SHELL=['./','./index.html','./manifest.webmanifest','./offline.html','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable-512.png','./icons/apple-touch-icon.png',MULTI,STABILITY,PLATFORM,EXPERIENCE,HYDRATE,NEXTJS,NEXTCSS,COMMERCE,MANAGEMENT,USAGE,SYNC,STRICT_MEDIA,RECOVERY,DEEP,CENTRAL_FIX,USAGE_FIX,RELEASE];
 
 async function cacheShell(){const c=await caches.open(CACHE);for(const url of SHELL){try{const r=await fetch(url,{cache:'reload'});if(r.ok)await c.put(url,r.clone())}catch(_){}}}
 function injectBefore(html,needle,tag){if(html.includes(needle))return html;const low=html.toLowerCase(),p=low.lastIndexOf('</body>');return p>=0?html.slice(0,p)+tag+html.slice(p):html+tag}
@@ -57,6 +59,7 @@ async function injectScripts(response){
   html=injectBefore(html,'catalog-deep-recovery-v8-18-1.js',DEEP_TAG);
   html=injectBefore(html,'central-modules-hotfix-v8-22-2.js',CENTRAL_FIX_TAG);
   html=injectBefore(html,'erp-usage-v8-22-1.js',USAGE_FIX_TAG);
+  html=injectBefore(html,'release-consistency-v8-22-5.js',RELEASE_TAG);
   const h=new Headers(response.headers);h.delete('content-length');h.set('Cache-Control','no-cache, no-store, must-revalidate');return new Response(html,{status:response.status,statusText:response.statusText,headers:h});
 }
 self.addEventListener('install',e=>e.waitUntil(cacheShell().then(()=>self.skipWaiting())));
