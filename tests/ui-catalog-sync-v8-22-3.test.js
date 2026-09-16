@@ -33,8 +33,8 @@ test('alterações de catálogo são enviadas após save do ERP',()=>{
   assert.match(sync,/quantidadeMinima/);
 });
 
-test('PWA invalida cache quebrado e usa V8.22.3',()=>{
-  assert.match(sw,/john-erp-pwa-v8\.22\.3-ui-catalog-sync/);
-  assert.match(sw,/john-next-v8-17\.css\?v=8223/);
-  assert.match(sw,/caseirinho-commerce-sync-v8-21\.js\?v=8223/);
+test('PWA invalida cache quebrado e usa V8.22.5',()=>{
+  assert.match(sw,/john-erp-pwa-v8\.22\.5-persistent-media/);
+  assert.match(sw,/john-next-v8-17\.css\?v=8225/);
+  assert.match(sw,/caseirinho-commerce-sync-v8-21\.js\?v=8225/);
 });
