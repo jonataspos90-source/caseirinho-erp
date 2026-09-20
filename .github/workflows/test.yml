@@ -23,6 +23,9 @@ jobs:
           node --check erp-usage-v8-22-1.js
           node --check commerce-engine-v8-22-0.js
           node --check management-engine-v8-22-0.js
+          node --check transaction-persistence-v8-22-12.js
+          node --check store-settings-sync-v8-22-12.js
+          node --check pix-document-fix-v8-22-12.js
           node --check service-worker.js
       - name: Regression tests
         run: node --test tests/*.test.js
