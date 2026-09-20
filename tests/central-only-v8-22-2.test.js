@@ -18,5 +18,5 @@ test('os grupos continuam existentes para a Central de Módulos',()=>{
 test('PWA atual injeta a Central de Módulos e proteção transacional',()=>{
  assert.match(sw,/const CACHE='john-erp-pwa-v8\.22\.\d+[-\w]*'/);
  assert.match(sw,/central-modules-hotfix-v8-22-2\.js/);
- assert.match(sw,/transaction-persistence-v8-22-12\.js/);
+ assert.match(sw,/transaction-persistence-v8-22-13\.js/);
 });
