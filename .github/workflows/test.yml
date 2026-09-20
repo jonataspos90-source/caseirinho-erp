@@ -28,4 +28,18 @@ jobs:
           node --check pix-document-fix-v8-22-12.js
           node --check service-worker.js
       - name: Regression tests
-        run: node --test tests/*.test.js
+        id: regression
+        shell: bash
+        run: |
+          set +e
+          node --test tests/*.test.js > test-output.txt 2>&1
+          code=$?
+          cat test-output.txt
+          exit $code
+      - name: Upload regression report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: regression-report
+          path: test-output.txt
+          if-no-files-found: error
