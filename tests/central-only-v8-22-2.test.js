@@ -15,7 +15,8 @@ test('os grupos continuam existentes para a Central de Módulos',()=>{
  assert.match(src,/makeGroup\('centralgerencial'/);
  assert.match(src,/johnNext\?\.renderHub/);
 });
-test('PWA injeta a versão 8.22.5',()=>{
- assert.match(sw,/john-erp-pwa-v8\.22\.5-persistent-media/);
+test('PWA atual injeta a Central de Módulos e proteção transacional',()=>{
+ assert.match(sw,/const CACHE='john-erp-pwa-v8\.22\.\d+[-\w]*'/);
  assert.match(sw,/central-modules-hotfix-v8-22-2\.js/);
+ assert.match(sw,/transaction-persistence-v8-22-12\.js/);
 });
