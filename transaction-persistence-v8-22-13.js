@@ -5,13 +5,22 @@ window.__JOHN_TX_PERSIST_82213__=true;
 const VERSION='8.22.13',DB_KEY='pcp_app_v1',BACKUP_KEY='john_erp_transaction_backup_v1',PRE_ACTIVATION_KEY='john_public_pre_activation_backup_v1';
 const S=v=>String(v??''),A=v=>Array.isArray(v)?v:[],clone=v=>{try{return JSON.parse(JSON.stringify(v))}catch(_){return v}};
 function st(){try{return window.localStorage}catch(_){return null}}
+function ss(){try{return window.sessionStorage}catch(_){return null}}
 function parse(raw){try{const x=JSON.parse(raw||'null');return x&&typeof x==='object'&&!Array.isArray(x)?x:null}catch(_){return null}}
 function read(k){try{return parse(st()?.getItem(k))}catch(_){return null}}
 function write(k,v){try{st()?.setItem(k,JSON.stringify(v));return true}catch(_){return false}}
 function dbRef(){try{if(typeof db!=='undefined'&&db&&typeof db==='object')return db}catch(_){};try{return window.db||null}catch(_){return null}}
 function cloud(){try{return JSON.parse(st()?.getItem('john_cloud_config_v1')||'{}')||{}}catch(_){return{}}}
+function tenantSlug(){return S(window.__JOHN_TENANT__?.slug||st()?.getItem('john_tenant_slug')||cloud().storeSlug||'caseirinho')||'caseirinho'}
+function sessionObj(store,key){try{return parse(store?.getItem(key))||{}}catch(_){return{}}}
 function apiBase(){return S(cloud().apiUrl||'https://john-cloud-api-production.up.railway.app').replace(/\/+$/,'')}
-function apiKey(){return S(cloud().apiKey||'')}
+function apiKey(){
+ const c=cloud();if(S(c.apiKey).trim())return S(c.apiKey).trim();
+ for(const store of [ss(),st()]){const s=sessionObj(store,'john_user_session_v2');if(S(s.cloudToken).trim())return S(s.cloudToken).trim();}
+ const ns='john:'+tenantSlug()+':john_user_session_v2';const n=sessionObj(st(),ns);if(S(n.cloudToken).trim())return S(n.cloudToken).trim();
+ try{const s=window.johnGetSession?.();if(S(s?.cloudToken).trim())return S(s.cloudToken).trim()}catch(_){}
+ return'';
+}
 function orderKeys(o){const out=[];if(S(o?.id))out.push('id:'+S(o.id));if(S(o?.ecommercePedidoId))out.push('ecom:'+S(o.ecommercePedidoId));if(Number(o?.numero)>0)out.push('num:'+Number(o.numero));return out}
 function sameOrder(a,b){const ka=new Set(orderKeys(a));return orderKeys(b).some(k=>ka.has(k))}
 function ts(o){for(const k of ['atualizadoEm','updatedAt','updated_at','criadoEm','createdAt']){const n=Date.parse(S(o?.[k]));if(Number.isFinite(n))return n}return 0}
@@ -24,11 +33,11 @@ function buildBootBackup(){const existing=read(BACKUP_KEY),pre=read(PRE_ACTIVATI
 const BOOT_BACKUP=buildBootBackup();let ready=false,wrapping=false,pulling=null;
 function persistDb(d){try{const store=typeof __johnLocalStorage!=='undefined'?__johnLocalStorage:st();store?.setItem(DB_KEY,JSON.stringify(d));return true}catch(_){return false}}
 function applyBackup(){const d=dbRef(),b=read(BACKUP_KEY)||BOOT_BACKUP;if(!d||!b)return false;let changed=false;const p=mergeOrders(A(d.pedidos),A(b.pedidos));if(JSON.stringify(p)!==JSON.stringify(A(d.pedidos))){d.pedidos=p;changed=true}const pe=mergePeople(A(d.pessoas),A(b.pessoas));if(JSON.stringify(pe)!==JSON.stringify(A(d.pessoas))){d.pessoas=pe;changed=true}for(const k of ['convenioDuplicatas','convenioPagamentos','fluxoCaixa','vendas']){if(!Array.isArray(d[k]))d[k]=[];const merged=[];const seen=new Set();for(const x of [...A(d[k]),...A(b[k])]){const id=S(x?.id)||JSON.stringify(x);if(seen.has(id))continue;seen.add(id);merged.push(clone(x))}if(JSON.stringify(merged)!==JSON.stringify(d[k])){d[k]=merged;changed=true}}if(changed){persistDb(d);try{window.renderAll?.()}catch(_){};try{window.renderPedidos?.()}catch(_){}}return changed}
-async function fetchCloudDb(){const key=apiKey();if(!key)throw new Error('Sessão do ERP sem credencial de nuvem.');const r=await fetch(apiBase()+'/api/v1/admin/sync/export?_orders='+Date.now(),{cache:'no-store',headers:{'Authorization':'Bearer '+key,'Cache-Control':'no-cache'}});let j={};try{j=await r.json()}catch(_){}if(!r.ok)throw new Error(j?.error||('HTTP '+r.status));return j?.db&&typeof j.db==='object'?j.db:{}}
+async function fetchCloudDb(){const key=apiKey();if(!key)throw new Error('Sessão do ERP sem credencial de nuvem. Entre novamente.');const r=await fetch(apiBase()+'/api/v1/admin/sync/export?_orders='+Date.now(),{cache:'no-store',headers:{'Authorization':'Bearer '+key,'Cache-Control':'no-cache'}});let j={};try{j=await r.json()}catch(_){}if(!r.ok)throw new Error(j?.error||('HTTP '+r.status));return j?.db&&typeof j.db==='object'?j.db:{}}
 async function reconcileCloud(force=false){if(pulling)return pulling;pulling=(async()=>{try{try{window.johnCloudCapturarAlteracoes?.();await window.johnCloudFlushIncremental?.(true)}catch(_){}const remote=await fetchCloudDb(),d=dbRef();if(!d)return false;let changed=false;const orders=mergeOrders(A(d.pedidos),A(remote.pedidos));if(JSON.stringify(orders)!==JSON.stringify(A(d.pedidos))){d.pedidos=orders;changed=true}const people=mergePeople(A(d.pessoas),A(remote.pessoas));if(JSON.stringify(people)!==JSON.stringify(A(d.pessoas))){d.pessoas=people;changed=true}if(changed){persistDb(d);refreshBackup();try{window.renderPedidos?.()}catch(_){};try{window.renderAll?.()}catch(_){};window.dispatchEvent(new CustomEvent('john:orders-cloud-restored',{detail:{count:A(d.pedidos).length,version:VERSION}}))}return changed}catch(e){console.warn('[John '+VERSION+'] recuperação autoritativa de pedidos:',e);return false}finally{pulling=null}})();return pulling}
 function refreshBackup(){if(!ready)return;const d=dbRef();if(!d)return;const snap=snapshotFromDb(d);if(snap)write(BACKUP_KEY,snap)}
 function wrapSave(){if(wrapping)return;const f=window.save;if(typeof f!=='function'||f.__johnTxPersist82213)return;wrapping=true;const w=function(){const r=f.apply(this,arguments);setTimeout(refreshBackup,0);setTimeout(()=>{try{window.johnCloudCapturarAlteracoes?.();window.johnCloudFlushIncremental?.(true)}catch(_){}},80);return r};w.__johnTxPersist82213=true;window.save=w;wrapping=false}
-function boot(){applyBackup();ready=true;refreshBackup();wrapSave();let n=0;const t=setInterval(()=>{n++;wrapSave();if(n===6)reconcileCloud(true);if(n>40)clearInterval(t)},500);window.addEventListener('focus',()=>setTimeout(()=>reconcileCloud(false),250));window.addEventListener('beforeunload',refreshBackup)}
-window.JohnTransactionPersistence82213={version:VERSION,applyBackup,refreshBackup,reconcileCloud,backupKey:BACKUP_KEY};
+function boot(){applyBackup();ready=true;refreshBackup();wrapSave();let n=0;const t=setInterval(()=>{n++;wrapSave();if(n===6)reconcileCloud(true);if(n>40)clearInterval(t)},500);window.addEventListener('john:session-ready',()=>setTimeout(()=>reconcileCloud(true),150));window.addEventListener('focus',()=>setTimeout(()=>reconcileCloud(false),250));window.addEventListener('beforeunload',refreshBackup)}
+window.JohnTransactionPersistence82213={version:VERSION,applyBackup,refreshBackup,reconcileCloud,fetchCloudDb,apiKey,backupKey:BACKUP_KEY};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,40),{once:true});else setTimeout(boot,40);
 })();
