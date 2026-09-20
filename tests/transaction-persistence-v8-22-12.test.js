@@ -2,19 +2,19 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 
-const tx=fs.readFileSync('transaction-persistence-v8-22-12.js','utf8');
-const settings=fs.readFileSync('store-settings-sync-v8-22-12.js','utf8');
-const pix=fs.readFileSync('pix-document-fix-v8-22-12.js','utf8');
+const tx=fs.readFileSync('transaction-persistence-v8-22-13.js','utf8');
+const settings=fs.readFileSync('store-settings-sync-v8-22-13.js','utf8');
+const pix=fs.readFileSync('pix-document-fix-v8-22-13.js','utf8');
 const sw=fs.readFileSync('service-worker.js','utf8');
 
-test('PWA carrega proteção transacional antes das demais camadas',()=>{
-  assert.match(sw,/john-erp-pwa-v8\.22\.12-transaction-persistence/);
-  assert.match(sw,/transaction-persistence-v8-22-12\.js/);
-  assert.match(sw,/injectHead\(html,'transaction-persistence-v8-22-12\.js',TX_TAG\)/);
-  assert.ok(sw.indexOf("injectHead(html,'transaction-persistence-v8-22-12.js'") < sw.indexOf("injectHead(html,'multiempresa-v8-12-0.js'"));
+test('PWA carrega V8.22.13 com proteção transacional antes das demais camadas',()=>{
+  assert.match(sw,/john-erp-pwa-v8\.22\.13-store-authority/);
+  assert.match(sw,/transaction-persistence-v8-22-13\.js/);
+  assert.match(sw,/injectHead\(html,'transaction-persistence-v8-22-13\.js',TX_TAG\)/);
+  assert.ok(sw.indexOf("injectHead(html,'transaction-persistence-v8-22-13.js'") < sw.indexOf("injectHead(html,'multiempresa-v8-12-0.js'"));
 });
 
-test('pedidos existentes e backup pré-ativação entram na reconciliação',()=>{
+test('pedidos existentes e backup pré-ativação continuam protegidos',()=>{
   assert.match(tx,/john_public_pre_activation_backup_v1/);
   assert.match(tx,/john_erp_transaction_backup_v1/);
   assert.match(tx,/pedidos/);
@@ -23,24 +23,29 @@ test('pedidos existentes e backup pré-ativação entram na reconciliação',()=
   assert.match(tx,/sameOrder/);
 });
 
-test('backup transacional também preserva clientes e financeiro ligado ao pedido',()=>{
-  assert.match(tx,/pessoas/);
-  assert.match(tx,/convenioDuplicatas/);
-  assert.match(tx,/convenioPagamentos/);
-  assert.match(tx,/fluxoCaixa/);
-  assert.match(tx,/vendas/);
+test('pedidos também são recuperados da base autoritativa da API',()=>{
+  assert.match(tx,/\/api\/v1\/admin\/sync\/export/);
+  assert.match(tx,/fetchCloudDb/);
+  assert.match(tx,/reconcileCloud/);
+  assert.match(tx,/remote\.pedidos/);
+  assert.match(tx,/john:orders-cloud-restored/);
 });
 
-test('PIX local preenchido não é substituído pelo catálogo público',()=>{
-  assert.match(settings,/PIX local preenchido é autoritativo/);
-  assert.match(settings,/!S\(p\.chavePix\)\.trim\(\)&&S\(rp\.chave\)\.trim\(\)/);
-  assert.doesNotMatch(settings,/published>=ts\(p\.atualizadoEm\)/);
+test('backup transacional preserva clientes e financeiro ligado ao pedido',()=>{
+  for(const s of ['pessoas','convenioDuplicatas','convenioPagamentos','fluxoCaixa','vendas'])assert.match(tx,new RegExp(s));
 });
 
-test('documento do PDF acompanha chave PIX CPF ou CNPJ',()=>{
-  assert.match(pix,/digits\.length===11\|\|digits\.length===14/);
-  assert.match(pix,/p\.documento=digits/);
-  assert.match(pix,/p\.documentoTipo=tipo/);
-  assert.match(pix,/38824690807/);
-  assert.match(pix,/p\.documento=''/);
+test('PIX da impressão vem sempre do Cadastro da Loja',()=>{
+  assert.match(settings,/origem='CADASTRO_LOJA'/);
+  assert.match(settings,/function storePix/);
+  assert.match(settings,/applyStorePixToPrint/);
+  assert.match(settings,/a origem do PIX é sempre o Cadastro da Loja/);
+  assert.doesNotMatch(settings,/PIX local preenchido é autoritativo/);
+});
+
+test('PDF força leitura do PIX do Cadastro da Loja',()=>{
+  assert.match(pix,/function storePix/);
+  assert.match(pix,/origem:'CADASTRO_LOJA'/);
+  assert.match(pix,/wrapDados/);
+  assert.match(pix,/wrapPrint/);
 });
