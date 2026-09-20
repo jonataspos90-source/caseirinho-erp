@@ -13,7 +13,7 @@ test('PWA injeta módulos centrais e recuperação mesmo sobre shell antigo',()=
   assert.match(sw,/management-engine-v8-22-0\.js/);
   assert.match(sw,/catalog-deep-recovery-v8-18-1\.js/);
   assert.match(sw,/central-modules-hotfix-v8-22-2\.js/);
-  assert.match(sw,/transaction-persistence-v8-22-12\.js/);
+  assert.match(sw,/transaction-persistence-v8-22-13\.js/);
 });
 test('Motor Comercial e Central Gerencial alimentam a central sem aparecer na sidebar',()=>{
   assert.match(central,/Motor Comercial/);
