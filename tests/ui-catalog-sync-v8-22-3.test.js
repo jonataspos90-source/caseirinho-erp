@@ -38,5 +38,5 @@ test('PWA invalida caches anteriores e carrega os módulos atuais com cache-bust
   assert.match(sw,/keys\.filter\(k=>k!==CACHE&&k\.startsWith\('john-erp-pwa-'\)\)/);
   assert.match(sw,/john-next-v8-17\.css\?v=\d+/);
   assert.match(sw,/caseirinho-commerce-sync-v8-21\.js\?v=\d+/);
-  assert.match(sw,/transaction-persistence-v8-22-12\.js/);
+  assert.match(sw,/transaction-persistence-v8-22-13\.js/);
 });
