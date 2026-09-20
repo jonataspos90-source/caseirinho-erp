@@ -5,13 +5,16 @@ const fs=require('node:fs');
 const tx=fs.readFileSync('transaction-persistence-v8-22-13.js','utf8');
 const settings=fs.readFileSync('store-settings-sync-v8-22-13.js','utf8');
 const pix=fs.readFileSync('pix-document-fix-v8-22-13.js','utf8');
+const integrity=fs.readFileSync('production-integrity-v8-22-14.js','utf8');
 const sw=fs.readFileSync('service-worker.js','utf8');
 
-test('PWA carrega V8.22.13 com proteção transacional antes das demais camadas',()=>{
-  assert.match(sw,/john-erp-pwa-v8\.22\.13-store-authority/);
+test('PWA carrega proteção transacional e integridade V8.22.14',()=>{
+  assert.match(sw,/john-erp-pwa-v8\.22\.14-production-integrity/);
   assert.match(sw,/transaction-persistence-v8-22-13\.js/);
+  assert.match(sw,/production-integrity-v8-22-14\.js/);
   assert.match(sw,/injectHead\(html,'transaction-persistence-v8-22-13\.js',TX_TAG\)/);
   assert.ok(sw.indexOf("injectHead(html,'transaction-persistence-v8-22-13.js'") < sw.indexOf("injectHead(html,'multiempresa-v8-12-0.js'"));
+  assert.ok(sw.indexOf("injectBefore(html,'pix-document-fix-v8-22-13.js'") < sw.indexOf("injectBefore(html,'production-integrity-v8-22-14.js'"));
 });
 
 test('pedidos existentes e backup pré-ativação continuam protegidos',()=>{
@@ -43,9 +46,17 @@ test('PIX da impressão vem sempre do Cadastro da Loja',()=>{
   assert.doesNotMatch(settings,/PIX local preenchido é autoritativo/);
 });
 
-test('PDF força leitura do PIX do Cadastro da Loja',()=>{
+test('PDF força leitura do PIX do Cadastro da Loja e intercepta o HTML final',()=>{
   assert.match(pix,/function storePix/);
   assert.match(pix,/origem:'CADASTRO_LOJA'/);
-  assert.match(pix,/wrapDados/);
-  assert.match(pix,/wrapPrint/);
+  assert.match(integrity,/function injectPix/);
+  assert.match(integrity,/johnPixAuthority82214/);
+  assert.match(integrity,/Dados carregados do Cadastro da Loja/);
+});
+
+test('persistência do último pedido possui fila contra gravações concorrentes',()=>{
+  assert.match(integrity,/saveQueued=true/);
+  assert.match(integrity,/while\(saveQueued\)/);
+  assert.match(integrity,/johnCloudFlushIncremental/);
+  assert.match(integrity,/persistDb\(\)/);
 });
