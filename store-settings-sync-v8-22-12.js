@@ -1,0 +1,33 @@
+(function(){
+'use strict';
+if(window.__JOHN_STORE_SETTINGS_SYNC_82212__)return;
+window.__JOHN_STORE_SETTINGS_SYNC_82212__=true;
+const VERSION='8.22.12';
+const S=v=>String(v??''),A=v=>Array.isArray(v)?v:[];
+let lastFp='',publishing=null,reconciling=null;
+function storage(){try{return typeof __johnLocalStorage!=='undefined'?__johnLocalStorage:localStorage}catch(_){return localStorage}}
+function dbRef(){try{if(typeof db!=='undefined'&&db&&typeof db==='object')return db}catch(_){};try{return window.db||null}catch(_){return null}}
+function dbKey(){try{return typeof DB_KEY!=='undefined'?DB_KEY:'pcp_app_v1'}catch(_){return'pcp_app_v1'}}
+function saveDb(){const d=dbRef();if(!d)return;try{storage().setItem(dbKey(),JSON.stringify(d))}catch(_){} }
+function cloudCfg(){let c={};try{c=JSON.parse(storage().getItem('john_cloud_config_v1')||'{}')||{}}catch(_){}return{apiUrl:S(c.apiUrl||'https://john-cloud-api-production.up.railway.app').replace(/\/+$/,''),slug:S(c.storeSlug||'caseirinho')||'caseirinho'} }
+function store(){const d=dbRef();return A(d?.lojas).find(x=>S(x?.padrao).toUpperCase()==='SIM'&&S(x?.status||'ATIVA').toUpperCase()!=='INATIVA')||A(d?.lojas).find(x=>S(x?.status||'ATIVA').toUpperCase()!=='INATIVA')||A(d?.lojas)[0]||null}
+function pixCfg(){const d=dbRef();if(!d)return{};d.config=d.config&&typeof d.config==='object'?d.config:{};return d.config.impressaoPedidos=d.config.impressaoPedidos&&typeof d.config.impressaoPedidos==='object'?d.config.impressaoPedidos:{} }
+function normalizePix(mark=false){const p=pixCfg(),raw=S(p.chavePix).trim(),digits=raw.replace(/\D/g,''),doc=(digits.length===11||digits.length===14)&&S(raw).replace(/[\d.\-\/\s]/g,'')==='';let ch=false;if(doc){const tipo=digits.length===11?'CPF':'CNPJ';if(S(p.documento)!==digits){p.documento=digits;ch=true}if(S(p.documentoTipo).toUpperCase()!==tipo){p.documentoTipo=tipo;ch=true}}if(mark||ch){p.atualizadoEm=p.atualizadoEm||new Date().toISOString();saveDb()}return ch}
+function fingerprint(){const l=store()||{},p=pixCfg();return JSON.stringify({store:[l.id,l.nome,l.telefone,l.whatsapp,l.email,l.endereco,l.numero,l.bairro,l.cidade,l.uf,l.cep,l.apresentacao,l.horarioFuncionamento,l.atualizadoEm],pix:[p.chavePix,p.pixNomeRecebedor,p.pixCidade,p.documento,p.documentoTipo,p.atualizadoEm]})}
+async function cloudSync(){try{window.johnCloudCapturarAlteracoes?.();await window.johnCloudFlushIncremental?.(true)}catch(e){console.warn('[John '+VERSION+'] sync cloud:',e)}}
+async function publish(){if(publishing)return publishing;publishing=(async()=>{normalizePix(false);await cloudSync();const fn=window.JohnV880?.canonicalPublish||window.publicarCatalogoEcommerce||window.JohnCaseirinhoCatalogSync821?.publish;if(typeof fn!=='function')throw new Error('Publicador do E-commerce não carregado.');const out=await fn(true);lastFp=fingerprint();return out})().finally(()=>{publishing=null});return publishing}
+async function syncChanged(force=false){const fp=fingerprint();if(!force&&(!fp||fp===lastFp))return;try{await publish();window.dispatchEvent(new CustomEvent('john:store-settings-synced',{detail:{version:VERSION}}))}catch(e){console.warn('[John '+VERSION+'] publicação de dados da loja/PIX:',e)}}
+async function fetchCatalog(){const c=cloudCfg(),r=await fetch(c.apiUrl+'/api/v1/public/store/'+encodeURIComponent(c.slug)+'/catalog?_settings='+Date.now(),{cache:'no-store',headers:{'Cache-Control':'no-store','Pragma':'no-cache'}});let j={};try{j=await r.json()}catch(_){}if(!r.ok)throw new Error(j?.error||('HTTP '+r.status));return j}
+function applyCatalog(cat){const d=dbRef();if(!d||!cat?.loja)return false;const remote=cat.loja;let changed=false;const l=store();
+ // Dados públicos da loja podem hidratar campos vazios. Não substituem uma edição local já preenchida.
+ if(l){const map={nome:remote.nome||remote.nomeLoja,razao:remote.razao,cnpj:remote.cnpj,telefone:remote.telefone,whatsapp:remote.whatsapp,email:remote.email,apresentacao:remote.apresentacao||remote.subtitulo,horarioFuncionamento:remote.horarioFuncionamento,cep:remote.cep,endereco:remote.endereco||remote.logradouro,numero:remote.numero,complemento:remote.complemento,bairro:remote.bairro,cidade:remote.cidade,uf:remote.uf};for(const[k,v]of Object.entries(map)){if(!S(l[k]).trim()&&S(v).trim()){l[k]=v;changed=true}}}
+ // REGRA V8.22.12: PIX local preenchido é autoritativo. Catálogo público nunca sobrescreve chave/documento local.
+ const rp=remote.pix,p=pixCfg();if(rp&&!S(p.chavePix).trim()&&S(rp.chave).trim()){p.chavePix=S(rp.chave);if(!S(p.pixNomeRecebedor).trim()&&S(rp.nome).trim())p.pixNomeRecebedor=S(rp.nome);if(!S(p.pixCidade).trim()&&S(rp.cidade).trim())p.pixCidade=S(rp.cidade);p.atualizadoEm=p.atualizadoEm||cat.publishedAt||new Date().toISOString();normalizePix(false);changed=true}else normalizePix(false);
+ if(changed){saveDb();try{window.renderLojas?.()}catch(_){};try{window.renderCamposPix?.()}catch(_){}}return changed}
+async function reconcile(){if(reconciling)return reconciling;reconciling=(async()=>{try{normalizePix(false);const cat=await fetchCatalog();const changed=applyCatalog(cat);lastFp=fingerprint();return changed?'REMOTE_FILLED_EMPTY_FIELDS':'LOCAL_PRIORITY'}catch(e){console.warn('[John '+VERSION+'] reconciliação loja/PIX:',e);lastFp=fingerprint();return'LOCAL_ONLY'}})().finally(()=>{reconciling=null});return reconciling}
+function markLocalEdit(){const p=pixCfg();p.atualizadoEm=new Date().toISOString();normalizePix(false);saveDb();try{window.JohnTransactionPersistence82212?.refreshBackup?.()}catch(_){};lastFp='';setTimeout(()=>syncChanged(true),200)}
+function installWatch(){lastFp=fingerprint();setInterval(()=>syncChanged(false),2200);document.addEventListener('submit',e=>{if(e.target?.id==='lojaForm'){const l=store();if(l)l.atualizadoEm=new Date().toISOString();saveDb();lastFp='';setTimeout(()=>syncChanged(true),300)}},true);document.addEventListener('click',e=>{const id=e.target?.id||'';if(id==='configSalvarImpressao')setTimeout(markLocalEdit,120);if(id==='btnSalvarLojaFinal'){const l=store();if(l)l.atualizadoEm=new Date().toISOString();saveDb();lastFp='';setTimeout(()=>syncChanged(true),350)}},true)}
+async function boot(){normalizePix(false);await reconcile();installWatch()}
+window.JohnStoreSettingsSync82212={version:VERSION,reconcile,publish,syncChanged,fetchCatalog,normalizePix};
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,180),{once:true});else setTimeout(boot,180);
+})();
