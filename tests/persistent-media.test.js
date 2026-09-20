@@ -19,8 +19,8 @@ test('falha de upload não cria fallback local silencioso',()=>{
   assert.match(media,/stopImmediatePropagation\(\)/);
 });
 
-test('PWA injeta o upload estrito no ERP',()=>{
+test('PWA continua injetando o upload estrito no ERP nas versões posteriores',()=>{
   assert.match(sw,/strict-media-upload-v8-22-5\.js/);
-  assert.match(sw,/john-erp-pwa-v8\.22\.5-persistent-media/);
+  assert.match(sw,/const CACHE='john-erp-pwa-v8\.22\.\d+[-\w]*'/);
   assert.match(sw,/injectBefore\(html,'strict-media-upload-v8-22-5\.js',STRICT_MEDIA_TAG\)/);
 });
