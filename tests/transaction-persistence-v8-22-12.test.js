@@ -9,9 +9,10 @@ const integrity=fs.readFileSync('production-integrity-v8-22-14.js','utf8');
 const sw=fs.readFileSync('service-worker.js','utf8');
 
 test('PWA carrega proteção transacional, integridade V8.22.14 e recuperação V8.22.15',()=>{
-  assert.match(sw,/john-erp-pwa-v8\.22\.14-production-integrity/);
+  assert.match(sw,/john-erp-pwa-v8\.22\.15-real-recovery/);
   assert.match(sw,/transaction-persistence-v8-22-13\.js/);
   assert.match(sw,/production-integrity-v8-22-14\.js/);
+  assert.match(sw,/production-recovery-v8-22-15\.js/);
   assert.match(sw,/injectHead\(html,'transaction-persistence-v8-22-13\.js',TX_TAG\)/);
   assert.ok(sw.indexOf("injectHead(html,'transaction-persistence-v8-22-13.js'") < sw.indexOf("injectHead(html,'multiempresa-v8-12-0.js'"));
   assert.ok(sw.indexOf("injectBefore(html,'pix-document-fix-v8-22-13.js'") < sw.indexOf("injectBefore(html,'production-integrity-v8-22-14.js'"));
