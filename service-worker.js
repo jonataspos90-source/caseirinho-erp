@@ -1,4 +1,4 @@
-const CACHE='john-erp-pwa-v8.22.14-production-integrity';
+const CACHE='john-erp-pwa-v8.22.15-real-recovery';
 
 const TX='./transaction-persistence-v8-22-13.js';
 const MULTI='./multiempresa-v8-12-0.js';
@@ -18,6 +18,7 @@ const PUBLISH_FIX='./catalog-publish-fix-v8-22-8.js';
 const STORE_SETTINGS='./store-settings-sync-v8-22-13.js';
 const PIX_DOCUMENT='./pix-document-fix-v8-22-13.js';
 const INTEGRITY='./production-integrity-v8-22-14.js';
+const REAL_RECOVERY='./production-recovery-v8-22-15.js';
 const RECOVERY='./ecommerce-recovery-v8-16-1.js';
 const DEEP='./catalog-deep-recovery-v8-18-1.js';
 const CENTRAL_FIX='./central-modules-hotfix-v8-22-2.js';
@@ -41,14 +42,15 @@ const MEDIA_SYNC_TAG='<script src="./media-sync-fix-v8-22-6.js?v=82214"></'+'scr
 const PUBLISH_FIX_TAG='<script src="./catalog-publish-fix-v8-22-8.js?v=82214"></'+'script>';
 const STORE_SETTINGS_TAG='<script src="./store-settings-sync-v8-22-13.js?v=82214"></'+'script>';
 const PIX_DOCUMENT_TAG='<script src="./pix-document-fix-v8-22-13.js?v=82214"></'+'script>';
-const INTEGRITY_TAG='<script src="./production-integrity-v8-22-14.js?v=82214"></'+'script>';
+const INTEGRITY_TAG='<script src="./production-integrity-v8-22-14.js?v=82215"></'+'script>';
+const REAL_RECOVERY_TAG='<script src="./production-recovery-v8-22-15.js?v=82215"></'+'script>';
 const RECOVERY_TAG='<script src="./ecommerce-recovery-v8-16-1.js?v=82214"></'+'script>';
 const DEEP_TAG='<script src="./catalog-deep-recovery-v8-18-1.js?v=82214"></'+'script>';
 const CENTRAL_FIX_TAG='<script src="./central-modules-hotfix-v8-22-2.js?v=82214"></'+'script>';
 const USAGE_FIX_TAG='<script src="./erp-usage-v8-22-1.js?v=82214"></'+'script>';
 const RELEASE_TAG='<script src="./release-consistency-v8-22-5.js?v=82214"></'+'script>';
 
-const SHELL=['./','./index.html','./manifest.webmanifest','./offline.html','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable-512.png','./icons/apple-touch-icon.png',TX,MULTI,STABILITY,PLATFORM,EXPERIENCE,HYDRATE,NEXTJS,NEXTCSS,COMMERCE,MANAGEMENT,USAGE,SYNC,STRICT_MEDIA,MEDIA_SYNC,PUBLISH_FIX,STORE_SETTINGS,PIX_DOCUMENT,INTEGRITY,RECOVERY,DEEP,CENTRAL_FIX,USAGE_FIX,RELEASE];
+const SHELL=['./','./index.html','./manifest.webmanifest','./offline.html','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable-512.png','./icons/apple-touch-icon.png',TX,MULTI,STABILITY,PLATFORM,EXPERIENCE,HYDRATE,NEXTJS,NEXTCSS,COMMERCE,MANAGEMENT,USAGE,SYNC,STRICT_MEDIA,MEDIA_SYNC,PUBLISH_FIX,STORE_SETTINGS,PIX_DOCUMENT,INTEGRITY,REAL_RECOVERY,RECOVERY,DEEP,CENTRAL_FIX,USAGE_FIX,RELEASE];
 
 async function cacheShell(){const c=await caches.open(CACHE);for(const url of SHELL){try{const r=await fetch(url,{cache:'reload'});if(r.ok)await c.put(url,r.clone())}catch(_){}}}
 function injectBefore(html,needle,tag){if(html.includes(needle))return html;const low=html.toLowerCase(),p=low.lastIndexOf('</body>');return p>=0?html.slice(0,p)+tag+html.slice(p):html+tag}
@@ -73,6 +75,7 @@ async function injectScripts(response){
   html=injectBefore(html,'store-settings-sync-v8-22-13.js',STORE_SETTINGS_TAG);
   html=injectBefore(html,'pix-document-fix-v8-22-13.js',PIX_DOCUMENT_TAG);
   html=injectBefore(html,'production-integrity-v8-22-14.js',INTEGRITY_TAG);
+  html=injectBefore(html,'production-recovery-v8-22-15.js',REAL_RECOVERY_TAG);
   html=injectBefore(html,'ecommerce-recovery-v8-16-1.js',RECOVERY_TAG);
   html=injectBefore(html,'catalog-deep-recovery-v8-18-1.js',DEEP_TAG);
   html=injectBefore(html,'central-modules-hotfix-v8-22-2.js',CENTRAL_FIX_TAG);
