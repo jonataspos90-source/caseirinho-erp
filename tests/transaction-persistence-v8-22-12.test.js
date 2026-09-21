@@ -8,7 +8,7 @@ const pix=fs.readFileSync('pix-document-fix-v8-22-13.js','utf8');
 const integrity=fs.readFileSync('production-integrity-v8-22-14.js','utf8');
 const sw=fs.readFileSync('service-worker.js','utf8');
 
-test('PWA carrega proteção transacional e integridade V8.22.14',()=>{
+test('PWA carrega proteção transacional, integridade V8.22.14 e recuperação V8.22.15',()=>{
   assert.match(sw,/john-erp-pwa-v8\.22\.14-production-integrity/);
   assert.match(sw,/transaction-persistence-v8-22-13\.js/);
   assert.match(sw,/production-integrity-v8-22-14\.js/);
