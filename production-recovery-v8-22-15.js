@@ -2,10 +2,10 @@
 'use strict';
 if(window.__JOHN_REAL_PWA_RECOVERY_82215__)return;
 window.__JOHN_REAL_PWA_RECOVERY_82215__=true;
-const VERSION='8.22.15',DB_KEY='pcp_app_v1',PRE='john_public_pre_activation_backup_v1',TX='john_erp_transaction_backup_v1';
+const VERSION='8.22.18',DB_KEY='pcp_app_v1',PRE='john_public_pre_activation_backup_v1',TX='john_erp_transaction_backup_v1';
 const S=v=>String(v??''),A=v=>Array.isArray(v)?v:[],N=v=>Number(v)||0;
 const st=()=>{try{return window.__johnLocalStorage||localStorage}catch(_){return localStorage}};
-const esc=v=>S(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const esc=v=>S(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
 function dbRef(){try{if(typeof db!=='undefined'&&db&&typeof db==='object')return db}catch(_){}return window.db||null}
 function parseKey(k){try{const x=JSON.parse(st().getItem(k)||'null');return x&&typeof x==='object'?x:null}catch(_){return null}}
 function saveDb(){const d=dbRef();if(!d)return false;try{st().setItem(DB_KEY,JSON.stringify(d));return true}catch(e){console.warn('[John '+VERSION+'] salvar base:',e);return false}}
@@ -19,8 +19,18 @@ function isPixOrder(h){const x=S(h);return /Pedido\s+n[ºo]?|Pedido/i.test(x)&&/
 function injectPix(h){let x=S(h);if(!isPixOrder(x)||x.includes('johnPixReal82215'))return x;const b=pixBlock();if(!b)return x;const footer=x.search(/<div class=["']footer["']/i);if(footer>=0)return x.slice(0,footer)+b+x.slice(footer);const body=x.toLowerCase().lastIndexOf('</body>');return body>=0?x.slice(0,body)+b+x.slice(body):x+b}
 let bridge=false;
 function installPrintBridge(){if(bridge||typeof window.open!=='function')return false;const base=window.open.bind(window);window.open=function(){const w=base.apply(window,arguments);try{if(!w?.document||typeof w.document.write!=='function')return w;const write=w.document.write.bind(w.document);w.document.write=function(){const args=[...arguments],joined=args.map(S).join('');return write(injectPix(joined))};}catch(_){}return w};bridge=true;return true}
-function loadV82216(){if(window.__JOHN_ECOMMERCE_BATCH_MEDIA_82216__||document.querySelector('script[data-john-v82216]'))return;const s=document.createElement('script');s.src='./ecommerce-batch-media-v8-22-16.js?v=82216';s.async=false;s.dataset.johnV82216='1';s.onerror=()=>console.warn('[John 8.22.16] não foi possível carregar a melhoria de E-commerce.');(document.head||document.documentElement).appendChild(s)}
-function boot(){const r=mergeBackupOrders();installPrintBridge();loadV82216();let n=0;const t=setInterval(()=>{installPrintBridge();loadV82216();n++;if(n>40)clearInterval(t)},250);try{window.dispatchEvent(new CustomEvent('john:pwa-recovery',{detail:{version:VERSION,...r}}))}catch(_){};console.info('[John '+VERSION+'] PWA real ativo',r)}
-window.JohnRealPwaRecovery82215={version:VERSION,mergeBackupOrders,pix,pixBlock,injectPix,installPrintBridge,loadV82216};
+function loadScript(key,src){if(window[key]||document.querySelector(`script[data-john-recovery="${src}"]`))return;const s=document.createElement('script');s.src=src;s.async=false;s.dataset.johnRecovery=src;s.onerror=()=>console.warn('[John '+VERSION+'] não foi possível carregar '+src);(document.head||document.documentElement).appendChild(s)}
+function loadEcommerceImprovements(){loadScript('__JOHN_ECOMMERCE_BATCH_MEDIA_82216__','./ecommerce-batch-media-v8-22-16.js?v=82218');loadScript('__JOHN_ECOMMERCE_SUBMODULE_82217__','./ecommerce-submodule-media-v8-22-17.js?v=82218')}
+function recoverModules(){
+ try{window.JohnCentralModules8223?.install?.()}catch(e){console.warn('[John '+VERSION+'] central modules:',e)}
+ try{window.johnNext?.refresh?.()}catch(e){console.warn('[John '+VERSION+'] johnNext refresh:',e)}
+ try{window.johnNext?.renderHub?.()}catch(e){console.warn('[John '+VERSION+'] johnNext hub:',e)}
+ try{typeof window.renderAll==='function'&&window.renderAll()}catch(_){}
+}
+function scheduleModuleRecovery(){[120,350,800,1500,2800,4500,7000,10000].forEach(ms=>setTimeout(recoverModules,ms))}
+function boot(){const r=mergeBackupOrders();installPrintBridge();loadEcommerceImprovements();scheduleModuleRecovery();let n=0;const t=setInterval(()=>{installPrintBridge();loadEcommerceImprovements();if(n%4===0)recoverModules();n++;if(n>48)clearInterval(t)},250);try{window.dispatchEvent(new CustomEvent('john:pwa-recovery',{detail:{version:VERSION,...r}}))}catch(_){};console.info('[John '+VERSION+'] recuperação de módulos ativa',r)}
+window.addEventListener('john:session-ready',()=>setTimeout(recoverModules,120));
+window.addEventListener('john:cloud-applied',()=>setTimeout(recoverModules,180));
+window.JohnRealPwaRecovery82215={version:VERSION,mergeBackupOrders,pix,pixBlock,injectPix,installPrintBridge,loadEcommerceImprovements,recoverModules};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,40),{once:true});else setTimeout(boot,40);
 })();
