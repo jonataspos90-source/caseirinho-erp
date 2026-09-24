@@ -1,4 +1,4 @@
-const CACHE='john-erp-pwa-v8.22.17-ecommerce-maintenance';
+const CACHE='john-erp-pwa-v8.22.18-module-recovery';
 
 const TX='./transaction-persistence-v8-22-13.js';
 const MULTI='./multiempresa-v8-12-0.js';
@@ -14,8 +14,6 @@ const USAGE='./erp-usage-v8-20.js';
 const SYNC='./caseirinho-commerce-sync-v8-21.js';
 const STRICT_MEDIA='./strict-media-upload-v8-22-5.js';
 const MEDIA_SYNC='./media-sync-fix-v8-22-6.js';
-const BATCH_MEDIA='./ecommerce-batch-media-v8-22-16.js';
-const ECOM_MAINT='./ecommerce-submodule-media-v8-22-17.js';
 const PUBLISH_FIX='./catalog-publish-fix-v8-22-8.js';
 const STORE_SETTINGS='./store-settings-sync-v8-22-13.js';
 const PIX_DOCUMENT='./pix-document-fix-v8-22-13.js';
@@ -27,34 +25,32 @@ const CENTRAL_FIX='./central-modules-hotfix-v8-22-2.js';
 const USAGE_FIX='./erp-usage-v8-22-1.js';
 const RELEASE='./release-consistency-v8-22-5.js';
 
-const TX_TAG='<script src="./transaction-persistence-v8-22-13.js?v=82217"></'+'script>';
-const MULTI_TAG='<script src="./multiempresa-v8-12-0.js?v=82217"></'+'script>';
-const STABILITY_TAG='<script src="./production-stability-v8-10-5.js?v=82217"></'+'script>';
-const PLATFORM_TAG='<script src="./platform-admin-v8-12-0.js?v=82217"></'+'script>';
-const EXPERIENCE_TAG='<script src="./ecommerce-customer-experience-v8-13-0.js?v=82217"></'+'script>';
-const HYDRATE_TAG='<script src="./server-catalog-hydration-v8-19.js?v=82217"></'+'script>';
-const NEXTJS_TAG='<script src="./john-next-v8-17.js?v=82217"></'+'script>';
-const NEXTCSS_TAG='<link rel="stylesheet" href="./john-next-v8-17.css?v=82217">';
-const COMMERCE_TAG='<script src="./commerce-engine-v8-22-0.js?v=82217"></'+'script>';
-const MANAGEMENT_TAG='<script src="./management-engine-v8-22-0.js?v=82217"></'+'script>';
-const USAGE_TAG='<script src="./erp-usage-v8-20.js?v=82217"></'+'script>';
-const SYNC_TAG='<script src="./caseirinho-commerce-sync-v8-21.js?v=82217"></'+'script>';
-const STRICT_MEDIA_TAG='<script src="./strict-media-upload-v8-22-5.js?v=82217"></'+'script>';
-const MEDIA_SYNC_TAG='<script src="./media-sync-fix-v8-22-6.js?v=82217"></'+'script>';
-const BATCH_MEDIA_TAG='<script src="./ecommerce-batch-media-v8-22-16.js?v=82217"></'+'script>';
-const ECOM_MAINT_TAG='<script src="./ecommerce-submodule-media-v8-22-17.js?v=82217"></'+'script>';
-const PUBLISH_FIX_TAG='<script src="./catalog-publish-fix-v8-22-8.js?v=82217"></'+'script>';
-const STORE_SETTINGS_TAG='<script src="./store-settings-sync-v8-22-13.js?v=82217"></'+'script>';
-const PIX_DOCUMENT_TAG='<script src="./pix-document-fix-v8-22-13.js?v=82217"></'+'script>';
-const INTEGRITY_TAG='<script src="./production-integrity-v8-22-14.js?v=82217"></'+'script>';
-const REAL_RECOVERY_TAG='<script src="./production-recovery-v8-22-15.js?v=82217"></'+'script>';
-const RECOVERY_TAG='<script src="./ecommerce-recovery-v8-16-1.js?v=82217"></'+'script>';
-const DEEP_TAG='<script src="./catalog-deep-recovery-v8-18-1.js?v=82217"></'+'script>';
-const CENTRAL_FIX_TAG='<script src="./central-modules-hotfix-v8-22-2.js?v=82217"></'+'script>';
-const USAGE_FIX_TAG='<script src="./erp-usage-v8-22-1.js?v=82217"></'+'script>';
-const RELEASE_TAG='<script src="./release-consistency-v8-22-5.js?v=82217"></'+'script>';
+const TX_TAG='<script src="./transaction-persistence-v8-22-13.js?v=82214"></'+'script>';
+const MULTI_TAG='<script src="./multiempresa-v8-12-0.js?v=82214"></'+'script>';
+const STABILITY_TAG='<script src="./production-stability-v8-10-5.js?v=82214"></'+'script>';
+const PLATFORM_TAG='<script src="./platform-admin-v8-12-0.js?v=82214"></'+'script>';
+const EXPERIENCE_TAG='<script src="./ecommerce-customer-experience-v8-13-0.js?v=82214"></'+'script>';
+const HYDRATE_TAG='<script src="./server-catalog-hydration-v8-19.js?v=82214"></'+'script>';
+const NEXTJS_TAG='<script src="./john-next-v8-17.js?v=82214"></'+'script>';
+const NEXTCSS_TAG='<link rel="stylesheet" href="./john-next-v8-17.css?v=82214">';
+const COMMERCE_TAG='<script src="./commerce-engine-v8-22-0.js?v=82214"></'+'script>';
+const MANAGEMENT_TAG='<script src="./management-engine-v8-22-0.js?v=82214"></'+'script>';
+const USAGE_TAG='<script src="./erp-usage-v8-20.js?v=82214"></'+'script>';
+const SYNC_TAG='<script src="./caseirinho-commerce-sync-v8-21.js?v=82214"></'+'script>';
+const STRICT_MEDIA_TAG='<script src="./strict-media-upload-v8-22-5.js?v=82214"></'+'script>';
+const MEDIA_SYNC_TAG='<script src="./media-sync-fix-v8-22-6.js?v=82214"></'+'script>';
+const PUBLISH_FIX_TAG='<script src="./catalog-publish-fix-v8-22-8.js?v=82214"></'+'script>';
+const STORE_SETTINGS_TAG='<script src="./store-settings-sync-v8-22-13.js?v=82214"></'+'script>';
+const PIX_DOCUMENT_TAG='<script src="./pix-document-fix-v8-22-13.js?v=82214"></'+'script>';
+const INTEGRITY_TAG='<script src="./production-integrity-v8-22-14.js?v=82215"></'+'script>';
+const REAL_RECOVERY_TAG='<script src="./production-recovery-v8-22-15.js?v=82218"></'+'script>';
+const RECOVERY_TAG='<script src="./ecommerce-recovery-v8-16-1.js?v=82214"></'+'script>';
+const DEEP_TAG='<script src="./catalog-deep-recovery-v8-18-1.js?v=82214"></'+'script>';
+const CENTRAL_FIX_TAG='<script src="./central-modules-hotfix-v8-22-2.js?v=82214"></'+'script>';
+const USAGE_FIX_TAG='<script src="./erp-usage-v8-22-1.js?v=82214"></'+'script>';
+const RELEASE_TAG='<script src="./release-consistency-v8-22-5.js?v=82214"></'+'script>';
 
-const SHELL=['./','./index.html','./manifest.webmanifest','./offline.html','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable-512.png','./icons/apple-touch-icon.png',TX,MULTI,STABILITY,PLATFORM,EXPERIENCE,HYDRATE,NEXTJS,NEXTCSS,COMMERCE,MANAGEMENT,USAGE,SYNC,STRICT_MEDIA,MEDIA_SYNC,BATCH_MEDIA,ECOM_MAINT,PUBLISH_FIX,STORE_SETTINGS,PIX_DOCUMENT,INTEGRITY,REAL_RECOVERY,RECOVERY,DEEP,CENTRAL_FIX,USAGE_FIX,RELEASE];
+const SHELL=['./','./index.html','./manifest.webmanifest','./offline.html','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable-512.png','./icons/apple-touch-icon.png',TX,MULTI,STABILITY,PLATFORM,EXPERIENCE,HYDRATE,NEXTJS,NEXTCSS,COMMERCE,MANAGEMENT,USAGE,SYNC,STRICT_MEDIA,MEDIA_SYNC,PUBLISH_FIX,STORE_SETTINGS,PIX_DOCUMENT,INTEGRITY,REAL_RECOVERY,RECOVERY,DEEP,CENTRAL_FIX,USAGE_FIX,RELEASE];
 
 async function cacheShell(){const c=await caches.open(CACHE);for(const url of SHELL){try{const r=await fetch(url,{cache:'reload'});if(r.ok)await c.put(url,r.clone())}catch(_){}}}
 function injectBefore(html,needle,tag){if(html.includes(needle))return html;const low=html.toLowerCase(),p=low.lastIndexOf('</body>');return p>=0?html.slice(0,p)+tag+html.slice(p):html+tag}
@@ -75,8 +71,6 @@ async function injectScripts(response){
   html=injectBefore(html,'caseirinho-commerce-sync-v8-21.js',SYNC_TAG);
   html=injectBefore(html,'strict-media-upload-v8-22-5.js',STRICT_MEDIA_TAG);
   html=injectBefore(html,'media-sync-fix-v8-22-6.js',MEDIA_SYNC_TAG);
-  html=injectBefore(html,'ecommerce-batch-media-v8-22-16.js',BATCH_MEDIA_TAG);
-  html=injectBefore(html,'ecommerce-submodule-media-v8-22-17.js',ECOM_MAINT_TAG);
   html=injectBefore(html,'catalog-publish-fix-v8-22-8.js',PUBLISH_FIX_TAG);
   html=injectBefore(html,'store-settings-sync-v8-22-13.js',STORE_SETTINGS_TAG);
   html=injectBefore(html,'pix-document-fix-v8-22-13.js',PIX_DOCUMENT_TAG);
