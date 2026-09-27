@@ -1,4 +1,4 @@
-const CACHE='john-erp-pwa-v8.22.23-ecommerce-upsell';
+const CACHE='john-erp-pwa-v8.22.24-pedido-print';
 
 const TX='./transaction-persistence-v8-22-13.js';
 const MULTI='./multiempresa-v8-12-0.js';
@@ -19,6 +19,7 @@ const ETIQUETAS='./pcp-etiquetas-v8-22-20.js';
 const FECHAMENTO='./fechamento-periodico-v8-22-21.js';
 const PIX_STAY='./pix-config-stay-v8-22-22.js';
 const UPSELL='./ecommerce-upsell-v8-22-23.js';
+const PEDIDO_PRINT='./pedido-print-v8-22-24.js';
 const PUBLISH_FIX='./catalog-publish-fix-v8-22-8.js';
 const STORE_SETTINGS='./store-settings-sync-v8-22-13.js';
 const PIX_DOCUMENT='./pix-document-fix-v8-22-13.js';
@@ -49,6 +50,7 @@ const ETIQUETAS_TAG='<script src="./pcp-etiquetas-v8-22-20.js?v=82220"></'+'scri
 const FECHAMENTO_TAG='<script src="./fechamento-periodico-v8-22-21.js?v=82221"></'+'script>';
 const PIX_STAY_TAG='<script src="./pix-config-stay-v8-22-22.js?v=82222"></'+'script>';
 const UPSELL_TAG='<script src="./ecommerce-upsell-v8-22-23.js?v=82223"></'+'script>';
+const PEDIDO_PRINT_TAG='<script src="./pedido-print-v8-22-24.js?v=82224"></'+'script>';
 const PUBLISH_FIX_TAG='<script src="./catalog-publish-fix-v8-22-8.js?v=82214"></'+'script>';
 const STORE_SETTINGS_TAG='<script src="./store-settings-sync-v8-22-13.js?v=82214"></'+'script>';
 const PIX_DOCUMENT_TAG='<script src="./pix-document-fix-v8-22-13.js?v=82214"></'+'script>';
@@ -60,7 +62,7 @@ const CENTRAL_FIX_TAG='<script src="./central-modules-hotfix-v8-22-2.js?v=82214"
 const USAGE_FIX_TAG='<script src="./erp-usage-v8-22-1.js?v=82214"></'+'script>';
 const RELEASE_TAG='<script src="./release-consistency-v8-22-5.js?v=82214"></'+'script>';
 
-const SHELL=['./','./index.html','./manifest.webmanifest','./offline.html','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable-512.png','./icons/apple-touch-icon.png',TX,MULTI,STABILITY,PLATFORM,EXPERIENCE,HYDRATE,NEXTJS,NEXTCSS,COMMERCE,MANAGEMENT,USAGE,SYNC,STRICT_MEDIA,MEDIA_SYNC,LAB,ETIQUETAS,FECHAMENTO,PIX_STAY,UPSELL,PUBLISH_FIX,STORE_SETTINGS,PIX_DOCUMENT,INTEGRITY,REAL_RECOVERY,RECOVERY,DEEP,CENTRAL_FIX,USAGE_FIX,RELEASE];
+const SHELL=['./','./index.html','./manifest.webmanifest','./offline.html','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable-512.png','./icons/apple-touch-icon.png',TX,MULTI,STABILITY,PLATFORM,EXPERIENCE,HYDRATE,NEXTJS,NEXTCSS,COMMERCE,MANAGEMENT,USAGE,SYNC,STRICT_MEDIA,MEDIA_SYNC,LAB,ETIQUETAS,FECHAMENTO,PIX_STAY,UPSELL,PEDIDO_PRINT,PUBLISH_FIX,STORE_SETTINGS,PIX_DOCUMENT,INTEGRITY,REAL_RECOVERY,RECOVERY,DEEP,CENTRAL_FIX,USAGE_FIX,RELEASE];
 
 async function cacheShell(){const c=await caches.open(CACHE);for(const url of SHELL){try{const r=await fetch(url,{cache:'reload'});if(r.ok)await c.put(url,r.clone())}catch(_){}}}
 function injectBefore(html,needle,tag){if(html.includes(needle))return html;const low=html.toLowerCase(),p=low.lastIndexOf('</body>');return p>=0?html.slice(0,p)+tag+html.slice(p):html+tag}
@@ -86,6 +88,7 @@ async function injectScripts(response){
   html=injectBefore(html,'fechamento-periodico-v8-22-21.js',FECHAMENTO_TAG);
   html=injectBefore(html,'pix-config-stay-v8-22-22.js',PIX_STAY_TAG);
   html=injectBefore(html,'ecommerce-upsell-v8-22-23.js',UPSELL_TAG);
+  html=injectBefore(html,'pedido-print-v8-22-24.js',PEDIDO_PRINT_TAG);
   html=injectBefore(html,'catalog-publish-fix-v8-22-8.js',PUBLISH_FIX_TAG);
   html=injectBefore(html,'store-settings-sync-v8-22-13.js',STORE_SETTINGS_TAG);
   html=injectBefore(html,'pix-document-fix-v8-22-13.js',PIX_DOCUMENT_TAG);
