@@ -3,7 +3,17 @@
 if(window.__JOHN_RELEASE_CONSISTENCY_8225__)return;
 window.__JOHN_RELEASE_CONSISTENCY_8225__=true;
 const VERSION='8.22.5';
+function exposeDb(){
+ try{
+  if(typeof db!=='undefined'&&db&&typeof db==='object'){
+   window.db=db;
+   return true;
+  }
+ }catch(_){}
+ return false;
+}
 function apply(){
+ exposeDb();
  try{window.JOHN_ERP_VERSION=VERSION}catch(_){}
  try{document.documentElement.dataset.johnRelease='8225'}catch(_){}
  try{document.title='John Sistema ERP · V'+VERSION}catch(_){}
