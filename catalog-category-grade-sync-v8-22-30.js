@@ -1,9 +1,9 @@
 (function(){
 'use strict';
-if(window.__JOHN_CATALOG_CATEGORY_GRADE_SYNC_82230__)return;
-window.__JOHN_CATALOG_CATEGORY_GRADE_SYNC_82230__=true;
+if(window.__JOHN_CATALOG_CATEGORY_GRADE_SYNC_82231__)return;
+window.__JOHN_CATALOG_CATEGORY_GRADE_SYNC_82231__=true;
 
-const VERSION='8.22.30';
+const VERSION='8.22.31';
 const S=v=>String(v??'');
 const A=v=>Array.isArray(v)?v:[];
 const norm=v=>S(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toUpperCase();
@@ -20,6 +20,12 @@ function findCategory(d,data){
  const cs=categories(d),id=S(data?.categoriaId),name=norm(data?.categoria);
  return cs.find(c=>S(c.id)===id)||cs.find(c=>norm(c.nome)===name)||null;
 }
+function stamp(p){
+ for(const v of [p?.atualizadoEm,p?.updatedAt,p?.updated_at,p?.criadoEm,p?.createdAt]){
+   const t=Date.parse(S(v));if(Number.isFinite(t)&&t>0)return t;
+ }
+ return 0;
+}
 function normalizeGradeCategories(){
  const d=dbRef();if(!d||!Array.isArray(d.produtos))return 0;
  const byId=new Map(d.produtos.map(p=>[S(p?.id),p]).filter(([id])=>id));
@@ -27,18 +33,21 @@ function normalizeGradeCategories(){
  for(const g of grades(d)){
    if(!g||g.ativo===false)continue;
    const ids=A(g.variantes).map(v=>S(v?.produtoId)).filter(Boolean);if(!ids.length)continue;
-   const coverId=S(g.produtoCapaId)||ids[0];
-   const cover=byId.get(coverId)||ids.map(id=>byId.get(id)).find(Boolean);if(!cover)continue;
-   const sources=[cover,...ids.map(id=>byId.get(id)).filter(Boolean)];
-   let cat=null;
-   for(const p of sources){cat=findCategory(d,p?.ecommerce||{});if(cat)break}
-   if(!cat)continue;
+   const candidates=[];
+   for(const id of ids){
+     const p=byId.get(id);if(!p)continue;
+     const cat=findCategory(d,p?.ecommerce||{});if(!cat)continue;
+     candidates.push({p,cat,ts:stamp(p),order:ids.indexOf(id)});
+   }
+   if(!candidates.length)continue;
+   candidates.sort((a,b)=>b.ts-a.ts||a.order-b.order);
+   const cat=candidates[0].cat;
    for(const id of ids){
      const p=byId.get(id);if(!p)continue;
      const e=p.ecommerce=p.ecommerce&&typeof p.ecommerce==='object'&&!Array.isArray(p.ecommerce)?p.ecommerce:{};
      if(S(e.categoriaId)!==S(cat.id)||S(e.categoria)!==S(cat.nome)){
        e.categoriaId=S(cat.id);e.categoria=S(cat.nome);
-       p.atualizadoEm=new Date().toISOString();p.operadorAtualizacao='Consistência Grade '+VERSION;changed++;
+       p.atualizadoEm=new Date().toISOString();p.operadorAtualizacao='Categoria Loja '+VERSION;changed++;
      }
    }
  }
@@ -53,7 +62,7 @@ async function flushLocal(){
 }
 function captureBase(){
  const candidates=[window.publicarCatalogoEcommerce,window.JohnCaseirinhoCatalogSync821?.publish,window.JohnV880?.canonicalPublish];
- for(const fn of candidates){if(typeof fn==='function'&&!fn.__johnOrdered82230){basePublish=fn;return fn}}
+ for(const fn of candidates){if(typeof fn==='function'&&!fn.__johnOrdered82231){basePublish=fn;return fn}}
  return basePublish;
 }
 async function orderedPublish(silent=false){
@@ -67,7 +76,7 @@ async function orderedPublish(silent=false){
  })().finally(()=>{publishing=null});
  return publishing;
 }
-orderedPublish.__johnOrdered82230=true;
+orderedPublish.__johnOrdered82231=true;
 
 function install(){
  captureBase();if(typeof basePublish!=='function')return false;
@@ -75,9 +84,9 @@ function install(){
  if(window.JohnCaseirinhoCatalogSync821)window.JohnCaseirinhoCatalogSync821.publish=orderedPublish;
  if(window.JohnV880)window.JohnV880.canonicalPublish=orderedPublish;
  if(window.JohnManagement822){
-   window.JohnManagement822.syncEcommerce=async function(reason='management-82230'){
+   window.JohnManagement822.syncEcommerce=async function(reason='management-82231'){
      const out=await orderedPublish(true);
-     try{window.dispatchEvent(new CustomEvent('john:ecommerce-sync',{detail:{source:'management-82230',reason}}))}catch(_){}
+     try{window.dispatchEvent(new CustomEvent('john:ecommerce-sync',{detail:{source:'management-82231',reason}}))}catch(_){}
      return out;
    };
  }
@@ -88,5 +97,5 @@ function install(){
 window.addEventListener('john:session-ready',()=>setTimeout(install,150));
 window.addEventListener('john:cloud-applied',()=>setTimeout(install,150));
 window.addEventListener('john:ecommerce-sync',()=>setTimeout(install,50));
-window.JohnCatalogCategoryGradeSync82230={version:VERSION,install,flushLocal,normalizeGradeCategories,publish:orderedPublish};
+window.JohnCatalogCategoryGradeSync82231={version:VERSION,install,flushLocal,normalizeGradeCategories,publish:orderedPublish};
 })();
