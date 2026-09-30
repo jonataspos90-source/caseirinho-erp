@@ -2,10 +2,10 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 
-const src=fs.readFileSync('ecommerce-order-revision-v8-22-36.js','utf8');
+const src=fs.readFileSync('ecommerce-order-revision-v8-22-37.js','utf8');
 const sw=fs.readFileSync('service-worker.js','utf8');
 
-test('módulo de revisão possui sintaxe válida',()=>{
+test('módulo de revisão estável possui sintaxe válida',()=>{
   assert.doesNotThrow(()=>new Function(src));
 });
 
@@ -28,8 +28,15 @@ test('novo pedido revisado pode ser importado e original é marcado substituído
   assert.match(src,/restante=0/);
 });
 
-test('service worker injeta módulo V8.22.36 preservando contratos anteriores',()=>{
+test('service worker injeta módulo V8.22.37 preservando contratos anteriores',()=>{
   assert.match(sw,/john-erp-pwa-v8\.22\.31-category-save/);
   assert.match(sw,/production-recovery-v8-22-15\.js\?v=82218/);
-  assert.match(sw,/ecommerce-order-revision-v8-22-36\.js/);
+  assert.match(sw,/ecommerce-order-revision-v8-22-37\.js/);
+  assert.doesNotMatch(sw,/const ORDER_REVISION='\.\/ecommerce-order-revision-v8-22-36\.js'/);
+});
+
+test('renderizador estável não observa toda a árvore DOM em loop',()=>{
+  assert.doesNotMatch(src,/new MutationObserver/);
+  assert.match(src,/scheduleDecorate/);
+  assert.match(src,/dataset\.sig/);
 });
