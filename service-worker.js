@@ -60,7 +60,7 @@ const STORE_SETTINGS_TAG='<script src="./store-settings-sync-v8-22-13.js?v=82235
 const PIX_DOCUMENT_TAG='<script src="./pix-document-fix-v8-22-13.js?v=82235"></'+'script>';
 const PIX_OFFICIAL_TAG='<script src="./caseirinho-pix-config-v8-22-35.js?v=82235"></'+'script>';
 const INTEGRITY_TAG='<script src="./production-integrity-v8-22-14.js?v=82235"></'+'script>';
-const REAL_RECOVERY_TAG='<script src="./production-recovery-v8-22-15.js?v=82235"></'+'script>';
+const REAL_RECOVERY_TAG='<script src="./production-recovery-v8-22-15.js?v=82218"></'+'script>';
 const RECOVERY_TAG='<script src="./ecommerce-recovery-v8-16-1.js?v=82235"></'+'script>';
 const DEEP_TAG='<script src="./catalog-deep-recovery-v8-18-1.js?v=82235"></'+'script>';
 const CENTRAL_FIX_TAG='<script src="./central-modules-hotfix-v8-22-2.js?v=82235"></'+'script>';
