@@ -1,4 +1,4 @@
-const CACHE='john-erp-pwa-v8.22.37-revision-stability';
+const CACHE='john-erp-pwa-v8.22.31-category-save-revision82237-stability';
 
 const TX='./transaction-persistence-v8-22-13.js';
 const MULTI='./multiempresa-v8-12-0.js';
