@@ -22,9 +22,16 @@ function rerender(){for(const fn of ['renderProducts','johnV8RenderProducts','re
 async function catalog(){const c=cfg(),r=await fetch(c.api+'/api/v1/public/store/'+encodeURIComponent(c.slug)+'/catalog?_mac_recovery='+Date.now(),{cache:'no-store',headers:{'Cache-Control':'no-store','Pragma':'no-cache'}});let j={};try{j=await r.json()}catch(_){}if(!r.ok)throw new Error(j?.error||('HTTP '+r.status));return j}
 async function recover(){const d=currentDb();if(!d||!Array.isArray(d.produtos))return{ok:false,reason:'db-not-ready'};const cat=await catalog(),published=A(cat?.produtos).filter(isMac),restored=[];for(const p of published){if(!match(d,p))restored.push(restoreProduct(d,p))}d.config=d.config&&typeof d.config==='object'&&!Array.isArray(d.config)?d.config:{};d.config.ecommerce=d.config.ecommerce&&typeof d.config.ecommerce==='object'&&!Array.isArray(d.config.ecommerce)?d.config.ecommerce:{};d.config.ecommerce.grades=A(d.config.ecommerce.grades);const wanted=new Set(published.map(p=>S(p?.gradeId)).filter(Boolean));let grades=0;for(const g of A(cat?.loja?.grades)){const id=S(g?.id);if(id&&wanted.has(id)&&!d.config.ecommerce.grades.some(x=>S(x?.id)===id)){d.config.ecommerce.grades.push(clone(g));grades++}}if(restored.length||grades){persist(d);rerender();try{window.dispatchEvent(new CustomEvent('john:macarrao-recovered',{detail:{version:VERSION,restored:restored.length,grades,names:restored.map(x=>x.nome)}}))}catch(_){}console.info('[John '+VERSION+'] macarrões recuperados:',restored.map(x=>x.nome))}return{ok:true,published:published.length,restored:restored.length,grades,names:restored.map(x=>x.nome)}}
 function schedule(ms){setTimeout(()=>recover().catch(e=>console.warn('[John '+VERSION+'] recuperação de macarrões:',e)),ms)}
+function loadCatalogConsistency(){
+ if(window.__JOHN_CATALOG_CATEGORY_GRADE_SYNC_82230__||document.querySelector('script[data-john-catalog-82230]'))return;
+ const s=document.createElement('script');s.src='./catalog-category-grade-sync-v8-22-30.js?v=82230';s.async=false;s.dataset.johnCatalog82230='1';
+ s.onerror=()=>console.warn('[John '+VERSION+'] não foi possível carregar a consistência de categoria/grade V8.22.30.');
+ (document.head||document.documentElement).appendChild(s);
+}
 window.JohnMacarraoRecovery82225={version:VERSION,recover};
-window.addEventListener('john:session-ready',()=>schedule(300));
-window.addEventListener('john:cloud-applied',()=>schedule(500));
-document.addEventListener('DOMContentLoaded',()=>schedule(1200));
+loadCatalogConsistency();
+window.addEventListener('john:session-ready',()=>{loadCatalogConsistency();schedule(300)});
+window.addEventListener('john:cloud-applied',()=>{loadCatalogConsistency();schedule(500)});
+document.addEventListener('DOMContentLoaded',()=>{loadCatalogConsistency();schedule(1200)});
 [2500,5000].forEach(schedule);
 })();
