@@ -1,4 +1,4 @@
-const CACHE='john-erp-pwa-v8.22.26-recovery-isolated';
+const CACHE='john-erp-pwa-v8.22.31-category-save';
 
 const TX='./transaction-persistence-v8-22-13.js';
 const MULTI='./multiempresa-v8-12-0.js';
@@ -31,6 +31,8 @@ const CENTRAL_FIX='./central-modules-hotfix-v8-22-2.js';
 const USAGE_FIX='./erp-usage-v8-22-1.js';
 const RELEASE='./release-consistency-v8-22-5.js';
 const MACARRAO_RECOVERY='./macarrao-catalog-recovery-v8-22-25.js';
+const CATEGORY_GRADE_SYNC='./catalog-category-grade-sync-v8-22-30.js';
+const CATEGORY_SAVE='./product-category-store-sync-v8-22-31.js';
 
 const TX_TAG='<script src="./transaction-persistence-v8-22-13.js?v=82214"></'+'script>';
 const MULTI_TAG='<script src="./multiempresa-v8-12-0.js?v=82214"></'+'script>';
@@ -63,8 +65,10 @@ const CENTRAL_FIX_TAG='<script src="./central-modules-hotfix-v8-22-2.js?v=82214"
 const USAGE_FIX_TAG='<script src="./erp-usage-v8-22-1.js?v=82214"></'+'script>';
 const RELEASE_TAG='<script src="./release-consistency-v8-22-5.js?v=82214"></'+'script>';
 const MACARRAO_RECOVERY_TAG='<script src="./macarrao-catalog-recovery-v8-22-25.js?v=822251"></'+'script>';
+const CATEGORY_GRADE_SYNC_TAG='<script src="./catalog-category-grade-sync-v8-22-30.js?v=82231"></'+'script>';
+const CATEGORY_SAVE_TAG='<script src="./product-category-store-sync-v8-22-31.js?v=82231"></'+'script>';
 
-const SHELL=['./','./index.html','./manifest.webmanifest','./offline.html','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable-512.png','./icons/apple-touch-icon.png',TX,MULTI,STABILITY,PLATFORM,EXPERIENCE,HYDRATE,NEXTJS,NEXTCSS,COMMERCE,MANAGEMENT,USAGE,SYNC,STRICT_MEDIA,MEDIA_SYNC,LAB,ETIQUETAS,FECHAMENTO,PIX_STAY,UPSELL,PEDIDO_PRINT,PUBLISH_FIX,STORE_SETTINGS,PIX_DOCUMENT,INTEGRITY,REAL_RECOVERY,RECOVERY,DEEP,CENTRAL_FIX,USAGE_FIX,RELEASE,MACARRAO_RECOVERY];
+const SHELL=['./','./index.html','./manifest.webmanifest','./offline.html','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable-512.png','./icons/apple-touch-icon.png',TX,MULTI,STABILITY,PLATFORM,EXPERIENCE,HYDRATE,NEXTJS,NEXTCSS,COMMERCE,MANAGEMENT,USAGE,SYNC,STRICT_MEDIA,MEDIA_SYNC,LAB,ETIQUETAS,FECHAMENTO,PIX_STAY,UPSELL,PEDIDO_PRINT,PUBLISH_FIX,STORE_SETTINGS,PIX_DOCUMENT,INTEGRITY,REAL_RECOVERY,RECOVERY,DEEP,CENTRAL_FIX,USAGE_FIX,RELEASE,MACARRAO_RECOVERY,CATEGORY_GRADE_SYNC,CATEGORY_SAVE];
 
 async function cacheShell(){const c=await caches.open(CACHE);for(const url of SHELL){try{const r=await fetch(url,{cache:'reload'});if(r.ok)await c.put(url,r.clone())}catch(_){}}}
 function injectBefore(html,needle,tag){if(html.includes(needle))return html;const low=html.toLowerCase(),p=low.lastIndexOf('</body>');return p>=0?html.slice(0,p)+tag+html.slice(p):html+tag}
@@ -102,6 +106,8 @@ async function injectScripts(response){
   html=injectBefore(html,'erp-usage-v8-22-1.js',USAGE_FIX_TAG);
   html=injectBefore(html,'release-consistency-v8-22-5.js',RELEASE_TAG);
   html=injectBefore(html,'macarrao-catalog-recovery-v8-22-25.js',MACARRAO_RECOVERY_TAG);
+  html=injectBefore(html,'catalog-category-grade-sync-v8-22-30.js',CATEGORY_GRADE_SYNC_TAG);
+  html=injectBefore(html,'product-category-store-sync-v8-22-31.js',CATEGORY_SAVE_TAG);
   const h=new Headers(response.headers);h.delete('content-length');h.set('Cache-Control','no-cache, no-store, must-revalidate');return new Response(html,{status:response.status,statusText:response.statusText,headers:h});
 }
 self.addEventListener('install',e=>e.waitUntil(cacheShell().then(()=>self.skipWaiting())));
