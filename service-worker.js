@@ -1,4 +1,4 @@
-const CACHE='john-erp-pwa-v8.22.31-category-save-revision82237-stability';
+const CACHE='john-erp-pwa-v8.22.31-category-save-revision82237-stability-prereg82238';
 
 const TX='./transaction-persistence-v8-22-13.js';
 const MULTI='./multiempresa-v8-12-0.js';
@@ -25,6 +25,7 @@ const STORE_SETTINGS='./store-settings-sync-v8-22-13.js';
 const PIX_DOCUMENT='./pix-document-fix-v8-22-13.js';
 const PIX_OFFICIAL='./caseirinho-pix-config-v8-22-35.js';
 const ORDER_REVISION='./ecommerce-order-revision-v8-22-37.js';
+const PREREG='./ecommerce-preregistration-live-v8-22-38.js';
 const INTEGRITY='./production-integrity-v8-22-14.js';
 const REAL_RECOVERY='./production-recovery-v8-22-15.js';
 const RECOVERY='./ecommerce-recovery-v8-16-1.js';
@@ -61,6 +62,7 @@ const STORE_SETTINGS_TAG='<script src="./store-settings-sync-v8-22-13.js?v=82237
 const PIX_DOCUMENT_TAG='<script src="./pix-document-fix-v8-22-13.js?v=82237"></'+'script>';
 const PIX_OFFICIAL_TAG='<script src="./caseirinho-pix-config-v8-22-35.js?v=82237"></'+'script>';
 const ORDER_REVISION_TAG='<script src="./ecommerce-order-revision-v8-22-37.js?v=82237"></'+'script>';
+const PREREG_TAG='<script src="./ecommerce-preregistration-live-v8-22-38.js?v=82238"></'+'script>';
 const INTEGRITY_TAG='<script src="./production-integrity-v8-22-14.js?v=82237"></'+'script>';
 const REAL_RECOVERY_TAG='<script src="./production-recovery-v8-22-15.js?v=82218"></'+'script>';
 const RECOVERY_TAG='<script src="./ecommerce-recovery-v8-16-1.js?v=82237"></'+'script>';
@@ -72,11 +74,11 @@ const MACARRAO_RECOVERY_TAG='<script src="./macarrao-catalog-recovery-v8-22-25.j
 const CATEGORY_GRADE_SYNC_TAG='<script src="./catalog-category-grade-sync-v8-22-30.js?v=82231"></'+'script>';
 const CATEGORY_SAVE_TAG='<script src="./product-category-store-sync-v8-22-31.js?v=82231"></'+'script>';
 
-const SHELL=['./','./index.html','./manifest.webmanifest','./offline.html','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable-512.png','./icons/apple-touch-icon.png',TX,MULTI,STABILITY,PLATFORM,EXPERIENCE,HYDRATE,NEXTJS,NEXTCSS,COMMERCE,MANAGEMENT,USAGE,SYNC,STRICT_MEDIA,MEDIA_SYNC,LAB,ETIQUETAS,FECHAMENTO,PIX_STAY,UPSELL,PEDIDO_PRINT,PUBLISH_FIX,STORE_SETTINGS,PIX_DOCUMENT,PIX_OFFICIAL,ORDER_REVISION,INTEGRITY,REAL_RECOVERY,RECOVERY,DEEP,CENTRAL_FIX,USAGE_FIX,RELEASE,MACARRAO_RECOVERY,CATEGORY_GRADE_SYNC,CATEGORY_SAVE];
+const SHELL=['./','./index.html','./manifest.webmanifest','./offline.html','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable-512.png','./icons/apple-touch-icon.png',TX,MULTI,STABILITY,PLATFORM,EXPERIENCE,HYDRATE,NEXTJS,NEXTCSS,COMMERCE,MANAGEMENT,USAGE,SYNC,STRICT_MEDIA,MEDIA_SYNC,LAB,ETIQUETAS,FECHAMENTO,PIX_STAY,UPSELL,PEDIDO_PRINT,PUBLISH_FIX,STORE_SETTINGS,PIX_DOCUMENT,PIX_OFFICIAL,ORDER_REVISION,PREREG,INTEGRITY,REAL_RECOVERY,RECOVERY,DEEP,CENTRAL_FIX,USAGE_FIX,RELEASE,MACARRAO_RECOVERY,CATEGORY_GRADE_SYNC,CATEGORY_SAVE];
 
 async function cacheShell(){const c=await caches.open(CACHE);for(const url of SHELL){try{const r=await fetch(url,{cache:'reload'});if(r.ok)await c.put(url,r.clone())}catch(_){}}}
 function injectBefore(html,needle,tag){if(html.includes(needle))return html;const low=html.toLowerCase(),p=low.lastIndexOf('</body>');return p>=0?html.slice(0,p)+tag+html.slice(p):html+tag}
-function injectHead(html,needle,tag){if(html.includes(needle))return html;const low=html.toLowerCase(),p=low.lastIndexOf('</head>');return p>=0?html.slice(0,p)+tag+html.slice(p):tag+html}
+function injectHead(html,needle,tag){if(html.includes(needle))return html;const low=html.toLowerCase(),p=low.lastIndexOf('</head>');return p>=0?html.slice(0,p)+tag+html}
 async function injectScripts(response){
   if(!response)return response;const ct=response.headers.get('content-type')||'';if(!ct.includes('text/html'))return response;let html=await response.text();
   html=html.replace(/<script[^>]+ecommerce-order-revision-v8-22-36\.js[^>]*><\/script>/gi,'');
@@ -115,6 +117,7 @@ async function injectScripts(response){
   html=injectBefore(html,'macarrao-catalog-recovery-v8-22-25.js',MACARRAO_RECOVERY_TAG);
   html=injectBefore(html,'catalog-category-grade-sync-v8-22-30.js',CATEGORY_GRADE_SYNC_TAG);
   html=injectBefore(html,'product-category-store-sync-v8-22-31.js',CATEGORY_SAVE_TAG);
+  html=injectBefore(html,'ecommerce-preregistration-live-v8-22-38.js',PREREG_TAG);
   const h=new Headers(response.headers);h.delete('content-length');h.set('Cache-Control','no-cache, no-store, must-revalidate');return new Response(html,{status:response.status,statusText:response.statusText,headers:h});
 }
 self.addEventListener('install',e=>e.waitUntil(cacheShell().then(()=>self.skipWaiting())));
