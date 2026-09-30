@@ -1,4 +1,4 @@
-const CACHE='john-erp-pwa-v8.22.25-macarrao-recovery';
+const CACHE='john-erp-pwa-v8.22.26-recovery-isolated';
 
 const TX='./transaction-persistence-v8-22-13.js';
 const MULTI='./multiempresa-v8-12-0.js';
@@ -107,4 +107,4 @@ async function injectScripts(response){
 self.addEventListener('install',e=>e.waitUntil(cacheShell().then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE&&k.startsWith('john-erp-pwa-')).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
 self.addEventListener('message',e=>{if(e.data&&e.data.type==='SKIP_WAITING')self.skipWaiting()});
-self.addEventListener('fetch',e=>{const u=new URL(e.request.url);if(u.origin!==self.location.origin||e.request.method!=='GET')return;if(e.request.mode==='navigate'){e.respondWith((async()=>{try{const net=await fetch(e.request,{cache:'no-store'}),out=await injectScripts(net);if(out&&out.ok)caches.open(CACHE).then(c=>c.put('./index.html',out.clone())).catch(()=>{});return out}catch(_){const cached=await caches.match('./index.html')||await caches.match('./offline.html');return injectScripts(cached)}})());return}e.respondWith(fetch(e.request,{cache:'no-store'}).then(r=>{if(r.ok)caches.open(CACHE).then(c=>c.put(e.request,r.clone())).catch(()=>{});return r}).catch(()=>caches.match(e.request)))});
+self.addEventListener('fetch',e=>{const u=new URL(e.request.url);if(u.origin!==self.location.origin||e.request.method!=='GET')return;if(/\/recuperar-macarrao-v8-22-(?:25|26)\.html$/.test(u.pathname)){e.respondWith(fetch(e.request,{cache:'no-store'}).catch(()=>caches.match(e.request)));return}if(e.request.mode==='navigate'){e.respondWith((async()=>{try{const net=await fetch(e.request,{cache:'no-store'}),out=await injectScripts(net);if(out&&out.ok)caches.open(CACHE).then(c=>c.put('./index.html',out.clone())).catch(()=>{});return out}catch(_){const cached=await caches.match('./index.html')||await caches.match('./offline.html');return injectScripts(cached)}})());return}e.respondWith(fetch(e.request,{cache:'no-store'}).then(r=>{if(r.ok)caches.open(CACHE).then(c=>c.put(e.request,r.clone())).catch(()=>{});return r}).catch(()=>caches.match(e.request)))});
