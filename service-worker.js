@@ -1,4 +1,4 @@
-const CACHE='john-erp-pwa-v8.22.35-pix-oficial';
+const CACHE='john-erp-pwa-v8.22.31-category-save-pix82235';
 
 const TX='./transaction-persistence-v8-22-13.js';
 const MULTI='./multiempresa-v8-12-0.js';
@@ -67,8 +67,8 @@ const CENTRAL_FIX_TAG='<script src="./central-modules-hotfix-v8-22-2.js?v=82235"
 const USAGE_FIX_TAG='<script src="./erp-usage-v8-22-1.js?v=82235"></'+'script>';
 const RELEASE_TAG='<script src="./release-consistency-v8-22-5.js?v=82235"></'+'script>';
 const MACARRAO_RECOVERY_TAG='<script src="./macarrao-catalog-recovery-v8-22-25.js?v=82235"></'+'script>';
-const CATEGORY_GRADE_SYNC_TAG='<script src="./catalog-category-grade-sync-v8-22-30.js?v=82235"></'+'script>';
-const CATEGORY_SAVE_TAG='<script src="./product-category-store-sync-v8-22-31.js?v=82235"></'+'script>';
+const CATEGORY_GRADE_SYNC_TAG='<script src="./catalog-category-grade-sync-v8-22-30.js?v=82231"></'+'script>';
+const CATEGORY_SAVE_TAG='<script src="./product-category-store-sync-v8-22-31.js?v=82231"></'+'script>';
 
 const SHELL=['./','./index.html','./manifest.webmanifest','./offline.html','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable-512.png','./icons/apple-touch-icon.png',TX,MULTI,STABILITY,PLATFORM,EXPERIENCE,HYDRATE,NEXTJS,NEXTCSS,COMMERCE,MANAGEMENT,USAGE,SYNC,STRICT_MEDIA,MEDIA_SYNC,LAB,ETIQUETAS,FECHAMENTO,PIX_STAY,UPSELL,PEDIDO_PRINT,PUBLISH_FIX,STORE_SETTINGS,PIX_DOCUMENT,PIX_OFFICIAL,INTEGRITY,REAL_RECOVERY,RECOVERY,DEEP,CENTRAL_FIX,USAGE_FIX,RELEASE,MACARRAO_RECOVERY,CATEGORY_GRADE_SYNC,CATEGORY_SAVE];
 
