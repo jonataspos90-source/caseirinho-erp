@@ -27,8 +27,8 @@ test('grade usa a alteração de produto mais recente em vez de forçar a capa',
   assert.doesNotMatch(grade,/const coverId=.*ids\[0\]/);
 });
 
-test('service worker carrega as duas proteções de categoria',()=>{
-  assert.match(sw,/catalog-category-grade-sync-v8-22-30\.js\?v=82231/);
-  assert.match(sw,/product-category-store-sync-v8-22-31\.js\?v=82231/);
-  assert.match(sw,/john-erp-pwa-v8\.22\.31-category-save/);
+test('service worker atual continua carregando as duas proteções de categoria',()=>{
+  assert.match(sw,/catalog-category-grade-sync-v8-22-30\.js\?v=82239/);
+  assert.match(sw,/product-category-store-sync-v8-22-31\.js\?v=82239/);
+  assert.match(sw,/john-erp-pwa-v8\.22\.39-delivery-moto/);
 });
