@@ -28,8 +28,8 @@ test('ERP salva configuração na API e testa endereço pela rota pública',()=>
   assert.match(js,/providerConfigured/);
 });
 
-test('PWA injeta e atualiza cache para módulo V8.22.39',()=>{
-  assert.match(sw,/john-erp-pwa-v8\.22\.39-delivery-moto/);
+test('PWA preserva módulo Entrega Moto na publicação V8.22.40',()=>{
+  assert.match(sw,/john-erp-pwa-v8\.22\.40-ecommerce-inbox-focus/);
   assert.match(sw,/delivery-moto-config-v8-22-39\.js/);
   assert.match(sw,/DELIVERY_MOTO_TAG/);
 });
