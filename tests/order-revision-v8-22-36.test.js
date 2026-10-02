@@ -29,7 +29,7 @@ test('novo pedido revisado pode ser importado e original é marcado substituído
 });
 
 test('service worker injeta módulo V8.22.37 preservando contratos anteriores na release atual',()=>{
-  assert.match(sw,/john-erp-pwa-v8\.22\.39-delivery-moto/);
+  assert.match(sw,/john-erp-pwa-v8\.22\.40-ecommerce-inbox-focus/);
   assert.match(sw,/production-recovery-v8-22-15\.js\?v=82218/);
   assert.match(sw,/ecommerce-order-revision-v8-22-37\.js/);
   assert.doesNotMatch(sw,/const ORDER_REVISION='\.\/ecommerce-order-revision-v8-22-36\.js'/);
