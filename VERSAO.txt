@@ -1,37 +1,19 @@
-JOHN SISTEMA ERP · V8.22.2 · MÓDULOS CENTRAIS
+JOHN SISTEMA ERP · V8.22.40 · FILA DE PEDIDOS E-COMMERCE
+Build: 2026-10-02
 
-CORREÇÃO DE NAVEGAÇÃO
-- Motor Comercial deixa de ficar visível no menu lateral.
-- Central Gerencial deixa de ficar visível no menu lateral.
-- Os dois continuam cadastrados internamente para que a Central de Módulos consiga montar seus cards e funções.
-- Ao abrir uma função do Motor Comercial ou da Central Gerencial, o conteúdo é exibido na área central do ERP.
-- Aplicado no PC e no App/PWA com invalidação do cache anterior.
+CORREÇÃO DA FILA DE PEDIDOS
+- Pedido aceito e importado deixa de permanecer visível na fila principal de pedidos recebidos.
+- A fila passa a mostrar por padrão somente pedidos que ainda precisam de ação.
+- Pedidos ACEITOS/IMPORTADOS, CANCELADOS, REJEITADOS ou SUBSTITUÍDOS são tratados como processados.
+- O histórico não é apagado: botão "Mostrar processados" permite consultar os pedidos já tratados.
+- Ao aceitar um pedido, a própria tela reaplica o filtro automaticamente e o pedido sai da fila sem precisar recarregar manualmente.
+- Refresh e sincronização da nuvem também reaplicam a regra.
 
-MOTOR COMERCIAL
-- Visão Geral
-- Upsell / Cross-sell
-- Combos Inteligentes
-- Cupons
-- Fidelidade
-- Capacidade
-- Carrinhos Abandonados
-- Relacionamento
-- Avaliações
+MANTIDO
+- ERP V8.22.39 Entrega Moto e configurações de frete.
+- Revisão de itens, PDF, PIX, pré-cadastro, catálogo, PCP e demais módulos existentes.
+- Pedidos processados continuam gravados no ERP e no histórico do e-commerce; apenas deixam de poluir a fila operacional.
 
-CENTRAL GERENCIAL
-- Cockpit do Gestor
-- Pricing Multicanal
-- iFood / 99 / Taxas
-- Alertas e Exceções
-- PCP + Compras Inteligentes
-- Financeiro Gerencial
-- Aprovações
-- Automações
-- Lotes / FEFO / Perdas
-- Tarefas / Manutenção
-- Pergunte ao John
-- Saúde / Auditoria
-
-INTEGRAÇÃO
-- Mantida API/PostgreSQL/Loja como fonte integrada.
-- Ajustes de produto inativo e quantidade mínima dependem da API 1.18.1 preparada junto desta entrega.
+PWA
+- Cache atualizado para john-erp-pwa-v8.22.40-ecommerce-inbox-focus.
+- Nova camada: ecommerce-inbox-focus-v8-22-40.js.
