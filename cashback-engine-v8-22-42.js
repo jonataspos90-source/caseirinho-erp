@@ -5,7 +5,7 @@ const S=v=>String(v??'');
 const N=v=>Number(v)||0;
 const A=v=>Array.isArray(v)?v:[];
 const E=id=>document.getElementById(id);
-const esc=v=>S(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[m]));
+const esc=v=>S(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const money=v=>N(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 let currentCustomers=[];
 let selectedAccount='';
@@ -54,7 +54,6 @@ function configHtml(cfg={}){return `<div class="ce-panel"><h3>Configuração do 
 <label>Reserva no checkout (min)<input id="cb42Ttl" type="number" min="1" max="120" step="1" value="${Number(cfg.reservationTtlMinutes)||15}"></label>
 <div><button id="cb42Save" class="ce-btn ce-primary">Salvar configuração</button></div>
 </div><div class="cb42-note" style="margin-top:12px"><b>Regra financeira:</b> o saldo é crédito exclusivo para compras. Não pode ser sacado, transferido via Pix nem convertido em espécie. O cashback de uma venda somente entra no saldo quando o pedido é concluído, portanto nunca pode pagar a própria compra que o gerou.</div></div>`}
-}
 function kpisHtml(s={}){return `<div class="cb42-grid">
 <div class="ce-kpi"><small>Saldo em aberto</small><b>${money(s.openBalance)}</b></div>
 <div class="ce-kpi"><small>Gerado no mês</small><b>${money(s.generatedMonth)}</b></div>
