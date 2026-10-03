@@ -29,6 +29,7 @@ jobs:
           node --check catalog-category-grade-sync-v8-22-30.js
           node --check product-category-store-sync-v8-22-31.js
           node --check ecommerce-inbox-focus-v8-22-40.js
+          node --check ecommerce-order-actions-v8-22-33.js
           node --check service-worker.js
       - name: Regression tests
         id: regression
