@@ -1,6 +1,7 @@
 (function(){'use strict';
 const CORE='./commerce-engine-v8-22-0-core.js?v=82241';
-const CASHBACK='./cashback-engine-v8-22-42.js?v=82242';
+const CASHBACK='./cashback-engine-v8-22-42.js?v=82243';
+const CASHBACK_VISIBILITY='./cashback-visibility-hotfix-v8-22-43.js?v=82243';
 const S=v=>String(v??'');
 const N=v=>Number(v)||0;
 const A=v=>Array.isArray(v)?v:[];
@@ -14,7 +15,9 @@ async function persist(cfg,success){try{const r=await api('/api/v1/admin/commerc
 function couponById(cfg,id){return A(cfg.coupons).find(c=>S(c.id)===S(id))}
 function locked(c){return !!c&&(c.locked===true||norm(c.code||c.codigo)==='CASEIRINHO10')}
 function loadCashback(){if(window.__JOHN_CASHBACK_82242__||document.querySelector('script[data-john-cashback-82242]'))return;const s=document.createElement('script');s.src=CASHBACK;s.dataset.johnCashback82242='1';s.async=false;s.onerror=()=>toast('Não foi possível carregar o módulo Cashback. Atualize a página.');document.head.appendChild(s)}
+function loadCashbackVisibility(){if(window.__JOHN_CASHBACK_VISIBILITY_82243__||document.querySelector('script[data-john-cashback-visibility-82243]'))return;const s=document.createElement('script');s.src=CASHBACK_VISIBILITY;s.dataset.johnCashbackVisibility82243='1';s.async=false;s.onerror=()=>toast('Não foi possível ativar a visualização do Cashback. Atualize a página.');document.head.appendChild(s)}
 function install(){
+  loadCashbackVisibility();
   loadCashback();
   if(window.__JOHN_COUPON_RELIABILITY_82241__)return;window.__JOHN_COUPON_RELIABILITY_82241__=true;
   document.addEventListener('click',async ev=>{
