@@ -1,4 +1,4 @@
-const CACHE='john-erp-pwa-v8.22.40-ecommerce-inbox-focus';
+const CACHE='john-erp-pwa-v8.22.42-cashback';
 
 const TX='./transaction-persistence-v8-22-13.js';
 const MULTI='./multiempresa-v8-12-0.js';
@@ -9,6 +9,7 @@ const HYDRATE='./server-catalog-hydration-v8-19.js';
 const NEXTJS='./john-next-v8-17.js';
 const NEXTCSS='./john-next-v8-17.css';
 const COMMERCE='./commerce-engine-v8-22-0.js';
+const CASHBACK='./cashback-engine-v8-22-42.js';
 const MANAGEMENT='./management-engine-v8-22-0.js';
 const USAGE='./erp-usage-v8-20.js';
 const SYNC='./caseirinho-commerce-sync-v8-21.js';
@@ -48,6 +49,7 @@ const HYDRATE_TAG='<script src="./server-catalog-hydration-v8-19.js?v=82239"></'
 const NEXTJS_TAG='<script src="./john-next-v8-17.js?v=82239"></'+'script>';
 const NEXTCSS_TAG='<link rel="stylesheet" href="./john-next-v8-17.css?v=82239">';
 const COMMERCE_TAG='<script src="./commerce-engine-v8-22-0.js?v=82239"></'+'script>';
+const CASHBACK_TAG='<script src="./cashback-engine-v8-22-42.js?v=82242"></'+'script>';
 const MANAGEMENT_TAG='<script src="./management-engine-v8-22-0.js?v=82239"></'+'script>';
 const USAGE_TAG='<script src="./erp-usage-v8-20.js?v=82239"></'+'script>';
 const SYNC_TAG='<script src="./caseirinho-commerce-sync-v8-21.js?v=82239"></'+'script>';
@@ -78,7 +80,7 @@ const MACARRAO_RECOVERY_TAG='<script src="./macarrao-catalog-recovery-v8-22-25.j
 const CATEGORY_GRADE_SYNC_TAG='<script src="./catalog-category-grade-sync-v8-22-30.js?v=82239"></'+'script>';
 const CATEGORY_SAVE_TAG='<script src="./product-category-store-sync-v8-22-31.js?v=82239"></'+'script>';
 
-const SHELL=['./','./index.html','./manifest.webmanifest','./offline.html','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable-512.png','./icons/apple-touch-icon.png',TX,MULTI,STABILITY,PLATFORM,EXPERIENCE,HYDRATE,NEXTJS,NEXTCSS,COMMERCE,MANAGEMENT,USAGE,SYNC,STRICT_MEDIA,MEDIA_SYNC,LAB,ETIQUETAS,FECHAMENTO,PIX_STAY,UPSELL,PEDIDO_PRINT,PUBLISH_FIX,STORE_SETTINGS,PIX_DOCUMENT,PIX_OFFICIAL,ORDER_REVISION,PREREG,DELIVERY_MOTO,INBOX_FOCUS,INTEGRITY,REAL_RECOVERY,RECOVERY,DEEP,CENTRAL_FIX,USAGE_FIX,RELEASE,MACARRAO_RECOVERY,CATEGORY_GRADE_SYNC,CATEGORY_SAVE];
+const SHELL=['./','./index.html','./manifest.webmanifest','./offline.html','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable-512.png','./icons/apple-touch-icon.png',TX,MULTI,STABILITY,PLATFORM,EXPERIENCE,HYDRATE,NEXTJS,NEXTCSS,COMMERCE,CASHBACK,MANAGEMENT,USAGE,SYNC,STRICT_MEDIA,MEDIA_SYNC,LAB,ETIQUETAS,FECHAMENTO,PIX_STAY,UPSELL,PEDIDO_PRINT,PUBLISH_FIX,STORE_SETTINGS,PIX_DOCUMENT,PIX_OFFICIAL,ORDER_REVISION,PREREG,DELIVERY_MOTO,INBOX_FOCUS,INTEGRITY,REAL_RECOVERY,RECOVERY,DEEP,CENTRAL_FIX,USAGE_FIX,RELEASE,MACARRAO_RECOVERY,CATEGORY_GRADE_SYNC,CATEGORY_SAVE];
 
 async function cacheShell(){const c=await caches.open(CACHE);for(const url of SHELL){try{const r=await fetch(url,{cache:'reload'});if(r.ok)await c.put(url,r.clone())}catch(_){}}}
 function injectBefore(html,needle,tag){if(html.includes(needle))return html;const low=html.toLowerCase(),p=low.lastIndexOf('</body>');return p>=0?html.slice(0,p)+tag+html.slice(p):html+tag}
@@ -95,6 +97,7 @@ async function injectScripts(response){
   html=injectBefore(html,'server-catalog-hydration-v8-19.js',HYDRATE_TAG);
   html=injectBefore(html,'john-next-v8-17.js',NEXTJS_TAG);
   html=injectBefore(html,'commerce-engine-v8-22-0.js',COMMERCE_TAG);
+  html=injectBefore(html,'cashback-engine-v8-22-42.js',CASHBACK_TAG);
   html=injectBefore(html,'management-engine-v8-22-0.js',MANAGEMENT_TAG);
   html=injectBefore(html,'erp-usage-v8-20.js',USAGE_TAG);
   html=injectBefore(html,'caseirinho-commerce-sync-v8-21.js',SYNC_TAG);
