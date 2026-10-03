@@ -3,7 +3,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 const root=path.resolve(__dirname,'..');
-const ce=fs.readFileSync(path.join(root,'commerce-engine-v8-22-0.js'),'utf8');
+const ce=fs.readFileSync(path.join(root,'commerce-engine-v8-22-0-core.js'),'utf8');
 const mg=fs.readFileSync(path.join(root,'management-engine-v8-22-0.js'),'utf8');
 const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
 test('Motor Comercial abre no centro',()=>{assert.match(ce,/p\.id='motorComercial'/);assert.match(ce,/function showCenter\(\)/);assert.doesNotMatch(ce,/position:fixed;inset:0/)});
