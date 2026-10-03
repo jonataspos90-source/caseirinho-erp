@@ -1,4 +1,4 @@
-const CACHE='john-erp-pwa-v8.22.44-commerce-engagement';
+const CACHE='john-erp-pwa-v8.22.48-delivery-direct';
 
 const TX='./transaction-persistence-v8-22-13.js';
 const MULTI='./multiempresa-v8-12-0.js';
@@ -51,8 +51,8 @@ const HYDRATE_TAG='<script src="./server-catalog-hydration-v8-19.js?v=82244"></'
 const NEXTJS_TAG='<script src="./john-next-v8-17.js?v=82244"></'+'script>';
 const NEXTCSS_TAG='<link rel="stylesheet" href="./john-next-v8-17.css?v=82244">';
 const COMMERCE_TAG='<script src="./commerce-engine-v8-22-0.js?v=82244"></'+'script>';
-const CASHBACK_TAG='<script src="./cashback-engine-v8-22-42.js?v=82244"></'+'script>';
-const CASHBACK_VISIBILITY_TAG='<script src="./cashback-visibility-hotfix-v8-22-43.js?v=82244"></'+'script>';
+const CASHBACK_TAG='<script src="./cashback-engine-v8-22-42.js?v=82248"></'+'script>';
+const CASHBACK_VISIBILITY_TAG='<script src="./cashback-visibility-hotfix-v8-22-43.js?v=82248"></'+'script>';
 const COMMERCE_ENGAGEMENT_TAG='<script src="./commerce-engagement-erp-v8-22-44.js?v=82244"></'+'script>';
 const MANAGEMENT_TAG='<script src="./management-engine-v8-22-0.js?v=82244"></'+'script>';
 const USAGE_TAG='<script src="./erp-usage-v8-20.js?v=82244"></'+'script>';
