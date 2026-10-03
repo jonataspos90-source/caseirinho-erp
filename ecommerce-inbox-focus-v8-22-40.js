@@ -3,8 +3,9 @@
 if(window.__JOHN_ECOM_INBOX_FOCUS_82240__)return;
 window.__JOHN_ECOM_INBOX_FOCUS_82240__=true;
 
-const VERSION='8.22.40';
+const VERSION='8.22.40-r1';
 const INBOX_KEYS=['john_ecommerce_cloud_inbox_v1','john_ecommerce_inbox_v1'];
+const ORDER_ACTIONS_SRC='./ecommerce-order-actions-v8-22-33.js?v=82244-recovery-1';
 const S=v=>String(v??'');
 const A=v=>Array.isArray(v)?v:[];
 const norm=v=>S(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toUpperCase().replace(/[\s-]+/g,'_');
@@ -22,6 +23,21 @@ function isProcessed(o){
   if(['CANCELADO','REJEITADO','SUBSTITUIDO'].includes(st))return true;
   if(['IMPORTADO'].includes(integ))return true;
   if(st==='ACEITO'&&(integ==='IMPORTANDO'||!!o?.erpPedidoId||!!o?.erpNumero))return true;
+  return false;
+}
+function ensureOrderRecovery(){
+  if(window.johnOrderActions82233?.version==='8.22.44')return true;
+  if(document.querySelector('script[data-john-order-recovery-82244]'))return false;
+  const s=document.createElement('script');
+  s.src=ORDER_ACTIONS_SRC;
+  s.async=false;
+  s.setAttribute('data-john-order-recovery-82244','1');
+  s.onload=()=>{
+    try{window.johnOrderActions82233?.recoverAcceptedOrders?.();window.johnOrderActions82233?.syncFulfilledLocalOrders?.()}catch(e){console.warn(e)}
+    [0,100,500].forEach(ms=>setTimeout(()=>{patchAccept();schedule()},ms));
+  };
+  s.onerror=()=>console.warn('[John 8.22.40-r1] Não foi possível carregar a recuperação de pedidos aceitos.');
+  (document.head||document.documentElement).appendChild(s);
   return false;
 }
 function rowCode(tr){
@@ -96,8 +112,10 @@ function attachObserver(){
   const root=tableRoot();if(!root||observer)return false;
   observer=new MutationObserver(schedule);observer.observe(root,{childList:true,subtree:true});return true;
 }
-function init(){patchController();patchAccept();attachObserver();schedule()}
+function init(){ensureOrderRecovery();patchController();patchAccept();attachObserver();schedule()}
+ensureOrderRecovery();
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(init,250),{once:true});else setTimeout(init,120);
 [500,1200,2500,5000,9000].forEach(ms=>setTimeout(init,ms));
-window.johnEcommerceInboxFocus82240={version:VERSION,apply,isProcessed,get showProcessed(){return showProcessed},setShowProcessed(v){showProcessed=!!v;apply()}};
+window.addEventListener('focus',()=>{ensureOrderRecovery();try{window.johnOrderActions82233?.recoverAcceptedOrders?.();window.johnOrderActions82233?.syncFulfilledLocalOrders?.()}catch(_){}});
+window.johnEcommerceInboxFocus82240={version:VERSION,apply,isProcessed,ensureOrderRecovery,get showProcessed(){return showProcessed},setShowProcessed(v){showProcessed=!!v;apply()}};
 })();
