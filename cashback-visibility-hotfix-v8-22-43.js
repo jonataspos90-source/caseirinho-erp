@@ -2,21 +2,25 @@
 if(window.__JOHN_CASHBACK_VISIBILITY_82243__)return;
 window.__JOHN_CASHBACK_VISIBILITY_82243__=true;
 
-const CASHBACK='./cashback-engine-v8-22-42.js?v=82243';
-const ORDER_RECOVERY='./ecommerce-order-recovery-v8-22-45.js?v=82245';
+const CASHBACK='./cashback-engine-v8-22-42.js?v=82246';
+const ORDER_RECOVERY='./ecommerce-order-recovery-v8-22-45.js?v=82246-cloud';
 const S=v=>String(v??'');
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 
 function toast(message){try{if(typeof window.toast==='function')return window.toast(message)}catch(_){}console.warn('[Cashback]',message)}
 
 function ensureOrderRecovery(){
-  if(window.__JOHN_ORDER_RECOVERY_82245__)return true;
-  if(document.querySelector('script[src*="ecommerce-order-recovery-v8-22-45.js"]'))return true;
+  if(window.JohnOrderRecovery82246?.syncAndRepair){window.JohnOrderRecovery82246.syncAndRepair(true).catch?.(()=>{});return true}
+  const old=[...document.querySelectorAll('script[src*="ecommerce-order-recovery-v8-22-45.js"]')];
+  for(const s of old){if(!S(s.src).includes('82246-cloud')){try{s.remove()}catch(_){}}}
+  if(document.querySelector('script[src*="ecommerce-order-recovery-v8-22-45.js"][src*="82246-cloud"]'))return true;
   const s=document.createElement('script');
   s.src=ORDER_RECOVERY;
   s.async=false;
-  s.dataset.johnOrderRecovery82245='1';
-  document.head.appendChild(s);
+  s.dataset.johnOrderRecovery82246='1';
+  s.onload=()=>setTimeout(()=>window.JohnOrderRecovery82246?.syncAndRepair?.(true),80);
+  s.onerror=()=>console.warn('[John 8.22.46] Não foi possível carregar a recuperação de pedidos pela nuvem.');
+  (document.head||document.documentElement).appendChild(s);
   return true;
 }
 
@@ -121,5 +125,6 @@ if(document.documentElement)observer.observe(document.documentElement,{childList
 [0,300,900,1800,3500].forEach(ms=>setTimeout(install,ms));
 window.addEventListener('john:session-ready',()=>setTimeout(install,80));
 window.addEventListener('john:cloud-applied',()=>setTimeout(install,120));
-window.JohnCashbackVisibility82243={install,open:openCashback};
+window.addEventListener('focus',()=>setTimeout(ensureOrderRecovery,50));
+window.JohnCashbackVisibility82243={install,open:openCashback,ensureOrderRecovery};
 })();
