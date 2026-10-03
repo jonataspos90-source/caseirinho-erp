@@ -3,10 +3,22 @@ if(window.__JOHN_CASHBACK_VISIBILITY_82243__)return;
 window.__JOHN_CASHBACK_VISIBILITY_82243__=true;
 
 const CASHBACK='./cashback-engine-v8-22-42.js?v=82243';
+const ORDER_RECOVERY='./ecommerce-order-recovery-v8-22-45.js?v=82245';
 const S=v=>String(v??'');
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 
 function toast(message){try{if(typeof window.toast==='function')return window.toast(message)}catch(_){}console.warn('[Cashback]',message)}
+
+function ensureOrderRecovery(){
+  if(window.__JOHN_ORDER_RECOVERY_82245__)return true;
+  if(document.querySelector('script[src*="ecommerce-order-recovery-v8-22-45.js"]'))return true;
+  const s=document.createElement('script');
+  s.src=ORDER_RECOVERY;
+  s.async=false;
+  s.dataset.johnOrderRecovery82245='1';
+  document.head.appendChild(s);
+  return true;
+}
 
 function motorGroup(){
   return [...document.querySelectorAll('.john-module-group')].find(g=>/motor\s+comercial/i.test(S(g.querySelector('.john-module-name')?.textContent)));
@@ -103,7 +115,7 @@ document.addEventListener('click',ev=>{
   openCashback();
 },true);
 
-function install(){ensureNavItem();ensureTab();ensureCashbackScript()}
+function install(){ensureOrderRecovery();ensureNavItem();ensureTab();ensureCashbackScript()}
 const observer=new MutationObserver(()=>{ensureNavItem();ensureTab()});
 if(document.documentElement)observer.observe(document.documentElement,{childList:true,subtree:true});
 [0,300,900,1800,3500].forEach(ms=>setTimeout(install,ms));
