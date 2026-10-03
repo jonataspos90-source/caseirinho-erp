@@ -4,7 +4,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const root=path.resolve(__dirname,'..');
 const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
-const commerce=fs.readFileSync(path.join(root,'commerce-engine-v8-22-0.js'),'utf8');
+const commerce=fs.readFileSync(path.join(root,'commerce-engine-v8-22-0-core.js'),'utf8');
 const management=fs.readFileSync(path.join(root,'management-engine-v8-22-0.js'),'utf8');
 const sync=fs.readFileSync(path.join(root,'caseirinho-commerce-sync-v8-21.js'),'utf8');
 
