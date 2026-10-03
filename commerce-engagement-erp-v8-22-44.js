@@ -52,7 +52,7 @@ async function refreshActive(force=false){removeBodyLiteral();style();const t=ac
 function schedule(force=false){setTimeout(()=>refreshActive(force),100);setTimeout(()=>refreshActive(force),500)}
 
 document.addEventListener('click',e=>{const b=e.target?.closest?.('[data-cetab="abandoned"],[data-cetab="ratings"],#ce822Refresh');if(!b)return;schedule(true)},true);
-const obs=new MutationObserver(()=>{removeBodyLiteral();const t=activeTab();if((t==='abandoned'||t==='ratings')&&!E('eng44MutationLock'))schedule(false)});obs.observe(document.documentElement,{childList:true,subtree:true});
+const obs=new MutationObserver(()=>{removeBodyLiteral();const t=activeTab();if(t==='abandoned'&&!E('eng44AbandonedInfo'))schedule(false);else if(t==='ratings'&&!E('eng44RatingsPanel'))schedule(false)});obs.observe(document.documentElement,{childList:true,subtree:true});
 setInterval(()=>{const t=activeTab();if(t==='abandoned'||t==='ratings')refreshActive(true);removeBodyLiteral()},30000);
 [0,400,1200,2500].forEach(ms=>setTimeout(()=>{removeBodyLiteral();refreshActive(false)},ms));
 window.JohnCommerceEngagement82244={refresh:()=>refreshActive(true),removeBodyLiteral};
