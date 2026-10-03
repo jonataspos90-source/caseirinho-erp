@@ -38,7 +38,7 @@ test('aceite e refresh reaplicam filtro automaticamente',()=>{
 });
 
 test('PWA atual injeta o hotfix da fila',()=>{
-  assert.match(sw,/john-erp-pwa-v8\.22\.44-commerce-engagement/);
+  assert.match(sw,/john-erp-pwa-v8\.22\.48-delivery-direct/);
   assert.match(sw,/ecommerce-inbox-focus-v8-22-40\.js/);
   assert.match(sw,/INBOX_FOCUS_TAG/);
 });
