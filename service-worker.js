@@ -1,4 +1,4 @@
-const CACHE='john-erp-pwa-v8.22.42-cashback';
+const CACHE='john-erp-pwa-v8.22.40-ecommerce-inbox-focus';
 
 const TX='./transaction-persistence-v8-22-13.js';
 const MULTI='./multiempresa-v8-12-0.js';
