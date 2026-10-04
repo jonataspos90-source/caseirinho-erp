@@ -2,7 +2,7 @@
 if(window.__JOHN_CASHBACK_VISIBILITY_82243__)return;
 window.__JOHN_CASHBACK_VISIBILITY_82243__=true;
 
-const VERSION='8.22.49';
+const VERSION='8.22.50';
 const CASHBACK='./cashback-engine-v8-22-42.js?v=82247';
 const ORDER_RECOVERY='./ecommerce-order-recovery-v8-22-45.js?v=82246-cloud';
 const S=v=>String(v??'');
@@ -85,22 +85,32 @@ function ensureDeliveryNavItem(){
     btn.dataset.deliveryNavBound='1';
     btn.addEventListener('click',ev=>{
       ev.preventDefault();ev.stopImmediatePropagation();
-      const sales=host.querySelector('button[data-page="vendas"]');
-      if(sales)sales.click();
-      else if(typeof window.showPage==='function')window.showPage('vendas');
-      else{
-        document.querySelectorAll('.page').forEach(p=>p.classList.add('hidden'));
-        document.getElementById('vendas')?.classList.remove('hidden');
-      }
-      setTimeout(()=>{
-        ensureSalesDeliveryPanel();
-        loadDeliveryOrders(true);
-        document.getElementById('johnSalesDelivery82247')?.scrollIntoView?.({behavior:'smooth',block:'start'});
-      },100);
+      openDeliveryPage();
     },{capture:true});
   }
   if(created)setTimeout(()=>{window.johnNext?.renderHub?.()},60);
   return true;
+}
+
+function openDeliveryPage(){
+  ensureSalesDeliveryPanel();
+  document.querySelectorAll('.page').forEach(p=>p.classList.add('hidden'));
+  const page=document.getElementById('pedidosEntregas');
+  if(page)page.classList.remove('hidden');
+  document.body.dataset.jnPage='pedidosEntregas';
+  const area=document.getElementById('jnActiveArea');
+  if(area)area.textContent='Pedidos / Entregas';
+  loadDeliveryOrders(true);
+  page?.scrollIntoView?.({behavior:'smooth',block:'start'});
+}
+
+function cashbackDateEligible(o){
+  if(typeof o?.cashbackEligible==='boolean')return o.cashbackEligible;
+  const raw=o?.createdAt||o?.criadoEm||o?.created_at||o?.payload?.criadoEm;
+  const value=S(raw);
+  if(/^\d{4}-\d{2}-\d{2}$/.test(value))return value>='2026-10-03';
+  const date=Date.parse(value);
+  return Number.isFinite(date)&&date>=Date.parse('2026-10-03T00:00:00-03:00');
 }
 
 function ensureTab(){
@@ -179,11 +189,16 @@ function deliveryStyle(){
 
 function ensureSalesDeliveryPanel(){
   deliveryStyle();
-  const page=document.getElementById('vendas');if(!page)return false;
+  let page=document.getElementById('pedidosEntregas');
+  if(!page){
+    const sales=document.getElementById('vendas');if(!sales)return false;
+    page=document.createElement('section');page.id='pedidosEntregas';page.className='page hidden';
+    sales.insertAdjacentElement('afterend',page);
+  }
   let panel=document.getElementById('johnSalesDelivery82247');
   if(!panel){
     panel=document.createElement('div');panel.id='johnSalesDelivery82247';panel.className='panel';
-    panel.innerHTML=`<div class="jcd-head"><div><h2>📦 Pedidos / Entregas</h2><div class="jcd-sub">Submódulo de Vendas · concluir pedido e liberar cashback automaticamente</div></div><button type="button" class="btn secondary" id="jcdRefresh82247">Atualizar pedidos</button></div><div class="jcd-body"><div class="jcd-note"><b>Novo fluxo:</b> marque o pedido como <b>Entregue</b> (ou Retirado). O ERP Cloud registra a conclusão e o cashback elegível entra automaticamente na conta do cliente. Não é necessário abrir o módulo Cashback nem fazer consulta manual para gerar o crédito.</div><div class="jcd-tools"><select id="jcdFilter82247"><option value="PENDENTES">Aguardando conclusão</option><option value="TODOS">Todos os pedidos</option><option value="CONCLUIDOS">Entregues / Retirados</option></select><input id="jcdSearch82247" placeholder="Buscar pedido ou cliente"></div><div class="jcd-table"><table><thead><tr><th>Pedido</th><th>Cliente</th><th>Recebimento</th><th>Total</th><th>Status</th><th>Cashback</th><th>Ação</th></tr></thead><tbody id="jcdRows82247"><tr><td colspan="7" class="jcd-empty">Clique em Atualizar pedidos.</td></tr></tbody></table></div></div>`;
+    panel.innerHTML=`<div class="jcd-head"><div><h2>📦 Pedidos / Entregas</h2><div class="jcd-sub">Submódulo de Vendas · concluir entregas e retiradas</div></div><button type="button" class="btn secondary" id="jcdRefresh82247">Atualizar pedidos</button></div><div class="jcd-body"><div class="jcd-note">Cashback válido para pedidos criados a partir de <b>03/10/2026</b>. Pedidos anteriores podem ser concluídos, sem gerar cashback.<br>Marque o pedido como <b>Entregue</b> (ou Retirado). O ERP Cloud registra a conclusão e o cashback elegível entra automaticamente na conta do cliente. Não é necessário abrir o módulo Cashback nem fazer consulta manual para gerar o crédito.</div><div class="jcd-tools"><select id="jcdFilter82247"><option value="PENDENTES">Aguardando conclusão</option><option value="TODOS">Todos os pedidos</option><option value="CONCLUIDOS">Entregues / Retirados</option></select><input id="jcdSearch82247" placeholder="Buscar pedido ou cliente"></div><div class="jcd-table"><table><thead><tr><th>Pedido</th><th>Cliente</th><th>Recebimento</th><th>Total</th><th>Status</th><th>Cashback</th><th>Ação</th></tr></thead><tbody id="jcdRows82247"><tr><td colspan="7" class="jcd-empty">Clique em Atualizar pedidos.</td></tr></tbody></table></div></div>`;
     const top=page.querySelector('.topbar');if(top)top.insertAdjacentElement('afterend',panel);else page.prepend(panel);
     panel.querySelector('#jcdRefresh82247')?.addEventListener('click',()=>loadDeliveryOrders(true));
     panel.querySelector('#jcdFilter82247')?.addEventListener('change',renderDeliveryOrders);
@@ -203,6 +218,7 @@ function orderFreight(o){return N(o?.valorFrete??o?.frete??o?.payload?.valorFret
 function orderCashbackUsed(o){return N(o?.cashbackUtilizado??o?.cashbackUsado??o?.payload?.cashbackUtilizado??o?.payload?.cashbackUsado)}
 function isAccepted(o){const st=orderStatus(o),it=norm(o?.statusIntegracao||o?.integration_status);return !['NOVO','PENDENTE','CANCELADO','REJEITADO'].includes(st)&&(['ACEITO','EM_PREPARO','PRONTO','SAIU_PARA_ENTREGA',...COMPLETED].includes(st)||['IMPORTANDO','IMPORTADO'].includes(it)||!!o?.erpPedidoId||!!o?.erpNumero)}
 function predictedCashback(o){
+  if(!cashbackDateEligible(o))return 0;
   const p=o?.cashbackPolicy||o?.payload?.cashbackPolicy||cashbackCfg||{};
   const enabled=p.enabled!==undefined?p.enabled:cashbackCfg.enabled;if(enabled!==true)return 0;
   const pct=N(p.percentage??cashbackCfg.percentage),min=N(p.minOrderValue??cashbackCfg.minOrderValue),exclude=p.excludeShipping!==undefined?p.excludeShipping:(cashbackCfg.excludeShipping!==false);
@@ -219,7 +235,7 @@ function renderDeliveryOrders(){
   if(filter==='CONCLUIDOS')rows=rows.filter(o=>COMPLETED.has(orderStatus(o)));
   if(q)rows=rows.filter(o=>norm(orderCode(o)+' '+orderCustomer(o)).includes(q));
   rows.sort((a,b)=>S(b?.criadoEm||b?.createdAt||b?.updatedAt).localeCompare(S(a?.criadoEm||a?.createdAt||a?.updatedAt)));
-  body.innerHTML=rows.map(o=>{const st=orderStatus(o),done=COMPLETED.has(st),mode=orderMode(o),target=mode==='RETIRADA'?'RETIRADO':'ENTREGUE',cash=predictedCashback(o),id=esc(o?.id);return `<tr><td><b>${esc(orderCode(o))}</b><br><small class="jcd-muted">${esc(S(o?.erpNumero?'ERP #'+o.erpNumero:''))}</small></td><td>${esc(orderCustomer(o))}</td><td>${mode==='RETIRADA'?'🏪 Retirada':'🛵 Entrega'}</td><td><b>${money(orderTotal(o))}</b></td><td><span class="jcd-status ${done?'done':''}">${esc(statusLabel(st))}</span></td><td>${done?(cash>0?`<span class="jcd-cash">✓ ${money(cash)} processado</span>`:'<span class="jcd-muted">Regra processada</span>'):(cash>0?`<span class="jcd-cash">Previsto ${money(cash)}</span>`:'<span class="jcd-muted">Sem crédito previsto</span>')}</td><td>${done?'✓ Concluído':`<button type="button" class="jcd-deliver" data-jcd-deliver="${id}">✓ Marcar ${target==='RETIRADO'?'retirado':'entregue'}</button>`}</td></tr>`}).join('')||'<tr><td colspan="7" class="jcd-empty">Nenhum pedido encontrado neste filtro.</td></tr>';
+  body.innerHTML=rows.map(o=>{const st=orderStatus(o),done=COMPLETED.has(st),mode=orderMode(o),target=mode==='RETIRADA'?'RETIRADO':'ENTREGUE',cash=predictedCashback(o),id=esc(o?.id);return `<tr><td><b>${esc(orderCode(o))}</b><br><small class="jcd-muted">${esc(S(o?.erpNumero?'ERP #'+o.erpNumero:''))}</small></td><td>${esc(orderCustomer(o))}</td><td>${mode==='RETIRADA'?'🏪 Retirada':'🛵 Entrega'}</td><td><b>${money(orderTotal(o))}</b></td><td><span class="jcd-status ${done?'done':''}">${esc(statusLabel(st))}</span></td><td>${!cashbackDateEligible(o)?'<span class="jcd-muted">Sem cashback · anterior a 03/10/2026</span>':done?(cash>0?`<span class="jcd-cash">✓ ${money(cash)} processado</span>`:'<span class="jcd-muted">Regra processada</span>'):(cash>0?`<span class="jcd-cash">Previsto ${money(cash)}</span>`:'<span class="jcd-muted">Sem crédito previsto</span>')}</td><td>${done?'✓ Concluído':`<button type="button" class="jcd-deliver" data-jcd-deliver="${id}">✓ Marcar ${target==='RETIRADO'?'retirado':'entregue'}</button>`}</td></tr>`}).join('')||'<tr><td colspan="7" class="jcd-empty">Nenhum pedido encontrado neste filtro.</td></tr>';
 }
 
 async function loadDeliveryOrders(force=false){
@@ -227,7 +243,13 @@ async function loadDeliveryOrders(force=false){
   const body=document.getElementById('jcdRows82247');if(body)body.innerHTML='<tr><td colspan="7" class="jcd-empty">Atualizando pedidos...</td></tr>';
   try{
     const [ordersR,cfgR]=await Promise.all([admin('/api/v1/admin/store/orders?status=TODOS&limit=1000'),admin('/api/v1/admin/cashback/config').catch(()=>({config:{}}))]);
-    deliveryRows=A(ordersR?.orders);cashbackCfg=cfgR?.config||{};renderDeliveryOrders();
+    deliveryRows=A(ordersR?.orders);cashbackCfg=cfgR?.config||{};
+    if(deliveryRows.length){
+      const eligibility=await admin('/api/v1/admin/cashback/orders/eligibility',{method:'POST',body:JSON.stringify({ids:deliveryRows.map(o=>S(o.id))})});
+      const dates=new Map(A(eligibility.orders).map(o=>[S(o.id),o]));
+      deliveryRows=deliveryRows.map(o=>({...o,...(dates.get(S(o.id))||{cashbackEligible:false})}));
+    }
+    renderDeliveryOrders();
     if(force)window.JohnOrderRecovery82246?.syncAndRepair?.(true)?.catch?.(()=>{});
   }catch(e){console.error('[John '+VERSION+'] Pedidos / Entregas',e);if(body)body.innerHTML=`<tr><td colspan="7" class="jcd-empty">Falha ao carregar: ${esc(e?.message||e)}</td></tr>`}
   finally{deliveryBusy=false}
@@ -242,13 +264,13 @@ function updateLocalDelivered(id,target){
 async function markDelivered(id,btn){
   const o=deliveryRows.find(x=>S(x?.id)===S(id));if(!o)return toast('Pedido não localizado. Atualize a lista.');
   const mode=orderMode(o),target=mode==='RETIRADA'?'RETIRADO':'ENTREGUE',code=orderCode(o),cash=predictedCashback(o);
-  if(!confirm(`Confirmar pedido ${code} como ${target==='RETIRADO'?'RETIRADO':'ENTREGUE'}?\n\nAo confirmar, a regra de cashback será processada automaticamente para o cliente.`))return;
+  if(!confirm(`Confirmar pedido ${code} como ${target==='RETIRADO'?'RETIRADO':'ENTREGUE'}?\n\n${cashbackDateEligible(o)?'Ao confirmar, a regra de cashback será processada automaticamente para o cliente.':'Pedido anterior a 03/10/2026: será concluído sem gerar cashback.'}`))return;
   if(btn){btn.disabled=true;btn.textContent='Processando...'}
   try{
     await admin('/api/v1/admin/store/orders/statuses',{method:'PUT',body:JSON.stringify({pedidos:{[id]:{status:target}}})});
     updateLocalDelivered(id,target);
     await loadDeliveryOrders(false);
-    const msg=cash>0?`Pedido ${code} concluído. Cashback de aproximadamente ${money(cash)} processado automaticamente para o cliente.`:`Pedido ${code} concluído. A regra de cashback foi processada automaticamente.`;
+    const msg=!cashbackDateEligible(o)?`Pedido ${code} concluído sem cashback (anterior a 03/10/2026).`:cash>0?`Pedido ${code} concluído. Cashback de aproximadamente ${money(cash)} processado automaticamente para o cliente.`:`Pedido ${code} concluído. A regra de cashback foi processada automaticamente.`;
     toast(msg);
     setTimeout(()=>{window.JohnCashback82242?.refresh?.().catch?.(()=>{});window.johnEcommerceOrdersController?.refresh?.(true)?.catch?.(()=>{})},250);
   }catch(e){console.error('[John '+VERSION+'] conclusão de pedido',e);toast('Não foi possível concluir o pedido: '+(e?.message||e));if(btn){btn.disabled=false;btn.textContent=target==='RETIRADO'?'✓ Marcar retirado':'✓ Marcar entregue'}}
@@ -257,8 +279,8 @@ async function markDelivered(id,btn){
 document.addEventListener('click',ev=>{
   const cb=ev.target?.closest?.('[data-cetab="cashback"]');
   if(cb){ev.preventDefault();ev.stopImmediatePropagation();openCashback();return}
-  const vendas=ev.target?.closest?.('[data-page="vendas"]');
-  if(vendas)setTimeout(()=>{ensureSalesDeliveryPanel();loadDeliveryOrders(false)},100);
+  const vendas=ev.target?.closest?.('[data-page]');
+  if(vendas)document.getElementById('pedidosEntregas')?.classList.add('hidden');
 },true);
 
 function install(){ensureOrderRecovery();ensureNavItem();ensureDeliveryNavItem();ensureTab();ensureCashbackScript();ensureSalesDeliveryPanel()}
@@ -267,6 +289,6 @@ if(document.documentElement)observer.observe(document.documentElement,{childList
 [0,300,900,1800,3500].forEach(ms=>setTimeout(install,ms));
 window.addEventListener('john:session-ready',()=>setTimeout(()=>{install();loadDeliveryOrders(false)},80));
 window.addEventListener('john:cloud-applied',()=>setTimeout(()=>{install();loadDeliveryOrders(false)},120));
-window.addEventListener('focus',()=>{setTimeout(ensureOrderRecovery,50);const page=document.getElementById('vendas');if(page&&!page.classList.contains('hidden'))setTimeout(()=>loadDeliveryOrders(false),120)});
-window.JohnCashbackVisibility82243={version:VERSION,install,open:openCashback,ensureOrderRecovery,openDelivery:()=>{ensureSalesDeliveryPanel();return loadDeliveryOrders(true)},markDelivered};
+window.addEventListener('focus',()=>{setTimeout(ensureOrderRecovery,50);const page=document.getElementById('pedidosEntregas');if(page&&!page.classList.contains('hidden'))setTimeout(()=>loadDeliveryOrders(false),120)});
+window.JohnCashbackVisibility82243={version:VERSION,install,open:openCashback,ensureOrderRecovery,openDelivery:openDeliveryPage,markDelivered};
 })();
