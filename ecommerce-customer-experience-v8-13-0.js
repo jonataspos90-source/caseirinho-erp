@@ -210,7 +210,7 @@ function printOrderPdf(id){
   <div class="meta">Emitido em ${esc(new Date().toLocaleString('pt-BR'))}</div>
   <div class="box"><b>Cliente:</b> ${esc(o.cliente?.nome||'-')}<br><b>Telefone:</b> ${esc(o.cliente?.telefone||'-')}<br><b>Modalidade:</b> ${esc(o.modalidade||'-')}<br><b>Endereço/retirada:</b> ${addr}<br><b>Data:</b> ${esc(o.dataAtendimento||created||'-')}<br><b>Horário:</b> ${esc(orderTime(o)||'-')}<br><b>Status:</b> <span class="status">${esc(stateLabel(status))}</span></div>
   <table><thead><tr><th>Produto</th><th>Qtd.</th><th>Unitário</th><th>Total</th></tr></thead><tbody>${rows}</tbody></table>
-  <p class="total">Subtotal: ${money(o.subtotal)}<br>Frete: ${delivery(o)?money(o.valorFrete):money(0)}<br>Total: ${money(o.total)}</p>
+  <p class="total">${window.JohnOrderAmounts.lines(o).map(([label,value])=>esc(label)+': '+esc(value)).join('<br>')}</p>
   <p><b>Pagamento:</b> ${esc(o.formaPagamento||'-')}</p>
   <p><b>Observações:</b> ${esc(o.observacao||o.obs||'-')}</p>
   <button onclick="window.print()">Imprimir / Salvar em PDF</button>
