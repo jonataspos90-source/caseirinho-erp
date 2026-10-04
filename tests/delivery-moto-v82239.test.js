@@ -29,7 +29,7 @@ test('ERP salva configuração na API e testa endereço pela rota pública',()=>
 });
 
 test('PWA preserva módulo Entrega Moto na publicação atual',()=>{
-  assert.match(sw,/john-erp-pwa-v8\.22\.48-delivery-direct/);
+  assert.match(sw,/john-erp-pwa-v8\.22\.51-order-alerts/);
   assert.match(sw,/delivery-moto-config-v8-22-39\.js/);
   assert.match(sw,/DELIVERY_MOTO_TAG/);
 });
