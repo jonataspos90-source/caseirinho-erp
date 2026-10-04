@@ -2,7 +2,7 @@
 if(window.__JOHN_CASHBACK_VISIBILITY_82243__)return;
 window.__JOHN_CASHBACK_VISIBILITY_82243__=true;
 
-const VERSION='8.22.47';
+const VERSION='8.22.49';
 const CASHBACK='./cashback-engine-v8-22-42.js?v=82247';
 const ORDER_RECOVERY='./ecommerce-order-recovery-v8-22-45.js?v=82246-cloud';
 const S=v=>String(v??'');
@@ -64,6 +64,42 @@ function ensureNavItem(){
     btn.addEventListener('click',ev=>{ev.preventDefault();ev.stopImmediatePropagation();openCashback()},{capture:true});
   }
   if(created)setTimeout(()=>{try{window.johnNext?.renderHub?.();window.johnNext?.refresh?.()}catch(_){}},60);
+  return true;
+}
+
+function ensureDeliveryNavItem(){
+  const group=[...document.querySelectorAll('.nav .john-module-group')].find(g=>norm(g.querySelector('.john-module-name')?.textContent)==='VENDAS');
+  const host=group?.querySelector('.john-module-items');
+  if(!host)return false;
+  let btn=host.querySelector('button[data-special="pedidosEntregas"]');
+  const created=!btn;
+  if(!btn){
+    btn=document.createElement('button');
+    btn.type='button';
+    btn.className='john-special-nav';
+    btn.dataset.special='pedidosEntregas';
+    btn.innerHTML='📦 Pedidos / Entregas';
+    host.appendChild(btn);
+  }
+  if(btn.dataset.deliveryNavBound!=='1'){
+    btn.dataset.deliveryNavBound='1';
+    btn.addEventListener('click',ev=>{
+      ev.preventDefault();ev.stopImmediatePropagation();
+      const sales=host.querySelector('button[data-page="vendas"]');
+      if(sales)sales.click();
+      else if(typeof window.showPage==='function')window.showPage('vendas');
+      else{
+        document.querySelectorAll('.page').forEach(p=>p.classList.add('hidden'));
+        document.getElementById('vendas')?.classList.remove('hidden');
+      }
+      setTimeout(()=>{
+        ensureSalesDeliveryPanel();
+        loadDeliveryOrders(true);
+        document.getElementById('johnSalesDelivery82247')?.scrollIntoView?.({behavior:'smooth',block:'start'});
+      },100);
+    },{capture:true});
+  }
+  if(created)setTimeout(()=>{window.johnNext?.renderHub?.()},60);
   return true;
 }
 
@@ -225,8 +261,8 @@ document.addEventListener('click',ev=>{
   if(vendas)setTimeout(()=>{ensureSalesDeliveryPanel();loadDeliveryOrders(false)},100);
 },true);
 
-function install(){ensureOrderRecovery();ensureNavItem();ensureTab();ensureCashbackScript();ensureSalesDeliveryPanel()}
-const observer=new MutationObserver(()=>{ensureNavItem();ensureTab();ensureSalesDeliveryPanel()});
+function install(){ensureOrderRecovery();ensureNavItem();ensureDeliveryNavItem();ensureTab();ensureCashbackScript();ensureSalesDeliveryPanel()}
+const observer=new MutationObserver(()=>{ensureNavItem();ensureDeliveryNavItem();ensureTab();ensureSalesDeliveryPanel()});
 if(document.documentElement)observer.observe(document.documentElement,{childList:true,subtree:true});
 [0,300,900,1800,3500].forEach(ms=>setTimeout(install,ms));
 window.addEventListener('john:session-ready',()=>setTimeout(()=>{install();loadDeliveryOrders(false)},80));
