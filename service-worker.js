@@ -1,5 +1,5 @@
 importScripts('./order-alerts-worker.js');
-const CACHE='john-erp-pwa-v8.22.52-order-amounts';
+const CACHE='john-erp-pwa-v8.22.53-feature-flags';
 
 const TX='./transaction-persistence-v8-22-13.js';
 const MULTI='./multiempresa-v8-12-0.js';
@@ -57,7 +57,7 @@ const CASHBACK_VISIBILITY_TAG='<script src="./cashback-visibility-hotfix-v8-22-4
 const COMMERCE_ENGAGEMENT_TAG='<script src="./commerce-engagement-erp-v8-22-44.js?v=82244"></'+'script>';
 const MANAGEMENT_TAG='<script src="./management-engine-v8-22-0.js?v=82244"></'+'script>';
 const USAGE_TAG='<script src="./erp-usage-v8-20.js?v=82244"></'+'script>';
-const SYNC_TAG='<script src="./caseirinho-commerce-sync-v8-21.js?v=82244"></'+'script>';
+const SYNC_TAG='<script src="./caseirinho-commerce-sync-v8-21.js?v=82253"></'+'script>';
 const STRICT_MEDIA_TAG='<script src="./strict-media-upload-v8-22-5.js?v=82244"></'+'script>';
 const MEDIA_SYNC_TAG='<script src="./media-sync-fix-v8-22-6.js?v=82244"></'+'script>';
 const LAB_TAG='<script src="./pcp-laboratorio-v8-22-19.js?v=82244"></'+'script>';
