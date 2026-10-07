@@ -1,3 +1,18 @@
+JOHN SISTEMA ERP · V8.22.55 · PROMOÇÕES E PACK VIRTUAL NO E-COMMERCE
+Build: 2026-10-07
+
+NOVIDADES
+- Cadastro de produtos E-commerce reúne preço regular, preço promocional e Pack Virtual.
+- Preço promocional tem validação para ficar abaixo do Preço E-commerce e é salvo no produto.
+- Pack Virtual oferece “Leve X, pague Y” do mesmo produto ou compre X do produto gatilho e leve outro produto por preço especial.
+- O catálogo publicado leva os dados da promoção e dos packs sem alterar o preço de venda do ERP.
+- PWA invalidado para carregar a tela de cadastro atualizada.
+
+MANTIDO
+- Preço ERP permanece separado do Preço E-commerce.
+- Estoque, disponibilidade, categoria, pedidos, preços e configurações existentes são preservados.
+- A promoção e o pack são recalculados pela API no fechamento do pedido.
+
 JOHN SISTEMA ERP · V8.22.54 · PUBLICAÇÃO SEGURA DO CATÁLOGO
 Build: 2026-10-06
 
