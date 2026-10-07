@@ -1,5 +1,5 @@
 importScripts('./order-alerts-worker.js');
-const CACHE='john-erp-pwa-v8.22.58-pricing-submenu';
+const CACHE='john-erp-pwa-v8.22.59-pricing-submenu';
 
 const TX='./transaction-persistence-v8-22-13.js';
 const MULTI='./multiempresa-v8-12-0.js';
@@ -87,9 +87,9 @@ const MACARRAO_RECOVERY_TAG='<script src="./macarrao-catalog-recovery-v8-22-25.j
 const CATEGORY_GRADE_SYNC_TAG='<script src="./catalog-category-grade-sync-v8-22-30.js?v=82244"></'+'script>';
 const CATEGORY_SAVE_TAG='<script src="./product-category-store-sync-v8-22-31.js?v=82244"></'+'script>';
 const ECOMMERCE_SUBMODULE_TAG='<script src="./ecommerce-submodule-media-v8-22-17.js?v=82218"></'+'script>';
-const PRICING_PACK_TAG='<script src="./pricing-pack-offers-v8-22-57.js?v=82258"></'+'script>';
+const PRICING_PACK_TAG='<script src="./pricing-pack-offers-v8-22-57.js?v=82259"></'+'script>';
 
-const SHELL=['./order-amounts.js','./order-alerts-worker.js','./order-alerts-v8-22-51.js','./','./index.html','./manifest.webmanifest','./offline.html','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable-512.png','./icons/apple-touch-icon.png',TX,MULTI,STABILITY,PLATFORM,EXPERIENCE,HYDRATE,NEXTJS,NEXTCSS,COMMERCE,CASHBACK,CASHBACK_VISIBILITY,COMMERCE_ENGAGEMENT,MANAGEMENT,USAGE,PUBLISH_SAFE,SYNC,STRICT_MEDIA,MEDIA_SYNC,LAB,ETIQUETAS,FECHAMENTO,PIX_STAY,UPSELL,PEDIDO_PRINT,PUBLISH_FIX,STORE_SETTINGS,PIX_DOCUMENT,PIX_OFFICIAL,ORDER_REVISION,PREREG,DELIVERY_MOTO,INBOX_FOCUS,INTEGRITY,REAL_RECOVERY,RECOVERY,DEEP,CENTRAL_FIX,USAGE_FIX,RELEASE,MACARRAO_RECOVERY,CATEGORY_GRADE_SYNC,CATEGORY_SAVE,'./ecommerce-submodule-media-v8-22-17.js','./pricing-pack-offers-v8-22-57.js?v=82258'];
+const SHELL=['./order-amounts.js','./order-alerts-worker.js','./order-alerts-v8-22-51.js','./','./index.html','./manifest.webmanifest','./offline.html','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable-512.png','./icons/apple-touch-icon.png',TX,MULTI,STABILITY,PLATFORM,EXPERIENCE,HYDRATE,NEXTJS,NEXTCSS,COMMERCE,CASHBACK,CASHBACK_VISIBILITY,COMMERCE_ENGAGEMENT,MANAGEMENT,USAGE,PUBLISH_SAFE,SYNC,STRICT_MEDIA,MEDIA_SYNC,LAB,ETIQUETAS,FECHAMENTO,PIX_STAY,UPSELL,PEDIDO_PRINT,PUBLISH_FIX,STORE_SETTINGS,PIX_DOCUMENT,PIX_OFFICIAL,ORDER_REVISION,PREREG,DELIVERY_MOTO,INBOX_FOCUS,INTEGRITY,REAL_RECOVERY,RECOVERY,DEEP,CENTRAL_FIX,USAGE_FIX,RELEASE,MACARRAO_RECOVERY,CATEGORY_GRADE_SYNC,CATEGORY_SAVE,'./ecommerce-submodule-media-v8-22-17.js','./pricing-pack-offers-v8-22-57.js?v=82259'];
 
 async function cacheShell(){const c=await caches.open(CACHE);for(const url of SHELL){try{const r=await fetch(url,{cache:'reload'});if(r.ok)await c.put(url,r.clone())}catch(_){}}}
 function injectBefore(html,needle,tag){if(html.includes(needle))return html;const low=html.toLowerCase(),p=low.lastIndexOf('</body>');return p>=0?html.slice(0,p)+tag+html.slice(p):html+tag}
