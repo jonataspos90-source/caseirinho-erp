@@ -30,6 +30,6 @@ test('grade usa a alteração de produto mais recente em vez de forçar a capa',
 test('service worker atual continua carregando as duas proteções de categoria',()=>{
   assert.match(sw,/catalog-category-grade-sync-v8-22-30\.js\?v=82244/);
   assert.match(sw,/product-category-store-sync-v8-22-31\.js\?v=82244/);
-  assert.match(sw,/john-erp-pwa-v8\.22\.54-safe-catalog-publish/);
+  assert.match(sw,/john-erp-pwa-v8\.22\.55-ecommerce-promotions/);
 });
 
