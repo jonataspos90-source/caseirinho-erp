@@ -1,5 +1,5 @@
 importScripts('./order-alerts-worker.js');
-const CACHE='john-erp-pwa-v8.22.55-ecommerce-promotions';
+const CACHE='john-erp-pwa-v8.22.56-pack-promotions';
 
 const TX='./transaction-persistence-v8-22-13.js';
 const MULTI='./multiempresa-v8-12-0.js';
@@ -86,8 +86,9 @@ const RELEASE_TAG='<script src="./release-consistency-v8-22-5.js?v=82244"></'+'s
 const MACARRAO_RECOVERY_TAG='<script src="./macarrao-catalog-recovery-v8-22-25.js?v=82244"></'+'script>';
 const CATEGORY_GRADE_SYNC_TAG='<script src="./catalog-category-grade-sync-v8-22-30.js?v=82244"></'+'script>';
 const CATEGORY_SAVE_TAG='<script src="./product-category-store-sync-v8-22-31.js?v=82244"></'+'script>';
+const ECOMMERCE_SUBMODULE_TAG='<script src="./ecommerce-submodule-media-v8-22-17.js?v=82218"></'+'script>';
 
-const SHELL=['./order-amounts.js','./order-alerts-worker.js','./order-alerts-v8-22-51.js','./','./index.html','./manifest.webmanifest','./offline.html','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable-512.png','./icons/apple-touch-icon.png',TX,MULTI,STABILITY,PLATFORM,EXPERIENCE,HYDRATE,NEXTJS,NEXTCSS,COMMERCE,CASHBACK,CASHBACK_VISIBILITY,COMMERCE_ENGAGEMENT,MANAGEMENT,USAGE,PUBLISH_SAFE,SYNC,STRICT_MEDIA,MEDIA_SYNC,LAB,ETIQUETAS,FECHAMENTO,PIX_STAY,UPSELL,PEDIDO_PRINT,PUBLISH_FIX,STORE_SETTINGS,PIX_DOCUMENT,PIX_OFFICIAL,ORDER_REVISION,PREREG,DELIVERY_MOTO,INBOX_FOCUS,INTEGRITY,REAL_RECOVERY,RECOVERY,DEEP,CENTRAL_FIX,USAGE_FIX,RELEASE,MACARRAO_RECOVERY,CATEGORY_GRADE_SYNC,CATEGORY_SAVE];
+const SHELL=['./order-amounts.js','./order-alerts-worker.js','./order-alerts-v8-22-51.js','./','./index.html','./manifest.webmanifest','./offline.html','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable-512.png','./icons/apple-touch-icon.png',TX,MULTI,STABILITY,PLATFORM,EXPERIENCE,HYDRATE,NEXTJS,NEXTCSS,COMMERCE,CASHBACK,CASHBACK_VISIBILITY,COMMERCE_ENGAGEMENT,MANAGEMENT,USAGE,PUBLISH_SAFE,SYNC,STRICT_MEDIA,MEDIA_SYNC,LAB,ETIQUETAS,FECHAMENTO,PIX_STAY,UPSELL,PEDIDO_PRINT,PUBLISH_FIX,STORE_SETTINGS,PIX_DOCUMENT,PIX_OFFICIAL,ORDER_REVISION,PREREG,DELIVERY_MOTO,INBOX_FOCUS,INTEGRITY,REAL_RECOVERY,RECOVERY,DEEP,CENTRAL_FIX,USAGE_FIX,RELEASE,MACARRAO_RECOVERY,CATEGORY_GRADE_SYNC,CATEGORY_SAVE,'./ecommerce-submodule-media-v8-22-17.js'];
 
 async function cacheShell(){const c=await caches.open(CACHE);for(const url of SHELL){try{const r=await fetch(url,{cache:'reload'});if(r.ok)await c.put(url,r.clone())}catch(_){}}}
 function injectBefore(html,needle,tag){if(html.includes(needle))return html;const low=html.toLowerCase(),p=low.lastIndexOf('</body>');return p>=0?html.slice(0,p)+tag+html.slice(p):html+tag}
@@ -95,6 +96,7 @@ function injectHead(html,needle,tag){if(html.includes(needle))return html;const 
 async function injectScripts(response){
   if(!response)return response;const ct=response.headers.get('content-type')||'';if(!ct.includes('text/html'))return response;let html=await response.text();
   html=html.replace(/<script[^>]+ecommerce-order-revision-v8-22-36\.js[^>]*><\/script>/gi,'');
+  html=html.replace(/<script[^>]+ecommerce-submodule-media-v8-22-17\.js[^>]*><\/script>/gi,'');
   html=injectBefore(html,'order-alerts-v8-22-51.js','<script src="./order-alerts-v8-22-51.js?v=82251"></'+'script>');
   html=injectHead(html,'order-amounts.js','<script src="./order-amounts.js?v=20261004"></'+'script>');html=injectHead(html,'transaction-persistence-v8-22-13.js',TX_TAG);
   html=injectHead(html,'multiempresa-v8-12-0.js',MULTI_TAG);
@@ -136,6 +138,7 @@ async function injectScripts(response){
   html=injectBefore(html,'release-consistency-v8-22-5.js',RELEASE_TAG);
   html=injectBefore(html,'macarrao-catalog-recovery-v8-22-25.js',MACARRAO_RECOVERY_TAG);
   html=injectBefore(html,'catalog-category-grade-sync-v8-22-30.js',CATEGORY_GRADE_SYNC_TAG);
+  html=injectBefore(html,'ecommerce-submodule-media-v8-22-17.js',ECOMMERCE_SUBMODULE_TAG);
   html=injectBefore(html,'product-category-store-sync-v8-22-31.js',CATEGORY_SAVE_TAG);
   html=injectBefore(html,'ecommerce-inbox-focus-v8-22-40.js',INBOX_FOCUS_TAG);
   const h=new Headers(response.headers);h.delete('content-length');h.set('Cache-Control','no-cache, no-store, must-revalidate');return new Response(html,{status:response.status,statusText:response.statusText,headers:h});
