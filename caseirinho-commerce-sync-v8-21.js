@@ -106,7 +106,12 @@ async function authoritativePublish(silent=false){
    cat={...cat,produtos:A(cat.produtos).map(p=>({...p,imagens:[...A(p?.imagens)]}))};
    cat=applyLocalMerchandisingFlags(cat);
    await ensureRemoteImages(cat);
-   const result=await apiAdmin('/api/v1/admin/store/catalog',{method:'PUT',body:JSON.stringify({...cat,replaceCatalog:true,removedProductIds:[]})});
+   const publishBody={...cat,replaceCatalog:true,removedProductIds:[]};
+   const safePublishBody=window.JohnCatalogPublishSafe82254?.sanitize(publishBody)||publishBody;
+   let serializedPublishBody;
+   try{serializedPublishBody=JSON.stringify(safePublishBody)}
+   catch(error){throw new Error('Não foi possível preparar o catálogo para publicação: '+(error?.message||error))}
+   const result=await apiAdmin('/api/v1/admin/store/catalog',{method:'PUT',body:serializedPublishBody});
    try{localStorage.setItem('john_ecommerce_public_v1',JSON.stringify(cat))}catch(_){}
    try{await window.johnHydrateStorefrontFromServerV8225?.(true)}catch(e){console.warn('[John V8.22.5] hidratação pós-publicação:',e)}
    try{await window.johnV84Cloud?.loadOnline?.()}catch(_){}

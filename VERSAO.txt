@@ -1,3 +1,16 @@
+JOHN SISTEMA ERP · V8.22.54 · PUBLICAÇÃO SEGURA DO CATÁLOGO
+Build: 2026-10-06
+
+CORREÇÃO DA PUBLICAÇÃO DE IMAGENS
+- Sanitiza o catálogo antes de serializar e enviar à loja.
+- Referências circulares e objetos com profundidade excessiva não interrompem a publicação.
+- Nova camada carregada pelo PWA; cache atualizado para invalidar a versão anterior.
+- Depois de atualizar o ERP, publique novamente o produto 900079 para enviar a foto do talharim ao app.
+
+MANTIDO
+- Dados comerciais, estoque, categorias, preços, fotos, pedidos e módulos existentes.
+- A alteração de segurança remove somente referências repetidas/circulares ou conteúdo além do limite seguro de profundidade no payload público.
+
 JOHN SISTEMA ERP · V8.22.40 · FILA DE PEDIDOS E-COMMERCE
 Build: 2026-10-02
 

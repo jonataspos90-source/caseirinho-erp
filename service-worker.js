@@ -1,5 +1,5 @@
 importScripts('./order-alerts-worker.js');
-const CACHE='john-erp-pwa-v8.22.53-feature-flags';
+const CACHE='john-erp-pwa-v8.22.54-safe-catalog-publish';
 
 const TX='./transaction-persistence-v8-22-13.js';
 const MULTI='./multiempresa-v8-12-0.js';
@@ -15,6 +15,7 @@ const CASHBACK_VISIBILITY='./cashback-visibility-hotfix-v8-22-43.js';
 const COMMERCE_ENGAGEMENT='./commerce-engagement-erp-v8-22-44.js';
 const MANAGEMENT='./management-engine-v8-22-0.js';
 const USAGE='./erp-usage-v8-20.js';
+const PUBLISH_SAFE='./catalog-publish-safe-v8-22-54.js';
 const SYNC='./caseirinho-commerce-sync-v8-21.js';
 const STRICT_MEDIA='./strict-media-upload-v8-22-5.js';
 const MEDIA_SYNC='./media-sync-fix-v8-22-6.js';
@@ -57,7 +58,8 @@ const CASHBACK_VISIBILITY_TAG='<script src="./cashback-visibility-hotfix-v8-22-4
 const COMMERCE_ENGAGEMENT_TAG='<script src="./commerce-engagement-erp-v8-22-44.js?v=82244"></'+'script>';
 const MANAGEMENT_TAG='<script src="./management-engine-v8-22-0.js?v=82244"></'+'script>';
 const USAGE_TAG='<script src="./erp-usage-v8-20.js?v=82244"></'+'script>';
-const SYNC_TAG='<script src="./caseirinho-commerce-sync-v8-21.js?v=82253"></'+'script>';
+const PUBLISH_SAFE_TAG='<script src="./catalog-publish-safe-v8-22-54.js?v=82254"></'+'script>';
+const SYNC_TAG='<script src="./caseirinho-commerce-sync-v8-21.js?v=82254"></'+'script>';
 const STRICT_MEDIA_TAG='<script src="./strict-media-upload-v8-22-5.js?v=82244"></'+'script>';
 const MEDIA_SYNC_TAG='<script src="./media-sync-fix-v8-22-6.js?v=82244"></'+'script>';
 const LAB_TAG='<script src="./pcp-laboratorio-v8-22-19.js?v=82244"></'+'script>';
@@ -85,7 +87,7 @@ const MACARRAO_RECOVERY_TAG='<script src="./macarrao-catalog-recovery-v8-22-25.j
 const CATEGORY_GRADE_SYNC_TAG='<script src="./catalog-category-grade-sync-v8-22-30.js?v=82244"></'+'script>';
 const CATEGORY_SAVE_TAG='<script src="./product-category-store-sync-v8-22-31.js?v=82244"></'+'script>';
 
-const SHELL=['./order-amounts.js','./order-alerts-worker.js','./order-alerts-v8-22-51.js','./','./index.html','./manifest.webmanifest','./offline.html','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable-512.png','./icons/apple-touch-icon.png',TX,MULTI,STABILITY,PLATFORM,EXPERIENCE,HYDRATE,NEXTJS,NEXTCSS,COMMERCE,CASHBACK,CASHBACK_VISIBILITY,COMMERCE_ENGAGEMENT,MANAGEMENT,USAGE,SYNC,STRICT_MEDIA,MEDIA_SYNC,LAB,ETIQUETAS,FECHAMENTO,PIX_STAY,UPSELL,PEDIDO_PRINT,PUBLISH_FIX,STORE_SETTINGS,PIX_DOCUMENT,PIX_OFFICIAL,ORDER_REVISION,PREREG,DELIVERY_MOTO,INBOX_FOCUS,INTEGRITY,REAL_RECOVERY,RECOVERY,DEEP,CENTRAL_FIX,USAGE_FIX,RELEASE,MACARRAO_RECOVERY,CATEGORY_GRADE_SYNC,CATEGORY_SAVE];
+const SHELL=['./order-amounts.js','./order-alerts-worker.js','./order-alerts-v8-22-51.js','./','./index.html','./manifest.webmanifest','./offline.html','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable-512.png','./icons/apple-touch-icon.png',TX,MULTI,STABILITY,PLATFORM,EXPERIENCE,HYDRATE,NEXTJS,NEXTCSS,COMMERCE,CASHBACK,CASHBACK_VISIBILITY,COMMERCE_ENGAGEMENT,MANAGEMENT,USAGE,PUBLISH_SAFE,SYNC,STRICT_MEDIA,MEDIA_SYNC,LAB,ETIQUETAS,FECHAMENTO,PIX_STAY,UPSELL,PEDIDO_PRINT,PUBLISH_FIX,STORE_SETTINGS,PIX_DOCUMENT,PIX_OFFICIAL,ORDER_REVISION,PREREG,DELIVERY_MOTO,INBOX_FOCUS,INTEGRITY,REAL_RECOVERY,RECOVERY,DEEP,CENTRAL_FIX,USAGE_FIX,RELEASE,MACARRAO_RECOVERY,CATEGORY_GRADE_SYNC,CATEGORY_SAVE];
 
 async function cacheShell(){const c=await caches.open(CACHE);for(const url of SHELL){try{const r=await fetch(url,{cache:'reload'});if(r.ok)await c.put(url,r.clone())}catch(_){}}}
 function injectBefore(html,needle,tag){if(html.includes(needle))return html;const low=html.toLowerCase(),p=low.lastIndexOf('</body>');return p>=0?html.slice(0,p)+tag+html.slice(p):html+tag}
@@ -108,6 +110,7 @@ async function injectScripts(response){
   html=injectBefore(html,'commerce-engagement-erp-v8-22-44.js',COMMERCE_ENGAGEMENT_TAG);
   html=injectBefore(html,'management-engine-v8-22-0.js',MANAGEMENT_TAG);
   html=injectBefore(html,'erp-usage-v8-20.js',USAGE_TAG);
+  html=injectBefore(html,'catalog-publish-safe-v8-22-54.js',PUBLISH_SAFE_TAG);
   html=injectBefore(html,'caseirinho-commerce-sync-v8-21.js',SYNC_TAG);
   html=injectBefore(html,'strict-media-upload-v8-22-5.js',STRICT_MEDIA_TAG);
   html=injectBefore(html,'media-sync-fix-v8-22-6.js',MEDIA_SYNC_TAG);
