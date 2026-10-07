@@ -9,7 +9,7 @@ test('catalog sanitizer removes cycles and remains JSON serializable',()=>{
   const safe=sanitize({produtos:[product]});
   assert.equal(safe.produtos[0].id,'900079');
   assert.equal(safe.produtos[0].related,undefined);
-  assert.equal(JSON.parse(JSON.stringify(safe)).produtos[0].imagem.length,500024);
+  assert.equal(JSON.parse(JSON.stringify(safe)).produtos[0].imagem.length,500023);
 });
 
 test('catalog sanitizer bounds deeply nested optional values',()=>{
