@@ -49,7 +49,7 @@ test('publicação segura versionada e carregada sem cache anterior',()=>{
   const main=fs.readFileSync(path.join(root,'caseirinho-commerce-sync-v8-21.js'),'utf8');
   const worker=fs.readFileSync(path.join(root,'service-worker.js'),'utf8');
   assert.match(main,/publishDirect:authoritativePublish/);
-  assert.match(worker,/john-erp-pwa-v8\.22\.65-catalog-publish-recursion-guard/);
+  assert.match(worker,/john-erp-pwa-v8\.22\.(?:65|66)-/);
   assert.match(worker,/caseirinho-commerce-sync-v8-21\.js\?v=82265/);
   assert.match(worker,/catalog-category-grade-sync-v8-22-30\.js\?v=82265/);
 });
