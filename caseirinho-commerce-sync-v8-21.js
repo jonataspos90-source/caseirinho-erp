@@ -190,7 +190,8 @@ function boot(){
  bindPublishButtons();
  [0,300,900,1800,3500,7000].forEach(ms=>setTimeout(()=>{installSaveHook();bindPublishButtons()},ms));
 }
-window.JohnCaseirinhoCatalogSync821={version:VERSION,ensure,syncPublished,schedulePublished,catalogFingerprint,required:REQUIRED,publish:authoritativePublish,ensureRemoteImages};
+// A referência estável não pode ser sobrescrita pelos wrappers de publicação.
+window.JohnCaseirinhoCatalogSync821={version:VERSION,ensure,syncPublished,schedulePublished,catalogFingerprint,required:REQUIRED,publish:authoritativePublish,publishDirect:authoritativePublish,ensureRemoteImages};
 window.JohnCaseirinhoCatalogSync825=window.JohnCaseirinhoCatalogSync821;
 window.addEventListener('john:storefront-hydrated',()=>setTimeout(()=>ensure(true).catch(console.warn),120));
 window.addEventListener('john:cloud-applied',()=>setTimeout(()=>ensure(false).catch(console.warn),160));
