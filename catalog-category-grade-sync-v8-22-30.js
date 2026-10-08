@@ -61,8 +61,20 @@ async function flushLocal(){
  return changed;
 }
 function captureBase(){
- const candidates=[window.publicarCatalogoEcommerce,window.JohnCaseirinhoCatalogSync821?.publish,window.JohnV880?.canonicalPublish];
- for(const fn of candidates){if(typeof fn==='function'&&!fn.__johnOrdered82231){basePublish=fn;return fn}}
+ // A entrada mais segura é a função original do serviço, não wrappers globais.
+ // Os wrappers podem chamar orderedPublish novamente (ciclo / stack overflow).
+ const direct=window.JohnCaseirinhoCatalogSync821?.publishDirect||
+   window.JohnCaseirinhoCatalogSync825?.publishDirect;
+ if(typeof direct==='function'&&direct!==orderedPublish&&!direct.__johnOrdered82231){
+   basePublish=direct;return direct;
+ }
+ const candidates=[window.JohnCaseirinhoCatalogSync821?.publish,window.publicarCatalogoEcommerce,window.JohnV880?.canonicalPublish];
+ for(const fn of candidates){
+   if(typeof fn!=='function'||fn===orderedPublish||fn.__johnOrdered82231||fn.__johnCatalogWrapper82231)continue;
+   // Nunca troque uma referência original já identificada por um wrapper tardio.
+   if(typeof basePublish==='function'&&basePublish!==fn)return basePublish;
+   basePublish=fn;return fn;
+ }
  return basePublish;
 }
 async function orderedPublish(silent=false){
