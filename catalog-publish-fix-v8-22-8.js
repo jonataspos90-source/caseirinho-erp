@@ -47,10 +47,16 @@ async function request(path,opt={}){
     if(!r.ok)throw new Error(d?.error||('HTTP '+r.status));
     return d;
   }catch(err){
+    const isCatalog=path.includes('/admin/store/catalog');
     if(err?.name==='AbortError'){
-      throw new Error(path.includes('/admin/store/catalog')
-        ?'A publicação está demorando mais de 2 minutos. Tente novamente sem fechar o aplicativo.'
-        :'A API demorou para responder. Tente novamente.');
+      throw new Error(isCatalog
+        ?'Tempo esgotado na publicação do catálogo. A API pode ter recebido a alteração; verifique Produtos Online antes de reenviar.'
+        :'Tempo esgotado na comunicação com a API durante o envio de imagens.');
+    }
+    if(err?.name==='TypeError'||/failed to fetch|networkerror|load failed/i.test(S(err?.message))){
+      throw new Error(isCatalog
+        ?'Conexão interrompida ao publicar o catálogo (rede/API). O produto foi salvo no ERP, mas a publicação não foi confirmada. Confira Produtos Online antes de tentar novamente.'
+        :'Falha de comunicação durante o envio de imagem à API. Confira a conexão e tente reenviar a imagem.');
     }
     throw err;
   }finally{clearTimeout(timer)}
