@@ -35,6 +35,13 @@ function canonicalizeProduct(p,cp,cats){
  e.antecedenciaDias=Math.max(0,Math.round(N(cp?.antecedenciaDias)));
  e.destaque=cp?.destaque===true;
  e.novidade=cp?.novidade===true;
+ // Preserva ofertas publicadas ao abrir o ERP em outro dispositivo.
+ // Uma desativação explícita também precisa chegar ao cadastro local.
+ for(const field of ['promocao','packVirtual']){
+   const source=cp&&Object.prototype.hasOwnProperty.call(cp,field)?cp:
+     cp?.ecommerce&&Object.prototype.hasOwnProperty.call(cp.ecommerce,field)?cp.ecommerce:null;
+   if(source){e[field]=source[field];if(Object.prototype.hasOwnProperty.call(p,field))delete p[field]}
+ }
  e.imagem=imgs[0]||'';
  e.imagens=imgs;
  return imgs.length>0;
