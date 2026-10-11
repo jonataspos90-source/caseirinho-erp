@@ -1,5 +1,5 @@
 importScripts('./order-alerts-worker.js');
-const CACHE='john-erp-pwa-v8.22.66-catalog-network-diagnostics';
+const CACHE='john-erp-pwa-v8.22.67-promocoes-packs';
 
 const TX='./transaction-persistence-v8-22-13.js';
 const MULTI='./multiempresa-v8-12-0.js';
@@ -49,7 +49,7 @@ const MULTI_TAG='<script src="./multiempresa-v8-12-0.js?v=82244"></'+'script>';
 const STABILITY_TAG='<script src="./production-stability-v8-10-5.js?v=82244"></'+'script>';
 const PLATFORM_TAG='<script src="./platform-admin-v8-12-0.js?v=82244"></'+'script>';
 const EXPERIENCE_TAG='<script src="./ecommerce-customer-experience-v8-13-0.js?v=82244"></'+'script>';
-const HYDRATE_TAG='<script src="./server-catalog-hydration-v8-19.js?v=82244"></'+'script>';
+const HYDRATE_TAG='<script src="./server-catalog-hydration-v8-19.js?v=82267"></'+'script>';
 const NEXTJS_TAG='<script src="./john-next-v8-17.js?v=82244"></'+'script>';
 const NEXTCSS_TAG='<link rel="stylesheet" href="./john-next-v8-17.css?v=82244">';
 const COMMERCE_TAG='<script src="./commerce-engine-v8-22-0.js?v=82244"></'+'script>';
@@ -59,7 +59,7 @@ const COMMERCE_ENGAGEMENT_TAG='<script src="./commerce-engagement-erp-v8-22-44.j
 const MANAGEMENT_TAG='<script src="./management-engine-v8-22-0.js?v=82244"></'+'script>';
 const USAGE_TAG='<script src="./erp-usage-v8-20.js?v=82244"></'+'script>';
 const PUBLISH_SAFE_TAG='<script src="./catalog-publish-safe-v8-22-54.js?v=82254"></'+'script>';
-const SYNC_TAG='<script src="./caseirinho-commerce-sync-v8-21.js?v=82265"></'+'script>';
+const SYNC_TAG='<script src="./caseirinho-commerce-sync-v8-21.js?v=82267"></'+'script>';
 const STRICT_MEDIA_TAG='<script src="./strict-media-upload-v8-22-5.js?v=82244"></'+'script>';
 const MEDIA_SYNC_TAG='<script src="./media-sync-fix-v8-22-6.js?v=82244"></'+'script>';
 const LAB_TAG='<script src="./pcp-laboratorio-v8-22-19.js?v=82244"></'+'script>';
@@ -87,9 +87,9 @@ const MACARRAO_RECOVERY_TAG='<script src="./macarrao-catalog-recovery-v8-22-25.j
 const CATEGORY_GRADE_SYNC_TAG='<script src="./catalog-category-grade-sync-v8-22-30.js?v=82265"></'+'script>';
 const CATEGORY_SAVE_TAG='<script src="./product-category-store-sync-v8-22-31.js?v=82244"></'+'script>';
 const ECOMMERCE_SUBMODULE_TAG='<script src="./ecommerce-submodule-media-v8-22-17.js?v=82218"></'+'script>';
-const PRICING_PACK_TAG='<script src="./pricing-pack-offers-v8-22-57.js?v=82264"></'+'script>';
+const PRICING_PACK_TAG='<script src="./pricing-pack-offers-v8-22-57.js?v=82267"></'+'script>';
 
-const SHELL=['./order-amounts.js','./order-alerts-worker.js','./order-alerts-v8-22-51.js','./','./index.html','./manifest.webmanifest','./offline.html','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable-512.png','./icons/apple-touch-icon.png',TX,MULTI,STABILITY,PLATFORM,EXPERIENCE,HYDRATE,NEXTJS,NEXTCSS,COMMERCE,CASHBACK,CASHBACK_VISIBILITY,COMMERCE_ENGAGEMENT,MANAGEMENT,USAGE,PUBLISH_SAFE,SYNC,STRICT_MEDIA,MEDIA_SYNC,LAB,ETIQUETAS,FECHAMENTO,PIX_STAY,UPSELL,PEDIDO_PRINT,PUBLISH_FIX,STORE_SETTINGS,PIX_DOCUMENT,PIX_OFFICIAL,ORDER_REVISION,PREREG,DELIVERY_MOTO,INBOX_FOCUS,INTEGRITY,REAL_RECOVERY,RECOVERY,DEEP,CENTRAL_FIX,USAGE_FIX,RELEASE,MACARRAO_RECOVERY,CATEGORY_GRADE_SYNC,CATEGORY_SAVE,'./ecommerce-submodule-media-v8-22-17.js','./pricing-pack-offers-v8-22-57.js?v=82263'];
+const SHELL=['./order-amounts.js','./order-alerts-worker.js','./order-alerts-v8-22-51.js','./','./index.html','./manifest.webmanifest','./offline.html','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable-512.png','./icons/apple-touch-icon.png',TX,MULTI,STABILITY,PLATFORM,EXPERIENCE,HYDRATE,NEXTJS,NEXTCSS,COMMERCE,CASHBACK,CASHBACK_VISIBILITY,COMMERCE_ENGAGEMENT,MANAGEMENT,USAGE,PUBLISH_SAFE,SYNC,STRICT_MEDIA,MEDIA_SYNC,LAB,ETIQUETAS,FECHAMENTO,PIX_STAY,UPSELL,PEDIDO_PRINT,PUBLISH_FIX,STORE_SETTINGS,PIX_DOCUMENT,PIX_OFFICIAL,ORDER_REVISION,PREREG,DELIVERY_MOTO,INBOX_FOCUS,INTEGRITY,REAL_RECOVERY,RECOVERY,DEEP,CENTRAL_FIX,USAGE_FIX,RELEASE,MACARRAO_RECOVERY,CATEGORY_GRADE_SYNC,CATEGORY_SAVE,'./ecommerce-submodule-media-v8-22-17.js','./pricing-pack-offers-v8-22-57.js?v=82267'];
 
 async function cacheShell(){const c=await caches.open(CACHE);for(const url of SHELL){try{const r=await fetch(url,{cache:'reload'});if(r.ok)await c.put(url,r.clone())}catch(_){}}}
 function injectBefore(html,needle,tag){if(html.includes(needle))return html;const low=html.toLowerCase(),p=low.lastIndexOf('</body>');return p>=0?html.slice(0,p)+tag+html.slice(p):html+tag}
@@ -98,9 +98,9 @@ function injectHead(html,needle,tag){if(html.includes(needle))return html;const 
 async function injectScripts(response){
   if(!response)return response;const ct=response.headers.get('content-type')||'';if(!ct.includes('text/html'))return response;let html=await response.text();
   html=html.replace(/<script[^>]+ecommerce-order-revision-v8-22-36\.js[^>]*><\/script>/gi,'');
-  html=html.replace(/(caseirinho-commerce-sync-v8-21\.js\?v=)\d+/gi,(_,prefix)=>prefix+'82265');
+  html=html.replace(/(caseirinho-commerce-sync-v8-21\.js\?v=)\d+/gi,(_,prefix)=>prefix+'82267');
   html=html.replace(/(catalog-publish-fix-v8-22-8\.js\?v=)\d+/gi,(_,prefix)=>prefix+'82266');
-  html=html.replace(/(catalog-category-grade-sync-v8-22-30\.js\?v=)\d+/gi,(_,prefix)=>prefix+'82265');
+  html=html.replace(/(catalog-category-grade-sync-v8-22-30\.js\?v=)\d+/gi,(_,prefix)=>prefix+'82267');
   html=html.replace(/<script[^>]+ecommerce-submodule-media-v8-22-17\.js[^>]*><\/script>/gi,'');
   html=injectBefore(html,'order-alerts-v8-22-51.js','<script src="./order-alerts-v8-22-51.js?v=82251"></'+'script>');
   html=injectHead(html,'order-amounts.js','<script src="./order-amounts.js?v=20261004"></'+'script>');html=injectHead(html,'transaction-persistence-v8-22-13.js',TX_TAG);
