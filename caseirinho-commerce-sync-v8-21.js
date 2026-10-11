@@ -44,6 +44,9 @@ function catalogFingerprint(){
   antecedenciaDias:N(p?.ecommerce?.antecedenciaDias),
   destaque:p?.ecommerce?.destaque===true,
   novidade:p?.ecommerce?.novidade===true,
+  // Promoções e Packs devem disparar publicação mesmo sem alterar preço ou imagem.
+  promocao:JSON.stringify(p?.ecommerce?.promocao??p?.promocao??null),
+  packVirtual:JSON.stringify(p?.ecommerce?.packVirtual??p?.packVirtual??null),
   imagem:S(p?.ecommerce?.imagem||''),imagens:A(p?.ecommerce?.imagens).map(S)
  })).sort((a,b)=>a.id.localeCompare(b.id)));
 }
@@ -55,7 +58,13 @@ function applyLocalMerchandisingFlags(cat){
    const id=S(cp?.id||cp?.produtoId),code=S(cp?.codigo);
    const p=products.find(x=>S(x?.id)===id)||products.find(x=>code&&S(x?.codigo)===code);
    const e=p?.ecommerce&&typeof p.ecommerce==='object'&&!Array.isArray(p.ecommerce)?p.ecommerce:{};
-   return {...cp,destaque:e.destaque===true,novidade:e.novidade===true};
+   // A geração local pode devolver um cartão sem os campos de ofertas.
+   // Reaplicar os dados do ERP impede perda de promoção na publicação.
+   const promocao=e.promocao??p?.promocao;
+   const packVirtual=e.packVirtual??p?.packVirtual;
+   return {...cp,destaque:e.destaque===true,novidade:e.novidade===true,
+     ...(promocao!==undefined?{promocao}:{}),
+     ...(packVirtual!==undefined?{packVirtual}:{})};
  });
  return cat;
 }
