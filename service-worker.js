@@ -1,5 +1,5 @@
 importScripts('./order-alerts-worker.js');
-const CACHE='john-erp-pwa-v8.22.70-disponibilidade-encomendas';
+const CACHE='john-erp-pwa-v8.22.71-mercadopago';
 
 const TX='./transaction-persistence-v8-22-13.js';
 const MULTI='./multiempresa-v8-12-0.js';
@@ -92,8 +92,10 @@ const BULK_DESC_TAG='<script src="./bulk-product-descriptions-v8-22-68.js?v=8226
 const PRICING_PACK_TAG='<script src="./pricing-pack-offers-v8-22-57.js?v=82270"></'+'script>';
 const ENCOMENDAS='./caseirinho-encomendas-v8-22-70.js';
 const ENCOMENDAS_TAG='<script src="./caseirinho-encomendas-v8-22-70.js?v=82270"></'+'script>';
+const MP_PANEL='./caseirinho-mercadopago-v8-22-71.js';
+const MP_PANEL_TAG='<script src="./caseirinho-mercadopago-v8-22-71.js?v=82271"></'+'script>';
 
-const SHELL=['./order-amounts.js','./order-alerts-worker.js','./order-alerts-v8-22-51.js','./','./index.html','./manifest.webmanifest','./offline.html','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable-512.png','./icons/apple-touch-icon.png',TX,MULTI,STABILITY,PLATFORM,EXPERIENCE,HYDRATE,NEXTJS,NEXTCSS,COMMERCE,CASHBACK,CASHBACK_VISIBILITY,COMMERCE_ENGAGEMENT,MANAGEMENT,USAGE,PUBLISH_SAFE,SYNC,STRICT_MEDIA,MEDIA_SYNC,LAB,ETIQUETAS,FECHAMENTO,PIX_STAY,UPSELL,PEDIDO_PRINT,PUBLISH_FIX,STORE_SETTINGS,PIX_DOCUMENT,PIX_OFFICIAL,ORDER_REVISION,PREREG,DELIVERY_MOTO,INBOX_FOCUS,INTEGRITY,REAL_RECOVERY,RECOVERY,DEEP,CENTRAL_FIX,USAGE_FIX,RELEASE,MACARRAO_RECOVERY,CATEGORY_GRADE_SYNC,CATEGORY_SAVE,'./ecommerce-submodule-media-v8-22-17.js','./pricing-pack-offers-v8-22-57.js?v=82270',BULK_DESC,ENCOMENDAS];
+const SHELL=['./order-amounts.js','./order-alerts-worker.js','./order-alerts-v8-22-51.js','./','./index.html','./manifest.webmanifest','./offline.html','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable-512.png','./icons/apple-touch-icon.png',TX,MULTI,STABILITY,PLATFORM,EXPERIENCE,HYDRATE,NEXTJS,NEXTCSS,COMMERCE,CASHBACK,CASHBACK_VISIBILITY,COMMERCE_ENGAGEMENT,MANAGEMENT,USAGE,PUBLISH_SAFE,SYNC,STRICT_MEDIA,MEDIA_SYNC,LAB,ETIQUETAS,FECHAMENTO,PIX_STAY,UPSELL,PEDIDO_PRINT,PUBLISH_FIX,STORE_SETTINGS,PIX_DOCUMENT,PIX_OFFICIAL,ORDER_REVISION,PREREG,DELIVERY_MOTO,INBOX_FOCUS,INTEGRITY,REAL_RECOVERY,RECOVERY,DEEP,CENTRAL_FIX,USAGE_FIX,RELEASE,MACARRAO_RECOVERY,CATEGORY_GRADE_SYNC,CATEGORY_SAVE,'./ecommerce-submodule-media-v8-22-17.js','./pricing-pack-offers-v8-22-57.js?v=82270',BULK_DESC,ENCOMENDAS,MP_PANEL];
 
 async function cacheShell(){const c=await caches.open(CACHE);for(const url of SHELL){try{const r=await fetch(url,{cache:'reload'});if(r.ok)await c.put(url,r.clone())}catch(_){}}}
 function injectBefore(html,needle,tag){if(html.includes(needle))return html;const low=html.toLowerCase(),p=low.lastIndexOf('</body>');return p>=0?html.slice(0,p)+tag+html.slice(p):html+tag}
@@ -153,6 +155,7 @@ async function injectScripts(response){
   html=injectBefore(html,'ecommerce-inbox-focus-v8-22-40.js',INBOX_FOCUS_TAG);
   html=injectBefore(html,'bulk-product-descriptions-v8-22-68.js',BULK_DESC_TAG);
   html=injectBefore(html,'caseirinho-encomendas-v8-22-70.js',ENCOMENDAS_TAG);
+  html=injectBefore(html,'caseirinho-mercadopago-v8-22-71.js',MP_PANEL_TAG);
   const h=new Headers(response.headers);h.delete('content-length');h.set('Cache-Control','no-cache, no-store, must-revalidate');return new Response(html,{status:response.status,statusText:response.statusText,headers:h});
 }
 self.addEventListener('install',e=>e.waitUntil(cacheShell().then(()=>self.skipWaiting())));

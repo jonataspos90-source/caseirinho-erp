@@ -34,6 +34,7 @@ jobs:
           node --check cashback-visibility-hotfix-v8-22-43.js
           node --check service-worker.js
           node --check caseirinho-encomendas-v8-22-70.js
+          node --check caseirinho-mercadopago-v8-22-71.js
       - name: Regression tests
         id: regression
         shell: bash
