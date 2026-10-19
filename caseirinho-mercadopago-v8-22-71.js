@@ -5,7 +5,7 @@ window.__CASEIRINHO_MP_82271__=true;
 const E=id=>document.getElementById(id),S=x=>String(x??'');
 const esc=x=>S(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const formatMoney=x=>(Number(x)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-const statusName=s=>({APROVADO:'✅ Pago',PENDENTE:'🕘 Pendente',RECUSADO:'❌ Recusado',ESTORNADO:'↩️ Estornado',CANCELADO:'Cancelado',NAO_GERADO:'Não gerado'}[S(s)]||S(s);
+const statusName=s=>({APROVADO:'✅ Pago',PENDENTE:'🕘 Pendente',RECUSADO:'❌ Recusado',ESTORNADO:'↩️ Estornado',CANCELADO:'Cancelado',NAO_GERADO:'Não gerado'}[S(s)]||S(s));
 function api(path){if(typeof window.adminFetch==='function')return window.adminFetch(path);throw Error('Não foi possível autenticar o ERP na API.');}
 function page(){
  let el=E('ceMpPage82271');if(el)return el;
