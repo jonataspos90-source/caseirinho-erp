@@ -2,7 +2,7 @@
 'use strict';
 if(window.__JOHN_CENTRAL_MODULES_8223__)return;
 window.__JOHN_CENTRAL_MODULES_8223__=true;
-const VERSION='8.22.3';
+const VERSION='8.22.70';
 const S=v=>String(v??'');
 const motor=[
  ['dash','📈 Visão Geral','produtos'],['offers','🎯 Upsell / Cross-sell','produtos'],['combos','🧺 Combos Inteligentes','produtos'],['coupons','🏷️ Cupons','produtos'],['loyalty','⭐ Fidelidade','produtos'],['capacity','🏭 Capacidade','produtos'],['abandoned','🛒 Carrinhos Abandonados','produtos'],['relationship','❤️ Relacionamento','produtos'],['ratings','⭐ Avaliações','produtos']
@@ -28,7 +28,7 @@ function installStyle(){
  s.id='johnCentralOnly8223Style';
  s.textContent=`
  .sidebar .john-module-group[data-module="motorcomercial"],
- .sidebar .john-module-group[data-module="centralgerencial"]{display:none!important}
+ .sidebar .john-module-group[data-module="centralgerencial"]{display:block!important}
  #johnNextHub .jn-module-card[data-jn-group="motorcomercial"],
  #johnNextHub .jn-module-card[data-jn-group="centralgerencial"]{display:block!important}
  body.john-next-v2 #johnNextHub{max-width:1460px;margin:0 auto 18px}
