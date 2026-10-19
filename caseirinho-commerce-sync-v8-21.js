@@ -64,7 +64,9 @@ function applyLocalMerchandisingFlags(cat){
    const packVirtual=e.packVirtual??p?.packVirtual;
    return {...cp,destaque:e.destaque===true,novidade:e.novidade===true,
      ...(promocao!==undefined?{promocao}:{}),
-     ...(packVirtual!==undefined?{packVirtual}:{})};
+     ...(packVirtual!==undefined?{packVirtual}:{}),
+     ...(e.disponibilidade?{disponibilidade:e.disponibilidade}:{}),
+     ...(Number.isFinite(Number(e.antecedenciaDias))?{antecedenciaDias:Math.max(0,Number(e.antecedenciaDias))}:{})};
  });
  return cat;
 }
