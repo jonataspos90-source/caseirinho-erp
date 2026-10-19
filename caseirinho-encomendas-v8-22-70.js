@@ -1,0 +1,192 @@
+(function(){
+'use strict';
+if(window.__CASEIRINHO_ENCOMENDAS_82270__)return;
+window.__CASEIRINHO_ENCOMENDAS_82270__=true;
+const S=v=>String(v??''),N=v=>Number(v)||0,A=v=>Array.isArray(v)?v:[];
+const E=id=>document.getElementById(id),esc=v=>S(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const norm=v=>S(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().trim();
+const decisionOptions=[['PENDENTE','Aguardando análise'],['PRONTA_ENTREGA','Tenho pronta entrega'],['PRODUZIR','Produzir sob encomenda'],['INDISPONIVEL','Indisponível / negociar']];
+let saving=false,loading=false;
+const selected=new Set();
+function database(){try{return typeof db!=='undefined'?db:window.db}catch(_){return window.db||{}}}
+function products(){return A(database()?.produtos).filter(p=>norm([...(A(p.tipos)),p.tipo,p.tipoProduto,p.classificacao].join(' ')).includes('ACABADO')&&norm(p.status||'ATIVO')!=='INATIVO')}
+function canEdit(){try{return typeof permissao!=='function'||permissao('produtos','editar')}catch(_){return false}}
+function notice(message){const el=E('ceStatus82270');if(el)el.textContent=message;else if(typeof window.toast==='function')window.toast(message);else alert(message)}
+function style(){
+ if(E('ceStyle82270'))return;
+ const el=document.createElement('style');el.id='ceStyle82270';
+ el.textContent='.ce82270{margin:14px 0;border:1px solid #dbe5e9;border-radius:14px;background:#fff;padding:16px;color:#152238}.ce82270 input,.ce82270 select,.ce82270 textarea{width:100%;box-sizing:border-box;padding:9px;border:1px solid #cdd8e2;border-radius:8px;background:#fff;color:#152238}.ce82270 button{border:0;background:#7b1438;color:#fff;border-radius:8px;padding:10px 13px;font-weight:700;cursor:pointer}.ce82270 button:disabled{opacity:.5;cursor:wait}.ce82270 button.secondary{background:#eef2f6;color:#122236}.ce82270 .fields{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;margin:12px 0}.ce82270 .tbl{overflow:auto;max-height:54vh}.ce82270 table{border-collapse:collapse;min-width:720px;width:100%}.ce82270 td,.ce82270 th{padding:9px;border-bottom:1px solid #edf0f4;text-align:left;font-size:13px}.ce82270 .bar{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin:12px 0}.ce82270 .order{background:#fafbfc;border:1px solid #e0e5eb;border-radius:12px;padding:12px;margin:10px 0}.ce82270 .order-item{display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:8px;align-items:end;margin:10px 0}.ce82270 .hint{color:#596577;font-size:12px;margin-top:5px}@media(max-width:650px){.ce82270 .fields,.ce82270 .order-item{grid-template-columns:1fr}.ce82270{padding:10px}}';
+ document.head.appendChild(el);
+}
+function ensurePage(){
+ let p=E('ceAvailabilityPage82270');if(p)return p;
+ p=document.createElement('section');p.className='page hidden';p.id='ceAvailabilityPage82270';
+ p.innerHTML='<div class="ce82270"><div class="bar" style="justify-content:space-between"><h2>📦 Disponibilidade e Encomendas · Produtos Acabados</h2><button class="secondary" id="ceBack82270">Voltar</button></div><p>Defina pronta entrega, sob encomenda ou ambos. É possível selecionar vários produtos sem mexer nos preços.</p><div class="fields"><label>Pesquisar produto ou código<input id="ceSearch82270" placeholder="Nome, código ou categoria"></label><label>Filtrar modalidade<select id="ceFilter82270"><option value="">Todas</option><option value="PRONTA_ENTREGA">Pronta entrega</option><option value="SOB_ENCOMENDA">Sob encomenda</option><option value="AMBOS">Ambos</option></select></label><label>Modalidade em lote<select id="ceBulk82270"><option value="">Escolher</option><option value="PRONTA_ENTREGA">Pronta entrega</option><option value="SOB_ENCOMENDA">Sob encomenda</option><option value="AMBOS">Ambos</option></select></label></div><div class="bar"><button id="ceSelectVisible82270" class="secondary">Selecionar filtrados</button><button id="ceClear82270" class="secondary">Limpar seleção</button><button id="ceApply82270">Aplicar modalidade à seleção</button><span id="ceCount82270">0 selecionados</span></div><div class="tbl"><table><thead><tr><th>Sel.</th><th>Produto acabado</th><th>Modalidade</th><th>Antecedência (dias)</th></tr></thead><tbody id="ceRows82270"></tbody></table></div><div class="bar"><button id="ceSave82270">Salvar e publicar no aplicativo</button><span id="ceStatus82270" role="status"></span></div><p class="hint">O estoque é consultado separadamente: marcar pronta entrega não cria estoque fictício. A loja confirma a disponibilidade real no pedido.</p></div>';
+ (document.querySelector('main.main')||document.querySelector('main')||document.body).appendChild(p);
+ E('ceBack82270').onclick=()=>{p.classList.add('hidden');E('manutencao')?.classList.remove('hidden')};
+ E('ceSearch82270').oninput=render;
+ E('ceFilter82270').onchange=render;
+ E('ceSelectVisible82270').onclick=()=>{visible().forEach(x=>selected.add(S(x.id)));render()};
+ E('ceClear82270').onclick=()=>{selected.clear();render()};
+ E('ceApply82270').onclick=()=>{
+   const mode=E('ceBulk82270').value;if(!mode||!selected.size)return notice('Selecione produtos e a modalidade.');
+   for(const id of selected){const row=E('ceRows82270')?.querySelector('[data-id="'+CSS.escape(id)+'"]');if(row)row.querySelector('select.ceMode82270').value=mode;else drafts.set(id,{...(drafts.get(id)||{}),mode})}
+   E('ceRows82270').querySelectorAll('tr[data-id]').forEach(row=>{if(selected.has(row.dataset.id))drafts.set(row.dataset.id,{...(drafts.get(row.dataset.id)||{}),mode})});
+   render();
+ };
+ E('ceRows82270').addEventListener('change',e=>{
+   const row=e.target.closest('tr[data-id]');if(!row)return;const id=row.dataset.id;
+   if(e.target.classList.contains('ceMark82270')){e.target.checked?selected.add(id):selected.delete(id)}
+   else {selected.add(id);drafts.set(id,{mode:row.querySelector('.ceMode82270').value,days:Math.max(0,Math.floor(N(row.querySelector('.ceDays82270').value)))})}
+   E('ceCount82270').textContent=selected.size+' selecionados';
+ });
+ E('ceSave82270').onclick=save;
+ return p;
+}
+const drafts=new Map();
+function visible(){
+ const q=norm(E('ceSearch82270')?.value),mode=S(E('ceFilter82270')?.value);
+ return products().filter(p=>(!q||norm([p.nome,p.codigo,p.ecommerce?.nomeComercial,p.ecommerce?.categoria,p.categoria].join(' ')).includes(q))&&(!mode||S(drafts.get(S(p.id))?.mode||p.ecommerce?.disponibilidade||'AMBOS')===mode)).sort((a,b)=>S(a.nome).localeCompare(S(b.nome),'pt-BR'));
+}
+function render(){
+ if(!E('ceRows82270'))return;
+ E('ceRows82270').innerHTML=visible().map(p=>{
+   const d=drafts.get(S(p.id))||{},mode=d.mode||p.ecommerce?.disponibilidade||'AMBOS',days=d.days??p.ecommerce?.antecedenciaDias??0;
+   return '<tr data-id="'+esc(p.id)+'"><td><input type="checkbox" class="ceMark82270" '+(selected.has(S(p.id))?'checked':'')+'></td><td><b>'+esc(p.nome)+'</b><br><small>'+esc(p.codigo||'')+'</small></td><td><select class="ceMode82270">'+[['PRONTA_ENTREGA','Pronta entrega'],['SOB_ENCOMENDA','Sob encomenda'],['AMBOS','Ambos']].map(x=>'<option value="'+x[0]+'" '+(x[0]===mode?'selected':'')+'>'+x[1]+'</option>').join('')+'</select></td><td><input class="ceDays82270" type="number" min="0" max="365" step="1" value="'+esc(days)+'"></td></tr>';
+ }).join('')||'<tr><td colspan="4">Nenhum produto acabado encontrado.</td></tr>';
+ E('ceCount82270').textContent=selected.size+' selecionados';
+}
+function openAvailability(){
+ if(!canEdit())return notice('Seu usuário não tem permissão para editar produtos.');
+ style();let p=ensurePage();document.querySelectorAll('.page').forEach(x=>x.classList.add('hidden'));p.classList.remove('hidden');render();
+ window.scrollTo({top:0,behavior:'smooth'});
+}
+async function save(){
+ if(saving||!canEdit()||!selected.size)return notice('Selecione os produtos a atualizar.');
+ const d=database(),changes=[];
+ for(const id of selected){const p=products().find(x=>S(x.id)===id);if(!p)continue;const draft=drafts.get(id)||{};
+   const row=[...E('ceRows82270').querySelectorAll('tr[data-id]')].find(x=>x.dataset.id===id);
+   const mode=draft.mode||row?.querySelector('.ceMode82270')?.value||p.ecommerce?.disponibilidade||'AMBOS';
+   const days=Math.min(365,Math.max(0,Math.floor(Number(draft.days??row?.querySelector('.ceDays82270')?.value??p.ecommerce?.antecedenciaDias??0)||0)));
+   if(!['PRONTA_ENTREGA','SOB_ENCOMENDA','AMBOS'].includes(mode))return notice('Modalidade inválida.');
+   changes.push({p,mode,days});
+ }
+ if(!changes.length)return;
+ if(!confirm('Atualizar e publicar a disponibilidade de '+changes.length+' produto(s) acabado(s)?'))return;
+ const backup=changes.map(({p})=>({p,ecommerce:p.ecommerce,atualizadoEm:p.atualizadoEm}));
+ saving=true;E('ceSave82270').disabled=true;
+ try{
+   changes.forEach(({p,mode,days})=>{
+     p.ecommerce={...(p.ecommerce||{}),disponibilidade:mode,antecedenciaDias:days};
+     p.atualizadoEm=new Date().toISOString();
+   });
+   if(typeof window.save==='function')window.save();
+   else if(typeof DB_KEY!=='undefined')localStorage.setItem(DB_KEY,JSON.stringify(d));
+   else throw Error('Persistência do ERP indisponível.');
+   notice('Dados salvos. Sincronizando e publicando catálogo...');
+   const fn=window.JohnCaseirinhoCatalogSync821?.publishDirect||window.JohnCaseirinhoCatalogSync821?.publish;
+   if(typeof fn!=='function')throw Error('Publicador central do catálogo indisponível.');
+   await fn(true);
+   if(typeof window.johnCloudCapturarAlteracoes==='function')window.johnCloudCapturarAlteracoes();
+   if(typeof window.johnCloudFlushIncremental==='function')await window.johnCloudFlushIncremental(true);
+   changes.forEach(x=>{selected.delete(S(x.p.id));drafts.delete(S(x.p.id))});
+   render();notice('✅ Disponibilidade publicada: '+changes.length+' produto(s).');
+ }catch(err){
+   if(!changes.some(x=>x.p.ecommerce?.disponibilidade===x.mode))backup.forEach(x=>{x.p.ecommerce=x.ecommerce;x.p.atualizadoEm=x.atualizadoEm});
+   notice('Alterações gravadas no ERP, mas falta confirmar publicação/sincronização: '+S(err?.message||err));
+   console.error('[Encomendas 82270]',err);
+ }finally{saving=false;E('ceSave82270').disabled=false}
+}
+function api(path,opt={}){
+ if(typeof window.adminFetch==='function')return window.adminFetch(path,opt);
+ return Promise.reject(new Error('Conexão autenticada à API indisponível. Entre no ERP e configure a nuvem.'));
+}
+function pendingItems(order){
+ const rows=A(order?.itens).filter(i=>!i.adicional&&!i.adicionalPromocional&&(
+  S(i.disponibilidade)==='SOB_ENCOMENDA'||i.encomendaAutomatica===true||
+  A(order.encomendaConfirmacao?.itens).some(x=>S(x.produtoId)===S(i.produtoId))));
+ return rows;
+}
+function ensureOrdersPage(){
+ let el=E('ceOrdersPage82270');if(el)return el;
+ el=document.createElement('section');el.className='page hidden';el.id='ceOrdersPage82270';
+ el.innerHTML='<div class="ce82270"><div class="bar" style="justify-content:space-between"><h2>🕘 Encomendas para confirmar</h2><button class="secondary" id="ceOrdersBack82270">Voltar</button></div><p>Confirme pronta entrega, produção ou indisponibilidade por produto. As decisões ficam salvas no pedido na nuvem; o WhatsApp é aberto com uma mensagem pronta para envio.</p><div class="bar"><button id="ceOrdersRefresh82270">Atualizar pedidos</button><span id="ceOrdersStatus82270" role="status"></span></div><div id="ceOrdersRows82270"></div></div>';
+ (document.querySelector('main.main')||document.querySelector('main')||document.body).appendChild(el);
+ E('ceOrdersBack82270').onclick=()=>{el.classList.add('hidden');E('dashboard')?.classList.remove('hidden')};
+ E('ceOrdersRefresh82270').onclick=loadOrders;
+ E('ceOrdersRows82270').addEventListener('click',e=>{const b=e.target.closest('[data-save-order]');if(b)saveOrder(b.dataset.saveOrder)});
+ return el;
+}
+const ordersById=new Map();
+function orderRows(list){
+ const root=E('ceOrdersRows82270');if(!root)return;
+ const orders=list.filter(o=>pendingItems(o).length&&!['CANCELADO','REJEITADO','ENTREGUE','RETIRADO'].includes(norm(o.status)));
+ ordersById.clear();orders.forEach(o=>ordersById.set(S(o.id),o));
+ root.innerHTML=orders.map(o=>{
+   const previous=A(o.encomendaConfirmacao?.itens),items=pendingItems(o);
+   return '<div class="order" data-order="'+esc(o.id)+'"><div class="bar"><b>Pedido '+esc(o.codigo||o.id)+'</b><span>'+esc(o.cliente?.nome||'Cliente')+'</span><small>'+esc(o.encomendaConfirmacao?.status||'Aguardando análise')+'</small></div>'+
+   items.map(i=>{const prior=previous.find(x=>S(x.produtoId)===S(i.produtoId))||{};
+     return '<div class="order-item" data-prod="'+esc(i.produtoId)+'"><div><b>'+esc(i.nome||i.produtoId)+'</b><div class="hint">Quantidade: '+esc(i.quantidade)+'</div></div><label>Decisão<select class="ceDecision">'+decisionOptions.map(([v,t])=>'<option value="'+v+'" '+((prior.decisao||'PENDENTE')===v?'selected':'')+'>'+t+'</option>').join('')+'</select></label><label>Previsão, se produzir<input type="date" class="ceDue" value="'+esc(prior.previsao||'')+'"></label><label style="grid-column:1/-1">Observação (opcional)<input class="ceReason" maxlength="300" value="'+esc(prior.observacao||'')+'"></label></div>';
+   }).join('')+'<div class="bar"><button data-save-order="'+esc(o.id)+'">Salvar decisões</button><span class="ceOrderFeedback" role="status"></span></div></div>';
+ }).join('')||'<p>Não há encomendas pendentes de confirmação na consulta atual.</p>';
+}
+async function loadOrders(){
+ if(loading)return;loading=true;const t=E('ceOrdersStatus82270');t.textContent='Consultando a API...';
+ try{const result=await api('/api/v1/admin/store/orders?status=TODOS&limit=200');
+   orderRows(A(result.orders));t.textContent='Pedidos atualizados · '+new Date().toLocaleTimeString('pt-BR');
+ }catch(e){t.textContent='Não foi possível consultar pedidos: '+S(e.message||e)}
+ finally{loading=false}
+}
+async function saveOrder(id){
+ const o=ordersById.get(S(id)),panel=[...document.querySelectorAll('#ceOrdersRows82270 [data-order]')].find(e=>e.dataset.order===S(id));
+ if(!o||!panel)return;
+ const feedback=panel.querySelector('.ceOrderFeedback'),btn=panel.querySelector('[data-save-order]');
+ const itens=[...panel.querySelectorAll('.order-item[data-prod]')].map(row=>({
+   produtoId:row.dataset.prod,decisao:row.querySelector('.ceDecision').value,
+   previsao:row.querySelector('.ceDue').value,observacao:row.querySelector('.ceReason').value
+ }));
+ if(itens.some(i=>i.decisao==='PRODUZIR'&&!i.previsao))return feedback.textContent='Informe a data prevista para os itens que serão produzidos.';
+ if(!itens.length)return;
+ if(!confirm('Salvar a decisão de disponibilidade para o pedido '+S(o.codigo||id)+'?'))return;
+ btn.disabled=true;feedback.textContent='Salvando no servidor...';
+ try{
+   const res=await api('/api/v1/admin/store/orders/'+encodeURIComponent(id),{method:'PATCH',body:JSON.stringify({encomendaConfirmacao:{itens}})});
+   o.encomendaConfirmacao=res.order?.encomendaConfirmacao;
+   feedback.textContent='✅ Decisão salva na nuvem. Envie a confirmação por WhatsApp.';
+   const phone=S(o.cliente?.telefone).replace(/\D/g,'').replace(/^0+/,'');
+   if(phone){
+     const normalized=phone.length<=11?'55'+phone:phone;
+     const message=S(res.order?.mensagemCliente||'Olá! O Caseirinho tem uma atualização sobre o seu pedido.');
+     let link=panel.querySelector('.ceWhatsapp');
+     if(!link){link=document.createElement('a');link.className='ceWhatsapp';link.target='_blank';link.rel='noopener noreferrer';link.style.cssText='display:inline-block;margin:9px;color:#176c45;font-weight:700';panel.appendChild(link)}
+     link.href='https://wa.me/'+normalized+'?text='+encodeURIComponent(message);
+     link.textContent='🟢 Abrir WhatsApp com mensagem pronta';
+   }
+ }catch(e){feedback.textContent='Falha ao salvar: '+S(e.message||e)}
+ finally{btn.disabled=false}
+}
+function openOrders(){
+ style();const p=ensureOrdersPage();document.querySelectorAll('.page').forEach(e=>e.classList.add('hidden'));p.classList.remove('hidden');loadOrders();
+ window.scrollTo({top:0,behavior:'smooth'});
+}
+function install(){
+ style();
+ const menu=E('manutencao')?.querySelector('.report-choice-grid');
+ if(menu&&!E('ceAvailOpen82270')){
+   const b=document.createElement('button');b.id='ceAvailOpen82270';b.type='button';b.className='report-choice';
+   b.innerHTML='<span class="icon">📦</span><b>Disponibilidade e Encomendas</b><small>Produtos acabados · pronta entrega / sob encomenda / ambos</small>';
+   menu.appendChild(b);b.onclick=openAvailability;
+ }
+ const nav=document.querySelector('.nav .john-module-group[data-module="vendas"] .john-module-items')
+   ||document.querySelector('.nav .john-module-group[data-module="ecommerce"] .john-module-items');
+ if(nav&&!E('ceOrdersNav82270')){
+   const b=document.createElement('button');b.id='ceOrdersNav82270';b.type='button';b.className='john-special-nav';b.dataset.page='ceOrdersPage82270';b.dataset.permissionPage='pedidos';b.textContent='🕘 Encomendas para confirmar';nav.appendChild(b);b.onclick=e=>{e.preventDefault();openOrders()};
+   try{window.johnNext?.renderHub?.()}catch(_){}
+ }
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
+[300,1200,3200].forEach(n=>setTimeout(install,n));
+window.addEventListener('john:session-ready',()=>setTimeout(install,120));
+window.addEventListener('john:cloud-applied',()=>setTimeout(install,150));
+window.CaseirinhoEncomendas82270={openAvailability,openOrders,loadOrders};
+})();

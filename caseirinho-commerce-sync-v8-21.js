@@ -64,7 +64,9 @@ function applyLocalMerchandisingFlags(cat){
    const packVirtual=e.packVirtual??p?.packVirtual;
    return {...cp,destaque:e.destaque===true,novidade:e.novidade===true,
      ...(promocao!==undefined?{promocao}:{}),
-     ...(packVirtual!==undefined?{packVirtual}:{})};
+     ...(packVirtual!==undefined?{packVirtual}:{}),
+     ...(e.disponibilidade?{disponibilidade:e.disponibilidade}:{}),
+     ...(Number.isFinite(Number(e.antecedenciaDias))?{antecedenciaDias:Math.max(0,Number(e.antecedenciaDias))}:{})};
  });
  return cat;
 }
@@ -108,7 +110,9 @@ async function ensureRemoteImages(cat){
 }
 async function authoritativePublish(silent=false){
  if(publishPromise)return publishPromise;
- publishPromise=(async()=>{
+ // Agenda o gerador em uma microtarefa: publica o mutex ANTES de invocar
+ // wrappers legados que poderiam chamar novamente a publicação.
+ publishPromise=Promise.resolve().then(async()=>{
    const base=window.__johnPublicarEcomLocal;
    if(typeof base!=='function')throw new Error('O gerador local do catálogo ainda não foi carregado.');
    let cat=base(true)||{loja:{},produtos:[]};
@@ -129,7 +133,7 @@ async function authoritativePublish(silent=false){
    lastSyncedFingerprint=catalogFingerprint();
    try{localStorage.setItem(SYNC_FP_KEY,lastSyncedFingerprint)}catch(_){}
    return cat;
- })().finally(()=>{publishPromise=null});
+ }).finally(()=>{publishPromise=null});
  return publishPromise;
 }
 async function syncPublished(reason){
