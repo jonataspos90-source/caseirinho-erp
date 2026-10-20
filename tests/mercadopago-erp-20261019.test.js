@@ -10,5 +10,5 @@ test('painel financeiro carrega status sem capturar cartões nem segredos',()=>{
 });
 test('painel Mercado Pago entra no PWA versionado',()=>{
  assert.match(sw,/caseirinho-mercadopago-v8-22-71\.js/);
- assert.match(sw,/john-erp-pwa-v8\.22\.71-mercadopago/);
+ assert.match(sw,/john-erp-pwa-v8\.22\.73-pagamento-ux/);
 });
