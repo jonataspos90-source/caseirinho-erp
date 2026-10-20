@@ -39,6 +39,11 @@ function delivery(o){return norm(o.modalidade)==='ENTREGA'}
 function exactTime(v){return /^([01]\d|2[0-3]):[0-5]\d$/.test(S(v).trim())}
 function orderTime(o){const h=S(o.horarioEntrega||o.horario||'').trim();return exactTime(h)?h:'A combinar'}
 
+function awaitingOnlinePayment(o){
+  const method=S(o?.formaPagamento||o?.payload?.formaPagamento);
+  const pay=o?.mercadoPago||o?.payload?.mercadoPago||{};
+  return /MERCADO[ _-]?PAGO/i.test(method)&&norm(pay.status)!=='APROVADO';
+}
 function state(o){
   const st=norm(o.status||o.payload?.status||'');
   const integ=norm(o.statusIntegracao||o.integration_status||'');
@@ -51,15 +56,17 @@ function state(o){
   if(st==='AGUARDANDO_CLIENTE_FRETE'||(freight==='COTADO'&&decision==='PENDENTE'))return'AGUARDANDO_CLIENTE_FRETE';
   if(freight==='COTACAO_PENDENTE'||st==='AGUARDANDO_COTACAO_FRETE')return'COTACAO_PENDENTE';
   if(st==='ACEITO'||['IMPORTANDO','IMPORTADO'].includes(integ)||o.erpPedidoId||o.erpNumero)return'ACEITO';
+  if(awaitingOnlinePayment(o))return'AGUARDANDO_PAGAMENTO';
   return'PENDENTE';
 }
 function stateLabel(s){return({
-  PENDENTE:'Aguardando decisão',COTACAO_PENDENTE:'Frete a cotar',AGUARDANDO_CLIENTE_FRETE:'Aguardando cliente',
+  PENDENTE:'Aguardando decisão',AGUARDANDO_PAGAMENTO:'Aguardando pagamento',COTACAO_PENDENTE:'Frete a cotar',AGUARDANDO_CLIENTE_FRETE:'Aguardando cliente',
   AGUARDANDO_ACEITE_ERP:'Cliente aceitou novo frete',FRETE_RECUSADO_CLIENTE:'Cancelado',ACEITO:'Aceito',REJEITADO:'Rejeitado',CANCELADO:'Cancelado'
 })[s]||s}
 function actionType(o,s=state(o)){
   if(s==='COTACAO_PENDENTE')return'COTAR';
   if(s==='AGUARDANDO_CLIENTE_FRETE')return'AGUARDANDO_CLIENTE';
+  if(s==='AGUARDANDO_PAGAMENTO')return'AGUARDANDO_PAGAMENTO';
   if(s==='PENDENTE'||s==='AGUARDANDO_ACEITE_ERP')return'DECIDIR';
   return'SEM_ACAO';
 }
@@ -98,8 +105,8 @@ function ensureToolbar(){
       <div><label>Data até</label><input id="johnCxTo" type="date"></div>
       <div><label>Cliente</label><input id="johnCxCustomer" type="search" placeholder="Nome do cliente"></div>
       <div><label>Modalidade</label><select id="johnCxModality"><option value="TODOS">Todas</option><option value="ENTREGA">Entrega</option><option value="RETIRADA">Retirada</option></select></div>
-      <div><label>Status</label><select id="johnCxStatus"><option value="TODOS">Todos</option><option value="PENDENTE">Aguardando decisão</option><option value="COTACAO_PENDENTE">Frete a cotar</option><option value="AGUARDANDO_CLIENTE_FRETE">Aguardando cliente</option><option value="AGUARDANDO_ACEITE_ERP">Cliente aceitou novo frete</option><option value="ACEITO">Aceito</option><option value="REJEITADO">Rejeitado</option><option value="CANCELADO">Cancelado</option></select></div>
-      <div><label>Ações</label><select id="johnCxAction"><option value="TODOS">Todas</option><option value="COTAR">Cotação</option><option value="AGUARDANDO_CLIENTE">Aguardando cliente</option><option value="DECIDIR">Aceitar / Rejeitar</option><option value="SEM_ACAO">Sem ação</option></select></div>
+      <div><label>Status</label><select id="johnCxStatus"><option value="TODOS">Todos</option><option value="PENDENTE">Aguardando decisão</option><option value="AGUARDANDO_PAGAMENTO">Aguardando pagamento</option><option value="COTACAO_PENDENTE">Frete a cotar</option><option value="AGUARDANDO_CLIENTE_FRETE">Aguardando cliente</option><option value="AGUARDANDO_ACEITE_ERP">Cliente aceitou novo frete</option><option value="ACEITO">Aceito</option><option value="REJEITADO">Rejeitado</option><option value="CANCELADO">Cancelado</option></select></div>
+      <div><label>Ações</label><select id="johnCxAction"><option value="TODOS">Todas</option><option value="COTAR">Cotação</option><option value="AGUARDANDO_CLIENTE">Aguardando cliente</option><option value="DECIDIR">Aceitar / Rejeitar</option><option value="AGUARDANDO_PAGAMENTO">Aguardando pagamento</option><option value="SEM_ACAO">Sem ação</option></select></div>
       <button class="btn secondary" id="johnCxClearFilters" type="button">Limpar filtros</button>`;
     const head=panel.querySelector('.panel-head');head?head.insertAdjacentElement('afterend',box):panel.prepend(box);
     const f=filters();
@@ -211,7 +218,7 @@ function printOrderPdf(id){
   <div class="box"><b>Cliente:</b> ${esc(o.cliente?.nome||'-')}<br><b>Telefone:</b> ${esc(o.cliente?.telefone||'-')}<br><b>Modalidade:</b> ${esc(o.modalidade||'-')}<br><b>Endereço/retirada:</b> ${addr}<br><b>Data:</b> ${esc(o.dataAtendimento||created||'-')}<br><b>Horário:</b> ${esc(orderTime(o)||'-')}<br><b>Status:</b> <span class="status">${esc(stateLabel(status))}</span></div>
   <table><thead><tr><th>Produto</th><th>Qtd.</th><th>Unitário</th><th>Total</th></tr></thead><tbody>${rows}</tbody></table>
   <p class="total">${window.JohnOrderAmounts.lines(o).map(([label,value])=>esc(label)+': '+esc(value)).join('<br>')}</p>
-  <p><b>Pagamento:</b> ${esc(o.formaPagamento||'-')}</p>
+  <p><b>Pagamento:</b> ${esc(S(o.formaPagamento||'-').replace(/\\s*\\(Mercado Pago\\)/ig,'').replace(/\\s*online\\s*/ig,' ').trim())}</p>
   <p><b>Observações:</b> ${esc(o.observacao||o.obs||'-')}</p>
   <button onclick="window.print()">Imprimir / Salvar em PDF</button>
   <script>setTimeout(()=>window.print(),350)<\/script></body></html>`);
@@ -223,6 +230,7 @@ function actionHtml(o,s){
   if(s==='COTACAO_PENDENTE')return `<button class="btn primary" type="button" data-cx-quote="${id}">Cotação</button>${pdf}`;
   if(s==='AGUARDANDO_CLIENTE_FRETE')return `<button class="btn secondary" type="button" data-cx-quote="${id}">Alterar cotação</button><button class="btn secondary" type="button" disabled>Aguardando cliente</button>${pdf}`;
   if(s==='AGUARDANDO_ACEITE_ERP')return `<button class="btn primary" type="button" data-cx-accept="${id}">Aceitar</button>${pdf}<button class="btn danger" type="button" data-cx-reject="${id}">Rejeitar</button>`;
+  if(s==='AGUARDANDO_PAGAMENTO')return '<span class="john-cx-warn" title="Aguarde a confirmação real do banco antes de processar este pedido">🔒 Aguardando pagamento online</span>'+pdf;
   if(s==='PENDENTE')return `<button class="btn primary" type="button" data-cx-accept="${id}">Aceitar</button>${pdf}<button class="btn danger" type="button" data-cx-reject="${id}">Rejeitar</button>`;
   if(['ACEITO','REJEITADO','CANCELADO'].includes(s))return '<span class="john-cx-no-action">—</span>';
   return '<span class="john-cx-no-action">—</span>';
@@ -326,7 +334,7 @@ function addCss(){if(E('johnCx813Css'))return;const st=document.createElement('s
 #ecommercePedidosRecebidos .john-cx-filters{display:grid;grid-template-columns:140px 140px minmax(180px,1fr) 130px minmax(170px,1fr) minmax(160px,1fr) auto;gap:9px;align-items:end;padding:12px 16px;border-bottom:1px solid var(--border);background:linear-gradient(135deg,#fafafa,#f5f3ff)}
 #ecommercePedidosRecebidos .john-cx-filters label{font-size:10px;font-weight:900;margin-bottom:4px}#ecommercePedidosRecebidos .john-cx-filters input,#ecommercePedidosRecebidos .john-cx-filters select{height:38px;padding:7px 9px}
 #ecommercePedidosRecebidos table{min-width:1120px!important;table-layout:auto!important}#ecommercePedidosRecebidos th,#ecommercePedidosRecebidos td{font-size:10px!important;padding:7px!important;vertical-align:middle!important}#ecommercePedidosRecebidos .john-ecom-v8-actions{display:flex!important;gap:6px!important;flex-wrap:wrap!important;min-width:160px}
-#ecommercePedidosRecebidos .john-cx-status{display:inline-flex;padding:5px 7px;border-radius:99px;font-weight:900;background:#e2e8f0;color:#334155}#ecommercePedidosRecebidos .john-cx-status.ACEITO{background:#dcfce7;color:#166534}#ecommercePedidosRecebidos .john-cx-status.REJEITADO,#ecommercePedidosRecebidos .john-cx-status.CANCELADO{background:#fee2e2;color:#991b1b}#ecommercePedidosRecebidos .john-cx-status.AGUARDANDO_CLIENTE_FRETE{background:#ffedd5;color:#9a3412}#ecommercePedidosRecebidos .john-cx-status.AGUARDANDO_ACEITE_ERP{background:#cffafe;color:#0e7490;box-shadow:inset 0 0 0 1px #67e8f9}#ecommercePedidosRecebidos .john-cx-status.FRETE_RECUSADO_CLIENTE{background:#fef3c7;color:#92400e}.john-cx-no-action{color:#94a3b8;font-weight:900}.john-cx-warn{color:#b45309;font-weight:900}.john-cx-ok{color:#15803d;font-weight:900}.john-cx-muted{color:#64748b}.john-cx-time{display:grid;gap:3px;min-width:105px}.john-cx-time input{height:34px;padding:5px 7px}.john-cx-time small{color:#64748b}
+#ecommercePedidosRecebidos .john-cx-status{display:inline-flex;padding:5px 7px;border-radius:99px;font-weight:900;background:#e2e8f0;color:#334155}#ecommercePedidosRecebidos .john-cx-status.ACEITO{background:#dcfce7;color:#166534}#ecommercePedidosRecebidos .john-cx-status.REJEITADO,#ecommercePedidosRecebidos .john-cx-status.CANCELADO{background:#fee2e2;color:#991b1b}#ecommercePedidosRecebidos .john-cx-status.AGUARDANDO_PAGAMENTO{background:#fef3c7;color:#92400e}#ecommercePedidosRecebidos .john-cx-status.AGUARDANDO_CLIENTE_FRETE{background:#ffedd5;color:#9a3412}#ecommercePedidosRecebidos .john-cx-status.AGUARDANDO_ACEITE_ERP{background:#cffafe;color:#0e7490;box-shadow:inset 0 0 0 1px #67e8f9}#ecommercePedidosRecebidos .john-cx-status.FRETE_RECUSADO_CLIENTE{background:#fef3c7;color:#92400e}.john-cx-no-action{color:#94a3b8;font-weight:900}.john-cx-warn{color:#b45309;font-weight:900}.john-cx-ok{color:#15803d;font-weight:900}.john-cx-muted{color:#64748b}.john-cx-time{display:grid;gap:3px;min-width:105px}.john-cx-time input{height:34px;padding:5px 7px}.john-cx-time small{color:#64748b}
 @media(max-width:800px){#ecommercePedidosRecebidos .john-cx-filters{grid-template-columns:1fr 1fr}#ecommercePedidosRecebidos .john-cx-filters>*{min-width:0}}
 `;document.head.appendChild(st)}
 addCss();
