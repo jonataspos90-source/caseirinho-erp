@@ -3,7 +3,7 @@
 if(window.__JOHN_ECOM_ORDER_ACTIONS_82233__)return;
 window.__JOHN_ECOM_ORDER_ACTIONS_82233__=true;
 
-const VERSION='8.22.44';
+const VERSION='8.22.73';
 const INBOX_KEY='john_ecommerce_cloud_inbox_v1';
 const CLOUD_KEY='john_cloud_config_v1';
 const acceptingIds=new Set();
