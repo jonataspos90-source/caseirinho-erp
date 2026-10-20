@@ -33,7 +33,7 @@ test('marking ecommerce delivery as ENTREGUE is synchronized to the canonical or
 
 test('the already-loaded inbox module boots the recovery module in production',()=>{
   assert.doesNotThrow(()=>new Function(focus));
-  assert.match(focus,/ecommerce-order-actions-v8-22-33\.js\?v=82244-recovery-1/);
+  assert.match(focus,/ecommerce-order-actions-v8-22-33\.js\?v=82273-pagamento-1/);
   assert.match(focus,/function ensureOrderRecovery\(\)/);
   assert.match(focus,/recoverAcceptedOrders/);
   assert.match(focus,/syncFulfilledLocalOrders/);
