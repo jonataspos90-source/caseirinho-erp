@@ -218,7 +218,7 @@ function printOrderPdf(id){
   <div class="box"><b>Cliente:</b> ${esc(o.cliente?.nome||'-')}<br><b>Telefone:</b> ${esc(o.cliente?.telefone||'-')}<br><b>Modalidade:</b> ${esc(o.modalidade||'-')}<br><b>Endereço/retirada:</b> ${addr}<br><b>Data:</b> ${esc(o.dataAtendimento||created||'-')}<br><b>Horário:</b> ${esc(orderTime(o)||'-')}<br><b>Status:</b> <span class="status">${esc(stateLabel(status))}</span></div>
   <table><thead><tr><th>Produto</th><th>Qtd.</th><th>Unitário</th><th>Total</th></tr></thead><tbody>${rows}</tbody></table>
   <p class="total">${window.JohnOrderAmounts.lines(o).map(([label,value])=>esc(label)+': '+esc(value)).join('<br>')}</p>
-  <p><b>Pagamento:</b> ${esc(S(o.formaPagamento||'-').replace(/\\s*\\(Mercado Pago\\)/ig,'').replace(/\\s*online\\s*/ig,' ').trim())}</p>
+  <p><b>Pagamento:</b> ${esc(S(o.formaPagamento||'-').replace(/\s*\(Mercado Pago\)/ig,'').replace(/\s*online\s*/ig,' ').trim())}</p>
   <p><b>Observações:</b> ${esc(o.observacao||o.obs||'-')}</p>
   <button onclick="window.print()">Imprimir / Salvar em PDF</button>
   <script>setTimeout(()=>window.print(),350)<\/script></body></html>`);
@@ -336,6 +336,27 @@ function addCss(){if(E('johnCx813Css'))return;const st=document.createElement('s
 #ecommercePedidosRecebidos table{min-width:1120px!important;table-layout:auto!important}#ecommercePedidosRecebidos th,#ecommercePedidosRecebidos td{font-size:10px!important;padding:7px!important;vertical-align:middle!important}#ecommercePedidosRecebidos .john-ecom-v8-actions{display:flex!important;gap:6px!important;flex-wrap:wrap!important;min-width:160px}
 #ecommercePedidosRecebidos .john-cx-status{display:inline-flex;padding:5px 7px;border-radius:99px;font-weight:900;background:#e2e8f0;color:#334155}#ecommercePedidosRecebidos .john-cx-status.ACEITO{background:#dcfce7;color:#166534}#ecommercePedidosRecebidos .john-cx-status.REJEITADO,#ecommercePedidosRecebidos .john-cx-status.CANCELADO{background:#fee2e2;color:#991b1b}#ecommercePedidosRecebidos .john-cx-status.AGUARDANDO_PAGAMENTO{background:#fef3c7;color:#92400e}#ecommercePedidosRecebidos .john-cx-status.AGUARDANDO_CLIENTE_FRETE{background:#ffedd5;color:#9a3412}#ecommercePedidosRecebidos .john-cx-status.AGUARDANDO_ACEITE_ERP{background:#cffafe;color:#0e7490;box-shadow:inset 0 0 0 1px #67e8f9}#ecommercePedidosRecebidos .john-cx-status.FRETE_RECUSADO_CLIENTE{background:#fef3c7;color:#92400e}.john-cx-no-action{color:#94a3b8;font-weight:900}.john-cx-warn{color:#b45309;font-weight:900}.john-cx-ok{color:#15803d;font-weight:900}.john-cx-muted{color:#64748b}.john-cx-time{display:grid;gap:3px;min-width:105px}.john-cx-time input{height:34px;padding:5px 7px}.john-cx-time small{color:#64748b}
 @media(max-width:800px){#ecommercePedidosRecebidos .john-cx-filters{grid-template-columns:1fr 1fr}#ecommercePedidosRecebidos .john-cx-filters>*{min-width:0}}
+@media(max-width:800px){
+ #ecommercePedidosRecebidos .table-wrap{overflow-x:visible!important}
+ #ecommercePedidosRecebidos table{min-width:0!important;width:100%!important;display:block!important}
+ #ecommercePedidosRecebidos thead{display:none!important}
+ #ecommercePedidosRecebidos tbody{display:block!important}
+ #ecommercePedidosRecebidos tbody tr{display:grid!important;grid-template-columns:1fr 1fr;gap:6px 8px;margin:10px 4px 16px;padding:12px;border:1px solid #e2e8f0;border-radius:14px;background:#fff;box-shadow:0 4px 14px rgba(15,23,42,.05)}
+ #ecommercePedidosRecebidos tbody td{min-width:0!important;display:flex!important;flex-direction:column!important;align-items:flex-start!important;justify-content:center;gap:4px;border:0!important;padding:6px!important;overflow-wrap:anywhere}
+ #ecommercePedidosRecebidos tbody td:nth-child(2),#ecommercePedidosRecebidos tbody td:nth-child(3),#ecommercePedidosRecebidos tbody td:nth-child(9){grid-column:1/-1}
+ #ecommercePedidosRecebidos tbody td::before{font-size:10px;font-weight:900;letter-spacing:.04em;color:#64748b;text-transform:uppercase}
+ #ecommercePedidosRecebidos tbody td:nth-child(1)::before{content:'Data'}
+ #ecommercePedidosRecebidos tbody td:nth-child(2)::before{content:'Pedido'}
+ #ecommercePedidosRecebidos tbody td:nth-child(3)::before{content:'Cliente'}
+ #ecommercePedidosRecebidos tbody td:nth-child(4)::before{content:'Modalidade'}
+ #ecommercePedidosRecebidos tbody td:nth-child(5)::before{content:'Frete'}
+ #ecommercePedidosRecebidos tbody td:nth-child(6)::before{content:'Total'}
+ #ecommercePedidosRecebidos tbody td:nth-child(7)::before{content:'Status'}
+ #ecommercePedidosRecebidos tbody td:nth-child(8)::before{content:'Horário'}
+ #ecommercePedidosRecebidos tbody td:nth-child(9)::before{content:'Ações'}
+ #ecommercePedidosRecebidos tbody td:nth-child(9) .john-ecom-v8-actions{width:100%;min-width:0!important;display:grid!important;grid-template-columns:1fr 1fr}
+ #ecommercePedidosRecebidos tbody td:nth-child(9) .john-ecom-v8-actions .btn{width:100%;min-width:0;white-space:normal}
+}
 `;document.head.appendChild(st)}
 addCss();
 setTimeout(install,350);setTimeout(install,1600);setTimeout(()=>refreshAndRender(false),2600);
