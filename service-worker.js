@@ -1,5 +1,5 @@
 importScripts('./order-alerts-worker.js');
-const CACHE='john-erp-pwa-v8.22.71-mercadopago';
+const CACHE='john-erp-pwa-v8.22.73-pagamento-ux';
 
 const TX='./transaction-persistence-v8-22-13.js';
 const MULTI='./multiempresa-v8-12-0.js';
@@ -48,7 +48,7 @@ const TX_TAG='<script src="./transaction-persistence-v8-22-13.js?v=82244"></'+'s
 const MULTI_TAG='<script src="./multiempresa-v8-12-0.js?v=82244"></'+'script>';
 const STABILITY_TAG='<script src="./production-stability-v8-10-5.js?v=82244"></'+'script>';
 const PLATFORM_TAG='<script src="./platform-admin-v8-12-0.js?v=82244"></'+'script>';
-const EXPERIENCE_TAG='<script src="./ecommerce-customer-experience-v8-13-0.js?v=82244"></'+'script>';
+const EXPERIENCE_TAG='<script src="./ecommerce-customer-experience-v8-13-0.js?v=82273"></'+'script>';
 const HYDRATE_TAG='<script src="./server-catalog-hydration-v8-19.js?v=82267"></'+'script>';
 const NEXTJS_TAG='<script src="./john-next-v8-17.js?v=82244"></'+'script>';
 const NEXTCSS_TAG='<link rel="stylesheet" href="./john-next-v8-17.css?v=82244">';
@@ -67,7 +67,7 @@ const ETIQUETAS_TAG='<script src="./pcp-etiquetas-v8-22-20.js?v=82244"></'+'scri
 const FECHAMENTO_TAG='<script src="./fechamento-periodico-v8-22-21.js?v=82244"></'+'script>';
 const PIX_STAY_TAG='<script src="./pix-config-stay-v8-22-22.js?v=82244"></'+'script>';
 const UPSELL_TAG='<script src="./ecommerce-upsell-v8-22-23.js?v=82244"></'+'script>';
-const PEDIDO_PRINT_TAG='<script src="./pedido-print-v8-22-24.js?v=82244"></'+'script>';
+const PEDIDO_PRINT_TAG='<script src="./pedido-print-v8-22-24.js?v=82273"></'+'script>';
 const PUBLISH_FIX_TAG='<script src="./catalog-publish-fix-v8-22-8.js?v=82266"></'+'script>';
 const STORE_SETTINGS_TAG='<script src="./store-settings-sync-v8-22-13.js?v=82244"></'+'script>';
 const PIX_DOCUMENT_TAG='<script src="./pix-document-fix-v8-22-13.js?v=82244"></'+'script>';
@@ -75,7 +75,7 @@ const PIX_OFFICIAL_TAG='<script src="./caseirinho-pix-config-v8-22-35.js?v=82244
 const ORDER_REVISION_TAG='<script src="./ecommerce-order-revision-v8-22-37.js?v=82244"></'+'script>';
 const PREREG_TAG='<script src="./ecommerce-preregistration-live-v8-22-38.js?v=82244"></'+'script>';
 const DELIVERY_MOTO_TAG='<script src="./delivery-moto-config-v8-22-39.js?v=82244"></'+'script>';
-const INBOX_FOCUS_TAG='<script src="./ecommerce-inbox-focus-v8-22-40.js?v=82244"></'+'script>';
+const INBOX_FOCUS_TAG='<script src="./ecommerce-inbox-focus-v8-22-40.js?v=82273"></'+'script>';
 const INTEGRITY_TAG='<script src="./production-integrity-v8-22-14.js?v=82244"></'+'script>';
 const REAL_RECOVERY_TAG='<script src="./production-recovery-v8-22-15.js?v=82244"></'+'script>';
 const RECOVERY_TAG='<script src="./ecommerce-recovery-v8-16-1.js?v=82244"></'+'script>';
