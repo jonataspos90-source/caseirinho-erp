@@ -3,9 +3,9 @@
 if(window.__JOHN_ECOM_INBOX_FOCUS_82240__)return;
 window.__JOHN_ECOM_INBOX_FOCUS_82240__=true;
 
-const VERSION='8.22.40-r1';
+const VERSION='8.22.40-r2';
 const INBOX_KEYS=['john_ecommerce_cloud_inbox_v1','john_ecommerce_inbox_v1'];
-const ORDER_ACTIONS_SRC='./ecommerce-order-actions-v8-22-33.js?v=82244-recovery-1';
+const ORDER_ACTIONS_SRC='./ecommerce-order-actions-v8-22-33.js?v=82273-pagamento-1';
 const S=v=>String(v??'');
 const A=v=>Array.isArray(v)?v:[];
 const norm=v=>S(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toUpperCase().replace(/[\s-]+/g,'_');
@@ -26,7 +26,7 @@ function isProcessed(o){
   return false;
 }
 function ensureOrderRecovery(){
-  if(window.johnOrderActions82233?.version==='8.22.44')return true;
+  if(window.johnOrderActions82233?.version==='8.22.73')return true;
   if(document.querySelector('script[data-john-order-recovery-82244]'))return false;
   const s=document.createElement('script');
   s.src=ORDER_ACTIONS_SRC;
