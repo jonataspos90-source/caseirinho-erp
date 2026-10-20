@@ -52,6 +52,7 @@ function state(o){
 
   if(st==='REJEITADO'||integ==='REJEITADO'||o.rejeitado)return'REJEITADO';
   if(st==='CANCELADO'||integ==='CANCELADO'||decision==='REJEITADO'||st==='FRETE_RECUSADO_CLIENTE')return'CANCELADO';
+  if((st==='AGUARDANDO_ACEITE_ERP'||decision==='ACEITO')&&awaitingOnlinePayment(o))return'AGUARDANDO_PAGAMENTO';
   if(st==='AGUARDANDO_ACEITE_ERP'||decision==='ACEITO')return'AGUARDANDO_ACEITE_ERP';
   if(st==='AGUARDANDO_CLIENTE_FRETE'||(freight==='COTADO'&&decision==='PENDENTE'))return'AGUARDANDO_CLIENTE_FRETE';
   if(freight==='COTACAO_PENDENTE'||st==='AGUARDANDO_COTACAO_FRETE')return'COTACAO_PENDENTE';
