@@ -14,5 +14,5 @@ if not exist "%CASEIRINHO_CHROME%" (
  pause
  exit /b 1
 )
-start "" "%CASEIRINHO_CHROME%" --kiosk-printing --new-window "https://jonataspos90-source.github.io/caseirinho-erp/"
+start "" "%CASEIRINHO_CHROME%" --kiosk-printing --app="https://jonataspos90-source.github.io/caseirinho-erp/terminal-impressao.html"
 endlocal
