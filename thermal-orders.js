@@ -33,12 +33,12 @@ function announce(){
  const s=read(KEY,initial());if(s.sound===false)return;
  try{
  if(audioContext?.state==='running'){const osc=audioContext.createOscillator(),gain=audioContext.createGain();osc.connect(gain);gain.connect(audioContext.destination);osc.frequency.value=880;gain.gain.value=0.15;osc.start();osc.stop(audioContext.currentTime+0.2)}
- if(window.speechSynthesis&&window.SpeechSynthesisUtterance){const u=new window.SpeechSynthesisUtterance('Novo pedido Caseirinho');u.lang='pt-BR';u.rate=0.95;u.volume=1;const voice=window.speechSynthesis.getVoices().find(v=>v.lang==='pt-BR');if(voice)u.voice=voice;window.speechSynthesis.speak(u)}
+ if(window.speechSynthesis&&window.SpeechSynthesisUtterance){const u=new window.SpeechSynthesisUtterance('Chegou um novo pedido, Caseirinho!');u.lang='pt-BR';u.rate=1.08;u.pitch=1.35;u.volume=1;const voices=window.speechSynthesis.getVoices().filter(v=>/^pt[-_]BR$/i.test(v.lang));const voice=voices.find(v=>/maria|francisca|luciana|female|feminina/i.test(v.name))||voices[0];if(voice)u.voice=voice;window.speechSynthesis.speak(u)}
  }catch(err){status('Aviso sonoro indisponível. Clique em Ativar e testar som.')}
 }
 async function enableSound(){
  const s=read(KEY,initial());s.sound=true;save(s);
- try{const Audio=window.AudioContext||window.webkitAudioContext;if(Audio){audioContext=audioContext||new Audio();await audioContext.resume()}announce();status('Teste de som solicitado: Novo pedido Caseirinho. Confira o volume do PC.');const e=document.getElementById('stationSoundStatus');if(e)e.textContent='Som ativado nesta sessão. Confira se ouviu a frase.'}catch(err){status('Não foi possível ativar o som: '+err.message)}
+ try{const Audio=window.AudioContext||window.webkitAudioContext;if(Audio){audioContext=audioContext||new Audio();await audioContext.resume()}announce();status('Teste de som solicitado: Chegou um novo pedido, Caseirinho!. Confira o volume do PC.');const e=document.getElementById('stationSoundStatus');if(e)e.textContent='Som ativado nesta sessão. Confira se ouviu a frase.'}catch(err){status('Não foi possível ativar o som: '+err.message)}
 }
 async function enqueueToday(){
  await exclusive(async()=>{const s=read(KEY,initial());const day=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());const count=recoverTodayRows(orders(),s,day);save(s);status(count+' pedido(s) real(is) de hoje incluído(s) na fila.');});
