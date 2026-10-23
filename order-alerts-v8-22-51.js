@@ -78,7 +78,7 @@ window.JohnOrderAlerts={activate,disable,test};
 // Comandas térmicas usam o mesmo ponto de entrada dos avisos de pedidos.
 (function(){
  if(window.CaseirinhoThermal||document.querySelector('script[data-caseirinho-thermal]'))return;
- const s=document.createElement('script');s.src='./thermal-orders.js?v=2';s.dataset.caseirinhoThermal='1';
+ const s=document.createElement('script');s.src='./thermal-orders.js?v=4';s.dataset.caseirinhoThermal='1';
  s.onerror=()=>console.warn('Não foi possível carregar a impressão de comandas. Atualize o ERP.');
  document.head.appendChild(s);
 })();
