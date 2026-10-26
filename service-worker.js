@@ -1,5 +1,5 @@
 importScripts('./order-alerts-worker.js');
-const CACHE='john-erp-pwa-v8.22.76-pix-report-print-refresh';
+const CACHE='john-erp-pwa-v8.22.76-catalog-network-diagnostics-pix-report-print-refresh';
 
 const TX='./transaction-persistence-v8-22-13.js';
 const MULTI='./multiempresa-v8-12-0.js';
