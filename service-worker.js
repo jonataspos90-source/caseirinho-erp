@@ -1,5 +1,5 @@
 importScripts('./order-alerts-worker.js');
-const CACHE='john-erp-pwa-v8.22.74-comandas';
+const CACHE='john-erp-pwa-v8.22.76-pix-report-print-refresh';
 
 const TX='./transaction-persistence-v8-22-13.js';
 const MULTI='./multiempresa-v8-12-0.js';
@@ -48,7 +48,7 @@ const TX_TAG='<script src="./transaction-persistence-v8-22-13.js?v=82244"></'+'s
 const MULTI_TAG='<script src="./multiempresa-v8-12-0.js?v=82244"></'+'script>';
 const STABILITY_TAG='<script src="./production-stability-v8-10-5.js?v=82244"></'+'script>';
 const PLATFORM_TAG='<script src="./platform-admin-v8-12-0.js?v=82244"></'+'script>';
-const EXPERIENCE_TAG='<script src="./ecommerce-customer-experience-v8-13-0.js?v=82273"></'+'script>';
+const EXPERIENCE_TAG='<script src="./ecommerce-customer-experience-v8-13-0.js?v=82276"></'+'script>';
 const HYDRATE_TAG='<script src="./server-catalog-hydration-v8-19.js?v=82267"></'+'script>';
 const NEXTJS_TAG='<script src="./john-next-v8-17.js?v=82244"></'+'script>';
 const NEXTCSS_TAG='<link rel="stylesheet" href="./john-next-v8-17.css?v=82244">';
@@ -59,7 +59,7 @@ const COMMERCE_ENGAGEMENT_TAG='<script src="./commerce-engagement-erp-v8-22-44.j
 const MANAGEMENT_TAG='<script src="./management-engine-v8-22-0.js?v=82244"></'+'script>';
 const USAGE_TAG='<script src="./erp-usage-v8-20.js?v=82244"></'+'script>';
 const PUBLISH_SAFE_TAG='<script src="./catalog-publish-safe-v8-22-54.js?v=82254"></'+'script>';
-const SYNC_TAG='<script src="./caseirinho-commerce-sync-v8-21.js?v=82270"></'+'script>';
+const SYNC_TAG='<script src="./caseirinho-commerce-sync-v8-21.js?v=82275"></'+'script>';
 const STRICT_MEDIA_TAG='<script src="./strict-media-upload-v8-22-5.js?v=82244"></'+'script>';
 const MEDIA_SYNC_TAG='<script src="./media-sync-fix-v8-22-6.js?v=82244"></'+'script>';
 const LAB_TAG='<script src="./pcp-laboratorio-v8-22-19.js?v=82244"></'+'script>';
@@ -104,11 +104,11 @@ function injectHead(html,needle,tag){if(html.includes(needle))return html;const 
 async function injectScripts(response){
   if(!response)return response;const ct=response.headers.get('content-type')||'';if(!ct.includes('text/html'))return response;let html=await response.text();
   html=html.replace(/<script[^>]+ecommerce-order-revision-v8-22-36\.js[^>]*><\/script>/gi,'');
-  html=html.replace(/(caseirinho-commerce-sync-v8-21\.js\?v=)\d+/gi,(_,prefix)=>prefix+'82267');
+  html=html.replace(/(caseirinho-commerce-sync-v8-21\.js\?v=)\d+/gi,(_,prefix)=>prefix+'82275');
   html=html.replace(/(catalog-publish-fix-v8-22-8\.js\?v=)\d+/gi,(_,prefix)=>prefix+'82266');
   html=html.replace(/(catalog-category-grade-sync-v8-22-30\.js\?v=)\d+/gi,(_,prefix)=>prefix+'82267');
   html=html.replace(/<script[^>]+ecommerce-submodule-media-v8-22-17\.js[^>]*><\/script>/gi,'');
-  html=injectBefore(html,'order-alerts-v8-22-51.js','<script src="./order-alerts-v8-22-51.js?v=82251"></'+'script>');
+  html=injectBefore(html,'order-alerts-v8-22-51.js','<script src="./order-alerts-v8-22-51.js?v=82276"></'+'script>');
   html=injectHead(html,'order-amounts.js','<script src="./order-amounts.js?v=20261004"></'+'script>');html=injectHead(html,'transaction-persistence-v8-22-13.js',TX_TAG);
   html=injectHead(html,'multiempresa-v8-12-0.js',MULTI_TAG);
   html=injectHead(html,'john-next-v8-17.css',NEXTCSS_TAG);

@@ -3,7 +3,7 @@
 if(window.__JOHN_ECOMMERCE_CX_8130__)return;
 window.__JOHN_ECOMMERCE_CX_8130__=true;
 
-const VERSION='8.14.0';
+const VERSION='8.14.1';
 const INBOX_KEY='john_ecommerce_cloud_inbox_v1';
 const FILTER_KEY='john_ecommerce_cx_filters_v8130';
 const S=v=>String(v??'');
@@ -261,7 +261,7 @@ function render(){
     ensureToolbar();
     const all=[...inbox()].sort((a,b)=>S(b.createdAt||b.criadoEm).localeCompare(S(a.createdAt||a.criadoEm)));
     updateKpis(all);const f=filters(),arr=all.filter(o=>matches(o,f));
-    tb.innerHTML=arr.map(o=>{const s=state(o),created=S(o.createdAt||o.criadoEm||'').slice(0,16).replace('T',' '),erpNumber=o.erpNumero||o.erp_order_number||'';return `<tr data-cx-state="${s}"><td>${esc(created)}</td><td><b>${esc(o.codigo||o.code||o.id)}</b>${erpNumber?`<br><small>ERP #${esc(erpNumber)}</small>`:''}</td><td>${esc(o.cliente?.nome||'-')}<br><small>${esc(o.cliente?.telefone||'')}</small></td><td>${esc(o.modalidade||'-')}<br><small>${esc(o.entrega?.cidade||'')}</small></td><td>${freightHtml(o,s)}</td><td>${money(o.total)}</td><td><span class="john-cx-status ${s}">${esc(stateLabel(s))}</span></td><td>${timeHtml(o,s)}</td><td><div class="john-ecom-v8-actions">${actionHtml(o,s)}</div></td></tr>`}).join('')||'<tr><td colspan="9" class="empty">Nenhum pedido encontrado para os filtros selecionados.</td></tr>';
+    tb.innerHTML=arr.map(o=>{const s=state(o),created=S(o.createdAt||o.criadoEm||'').slice(0,16).replace('T',' '),erpNumber=o.erpNumero||o.erp_order_number||'',pixReported=S(o.pagamentoPix?.status||o.payload?.pagamentoPix?.status).toUpperCase()==='INFORMADO_PELO_CLIENTE';return `<tr data-cx-state="${s}"><td>${esc(created)}</td><td><b>${esc(o.codigo||o.code||o.id)}</b>${erpNumber?`<br><small>ERP #${esc(erpNumber)}</small>`:''}</td><td>${esc(o.cliente?.nome||'-')}<br><small>${esc(o.cliente?.telefone||'')}</small></td><td>${esc(o.modalidade||'-')}<br><small>${esc(o.entrega?.cidade||'')}</small></td><td>${freightHtml(o,s)}</td><td>${money(o.total)}</td><td>${pixReported?'<span class="john-cx-warn" title="O pagamento ainda precisa ser conferido no extrato">⚠ Cliente informou Pix · conferir extrato</span>':esc(S(o.formaPagamento||'-').replace(/\s*\(Mercado Pago\)/ig,'').replace(/\s*online\s*/ig,' ').trim())}</td><td><span class="john-cx-status ${s}">${esc(stateLabel(s))}</span></td><td>${timeHtml(o,s)}</td><td><div class="john-ecom-v8-actions">${actionHtml(o,s)}</div></td></tr>`}).join('')||'<tr><td colspan="10" class="empty">Nenhum pedido encontrado para os filtros selecionados.</td></tr>';
     tb.querySelectorAll('[data-cx-quote]').forEach(b=>b.onclick=()=>doQuote(b.dataset.cxQuote));
     tb.querySelectorAll('[data-cx-accept]').forEach(b=>b.onclick=()=>doAccept(b.dataset.cxAccept));
     tb.querySelectorAll('[data-cx-reject]').forEach(b=>b.onclick=()=>doReject(b.dataset.cxReject));

@@ -22,9 +22,12 @@ test('motores expõem API global e sincronizam com o E-commerce',()=>{
   assert.match(management,/syncEcommerce/);
 });
 
-test('catálogo obrigatório contém pão caseiro e rosquinha com imagem',()=>{
-  assert.match(sync,/Pão Caseiro/);
-  assert.match(sync,/Rosquinha Trançada com Açúcar/);
-  assert.match(sync,/e\.publicar=true/);
-  assert.match(sync,/data:image\/svg\+xml/);
+test('produtos encerrados são inativados e removidos da publicação sem apagar histórico',()=>{
+  assert.match(sync,/caseirinho-pao-caseiro/);
+  assert.match(sync,/caseirinho-rosquinha-trancada/);
+  assert.match(sync,/function retireFromStoreCatalog/);
+  assert.match(sync,/p\.status='INATIVO'/);
+  assert.match(sync,/e\.publicar=false/);
+  assert.match(sync,/cat\.produtos=kept/);
+  assert.doesNotMatch(sync,/const REQUIRED=\[\s*\{/);
 });

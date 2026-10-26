@@ -27,10 +27,30 @@ function svgData(title,subtitle,base,accent){
   const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900"><rect width="1200" height="900" fill="#f8f4ea"/><rect x="78" y="86" width="1044" height="728" rx="26" fill="#fffdf8" stroke="#d8c9a8" stroke-width="4"/><ellipse cx="600" cy="560" rx="300" ry="170" fill="${esc(base)}" opacity="0.18"/><path d="M420 565c30-87 126-148 245-148 129 0 230 69 261 164-71 40-176 64-292 64-93 0-173-17-214-40z" fill="${esc(base)}" opacity="0.75"/><path d="M455 495c26-54 84-89 152-89 70 0 134 37 162 96-53 22-115 34-183 34-49 0-94-6-131-16z" fill="#fff6d6" opacity="0.95"/><text x="110" y="180" font-family="Inter,Arial,sans-serif" font-size="78" font-weight="800" fill="#5b3b10">${esc(title)}</text><text x="112" y="245" font-family="Inter,Arial,sans-serif" font-size="34" font-weight="600" fill="#8a6b3d">${esc(subtitle)}</text><text x="110" y="770" font-family="Inter,Arial,sans-serif" font-size="26" font-weight="700" fill="#7b1438">Caseirinho · imagem padrão do catálogo</text></svg>`;
   return 'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(svg);
 }
-const REQUIRED=[
-  {id:'caseirinho-pao-caseiro',codigo:'900035',nome:'Pão Caseiro',unidade:'UN',preco:11.99,categoria:'Pães',descricao:'Pão caseiro artesanal, pronto para venda no E-commerce.',imagem:svgData('Pão Caseiro','Categoria Pães · Caseirinho','#c08457','#f59e0b')},
-  {id:'caseirinho-rosquinha-trancada',codigo:'900036',nome:'Rosquinha Trançada com Açúcar',unidade:'UN',preco:1.49,categoria:'Pães',descricao:'Rosquinha trançada com açúcar, pronta para venda no E-commerce.',imagem:svgData('Rosquinha Trançada','Categoria Pães · Caseirinho','#d97706','#fcd34d')}
+// Produtos encerrados pelo Caseirinho. Mantemos os registros no ERP para
+// preservar histórico de pedidos, mas nunca recriamos nem publicamos na Loja.
+const RETIRED_PRODUCTS=[
+  {ids:['caseirinho-pao-caseiro'],codes:['900035'],names:['pao caseiro']},
+  {ids:['caseirinho-rosquinha-trancada'],codes:['900036'],names:['rosquinha trancada com acucar']}
 ];
+const REQUIRED=[];
+function retiredProduct(p){
+ const id=S(p?.id||p?.produtoId).toLowerCase(),code=S(p?.codigo||p?.sku).replace(/\D/g,''),name=norm(p?.nomeComercial||p?.nome||'');
+ return RETIRED_PRODUCTS.some(x=>x.ids.includes(id)||x.codes.includes(code)||x.names.includes(name));
+}
+function retireFromStoreCatalog(cat){
+ const d=currentDb(),products=A(d?.produtos);let changed=0;
+ for(const p of products){
+  if(!retiredProduct(p))continue;
+  const e=p.ecommerce=p.ecommerce&&typeof p.ecommerce==='object'&&!Array.isArray(p.ecommerce)?p.ecommerce:{};
+  if(S(p.status).toUpperCase()!=='INATIVO'){p.status='INATIVO';p.atualizadoEm=now();changed++}
+  if(e.publicar!==false){e.publicar=false;p.atualizadoEm=now();changed++}
+ }
+ const before=A(cat?.produtos),kept=before.filter(cp=>!retiredProduct(cp)&&!products.some(p=>retiredProduct(p)&&(S(p.id)===S(cp?.id)||S(p.codigo)===S(cp?.codigo))));
+ if(kept.length!==before.length)changed+=before.length-kept.length;
+ cat.produtos=kept;
+ return changed;
+}
 function nextCode(d){let max=0;for(const p of A(d?.produtos)){const n=parseInt(S(p?.codigo).replace(/\D/g,''),10);if(Number.isFinite(n))max=Math.max(max,n)}return String(max+1).padStart(6,'0')}
 function findCategory(d,name){const cats=A(d?.config?.ecommerce?.categorias).filter(c=>S(c?.id).toUpperCase()!=='GERAL');return cats.find(c=>norm(c?.nome)===norm(name))||cats.find(c=>norm(c?.nome).includes(norm(name))||norm(name).includes(norm(c?.nome)))||null}
 function findProduct(d,spec){return A(d?.produtos).find(p=>norm(p?.nome)===norm(spec.nome))||A(d?.produtos).find(p=>norm(p?.nome).includes(norm(spec.nome))||norm(spec.nome).includes(norm(p?.nome)))||A(d?.produtos).find(p=>S(p?.codigo)===S(spec.codigo))||null}
@@ -54,6 +74,7 @@ function catalogFingerprint(){
 function applyLocalMerchandisingFlags(cat){
  const d=currentDb();
  const products=A(d?.produtos);
+ retireFromStoreCatalog(cat);
  cat.produtos=A(cat?.produtos).map(cp=>{
    const id=S(cp?.id||cp?.produtoId),code=S(cp?.codigo);
    const p=products.find(x=>S(x?.id)===id)||products.find(x=>code&&S(x?.codigo)===code);
@@ -154,7 +175,7 @@ function schedulePublished(reason,delay=500){
 }
 async function ensure(requiredSync=false){
   const d=currentDb();if(!d||!Array.isArray(d.produtos))return {changed:0};
-  let changed=0;
+  let changed=retireFromStoreCatalog({produtos:[]});
   for(const spec of REQUIRED){
     let p=findProduct(d,spec);const existed=!!p;
     if(!p){
@@ -204,7 +225,7 @@ function boot(){
  [0,300,900,1800,3500,7000].forEach(ms=>setTimeout(()=>{installSaveHook();bindPublishButtons()},ms));
 }
 // A referência estável não pode ser sobrescrita pelos wrappers de publicação.
-window.JohnCaseirinhoCatalogSync821={version:VERSION,ensure,syncPublished,schedulePublished,catalogFingerprint,required:REQUIRED,publish:authoritativePublish,publishDirect:authoritativePublish,ensureRemoteImages};
+window.JohnCaseirinhoCatalogSync821={version:VERSION,ensure,syncPublished,schedulePublished,catalogFingerprint,required:REQUIRED,retired:RETIRED_PRODUCTS,retiredProduct,publish:authoritativePublish,publishDirect:authoritativePublish,ensureRemoteImages};
 window.JohnCaseirinhoCatalogSync825=window.JohnCaseirinhoCatalogSync821;
 window.addEventListener('john:storefront-hydrated',()=>setTimeout(()=>ensure(true).catch(console.warn),120));
 window.addEventListener('john:cloud-applied',()=>setTimeout(()=>ensure(false).catch(console.warn),160));
