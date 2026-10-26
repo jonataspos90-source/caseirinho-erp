@@ -23,11 +23,18 @@ test('motores expõem API global e sincronizam com o E-commerce',()=>{
 });
 
 test('produtos encerrados são inativados e removidos da publicação sem apagar histórico',()=>{
-  assert.match(sync,/caseirinho-pao-caseiro/);
   assert.match(sync,/caseirinho-rosquinha-trancada/);
+  const retired=sync.slice(sync.indexOf('const RETIRED_PRODUCTS=['),sync.indexOf('];',sync.indexOf('const RETIRED_PRODUCTS=[')));
+  assert.doesNotMatch(retired,/caseirinho-pao-caseiro/);
   assert.match(sync,/function retireFromStoreCatalog/);
   assert.match(sync,/p\.status='INATIVO'/);
   assert.match(sync,/e\.publicar=false/);
   assert.match(sync,/cat\.produtos=kept/);
   assert.doesNotMatch(sync,/const REQUIRED=\[\s*\{/);
+});
+test('pão Caseiro é restaurado uma vez e a rosquinha continua fora do catálogo',()=>{
+  assert.match(sync,/function restorePaoCaseiroOnce/);
+  assert.match(sync,/p\.status='ATIVO';e\.publicar=true/);
+  assert.match(sync,/ecommercePaoCaseiroRestauradoV82278/);
+  assert.match(sync,/const RETIRED_PRODUCTS=\[\s*\{ids:\['caseirinho-rosquinha-trancada'\]/);
 });

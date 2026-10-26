@@ -30,9 +30,18 @@ function svgData(title,subtitle,base,accent){
 // Produtos encerrados pelo Caseirinho. Mantemos os registros no ERP para
 // preservar histórico de pedidos, mas nunca recriamos nem publicamos na Loja.
 const RETIRED_PRODUCTS=[
-  {ids:['caseirinho-pao-caseiro'],codes:['900035'],names:['pao caseiro']},
   {ids:['caseirinho-rosquinha-trancada'],codes:['900036'],names:['rosquinha trancada com acucar']}
 ];
+function restorePaoCaseiroOnce(d){
+ d.config=d.config&&typeof d.config==='object'?d.config:{};
+ if(d.config.ecommercePaoCaseiroRestauradoV82278)return false;
+ const p=A(d.produtos).find(x=>S(x?.id).toLowerCase()==='caseirinho-pao-caseiro'||S(x?.codigo||x?.sku).replace(/\D/g,'')==='900035'||norm(x?.nomeComercial||x?.nome)==='pao caseiro');
+ if(!p)return false;
+ const e=p.ecommerce=p.ecommerce&&typeof p.ecommerce==='object'&&!Array.isArray(p.ecommerce)?p.ecommerce:{};
+ p.status='ATIVO';e.publicar=true;p.atualizadoEm=now();
+ d.config.ecommercePaoCaseiroRestauradoV82278=true;d.config.ecommercePaoCaseiroRestauradoEm=now();
+ return true;
+}
 const REQUIRED=[];
 function retiredProduct(p){
  const id=S(p?.id||p?.produtoId).toLowerCase(),code=S(p?.codigo||p?.sku).replace(/\D/g,''),name=norm(p?.nomeComercial||p?.nome||'');
@@ -175,7 +184,8 @@ function schedulePublished(reason,delay=500){
 }
 async function ensure(requiredSync=false){
   const d=currentDb();if(!d||!Array.isArray(d.produtos))return {changed:0};
-  let changed=retireFromStoreCatalog({produtos:[]});
+  let changed=restorePaoCaseiroOnce(d)?1:0;
+  changed+=retireFromStoreCatalog({produtos:[]});
   for(const spec of REQUIRED){
     let p=findProduct(d,spec);const existed=!!p;
     if(!p){
