@@ -1,5 +1,5 @@
 importScripts('./order-alerts-worker.js');
-const CACHE='john-erp-pwa-v8.22.78-restore-pao-caseiro-retire-rosquinha';
+const CACHE='john-erp-pwa-v8.22.79-restore-complete-erp-login';
 
 const TX='./transaction-persistence-v8-22-13.js';
 const MULTI='./multiempresa-v8-12-0.js';
