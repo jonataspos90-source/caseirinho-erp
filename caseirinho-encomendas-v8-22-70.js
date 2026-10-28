@@ -220,12 +220,18 @@ function ensureOrdersNavigation(){
  const received=nav.querySelector('[data-page="ecommercePedidosRecebidos"]');
  if(b.parentElement!==nav||(received&&received.nextElementSibling!==b)){if(received)received.insertAdjacentElement('afterend',b);else nav.appendChild(b);changed=true}
  b.onclick=e=>{e.preventDefault();openOrders()};
- if(changed)try{window.johnNext?.renderHub?.()}catch(_){}
+ // Não reconstruir o hub aqui: isso pode remover o próprio botão recém-criado.
+
 }
-let navigationObserver=null;
+let navigationObserver=null,navRefreshScheduled=false;
 function watchNavigation(){
- const nav=document.querySelector('.nav');if(!nav||navigationObserver)return;
- navigationObserver=new MutationObserver(ensureOrdersNavigation);navigationObserver.observe(nav,{childList:true});
+ if(navigationObserver)return;
+ navigationObserver=new MutationObserver(()=>{
+   if(navRefreshScheduled)return;
+   navRefreshScheduled=true;
+   setTimeout(()=>{navRefreshScheduled=false;ensureOrdersNavigation()},80);
+ });
+ navigationObserver.observe(document.documentElement,{childList:true,subtree:true});
 }
 function install(){
  style();
