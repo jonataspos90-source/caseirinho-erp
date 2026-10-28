@@ -17,7 +17,7 @@ function cfg(){
   try{c=JSON.parse(storage().getItem(CLOUD_KEY)||'{}')||{}}catch(_){}
   return {
     apiUrl:S(c.apiUrl||'https://john-cloud-api-production.up.railway.app').replace(/\/+$/,''),
-    apiKey:S(c.apiKey),
+    apiKey:S(c.apiKey||c.token),
     storeSlug:S(c.storeSlug||'caseirinho')||'caseirinho'
   };
 }
