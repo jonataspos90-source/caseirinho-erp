@@ -34,5 +34,5 @@ test('availability page uses the configured authenticated API when adminFetch is
 test('PWA upgrades both availability modules and preserves one copy of each',async()=>{
  const ctx=vm.createContext({self:{addEventListener(){}},importScripts(){},Headers,Response});vm.runInContext(read('service-worker.js'),ctx);
  ctx.response=new Response('<body><script src="./ecommerce-customer-experience-v8-13-0.js?v=8140"></script><script src="./caseirinho-encomendas-v8-22-70.js?v=82270"></script></body>',{headers:{'content-type':'text/html'}});
- const out=await vm.runInContext('injectScripts(response)',ctx);const html=await out.text();assert.match(html,/ecommerce-customer-experience-v8-13-0\.js\?v=20261028-payment-flow/);assert.match(html,/caseirinho-encomendas-v8-22-70\.js\?v=20261028-submodule/);assert.equal((html.match(/caseirinho-encomendas-v8-22-70\.js/g)||[]).length,1);
+ const out=await vm.runInContext('injectScripts(response)',ctx);const html=await out.text();assert.match(html,/ecommerce-customer-experience-v8-13-0\.js\?v=20261028-payment-flow/);assert.match(html,/caseirinho-encomendas-v8-22-70\.js\?v=20261028-order-review/);assert.equal((html.match(/caseirinho-encomendas-v8-22-70\.js/g)||[]).length,1);
 });

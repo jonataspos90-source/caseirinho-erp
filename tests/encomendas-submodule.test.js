@@ -1,10 +1,10 @@
 'use strict';
 const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
-const source=fs.readFileSync(path.join(__dirname,'..','caseirinho-encomendas-v8-22-70.js'),'utf8').replace('={openAvailability,openOrders,loadOrders};','={openAvailability,openOrders,loadOrders,filteredOrders,managedOrders,orderStatusLabel,ensureOrdersNavigation};');
+const source=fs.readFileSync(path.join(__dirname,'..','caseirinho-encomendas-v8-22-70.js'),'utf8').replace('={openAvailability,openOrders,loadOrders};','={openAvailability,openOrders,loadOrders,filteredOrders,managedOrders,orderStatusLabel,ensureOrdersNavigation,saoPauloDate,orderCreatedDate};');
 function load(document={readyState:'loading',addEventListener(){}}){const window={addEventListener(){}};vm.runInNewContext(source,{window,document,setTimeout(){},console});return window.CaseirinhoEncomendas82270}
-const order=(id,status='PENDENTE',extra={})=>({id,codigo:'WEB-'+id,cliente:{nome:'João Garcia',telefone:'(11) 99999-0000'},status:'NOVO',itens:[{produtoId:'massa',disponibilidade:'SOB_ENCOMENDA'}],encomendaConfirmacao:{status},...extra});
+const order=(id,status='PENDENTE',extra={})=>({id,codigo:'WEB-'+id,cliente:{nome:'João Garcia',telefone:'(11) 99999-0000'},createdAt:new Date().toISOString(),status:'NOVO',itens:[{produtoId:'massa',disponibilidade:'SOB_ENCOMENDA'}],encomendaConfirmacao:{status},...(status==='CONFIRMADO'?{analisePedido:{status:'APROVADO'}}:{}),...extra});
 test('default view shows pending analysis and confirmed orders remain available in their filter',()=>{
- const m=load(),list=[order('1'),order('2','CONFIRMADO'),order('3','AGUARDANDO_CONTATO')];assert.deepEqual(Array.from(m.filteredOrders(list),o=>o.id),['1']);assert.deepEqual(Array.from(m.filteredOrders(list,'CONFIRMADO'),o=>o.id),['2']);assert.equal(m.filteredOrders(list,'TODOS').length,3);
+ const m=load(),list=[order('1'),order('2','CONFIRMADO'),order('3','AGUARDANDO_CONTATO')];assert.deepEqual(Array.from(m.filteredOrders(list),o=>o.id),['1','3']);assert.deepEqual(Array.from(m.filteredOrders(list,'CONFIRMADO'),o=>o.id),['2']);assert.equal(m.filteredOrders(list,'TODOS').length,3);
 });
 test('search matches accents, order number and formatted WhatsApp',()=>{
  const m=load(),list=[order('123')];assert.equal(m.filteredOrders(list,'TODOS','joao').length,1);assert.equal(m.filteredOrders(list,'TODOS','WEB-123').length,1);assert.equal(m.filteredOrders(list,'TODOS','11999990000').length,1);assert.equal(m.filteredOrders(list,'TODOS','inexistente').length,0);
@@ -13,7 +13,7 @@ test('finished orders and orders without availability items are excluded from op
  const m=load(),list=[order('1'),order('2','PENDENTE',{status:'CANCELADO'}),order('3','PENDENTE',{status:'FINALIZADO'}),order('4','PENDENTE',{itens:[],encomendaConfirmacao:null})];assert.deepEqual(Array.from(m.managedOrders(list),o=>o.id),['1']);
 });
 test('updated confirmation has the correct display label',()=>{
- const m=load(),o=order('1');assert.equal(m.orderStatusLabel(o),'Aguardando análise');o.encomendaConfirmacao.status='CONFIRMADO';assert.equal(m.orderStatusLabel(o),'Confirmada');
+ const m=load(),o=order('1');assert.equal(m.orderStatusLabel(o),'Aguardando análise');o.encomendaConfirmacao.status='CONFIRMADO';o.analisePedido={status:'APROVADO'};assert.equal(m.orderStatusLabel(o),'Análise aprovada');
 });
 function navigation(existing=false){
  const received={dataset:{page:'ecommercePedidosRecebidos'}},other={dataset:{page:'ecommerceCategorias'}};
@@ -29,4 +29,13 @@ test('submodule appears once immediately after received orders inside Ecommerce'
 });
 test('existing misplaced menu entry moves to Ecommerce instead of creating a duplicate',()=>{
  const h=navigation(true);h.api.ensureOrdersNavigation();assert.equal(h.nav.children.length,3);assert.equal(h.nav.children[1].id,'ceOrdersNav82270');assert.equal(h.nav.children[1].parentElement,h.nav);
+});
+
+test('pending analysis excludes older creation dates while other views retain the history',()=>{
+ const m=load(),now=new Date(),old=new Date(now.getTime()-86400000),future=new Date(now.getTime()+86400000);
+ const list=[order('old','PENDENTE',{createdAt:old.toISOString()}),order('today'),order('future','PENDENTE',{createdAt:future.toISOString()})];
+ assert.deepEqual(Array.from(m.filteredOrders(list),o=>o.id),['today','future']);assert.equal(m.filteredOrders(list,'TODOS').length,3);
+});
+test('creation date uses Sao Paulo midnight, not UTC midnight',()=>{
+ const m=load();assert.equal(m.saoPauloDate('2026-10-28T02:59:00Z'),'2026-10-27');assert.equal(m.saoPauloDate('2026-10-28T03:00:00Z'),'2026-10-28');
 });

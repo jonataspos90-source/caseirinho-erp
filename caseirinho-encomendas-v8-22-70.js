@@ -109,36 +109,45 @@ async function api(path,opt={}){
  return data;
 }
 function pendingItems(order){
- const rows=A(order?.itens).filter(i=>!i.adicional&&!i.adicionalPromocional&&(
-  S(i.disponibilidade)==='SOB_ENCOMENDA'||i.encomendaAutomatica===true||
-  A(order.encomendaConfirmacao?.itens).some(x=>S(x.produtoId)===S(i.produtoId))));
+ const rows=A(order?.itens).filter(i=>!i.adicional&&!i.adicionalPromocional);
  return rows;
 }
 function ensureOrdersPage(){
  let el=E('ceOrdersPage82270');if(el)return el;
  el=document.createElement('section');el.className='page hidden';el.id='ceOrdersPage82270';
- el.innerHTML='<div class="ce82270"><div class="bar" style="justify-content:space-between"><h2>📦 Encomendas e Disponibilidade</h2><button class="secondary" id="ceOrdersBack82270">Voltar aos pedidos</button></div><p>Controle a análise dos itens, a disponibilidade e o prazo de produção. A confirmação libera a próxima etapa do pagamento no APP quando o frete estiver definido.</p><div class="bar" id="ceOrdersSummary82270" aria-live="polite"></div><div class="fields order-filters"><label>Buscar pedido, cliente ou WhatsApp<input id="ceOrdersSearch82270" type="search" placeholder="Número do pedido, nome ou telefone"></label><label>Situação<select id="ceOrdersFilter82270"><option value="PENDENTE">Aguardando análise</option><option value="CONFIRMADO">Confirmadas</option><option value="AGUARDANDO_CONTATO">Indisponíveis / contato</option><option value="TODOS">Todas</option></select></label></div><div class="bar"><button id="ceOrdersRefresh82270">Atualizar pedidos</button><button class="secondary" id="ceOrdersProducts82270">Modalidades dos produtos</button><span id="ceOrdersStatus82270" role="status"></span></div><div id="ceOrdersRows82270"></div></div>';
+ el.innerHTML='<div class="ce82270"><div class="bar" style="justify-content:space-between"><h2>📦 Encomendas e Disponibilidade</h2><button class="secondary" id="ceOrdersBack82270">Voltar aos pedidos</button></div><p>Controle a análise dos itens, a disponibilidade e o prazo de produção. A confirmação libera a próxima etapa do pagamento no APP quando o frete estiver definido.</p><div class="bar" id="ceOrdersSummary82270" aria-live="polite"></div><div class="fields order-filters"><label>Buscar pedido, cliente ou WhatsApp<input id="ceOrdersSearch82270" type="search" placeholder="Número do pedido, nome ou telefone"></label><label>Situação<select id="ceOrdersFilter82270"><option value="PENDENTE">Aguardando análise · hoje em diante</option><option value="CONFIRMADO">Aprovadas</option><option value="REJEITADO">Não aprovadas</option><option value="AGUARDANDO_CONTATO">Indisponíveis / contato</option><option value="TODOS">Todas</option></select></label></div><div class="bar"><button id="ceOrdersRefresh82270">Atualizar pedidos</button><button class="secondary" id="ceOrdersProducts82270">Modalidades dos produtos</button><span id="ceOrdersStatus82270" role="status"></span></div><div id="ceOrdersRows82270"></div></div>';
  (document.querySelector('main.main')||document.querySelector('main')||document.body).appendChild(el);
  E('ceOrdersBack82270').onclick=()=>{el.classList.add('hidden');const target=document.querySelector('.nav [data-page="ecommercePedidosRecebidos"]');if(target)target.click();else E('ecommercePedidosRecebidos')?.classList.remove('hidden')};
  E('ceOrdersRefresh82270').onclick=loadOrders;
  E('ceOrdersProducts82270').onclick=openAvailability;
  E('ceOrdersSearch82270').oninput=()=>orderRows(cachedOrders);
  E('ceOrdersFilter82270').onchange=()=>orderRows(cachedOrders);
- E('ceOrdersRows82270').addEventListener('click',e=>{const b=e.target.closest('[data-save-order]');if(b)saveOrder(b.dataset.saveOrder)});
+ E('ceOrdersRows82270').addEventListener('click',e=>{const b=e.target.closest('[data-save-order]');if(b)saveOrder(b.dataset.saveOrder,b.dataset.reviewDecision||'PENDENTE')});
  return el;
 }
 const ordersById=new Map();
 let cachedOrders=[];
-function managedOrders(list){return A(list).filter(o=>pendingItems(o).length&&!['CANCELADO','REJEITADO','ENTREGUE','RETIRADO','CONCLUIDO','FINALIZADO'].includes(norm(o.status)))}
-function availabilityStatus(o){return norm(o.encomendaConfirmacao?.status||'PENDENTE')}
-function orderStatusLabel(o){return({PENDENTE:'Aguardando análise',CONFIRMADO:'Confirmada',AGUARDANDO_CONTATO:'Indisponível / contato'})[availabilityStatus(o)]||'Aguardando análise'}
+function managedOrders(list){return A(list).filter(o=>pendingItems(o).length&&!['CANCELADO','ENTREGUE','RETIRADO','CONCLUIDO','FINALIZADO'].includes(norm(o.status)))}
+function availabilityStatus(o){const review=norm(o.analisePedido?.status);return norm(o.status)==='REJEITADO'||review==='REJEITADO'?'REJEITADO':review==='APROVADO'?'CONFIRMADO':review==='PENDENTE'||!review&&orderCreatedDate(o)>='2026-10-28'?'PENDENTE':norm(o.encomendaConfirmacao?.status||'PENDENTE')}
+function orderStatusLabel(o){return({PENDENTE:'Aguardando análise',CONFIRMADO:'Análise aprovada',AGUARDANDO_CONTATO:'Indisponível / contato',REJEITADO:'Pedido não aprovado'})[availabilityStatus(o)]||'Aguardando análise'}
+function saoPauloDate(value=new Date()){
+ const date=new Date(value);if(!Number.isFinite(date.getTime()))return'';
+ return new Intl.DateTimeFormat('sv-SE',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).format(date);
+}
+function orderCreatedDate(o){const value=S(o.createdAt||o.criadoEm||o.created_at);if(/^\d{4}-\d{2}-\d{2}$/.test(value))return value;return value?saoPauloDate(value.replace(' ','T')):''}
+function createdLabel(o){const value=o.createdAt||o.criadoEm||o.created_at;const date=new Date(S(value).replace(' ','T'));return Number.isFinite(date.getTime())?date.toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo'}):'Data não informada'}
+function cashbackReview(o){
+ const policy=o.cashbackPolicy||{},enabled=policy.enabled===true||o.cashbackAprovacao?.policyEnabled===true,percentage=N(policy.percentage);
+ const base=Math.max(0,N(o.subtotal)-N(o.cashback?.used||o.cashbackDiscount)+(policy.excludeShipping===false?N(o.valorFrete):0));
+ return{enabled,estimate:Math.round(base*percentage)/100,status:S(o.cashbackAprovacao?.status||'PENDENTE')};
+}
 function filteredOrders(list,status='PENDENTE',query=''){
  const q=norm(query),digits=S(query).replace(/\D/g,'');
- return managedOrders(list).filter(o=>(status==='TODOS'||availabilityStatus(o)===status)&&(!q||norm([o.codigo,o.id,o.cliente?.nome,o.cliente?.telefone].join(' ')).includes(q)||(/^\+?[\d\s().-]+$/.test(query)&&digits&&S(o.cliente?.telefone).replace(/\D/g,'').includes(digits))));
+ return managedOrders(list).filter(o=>(status==='TODOS'||availabilityStatus(o)===status)&&(status!=='PENDENTE'||orderCreatedDate(o)>=saoPauloDate())&&(!q||norm([o.codigo,o.id,o.cliente?.nome,o.cliente?.telefone].join(' ')).includes(q)||(/^\+?[\d\s().-]+$/.test(query)&&digits&&S(o.cliente?.telefone).replace(/\D/g,'').includes(digits))));
 }
 function updateOrderSummary(){
  const el=E('ceOrdersSummary82270');if(!el)return;const all=managedOrders(cachedOrders);
- el.innerHTML=[['PENDENTE','Aguardando análise'],['CONFIRMADO','Confirmadas'],['AGUARDANDO_CONTATO','Indisponíveis / contato']].map(([status,label])=>'<span style="padding:9px 13px;border:1px solid #dbe5e9;border-radius:10px;background:#f8fafc"><b>'+all.filter(o=>availabilityStatus(o)===status).length+'</b> '+label+'</span>').join('');
+ el.innerHTML=[['PENDENTE','Aguardando análise · hoje em diante'],['CONFIRMADO','Aprovadas'],['REJEITADO','Não aprovadas']].map(([status,label])=>'<span style="padding:9px 13px;border:1px solid #dbe5e9;border-radius:10px;background:#f8fafc"><b>'+filteredOrders(all,status).length+'</b> '+label+'</span>').join('');
 }
 function orderRows(list){
  const root=E('ceOrdersRows82270');if(!root)return;
@@ -146,11 +155,11 @@ function orderRows(list){
  const orders=filteredOrders(cachedOrders,E('ceOrdersFilter82270')?.value||'PENDENTE',E('ceOrdersSearch82270')?.value||'');
  ordersById.clear();orders.forEach(o=>ordersById.set(S(o.id),o));
  root.innerHTML=orders.map(o=>{
-   const previous=A(o.encomendaConfirmacao?.itens),items=pendingItems(o);
-   return '<div class="order" data-order="'+esc(o.id)+'"><div class="bar"><b>Pedido '+esc(o.codigo||o.id)+'</b><span>'+esc(o.cliente?.nome||'Cliente')+'</span><small class="ceOrderState">'+esc(orderStatusLabel(o))+'</small></div>'+
+   const previous=A(o.encomendaConfirmacao?.itens),items=pendingItems(o),cash=cashbackReview(o),closed=norm(o.status)==='REJEITADO',disabled=closed?' disabled':'';
+   return '<div class="order" data-order="'+esc(o.id)+'"><div class="bar"><b>Pedido '+esc(o.codigo||o.id)+'</b><span>'+esc(o.cliente?.nome||'Cliente')+'</span><small class="ceOrderState">'+esc(orderStatusLabel(o))+'</small></div><p class="hint"><b>Data do pedido:</b> '+esc(createdLabel(o))+(o.dataAtendimento?' · Atendimento solicitado: '+esc(o.dataAtendimento.split('-').reverse().join('/')):'')+'</p>'+
    items.map(i=>{const prior=previous.find(x=>S(x.produtoId)===S(i.produtoId))||{};
-     return '<div class="order-item" data-prod="'+esc(i.produtoId)+'"><div><b>'+esc(i.nome||i.produtoId)+'</b><div class="hint">Quantidade: '+esc(i.quantidade)+'</div></div><label>Decisão<select class="ceDecision">'+decisionOptions.map(([v,t])=>'<option value="'+v+'" '+((prior.decisao||'PENDENTE')===v?'selected':'')+'>'+t+'</option>').join('')+'</select></label><label>Previsão, se produzir<input type="date" class="ceDue" value="'+esc(prior.previsao||'')+'"></label><label style="grid-column:1/-1">Observação (opcional)<input class="ceReason" maxlength="300" value="'+esc(prior.observacao||'')+'"></label></div>';
-   }).join('')+'<div class="bar"><button data-save-order="'+esc(o.id)+'">Salvar decisões</button><span class="ceOrderFeedback" role="status"></span></div></div>';
+     return '<div class="order-item" data-prod="'+esc(i.produtoId)+'"><div><b>'+esc(i.nome||i.produtoId)+'</b><div class="hint">Quantidade: '+esc(i.quantidade)+'</div></div><label>Situação do item<select class="ceDecision"'+disabled+'>'+decisionOptions.map(([v,t])=>'<option value="'+v+'" '+((prior.decisao||'PENDENTE')===v?'selected':'')+'>'+t+'</option>').join('')+'</select></label><label>Previsão, se produzir<input type="date" class="ceDue"'+disabled+' value="'+esc(prior.previsao||'')+'"></label><label style="grid-column:1/-1">Observação para o cliente<input class="ceReason"'+disabled+' maxlength="300" value="'+esc(prior.observacao||'')+'"></label></div>';
+   }).join('')+'<div class="fields order-filters"><label>Cashback previsto: '+(cash.enabled?cash.estimate.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}):'Não se aplica')+'<select class="ceCashbackDecision"'+(closed||!cash.enabled?' disabled':'')+'>'+[['PENDENTE','Aguardando aprovação'],['APROVADO','Aprovar cashback'],['REJEITADO','Não aprovar cashback']].map(([v,t])=>'<option value="'+v+'" '+(cash.status===v?'selected':'')+'>'+t+'</option>').join('')+'</select></label><label>Motivo da não aprovação / observação do pedido<input class="ceReviewReason" maxlength="1000"'+disabled+' value="'+esc(o.analisePedido?.motivo||'')+'"></label></div><p class="hint">O cashback aprovado só fica disponível após a conclusão da compra. Alterações são enviadas ao APP.</p><div class="bar">'+[['PENDENTE','Salvar análise'],['APROVADO','Aprovar pedido'],['REJEITADO','Não aprovar pedido']].map(([v,t])=>'<button type="button" data-save-order="'+esc(o.id)+'" data-review-decision="'+v+'"'+disabled+'>'+t+'</button>').join('')+'<span class="ceOrderFeedback" role="status"></span></div></div>';
  }).join('')||'<p>Não há encomendas para os filtros selecionados.</p>';
 }
 async function loadOrders(){
@@ -160,23 +169,27 @@ async function loadOrders(){
  }catch(e){t.textContent='Não foi possível consultar pedidos: '+S(e.message||e)}
  finally{loading=false}
 }
-async function saveOrder(id){
+async function saveOrder(id,decision='PENDENTE'){
  const o=ordersById.get(S(id)),panel=[...document.querySelectorAll('#ceOrdersRows82270 [data-order]')].find(e=>e.dataset.order===S(id));
  if(!o||!panel)return;
- const feedback=panel.querySelector('.ceOrderFeedback'),btn=panel.querySelector('[data-save-order]');
+ const feedback=panel.querySelector('.ceOrderFeedback'),buttons=[...panel.querySelectorAll('[data-save-order]')];
  const itens=[...panel.querySelectorAll('.order-item[data-prod]')].map(row=>({
    produtoId:row.dataset.prod,decisao:row.querySelector('.ceDecision').value,
    previsao:row.querySelector('.ceDue').value,observacao:row.querySelector('.ceReason').value
  }));
  if(itens.some(i=>i.decisao==='PRODUZIR'&&!i.previsao))return feedback.textContent='Informe a data prevista para os itens que serão produzidos.';
  if(!itens.length)return;
- if(!confirm('Salvar a decisão de disponibilidade para o pedido '+S(o.codigo||id)+'?'))return;
- btn.disabled=true;feedback.textContent='Salvando no servidor...';
+ const cashbackDecision=panel.querySelector('.ceCashbackDecision')?.value||'PENDENTE',reason=panel.querySelector('.ceReviewReason')?.value.trim()||'';
+ if(decision==='REJEITADO'&&!reason)return feedback.textContent='Informe o motivo para não aprovar o pedido.';
+ if(decision==='APROVADO'&&itens.some(i=>['PENDENTE','INDISPONIVEL'].includes(i.decisao)))return feedback.textContent='Resolva a situação de todos os itens antes de aprovar.';
+ if(decision==='APROVADO'&&cashbackReview(o).enabled&&cashbackDecision==='PENDENTE')return feedback.textContent='Aprove ou recuse o cashback antes de concluir a análise.';
+ if(!confirm((decision==='REJEITADO'?'Não aprovar':decision==='APROVADO'?'Aprovar':'Salvar análise do')+' pedido '+S(o.codigo||id)+'?'))return;
+ buttons.forEach(b=>b.disabled=true);feedback.textContent='Salvando no servidor...';
  try{
-   const res=await api('/api/v1/admin/store/orders/'+encodeURIComponent(id),{method:'PATCH',body:JSON.stringify({encomendaConfirmacao:{itens}})});
-   o.encomendaConfirmacao=res.order?.encomendaConfirmacao;
+   const res=await api('/api/v1/admin/store/orders/'+encodeURIComponent(id)+'/review',{method:'POST',body:JSON.stringify({decision,cashbackDecision,reason,itens})});
+   Object.assign(o,res.order||{});
    const state=panel.querySelector('.ceOrderState');if(state)state.textContent=orderStatusLabel(o);updateOrderSummary();
-   feedback.textContent=o.encomendaConfirmacao?.status==='CONFIRMADO'?'✅ Disponibilidade confirmada. O APP libera o pagamento quando o frete também estiver definido.':'✅ Decisão salva na nuvem. Confira os itens pendentes ou indisponíveis.';
+   feedback.textContent='✅ Análise salva e enviada ao APP. '+(decision==='REJEITADO'?'Pedido não aprovado.':decision==='APROVADO'?'Pedido aprovado para a próxima etapa de atendimento/pagamento.':'Os itens continuam em análise.');
    try{await window.johnEcommerceOrdersController?.refresh?.(true)}catch(_){}
    const phone=S(o.cliente?.telefone).replace(/\D/g,'').replace(/^0+/,'');
    if(phone){
@@ -188,7 +201,7 @@ async function saveOrder(id){
      link.textContent='🟢 Abrir WhatsApp com mensagem pronta';
    }
  }catch(e){feedback.textContent='Falha ao salvar: '+S(e.message||e)}
- finally{btn.disabled=false}
+ finally{buttons.forEach(b=>b.disabled=norm(o.status)==='REJEITADO')}
 }
 async function openOrders(orderId=''){
  style();ensureOrdersNavigation();const p=ensureOrdersPage();document.querySelectorAll('.page').forEach(e=>e.classList.add('hidden'));p.classList.remove('hidden');

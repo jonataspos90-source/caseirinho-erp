@@ -12,7 +12,7 @@ test('manutencao de produto acabado salva modalidades, sem mexer em preco',()=>{
 });
 test('ERP oferece decisão por item e WhatsApp com envio manual',()=>{
  const s=read('caseirinho-encomendas-v8-22-70.js');
- assert.match(s,/encomendaConfirmacao:\{itens\}/);
+ assert.match(s,/cashbackDecision,reason,itens/);
  assert.match(s,/wa\.me/);
  assert.match(s,/Produzir sob encomenda/);
 });
