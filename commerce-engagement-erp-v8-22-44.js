@@ -26,13 +26,13 @@ function customerHtml(x={}){const name=S(x.name).trim()||'Cliente não identific
 function bindWhatsapp(root){root?.querySelectorAll('[data-eng44-wa]').forEach(b=>b.onclick=()=>{const d=phoneDigits(b.dataset.eng44Wa);if(!d)return;const msg=S(E('ceAbMsg')?.value||'Olá! Notamos que você deixou alguns itens no carrinho. Posso ajudar a concluir seu pedido?');window.open('https://wa.me/55'+d+'?text='+encodeURIComponent(msg),'_blank')})}
 async function renderAbandoned(force=false){
   const body=E('ce822Body');if(!body||activeTab()!=='abandoned')return;
-  let data;try{data=await fetchSummary(force)}catch(e){console.warn('[Engagement ERP] abandonados',e);return}
+  let data;try{data=await fetchSummary(force)}catch(e){console.warn('[Engagement ERP] abandonados',e);let warning=E('eng44AbandonedError');if(!warning){warning=document.createElement('div');warning.id='eng44AbandonedError';warning.className='eng44-note';body.prepend(warning)}warning.setAttribute('role','alert');warning.textContent='Não foi possível consultar os carrinhos na nuvem: '+S(e?.message||e)+'. Verifique a conexão e o token da API nas configurações do ERP e clique em Atualizar.';return}E('eng44AbandonedError')?.remove()
   if(activeTab()!=='abandoned')return;
   const rows=A(data?.abandonedCart?.recent);
   const table=[...body.querySelectorAll('table.ce-table')].find(t=>/QUANDO/i.test(t.textContent)&&/CLIENTE/i.test(t.textContent)&&/ITENS/i.test(t.textContent));
-  const tbody=table?.querySelector('tbody');
+  let tbody=table?.querySelector('tbody');if(!tbody){let panel=E('eng44FallbackTable');if(!panel){panel=document.createElement('div');panel.id='eng44FallbackTable';panel.className='ce-panel ce-scroll';panel.innerHTML='<table class="ce-table"><thead><tr><th>Quando</th><th>Cliente</th><th>Total</th><th>Itens</th><th>Ação</th></tr></thead><tbody></tbody></table>';body.appendChild(panel)}tbody=panel.querySelector('tbody')}
   if(tbody)tbody.innerHTML=rows.map(x=>`<tr><td>${esc(fmtDate(x.lastActivityAt||x.at))}<br><span class="eng44-badge">há ${Math.max(0,N(x.inactiveMinutes))} min</span></td><td>${customerHtml(x)}</td><td><b>${money(x.total)}</b></td><td>${esc(x.itemNames||((N(x.items)||0)+' item(ns)'))}</td><td>${x.phone?`<button type="button" class="ce-btn ce-soft eng44-wa" data-eng44-wa="${esc(x.phone)}">WhatsApp</button>`:'<span class="eng44-muted">Sem telefone</span>'}</td></tr>`).join('')||'<tr><td colspan="5">Nenhum carrinho atingiu o tempo configurado de abandono.</td></tr>';
-  let info=E('eng44AbandonedInfo');if(!info){info=document.createElement('div');info.id='eng44AbandonedInfo';info.className='eng44-note';table?.parentElement?.insertAdjacentElement('beforebegin',info)}
+  let info=E('eng44AbandonedInfo');if(!info){info=document.createElement('div');info.id='eng44AbandonedInfo';info.className='eng44-note';(table?.parentElement||E('eng44FallbackTable')||body).insertAdjacentElement('beforebegin',info)}
   if(info)info.innerHTML=`<b>${rows.length} carrinho(s) abandonado(s)</b> · o servidor considera abandono após <b>${N(data?.abandonedCart?.thresholdMinutes)||30} min</b> sem atividade. O cliente aparece pelo nome/WhatsApp/e-mail quando esses dados foram informados na Loja.`;
   bindWhatsapp(body);
 }
