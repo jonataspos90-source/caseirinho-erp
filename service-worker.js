@@ -1,5 +1,5 @@
 importScripts('./order-alerts-worker.js');
-const CACHE='john-erp-pwa-v8.22.83-catalog-auth-bridge';
+const CACHE='john-erp-pwa-v8.22.84-upsell-recursion';
 
 const TX='./transaction-persistence-v8-22-13.js';
 const MULTI='./multiempresa-v8-12-0.js';
@@ -68,7 +68,7 @@ const LAB_TAG='<script src="./pcp-laboratorio-v8-22-19.js?v=82244"></'+'script>'
 const ETIQUETAS_TAG='<script src="./pcp-etiquetas-v8-22-20.js?v=82244"></'+'script>';
 const FECHAMENTO_TAG='<script src="./fechamento-periodico-v8-22-21.js?v=82244"></'+'script>';
 const PIX_STAY_TAG='<script src="./pix-config-stay-v8-22-22.js?v=82244"></'+'script>';
-const UPSELL_TAG='<script src="./ecommerce-upsell-v8-22-23.js?v=82244"></'+'script>';
+const UPSELL_TAG='<script src="./ecommerce-upsell-v8-22-23.js?v=82284"></'+'script>';
 const PEDIDO_PRINT_TAG='<script src="./pedido-print-v8-22-24.js?v=82273"></'+'script>';
 const PUBLISH_FIX_TAG='<script src="./catalog-publish-fix-v8-22-8.js?v=82283"></'+'script>';
 const STORE_SETTINGS_TAG='<script src="./store-settings-sync-v8-22-13.js?v=82244"></'+'script>';
@@ -108,6 +108,7 @@ async function injectScripts(response){
   if(!response)return response;const ct=response.headers.get('content-type')||'';if(!ct.includes('text/html'))return response;let html=await response.text();
   html=html.replace(/<script[^>]+ecommerce-order-revision-v8-22-36\.js[^>]*><\/script>/gi,'');
   html=html.replace(/(caseirinho-commerce-sync-v8-21\.js\?v=)\d+/gi,(_,prefix)=>prefix+'82283');
+  html=html.replace(/(ecommerce-upsell-v8-22-23\.js\?v=)\d+/gi,(_,prefix)=>prefix+'82284');
   html=html.replace(/(catalog-publish-fix-v8-22-8\.js\?v=)\d+/gi,(_,prefix)=>prefix+'82283');
   html=html.replace(/(catalog-category-grade-sync-v8-22-30\.js\?v=)\d+/gi,(_,prefix)=>prefix+'82267');
   html=html.replace(/<script[^>]+ecommerce-submodule-media-v8-22-17\.js[^>]*><\/script>/gi,'');

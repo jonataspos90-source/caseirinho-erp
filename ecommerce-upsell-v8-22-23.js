@@ -7,7 +7,6 @@ const S=v=>String(v??'');
 const N=v=>Number(v)||0;
 const A=v=>Array.isArray(v)?v:[];
 const esc=v=>S(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let baseCatalogFn=null;
 function storage(){try{return typeof __johnLocalStorage!=='undefined'?__johnLocalStorage:localStorage}catch(_){return localStorage}}
 function dbRef(){try{if(typeof db!=='undefined'&&db&&typeof db==='object')return db}catch(_){}return window.db||null}
 function dbKey(){try{return typeof DB_KEY!=='undefined'?DB_KEY:'pcp_app_v1'}catch(_){return 'pcp_app_v1'}}
@@ -62,7 +61,8 @@ function installCatalogHook(){
  const current=window.__johnPublicarEcomLocal;
  if(typeof current!=='function')return false;
  if(current.__johnUpsell82223)return true;
- baseCatalogFn=current;
+ // Cada wrapper mantém sua própria base; reinstalações não alteram os anteriores.
+ const baseCatalogFn=current;
  const wrapped=function(){return enrichCatalog(baseCatalogFn.apply(this,arguments))};
  wrapped.__johnUpsell82223=true;
  wrapped.__johnBase=baseCatalogFn;
