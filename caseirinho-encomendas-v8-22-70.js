@@ -16,6 +16,7 @@ function style(){
  if(E('ceStyle82270'))return;
  const el=document.createElement('style');el.id='ceStyle82270';
  el.textContent='.ce82270{margin:14px 0;border:1px solid #dbe5e9;border-radius:14px;background:#fff;padding:16px;color:#152238}.ce82270 input,.ce82270 select,.ce82270 textarea{width:100%;box-sizing:border-box;padding:9px;border:1px solid #cdd8e2;border-radius:8px;background:#fff;color:#152238}.ce82270 button{border:0;background:#7b1438;color:#fff;border-radius:8px;padding:10px 13px;font-weight:700;cursor:pointer}.ce82270 button:disabled{opacity:.5;cursor:wait}.ce82270 button.secondary{background:#eef2f6;color:#122236}.ce82270 .fields{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;margin:12px 0}.ce82270 .tbl{overflow:auto;max-height:54vh}.ce82270 table{border-collapse:collapse;min-width:720px;width:100%}.ce82270 td,.ce82270 th{padding:9px;border-bottom:1px solid #edf0f4;text-align:left;font-size:13px}.ce82270 .bar{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin:12px 0}.ce82270 .order{background:#fafbfc;border:1px solid #e0e5eb;border-radius:12px;padding:12px;margin:10px 0}.ce82270 .order-item{display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:8px;align-items:end;margin:10px 0}.ce82270 .hint{color:#596577;font-size:12px;margin-top:5px}@media(max-width:650px){.ce82270 .fields,.ce82270 .order-item{grid-template-columns:1fr}.ce82270{padding:10px}}';
+ el.textContent+=' .ce82270 .order-filters{grid-template-columns:2fr 1fr}@media(max-width:650px){.ce82270 .order-filters{grid-template-columns:1fr}}';
  document.head.appendChild(el);
 }
 function ensurePage(){
@@ -116,29 +117,45 @@ function pendingItems(order){
 function ensureOrdersPage(){
  let el=E('ceOrdersPage82270');if(el)return el;
  el=document.createElement('section');el.className='page hidden';el.id='ceOrdersPage82270';
- el.innerHTML='<div class="ce82270"><div class="bar" style="justify-content:space-between"><h2>🕘 Encomendas para confirmar</h2><button class="secondary" id="ceOrdersBack82270">Voltar</button></div><p>Confirme pronta entrega, produção ou indisponibilidade por produto. As decisões ficam salvas no pedido na nuvem; o WhatsApp é aberto com uma mensagem pronta para envio.</p><div class="bar"><button id="ceOrdersRefresh82270">Atualizar pedidos</button><span id="ceOrdersStatus82270" role="status"></span></div><div id="ceOrdersRows82270"></div></div>';
+ el.innerHTML='<div class="ce82270"><div class="bar" style="justify-content:space-between"><h2>📦 Encomendas e Disponibilidade</h2><button class="secondary" id="ceOrdersBack82270">Voltar aos pedidos</button></div><p>Controle a análise dos itens, a disponibilidade e o prazo de produção. A confirmação libera a próxima etapa do pagamento no APP quando o frete estiver definido.</p><div class="bar" id="ceOrdersSummary82270" aria-live="polite"></div><div class="fields order-filters"><label>Buscar pedido, cliente ou WhatsApp<input id="ceOrdersSearch82270" type="search" placeholder="Número do pedido, nome ou telefone"></label><label>Situação<select id="ceOrdersFilter82270"><option value="PENDENTE">Aguardando análise</option><option value="CONFIRMADO">Confirmadas</option><option value="AGUARDANDO_CONTATO">Indisponíveis / contato</option><option value="TODOS">Todas</option></select></label></div><div class="bar"><button id="ceOrdersRefresh82270">Atualizar pedidos</button><button class="secondary" id="ceOrdersProducts82270">Modalidades dos produtos</button><span id="ceOrdersStatus82270" role="status"></span></div><div id="ceOrdersRows82270"></div></div>';
  (document.querySelector('main.main')||document.querySelector('main')||document.body).appendChild(el);
- E('ceOrdersBack82270').onclick=()=>{el.classList.add('hidden');E('dashboard')?.classList.remove('hidden')};
+ E('ceOrdersBack82270').onclick=()=>{el.classList.add('hidden');const target=document.querySelector('.nav [data-page="ecommercePedidosRecebidos"]');if(target)target.click();else E('ecommercePedidosRecebidos')?.classList.remove('hidden')};
  E('ceOrdersRefresh82270').onclick=loadOrders;
+ E('ceOrdersProducts82270').onclick=openAvailability;
+ E('ceOrdersSearch82270').oninput=()=>orderRows(cachedOrders);
+ E('ceOrdersFilter82270').onchange=()=>orderRows(cachedOrders);
  E('ceOrdersRows82270').addEventListener('click',e=>{const b=e.target.closest('[data-save-order]');if(b)saveOrder(b.dataset.saveOrder)});
  return el;
 }
 const ordersById=new Map();
+let cachedOrders=[];
+function managedOrders(list){return A(list).filter(o=>pendingItems(o).length&&!['CANCELADO','REJEITADO','ENTREGUE','RETIRADO','CONCLUIDO','FINALIZADO'].includes(norm(o.status)))}
+function availabilityStatus(o){return norm(o.encomendaConfirmacao?.status||'PENDENTE')}
+function orderStatusLabel(o){return({PENDENTE:'Aguardando análise',CONFIRMADO:'Confirmada',AGUARDANDO_CONTATO:'Indisponível / contato'})[availabilityStatus(o)]||'Aguardando análise'}
+function filteredOrders(list,status='PENDENTE',query=''){
+ const q=norm(query),digits=S(query).replace(/\D/g,'');
+ return managedOrders(list).filter(o=>(status==='TODOS'||availabilityStatus(o)===status)&&(!q||norm([o.codigo,o.id,o.cliente?.nome,o.cliente?.telefone].join(' ')).includes(q)||(/^\+?[\d\s().-]+$/.test(query)&&digits&&S(o.cliente?.telefone).replace(/\D/g,'').includes(digits))));
+}
+function updateOrderSummary(){
+ const el=E('ceOrdersSummary82270');if(!el)return;const all=managedOrders(cachedOrders);
+ el.innerHTML=[['PENDENTE','Aguardando análise'],['CONFIRMADO','Confirmadas'],['AGUARDANDO_CONTATO','Indisponíveis / contato']].map(([status,label])=>'<span style="padding:9px 13px;border:1px solid #dbe5e9;border-radius:10px;background:#f8fafc"><b>'+all.filter(o=>availabilityStatus(o)===status).length+'</b> '+label+'</span>').join('');
+}
 function orderRows(list){
  const root=E('ceOrdersRows82270');if(!root)return;
- const orders=list.filter(o=>pendingItems(o).length&&!['CANCELADO','REJEITADO','ENTREGUE','RETIRADO'].includes(norm(o.status)));
+ cachedOrders=A(list);updateOrderSummary();
+ const orders=filteredOrders(cachedOrders,E('ceOrdersFilter82270')?.value||'PENDENTE',E('ceOrdersSearch82270')?.value||'');
  ordersById.clear();orders.forEach(o=>ordersById.set(S(o.id),o));
  root.innerHTML=orders.map(o=>{
    const previous=A(o.encomendaConfirmacao?.itens),items=pendingItems(o);
-   return '<div class="order" data-order="'+esc(o.id)+'"><div class="bar"><b>Pedido '+esc(o.codigo||o.id)+'</b><span>'+esc(o.cliente?.nome||'Cliente')+'</span><small>'+esc(o.encomendaConfirmacao?.status||'Aguardando análise')+'</small></div>'+
+   return '<div class="order" data-order="'+esc(o.id)+'"><div class="bar"><b>Pedido '+esc(o.codigo||o.id)+'</b><span>'+esc(o.cliente?.nome||'Cliente')+'</span><small class="ceOrderState">'+esc(orderStatusLabel(o))+'</small></div>'+
    items.map(i=>{const prior=previous.find(x=>S(x.produtoId)===S(i.produtoId))||{};
      return '<div class="order-item" data-prod="'+esc(i.produtoId)+'"><div><b>'+esc(i.nome||i.produtoId)+'</b><div class="hint">Quantidade: '+esc(i.quantidade)+'</div></div><label>Decisão<select class="ceDecision">'+decisionOptions.map(([v,t])=>'<option value="'+v+'" '+((prior.decisao||'PENDENTE')===v?'selected':'')+'>'+t+'</option>').join('')+'</select></label><label>Previsão, se produzir<input type="date" class="ceDue" value="'+esc(prior.previsao||'')+'"></label><label style="grid-column:1/-1">Observação (opcional)<input class="ceReason" maxlength="300" value="'+esc(prior.observacao||'')+'"></label></div>';
    }).join('')+'<div class="bar"><button data-save-order="'+esc(o.id)+'">Salvar decisões</button><span class="ceOrderFeedback" role="status"></span></div></div>';
- }).join('')||'<p>Não há encomendas pendentes de confirmação na consulta atual.</p>';
+ }).join('')||'<p>Não há encomendas para os filtros selecionados.</p>';
 }
 async function loadOrders(){
  if(loading)return;loading=true;const t=E('ceOrdersStatus82270');t.textContent='Consultando a API...';
- try{const result=await api('/api/v1/admin/store/orders?status=TODOS&limit=200');
+ try{const result=await api('/api/v1/admin/store/orders?status=TODOS&limit=1000');
    orderRows(A(result.orders));t.textContent='Pedidos atualizados · '+new Date().toLocaleTimeString('pt-BR');
  }catch(e){t.textContent='Não foi possível consultar pedidos: '+S(e.message||e)}
  finally{loading=false}
@@ -158,6 +175,7 @@ async function saveOrder(id){
  try{
    const res=await api('/api/v1/admin/store/orders/'+encodeURIComponent(id),{method:'PATCH',body:JSON.stringify({encomendaConfirmacao:{itens}})});
    o.encomendaConfirmacao=res.order?.encomendaConfirmacao;
+   const state=panel.querySelector('.ceOrderState');if(state)state.textContent=orderStatusLabel(o);updateOrderSummary();
    feedback.textContent=o.encomendaConfirmacao?.status==='CONFIRMADO'?'✅ Disponibilidade confirmada. O APP libera o pagamento quando o frete também estiver definido.':'✅ Decisão salva na nuvem. Confira os itens pendentes ou indisponíveis.';
    try{await window.johnEcommerceOrdersController?.refresh?.(true)}catch(_){}
    const phone=S(o.cliente?.telefone).replace(/\D/g,'').replace(/^0+/,'');
@@ -173,9 +191,28 @@ async function saveOrder(id){
  finally{btn.disabled=false}
 }
 async function openOrders(orderId=''){
- style();const p=ensureOrdersPage();document.querySelectorAll('.page').forEach(e=>e.classList.add('hidden'));p.classList.remove('hidden');await loadOrders();
+ style();ensureOrdersNavigation();const p=ensureOrdersPage();document.querySelectorAll('.page').forEach(e=>e.classList.add('hidden'));p.classList.remove('hidden');
+ document.querySelectorAll('.nav button[data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page==='ceOrdersPage82270'));
+ document.querySelector('.nav .john-module-group[data-module="ecommerce"]')?.classList.add('open');
+ if(orderId){E('ceOrdersFilter82270').value='TODOS';E('ceOrdersSearch82270').value=''}
+ await loadOrders();
  if(orderId){const panel=[...document.querySelectorAll('#ceOrdersRows82270 [data-order]')].find(e=>e.dataset.order===S(orderId));if(panel){panel.style.outline='3px solid #7b1438';panel.scrollIntoView({behavior:'smooth',block:'center'});return}}
  window.scrollTo({top:0,behavior:'smooth'});
+}
+function ensureOrdersNavigation(){
+ const nav=document.querySelector('.nav .john-module-group[data-module="ecommerce"] .john-module-items');if(!nav)return;
+ let b=E('ceOrdersNav82270'),changed=false;
+ if(!b){b=document.createElement('button');b.id='ceOrdersNav82270';b.type='button';b.className='john-special-nav';b.dataset.page='ceOrdersPage82270';b.dataset.permissionPage='pedidos';changed=true}
+ if(b.textContent!=='📦 Encomendas e Disponibilidade'){b.textContent='📦 Encomendas e Disponibilidade';changed=true}
+ const received=nav.querySelector('[data-page="ecommercePedidosRecebidos"]');
+ if(b.parentElement!==nav||(received&&received.nextElementSibling!==b)){if(received)received.insertAdjacentElement('afterend',b);else nav.appendChild(b);changed=true}
+ b.onclick=e=>{e.preventDefault();openOrders()};
+ if(changed)try{window.johnNext?.renderHub?.()}catch(_){}
+}
+let navigationObserver=null;
+function watchNavigation(){
+ const nav=document.querySelector('.nav');if(!nav||navigationObserver)return;
+ navigationObserver=new MutationObserver(ensureOrdersNavigation);navigationObserver.observe(nav,{childList:true});
 }
 function install(){
  style();
@@ -185,12 +222,7 @@ function install(){
    b.innerHTML='<span class="icon">📦</span><b>Disponibilidade e Encomendas</b><small>Produtos acabados · pronta entrega / sob encomenda / ambos</small>';
    menu.appendChild(b);b.onclick=openAvailability;
  }
- const nav=document.querySelector('.nav .john-module-group[data-module="vendas"] .john-module-items')
-   ||document.querySelector('.nav .john-module-group[data-module="ecommerce"] .john-module-items');
- if(nav&&!E('ceOrdersNav82270')){
-   const b=document.createElement('button');b.id='ceOrdersNav82270';b.type='button';b.className='john-special-nav';b.dataset.page='ceOrdersPage82270';b.dataset.permissionPage='pedidos';b.textContent='🕘 Encomendas para confirmar';nav.appendChild(b);b.onclick=e=>{e.preventDefault();openOrders()};
-   try{window.johnNext?.renderHub?.()}catch(_){}
- }
+ ensureOrdersNavigation();watchNavigation();
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
 [300,1200,3200].forEach(n=>setTimeout(install,n));

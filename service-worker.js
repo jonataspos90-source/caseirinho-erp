@@ -1,5 +1,5 @@
 importScripts('./order-alerts-worker.js');
-const CACHE='john-erp-pwa-v8.22.84-upsell-recursion-payment-availability-20261028';
+const CACHE='john-erp-pwa-v8.22.84-upsell-recursion-payment-availability-20261028-encomendas-module';
 
 const TX='./transaction-persistence-v8-22-13.js';
 const MULTI='./multiempresa-v8-12-0.js';
@@ -93,7 +93,7 @@ const BULK_DESC='./bulk-product-descriptions-v8-22-68.js';
 const BULK_DESC_TAG='<script src="./bulk-product-descriptions-v8-22-68.js?v=82268"></'+'script>';
 const PRICING_PACK_TAG='<script src="./pricing-pack-offers-v8-22-57.js?v=82270"></'+'script>';
 const ENCOMENDAS='./caseirinho-encomendas-v8-22-70.js';
-const ENCOMENDAS_TAG='<script src="./caseirinho-encomendas-v8-22-70.js?v=20261028-payment-flow"></'+'script>';
+const ENCOMENDAS_TAG='<script src="./caseirinho-encomendas-v8-22-70.js?v=20261028-submodule"></'+'script>';
 const MP_PANEL='./caseirinho-mercadopago-v8-22-71.js';
 const MP_PANEL_TAG='<script src="./caseirinho-mercadopago-v8-22-71.js?v=82271"></'+'script>';
 
@@ -107,6 +107,7 @@ function injectHead(html,needle,tag){if(html.includes(needle))return html;const 
 async function injectScripts(response){
   if(!response)return response;const ct=response.headers.get('content-type')||'';if(!ct.includes('text/html'))return response;let html=await response.text();
   html=html.replace(/((?:ecommerce-customer-experience-v8-13-0|caseirinho-encomendas-v8-22-70)\.js\?v=)[^"'\s<>]+/g,(_,prefix)=>prefix+'20261028-payment-flow');
+  html=html.replace(/(caseirinho-encomendas-v8-22-70\.js\?v=)[^"'\s<>]+/g,(_,prefix)=>prefix+'20261028-submodule');
   html=html.replace(/<script[^>]+ecommerce-order-revision-v8-22-36\.js[^>]*><\/script>/gi,'');
   html=html.replace(/(caseirinho-commerce-sync-v8-21\.js\?v=)\d+/gi,(_,prefix)=>prefix+'82283');
   html=html.replace(/(ecommerce-upsell-v8-22-23\.js\?v=)\d+/gi,(_,prefix)=>prefix+'82284');
