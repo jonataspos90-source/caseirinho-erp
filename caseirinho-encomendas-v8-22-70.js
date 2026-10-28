@@ -97,9 +97,15 @@ async function save(){
    console.error('[Encomendas 82270]',err);
  }finally{saving=false;E('ceSave82270').disabled=false}
 }
-function api(path,opt={}){
+async function api(path,opt={}){
  if(typeof window.adminFetch==='function')return window.adminFetch(path,opt);
- return Promise.reject(new Error('Conexão autenticada à API indisponível. Entre no ERP e configure a nuvem.'));
+ let cfg={};try{cfg=JSON.parse(localStorage.getItem('john_cloud_config_v1')||'{}')||{}}catch(_){}
+ const token=S(cfg.apiKey||cfg.token),base=S(cfg.apiUrl||'https://john-cloud-api-production.up.railway.app').replace(/\/+$/,'');
+ if(!token)throw new Error('Conexão autenticada à API indisponível. Entre no ERP e configure a nuvem.');
+ const response=await fetch(base+path,{...opt,cache:'no-store',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token,...(opt.headers||{})}});
+ let data={};try{data=await response.json()}catch(_){}
+ if(!response.ok)throw new Error(data.error||('Erro HTTP '+response.status));
+ return data;
 }
 function pendingItems(order){
  const rows=A(order?.itens).filter(i=>!i.adicional&&!i.adicionalPromocional&&(
@@ -152,7 +158,8 @@ async function saveOrder(id){
  try{
    const res=await api('/api/v1/admin/store/orders/'+encodeURIComponent(id),{method:'PATCH',body:JSON.stringify({encomendaConfirmacao:{itens}})});
    o.encomendaConfirmacao=res.order?.encomendaConfirmacao;
-   feedback.textContent='✅ Decisão salva na nuvem. Envie a confirmação por WhatsApp.';
+   feedback.textContent=o.encomendaConfirmacao?.status==='CONFIRMADO'?'✅ Disponibilidade confirmada. O APP libera o pagamento quando o frete também estiver definido.':'✅ Decisão salva na nuvem. Confira os itens pendentes ou indisponíveis.';
+   try{await window.johnEcommerceOrdersController?.refresh?.(true)}catch(_){}
    const phone=S(o.cliente?.telefone).replace(/\D/g,'').replace(/^0+/,'');
    if(phone){
      const normalized=phone.length<=11?'55'+phone:phone;
@@ -165,8 +172,9 @@ async function saveOrder(id){
  }catch(e){feedback.textContent='Falha ao salvar: '+S(e.message||e)}
  finally{btn.disabled=false}
 }
-function openOrders(){
- style();const p=ensureOrdersPage();document.querySelectorAll('.page').forEach(e=>e.classList.add('hidden'));p.classList.remove('hidden');loadOrders();
+async function openOrders(orderId=''){
+ style();const p=ensureOrdersPage();document.querySelectorAll('.page').forEach(e=>e.classList.add('hidden'));p.classList.remove('hidden');await loadOrders();
+ if(orderId){const panel=[...document.querySelectorAll('#ceOrdersRows82270 [data-order]')].find(e=>e.dataset.order===S(orderId));if(panel){panel.style.outline='3px solid #7b1438';panel.scrollIntoView({behavior:'smooth',block:'center'});return}}
  window.scrollTo({top:0,behavior:'smooth'});
 }
 function install(){

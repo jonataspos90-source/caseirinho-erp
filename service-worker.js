@@ -1,5 +1,5 @@
 importScripts('./order-alerts-worker.js');
-const CACHE='john-erp-pwa-v8.22.84-upsell-recursion';
+const CACHE='john-erp-pwa-v8.22.84-upsell-recursion-payment-availability-20261028';
 
 const TX='./transaction-persistence-v8-22-13.js';
 const MULTI='./multiempresa-v8-12-0.js';
@@ -49,7 +49,7 @@ const TX_TAG='<script src="./transaction-persistence-v8-22-13.js?v=82244"></'+'s
 const MULTI_TAG='<script src="./multiempresa-v8-12-0.js?v=82244"></'+'script>';
 const STABILITY_TAG='<script src="./production-stability-v8-10-5.js?v=82244"></'+'script>';
 const PLATFORM_TAG='<script src="./platform-admin-v8-12-0.js?v=82244"></'+'script>';
-const EXPERIENCE_TAG='<script src="./ecommerce-customer-experience-v8-13-0.js?v=82276"></'+'script>';
+const EXPERIENCE_TAG='<script src="./ecommerce-customer-experience-v8-13-0.js?v=20261028-payment-flow"></'+'script>';
 const MANUAL_PIX_TAG='<script src="./manual-pix-confirmation.js?v=82278"></'+'script>';
 const HYDRATE_TAG='<script src="./server-catalog-hydration-v8-19.js?v=82267"></'+'script>';
 const NEXTJS_TAG='<script src="./john-next-v8-17.js?v=82244"></'+'script>';
@@ -93,7 +93,7 @@ const BULK_DESC='./bulk-product-descriptions-v8-22-68.js';
 const BULK_DESC_TAG='<script src="./bulk-product-descriptions-v8-22-68.js?v=82268"></'+'script>';
 const PRICING_PACK_TAG='<script src="./pricing-pack-offers-v8-22-57.js?v=82270"></'+'script>';
 const ENCOMENDAS='./caseirinho-encomendas-v8-22-70.js';
-const ENCOMENDAS_TAG='<script src="./caseirinho-encomendas-v8-22-70.js?v=82270"></'+'script>';
+const ENCOMENDAS_TAG='<script src="./caseirinho-encomendas-v8-22-70.js?v=20261028-payment-flow"></'+'script>';
 const MP_PANEL='./caseirinho-mercadopago-v8-22-71.js';
 const MP_PANEL_TAG='<script src="./caseirinho-mercadopago-v8-22-71.js?v=82271"></'+'script>';
 
@@ -106,6 +106,7 @@ function ensurePricingPackScript(html,tag){const re=/<script\b[^>]*src=["'][^"']
 function injectHead(html,needle,tag){if(html.includes(needle))return html;const low=html.toLowerCase(),p=low.lastIndexOf('</head>');return p>=0?html.slice(0,p)+tag+html.slice(p):tag+html}
 async function injectScripts(response){
   if(!response)return response;const ct=response.headers.get('content-type')||'';if(!ct.includes('text/html'))return response;let html=await response.text();
+  html=html.replace(/((?:ecommerce-customer-experience-v8-13-0|caseirinho-encomendas-v8-22-70)\.js\?v=)[^"'\s<>]+/g,(_,prefix)=>prefix+'20261028-payment-flow');
   html=html.replace(/<script[^>]+ecommerce-order-revision-v8-22-36\.js[^>]*><\/script>/gi,'');
   html=html.replace(/(caseirinho-commerce-sync-v8-21\.js\?v=)\d+/gi,(_,prefix)=>prefix+'82283');
   html=html.replace(/(ecommerce-upsell-v8-22-23\.js\?v=)\d+/gi,(_,prefix)=>prefix+'82284');
@@ -168,4 +169,5 @@ self.addEventListener('install',e=>e.waitUntil(cacheShell().then(()=>self.skipWa
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE&&k.startsWith('john-erp-pwa-')).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
 self.addEventListener('message',e=>{if(e.data&&e.data.type==='SKIP_WAITING')self.skipWaiting()});
 self.addEventListener('fetch',e=>{const u=new URL(e.request.url);if(u.origin!==self.location.origin||e.request.method!=='GET')return;if(/\/(?:recuperar-macarrao-v8-22-(?:25|26)|terminal-impressao)\.html$/.test(u.pathname)){e.respondWith(fetch(e.request,{cache:'no-store'}).catch(()=>caches.match(e.request)));return}if(e.request.mode==='navigate'){e.respondWith((async()=>{try{const net=await fetch(e.request,{cache:'no-store'}),out=await injectScripts(net);if(out&&out.ok)caches.open(CACHE).then(c=>c.put('./index.html',out.clone())).catch(()=>{});return out}catch(_){const cached=await caches.match('./index.html')||await caches.match('./offline.html');return injectScripts(cached)}})());return}e.respondWith(fetch(e.request,{cache:'no-store'}).then(r=>{if(r.ok)caches.open(CACHE).then(c=>c.put(e.request,r.clone())).catch(()=>{});return r}).catch(()=>caches.match(e.request)))});
+
 

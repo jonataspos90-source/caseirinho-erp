@@ -3,7 +3,7 @@
 if(window.__JOHN_ECOMMERCE_CX_8130__)return;
 window.__JOHN_ECOMMERCE_CX_8130__=true;
 
-const VERSION='8.14.1';
+const VERSION='8.14.2';
 const INBOX_KEY='john_ecommerce_cloud_inbox_v1';
 const FILTER_KEY='john_ecommerce_cx_filters_v8130';
 const S=v=>String(v??'');
@@ -44,6 +44,10 @@ function awaitingOnlinePayment(o){
   const pay=o?.mercadoPago||o?.payload?.mercadoPago||{};
   return /MERCADO[ _-]?PAGO/i.test(method)&&norm(pay.status)!=='APROVADO';
 }
+function needsAvailability(o){
+  const confirmation=o.encomendaConfirmacao||o.payload?.encomendaConfirmacao;
+  return !!confirmation&&norm(confirmation.status)!=='CONFIRMADO';
+}
 function state(o){
   const st=norm(o.status||o.payload?.status||'');
   const integ=norm(o.statusIntegracao||o.integration_status||'');
@@ -52,6 +56,7 @@ function state(o){
 
   if(st==='REJEITADO'||integ==='REJEITADO'||o.rejeitado)return'REJEITADO';
   if(st==='CANCELADO'||integ==='CANCELADO'||decision==='REJEITADO'||st==='FRETE_RECUSADO_CLIENTE')return'CANCELADO';
+  if(!['ACEITO','ENTREGUE','RETIRADO','CONCLUIDO','FINALIZADO'].includes(st)&&!['IMPORTANDO','IMPORTADO'].includes(integ)&&awaitingOnlinePayment(o)&&needsAvailability(o))return'AGUARDANDO_DISPONIBILIDADE';
   if((st==='AGUARDANDO_ACEITE_ERP'||decision==='ACEITO')&&awaitingOnlinePayment(o))return'AGUARDANDO_PAGAMENTO';
   if(st==='AGUARDANDO_ACEITE_ERP'||decision==='ACEITO')return'AGUARDANDO_ACEITE_ERP';
   if(st==='AGUARDANDO_CLIENTE_FRETE'||(freight==='COTADO'&&decision==='PENDENTE'))return'AGUARDANDO_CLIENTE_FRETE';
@@ -61,10 +66,11 @@ function state(o){
   return'PENDENTE';
 }
 function stateLabel(s){return({
-  PENDENTE:'Aguardando decisão',AGUARDANDO_PAGAMENTO:'Aguardando pagamento',COTACAO_PENDENTE:'Frete a cotar',AGUARDANDO_CLIENTE_FRETE:'Aguardando cliente',
+  PENDENTE:'Aguardando decisão',AGUARDANDO_DISPONIBILIDADE:'Confirmar disponibilidade',AGUARDANDO_PAGAMENTO:'Aguardando pagamento',COTACAO_PENDENTE:'Frete a cotar',AGUARDANDO_CLIENTE_FRETE:'Aguardando cliente',
   AGUARDANDO_ACEITE_ERP:'Cliente aceitou novo frete',FRETE_RECUSADO_CLIENTE:'Cancelado',ACEITO:'Aceito',REJEITADO:'Rejeitado',CANCELADO:'Cancelado'
 })[s]||s}
 function actionType(o,s=state(o)){
+  if(s==='AGUARDANDO_DISPONIBILIDADE')return'CONFIRMAR_DISPONIBILIDADE';
   if(s==='COTACAO_PENDENTE')return'COTAR';
   if(s==='AGUARDANDO_CLIENTE_FRETE')return'AGUARDANDO_CLIENTE';
   if(s==='AGUARDANDO_PAGAMENTO')return'AGUARDANDO_PAGAMENTO';
@@ -106,8 +112,8 @@ function ensureToolbar(){
       <div><label>Data até</label><input id="johnCxTo" type="date"></div>
       <div><label>Cliente</label><input id="johnCxCustomer" type="search" placeholder="Nome do cliente"></div>
       <div><label>Modalidade</label><select id="johnCxModality"><option value="TODOS">Todas</option><option value="ENTREGA">Entrega</option><option value="RETIRADA">Retirada</option></select></div>
-      <div><label>Status</label><select id="johnCxStatus"><option value="TODOS">Todos</option><option value="PENDENTE">Aguardando decisão</option><option value="AGUARDANDO_PAGAMENTO">Aguardando pagamento</option><option value="COTACAO_PENDENTE">Frete a cotar</option><option value="AGUARDANDO_CLIENTE_FRETE">Aguardando cliente</option><option value="AGUARDANDO_ACEITE_ERP">Cliente aceitou novo frete</option><option value="ACEITO">Aceito</option><option value="REJEITADO">Rejeitado</option><option value="CANCELADO">Cancelado</option></select></div>
-      <div><label>Ações</label><select id="johnCxAction"><option value="TODOS">Todas</option><option value="COTAR">Cotação</option><option value="AGUARDANDO_CLIENTE">Aguardando cliente</option><option value="DECIDIR">Aceitar / Rejeitar</option><option value="AGUARDANDO_PAGAMENTO">Aguardando pagamento</option><option value="SEM_ACAO">Sem ação</option></select></div>
+      <div><label>Status</label><select id="johnCxStatus"><option value="TODOS">Todos</option><option value="PENDENTE">Aguardando decisão</option><option value="AGUARDANDO_DISPONIBILIDADE">Confirmar disponibilidade</option><option value="AGUARDANDO_PAGAMENTO">Aguardando pagamento</option><option value="COTACAO_PENDENTE">Frete a cotar</option><option value="AGUARDANDO_CLIENTE_FRETE">Aguardando cliente</option><option value="AGUARDANDO_ACEITE_ERP">Cliente aceitou novo frete</option><option value="ACEITO">Aceito</option><option value="REJEITADO">Rejeitado</option><option value="CANCELADO">Cancelado</option></select></div>
+      <div><label>Ações</label><select id="johnCxAction"><option value="TODOS">Todas</option><option value="CONFIRMAR_DISPONIBILIDADE">Confirmar disponibilidade</option><option value="COTAR">Cotação</option><option value="AGUARDANDO_CLIENTE">Aguardando cliente</option><option value="DECIDIR">Aceitar / Rejeitar</option><option value="AGUARDANDO_PAGAMENTO">Aguardando pagamento</option><option value="SEM_ACAO">Sem ação</option></select></div>
       <button class="btn secondary" id="johnCxClearFilters" type="button">Limpar filtros</button>`;
     const head=panel.querySelector('.panel-head');head?head.insertAdjacentElement('afterend',box):panel.prepend(box);
     const f=filters();
@@ -225,9 +231,25 @@ function printOrderPdf(id){
   <script>setTimeout(()=>window.print(),350)<\/script></body></html>`);
   w.document.close();
 }
+let availabilityModuleLoading=null;
+async function openOrderAvailability(id,button){
+  if(button)button.disabled=true;
+  try{
+    if(!window.CaseirinhoEncomendas82270?.openOrders){
+      if(!availabilityModuleLoading)availabilityModuleLoading=new Promise((resolve,reject)=>{
+        const script=document.createElement('script');script.src='./caseirinho-encomendas-v8-22-70.js?v=20261028-payment-flow';
+        script.onload=resolve;script.onerror=()=>{availabilityModuleLoading=null;script.remove();reject(new Error('Não foi possível carregar a confirmação de disponibilidade.'))};document.head.appendChild(script);
+      });
+      await availabilityModuleLoading;
+    }
+    if(!window.CaseirinhoEncomendas82270?.openOrders)throw new Error('Atualize o ERP para abrir a confirmação de disponibilidade.');
+    await window.CaseirinhoEncomendas82270.openOrders(id);
+  }catch(e){window.toast?.(e.message||'Não foi possível abrir o pedido.')}finally{if(button)button.disabled=false}
+}
 function actionHtml(o,s){
   const id=esc(o.id);
   const pdf=`<button class="btn print" type="button" data-cx-pdf="${id}">PDF</button>`;
+  if(s==='AGUARDANDO_DISPONIBILIDADE')return `<button class="btn primary" type="button" data-cx-availability="${id}">Confirmar disponibilidade</button><small class="john-cx-warn">Confirme os itens para liberar o pagamento no APP.</small>${pdf}`;
   if(s==='COTACAO_PENDENTE')return `<button class="btn primary" type="button" data-cx-quote="${id}">Cotação</button>${pdf}`;
   if(s==='AGUARDANDO_CLIENTE_FRETE')return `<button class="btn secondary" type="button" data-cx-quote="${id}">Alterar cotação</button><button class="btn secondary" type="button" disabled>Aguardando cliente</button>${pdf}`;
   if(s==='AGUARDANDO_ACEITE_ERP')return `<button class="btn primary" type="button" data-cx-accept="${id}">Aceitar</button>${pdf}<button class="btn danger" type="button" data-cx-reject="${id}">Rejeitar</button>`;
@@ -263,6 +285,7 @@ function render(){
     updateKpis(all);const f=filters(),arr=all.filter(o=>matches(o,f));
     tb.innerHTML=arr.map(o=>{const s=state(o),created=S(o.createdAt||o.criadoEm||'').slice(0,16).replace('T',' '),erpNumber=o.erpNumero||o.erp_order_number||'',pixStatus=S(o.pagamentoPix?.status||o.payload?.pagamentoPix?.status).toUpperCase(),pixReported=pixStatus==='INFORMADO_PELO_CLIENTE',pixConfirmed=pixStatus==='CONFIRMADO_MANUALMENTE';return `<tr data-cx-state="${s}"><td>${esc(created)}</td><td><b>${esc(o.codigo||o.code||o.id)}</b>${erpNumber?`<br><small>ERP #${esc(erpNumber)}</small>`:''}</td><td>${esc(o.cliente?.nome||'-')}<br><small>${esc(o.cliente?.telefone||'')}</small></td><td>${esc(o.modalidade||'-')}<br><small>${esc(o.entrega?.cidade||'')}</small></td><td>${freightHtml(o,s)}</td><td>${money(o.total)}</td><td>${pixConfirmed?'<span class="john-cx-paid" title="Pagamento conferido manualmente no ERP">✅ Pix confirmado pela loja</span>':pixReported?'<span class="john-cx-warn" title="O pagamento ainda precisa ser conferido no extrato">⚠ Cliente informou Pix · conferir extrato</span>':esc(S(o.formaPagamento||'-').replace(/\s*\(Mercado Pago\)/ig,'').replace(/\s*online\s*/ig,' ').trim())}</td><td><span class="john-cx-status ${s}">${esc(stateLabel(s))}</span></td><td>${timeHtml(o,s)}</td><td><div class="john-ecom-v8-actions">${actionHtml(o,s)}</div></td></tr>`}).join('')||'<tr><td colspan="10" class="empty">Nenhum pedido encontrado para os filtros selecionados.</td></tr>';
     tb.querySelectorAll('[data-cx-quote]').forEach(b=>b.onclick=()=>doQuote(b.dataset.cxQuote));
+    tb.querySelectorAll('[data-cx-availability]').forEach(b=>b.onclick=()=>openOrderAvailability(b.dataset.cxAvailability,b));
     tb.querySelectorAll('[data-cx-accept]').forEach(b=>b.onclick=()=>doAccept(b.dataset.cxAccept));
     tb.querySelectorAll('[data-cx-reject]').forEach(b=>b.onclick=()=>doReject(b.dataset.cxReject));
     tb.querySelectorAll('[data-cx-pdf]').forEach(b=>b.onclick=()=>printOrderPdf(b.dataset.cxPdf));
@@ -371,3 +394,4 @@ document.addEventListener('click',e=>{
 
 console.info('[John ERP] Experiência do Cliente V'+VERSION+' ativa.');
 })();
+
