@@ -148,6 +148,8 @@ async function authoritativePublish(silent=false){
    let cat=base(true)||{loja:{},produtos:[]};
    cat={...cat,produtos:A(cat.produtos).map(p=>({...p,imagens:[...A(p?.imagens)]}))};
    cat=applyLocalMerchandisingFlags(cat);
+   // O gerador local não inclui os vínculos e rótulos das grades.
+   if(typeof window.JohnV880?.applyGrades==='function')cat=window.JohnV880.applyGrades(cat);
    await ensureRemoteImages(cat);
    const publishBody={...cat,replaceCatalog:true,removedProductIds:[]};
    const safePublishBody=window.JohnCatalogPublishSafe82254?.sanitize(publishBody)||publishBody;
