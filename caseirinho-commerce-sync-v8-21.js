@@ -112,6 +112,9 @@ function isInlineSvg(x){return /^data:image\/svg\+xml(?:;charset=[^,]+)?,/i.test
 function isBlob(x){return /^blob:/i.test(S(x))}
 function stableUrl(x){const v=S(x).trim();return /^https?:\/\//i.test(v)}
 function apiAdmin(path,opt={}){
+ // A ponte autenticada deve funcionar também sem injeção do service worker.
+ if(typeof window.adminFetch==='function')return window.adminFetch(path,opt);
+ if(typeof window.JohnCatalogPublishFix8228?.adminFetch==='function')return window.JohnCatalogPublishFix8228.adminFetch(path,opt);
  if(typeof adminFetch==='function')return adminFetch(path,opt);
  throw new Error('A conexão autenticada com a API ainda não foi carregada. Abra Configurações → Nuvem / API e teste a conexão.');
 }

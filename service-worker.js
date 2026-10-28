@@ -1,5 +1,5 @@
 importScripts('./order-alerts-worker.js');
-const CACHE='john-erp-pwa-v8.22.82-ecommerce-price-publication';
+const CACHE='john-erp-pwa-v8.22.83-catalog-auth-bridge';
 
 const TX='./transaction-persistence-v8-22-13.js';
 const MULTI='./multiempresa-v8-12-0.js';
@@ -61,7 +61,7 @@ const COMMERCE_ENGAGEMENT_TAG='<script src="./commerce-engagement-erp-v8-22-44.j
 const MANAGEMENT_TAG='<script src="./management-engine-v8-22-0.js?v=82244"></'+'script>';
 const USAGE_TAG='<script src="./erp-usage-v8-20.js?v=82244"></'+'script>';
 const PUBLISH_SAFE_TAG='<script src="./catalog-publish-safe-v8-22-54.js?v=82254"></'+'script>';
-const SYNC_TAG='<script src="./caseirinho-commerce-sync-v8-21.js?v=82282"></'+'script>';
+const SYNC_TAG='<script src="./caseirinho-commerce-sync-v8-21.js?v=82283"></'+'script>';
 const STRICT_MEDIA_TAG='<script src="./strict-media-upload-v8-22-5.js?v=82244"></'+'script>';
 const MEDIA_SYNC_TAG='<script src="./media-sync-fix-v8-22-6.js?v=82244"></'+'script>';
 const LAB_TAG='<script src="./pcp-laboratorio-v8-22-19.js?v=82244"></'+'script>';
@@ -70,7 +70,7 @@ const FECHAMENTO_TAG='<script src="./fechamento-periodico-v8-22-21.js?v=82244"><
 const PIX_STAY_TAG='<script src="./pix-config-stay-v8-22-22.js?v=82244"></'+'script>';
 const UPSELL_TAG='<script src="./ecommerce-upsell-v8-22-23.js?v=82244"></'+'script>';
 const PEDIDO_PRINT_TAG='<script src="./pedido-print-v8-22-24.js?v=82273"></'+'script>';
-const PUBLISH_FIX_TAG='<script src="./catalog-publish-fix-v8-22-8.js?v=82266"></'+'script>';
+const PUBLISH_FIX_TAG='<script src="./catalog-publish-fix-v8-22-8.js?v=82283"></'+'script>';
 const STORE_SETTINGS_TAG='<script src="./store-settings-sync-v8-22-13.js?v=82244"></'+'script>';
 const PIX_DOCUMENT_TAG='<script src="./pix-document-fix-v8-22-13.js?v=82244"></'+'script>';
 const PIX_OFFICIAL_TAG='<script src="./caseirinho-pix-config-v8-22-35.js?v=82244"></'+'script>';
@@ -107,8 +107,8 @@ function injectHead(html,needle,tag){if(html.includes(needle))return html;const 
 async function injectScripts(response){
   if(!response)return response;const ct=response.headers.get('content-type')||'';if(!ct.includes('text/html'))return response;let html=await response.text();
   html=html.replace(/<script[^>]+ecommerce-order-revision-v8-22-36\.js[^>]*><\/script>/gi,'');
-  html=html.replace(/(caseirinho-commerce-sync-v8-21\.js\?v=)\d+/gi,(_,prefix)=>prefix+'82282');
-  html=html.replace(/(catalog-publish-fix-v8-22-8\.js\?v=)\d+/gi,(_,prefix)=>prefix+'82266');
+  html=html.replace(/(caseirinho-commerce-sync-v8-21\.js\?v=)\d+/gi,(_,prefix)=>prefix+'82283');
+  html=html.replace(/(catalog-publish-fix-v8-22-8\.js\?v=)\d+/gi,(_,prefix)=>prefix+'82283');
   html=html.replace(/(catalog-category-grade-sync-v8-22-30\.js\?v=)\d+/gi,(_,prefix)=>prefix+'82267');
   html=html.replace(/<script[^>]+ecommerce-submodule-media-v8-22-17\.js[^>]*><\/script>/gi,'');
   html=injectBefore(html,'order-alerts-v8-22-51.js','<script src="./order-alerts-v8-22-51.js?v=82276"></'+'script>');
