@@ -2,7 +2,7 @@
 const CORE='./commerce-engine-v8-22-0-core.js?v=82241';
 const CASHBACK='./cashback-engine-v8-22-42.js?v=82243';
 const CASHBACK_VISIBILITY='./cashback-visibility-hotfix-v8-22-43.js?v=82243';
-const COMMERCE_ENGAGEMENT='./commerce-engagement-erp-v8-22-44.js?v=82245';
+const COMMERCE_ENGAGEMENT='./commerce-engagement-erp-v8-22-44.js?v=82247';
 const S=v=>String(v??'');
 const N=v=>Number(v)||0;
 const A=v=>Array.isArray(v)?v:[];
