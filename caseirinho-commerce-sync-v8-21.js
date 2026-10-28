@@ -92,7 +92,13 @@ function applyLocalMerchandisingFlags(cat){
    // Reaplicar os dados do ERP impede perda de promoção na publicação.
    const promocao=e.promocao??p?.promocao;
    const packVirtual=e.packVirtual??p?.packVirtual;
-   return {...cp,destaque:e.destaque===true,novidade:e.novidade===true,
+   // Reaplique o preço salvo mesmo se o gerador legado devolver preço ERP/antigo.
+   const price=N(e.precoEcommerce);
+   const priceFields=Number.isFinite(price)&&price>0?{
+     preco:price,precoRegular:price,precoEcommerce:price,
+     precoERP:N(p?.precoVenda),precoModo:'ECOMMERCE',precoOrigem:'ECOMMERCE'
+   }:{};
+   return {...cp,...priceFields,destaque:e.destaque===true,novidade:e.novidade===true,
      ...(promocao!==undefined?{promocao}:{}),
      ...(packVirtual!==undefined?{packVirtual}:{}),
      ...(e.disponibilidade?{disponibilidade:e.disponibilidade}:{}),
