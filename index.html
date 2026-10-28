@@ -1962,7 +1962,7 @@ function renderProdutos(){
  const tbody=$('produtosTabela');if(!tbody)return;
  const busca=String($('buscaProduto')?.value||'').trim().toLowerCase();
  const lista=(db.produtos||[]).filter(p=>!busca||[p.codigo,p.nome,p.gtin,p.plu,listaTiposProduto(p).join(' ')].some(v=>String(v||'').toLowerCase().includes(busca))).sort((a,b)=>String(a.nome||'').localeCompare(String(b.nome||''),'pt-BR'));
- tbody.innerHTML=lista.map(p=>`<tr><td>${p.codigo||'-'}</td><td><b>${p.nome||'-'}</b></td><td>${statusProduto(p)}</td><td>${listaTiposProduto(p).map(x=>`<span class="badge">${x}</span>`).join('')}</td><td>${p.unidade||'-'}</td><td>${p.gtin||'-'}</td><td>${p.plu||'-'}</td><td>${p.temCaixa?(p.embalagem||'Sim'):'Não'}</td><td>${Number(p.fator||1).toLocaleString('pt-BR')}</td><td>${p.curvaABC||'-'}</td><td>${num(p.estoqueMinimo||0)}</td><td>${num(p.estoqueMaximo||0)}</td><td>${money(custoProduto(p.id))}</td><td><button class="btn secondary" type="button" onclick="editarProduto('${p.id}')">Editar</button> <button class="btn danger" type="button" onclick="excluirProduto('${p.id}')">Excluir</button></td></tr>`).join('')||'<tr><td colspan="14" class="empty">Nenhum produto cadastrado.</td></tr>';
+ tbody.innerHTML=lista.map(p=>`<tr><td>${p.codigo||'-'}</td><td><b>${esc(p.nome||'-')}</b></td><td>${statusProduto(p)}</td><td>${listaTiposProduto(p).map(x=>`<span class="badge">${x}</span>`).join('')}</td><td>${p.unidade||'-'}</td><td>${p.gtin||'-'}</td><td>${p.plu||'-'}</td><td>${p.temCaixa?(p.embalagem||'Sim'):'Não'}</td><td>${Number(p.fator||1).toLocaleString('pt-BR')}</td><td>${p.curvaABC||'-'}</td><td>${num(p.estoqueMinimo||0)}</td><td>${num(p.estoqueMaximo||0)}</td><td>${money(custoProduto(p.id))}</td><td><button class="btn secondary" type="button" onclick="editarProduto('${p.id}')">Editar</button> <button class="btn danger" type="button" onclick="excluirProduto('${p.id}')">Excluir</button></td></tr>`).join('')||'<tr><td colspan="14" class="empty">Nenhum produto cadastrado.</td></tr>';
 }
 
 
@@ -12487,6 +12487,7 @@ setTimeout(enforce,600);
   <script src="./cashback-visibility-hotfix-v8-22-43.js?v=82248"></script>
 <script src="./order-alerts-v8-22-51.js?v=82251"></script>
 <script>document.addEventListener("change",e=>{if(e.target?.id==="produtoPackTipo")alternarCamposPack()});</script>
+<script src="./product-list-edit-v8-22-80.js?v=82280"></script>
 </body>
 <!-- JOHN ERP V8.6.2 HOTFIX: preserve ecommerce price on product metadata edits -->
 </html>
