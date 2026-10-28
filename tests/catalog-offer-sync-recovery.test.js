@@ -42,3 +42,27 @@ test('desativação explícita do Pack é publicada sem apagar o registro da reg
   await api.publish(true);
   assert.equal(calls[0].body.produtos[0].packVirtual.ativo,false);
 });
+
+test('Preço E-commerce salvo prevalece sobre preço antigo gerado pelo catálogo',async()=>{
+  const {db,api,calls}=boot();
+  db.produtos[0].precoVenda=34.99;
+  db.produtos[0].ecommerce.precoEcommerce=29.90;
+  await api.publish(true);
+  const p=calls[0].body.produtos[0];
+  assert.equal(p.preco,29.90);
+  assert.equal(p.precoRegular,29.90);
+  assert.equal(p.precoEcommerce,29.90);
+  assert.equal(p.precoERP,34.99);
+  assert.equal(p.precoOrigem,'ECOMMERCE');
+});
+
+test('nova publicação usa o último Preço E-commerce salvo',async()=>{
+  const {db,api,calls}=boot();
+  db.produtos[0].ecommerce.precoEcommerce=29.90;
+  await api.publish(true);
+  db.produtos[0].ecommerce.precoEcommerce=27.90;
+  await api.publish(true);
+  assert.equal(calls[1].body.produtos[0].preco,27.90);
+  assert.equal(calls[1].body.produtos[0].precoRegular,27.90);
+  assert.equal(calls[1].body.produtos[0].promocao.precoPromocional,11.99);
+});
