@@ -51,3 +51,17 @@ test('sem total oficial a comanda não inventa um valor Pix nem marca pagamento 
  assert.match(html,/Conferir valor no ERP/);
  assert.match(html,/PENDENTE — NÃO PAGO/);
 });
+
+
+test('comanda separa pack e cupom, inclui adicional e não imprime aviso automático de estoque',()=>{
+ const h=harness(),html=h.api.receipt(order('completo',{
+  formaPagamento:'Pix pelo QR Code do CNPJ (conferência manual)',status:'NOVO',
+  subtotalOriginal:60,subtotal:50,descontoPromocional:10,descontoCupom:5,total:45,
+  itens:[{nome:'Lasanha',quantidade:1,precoUnitario:40,total:40,totalOriginal:50,economia:10}],
+  adicionaisEcommerce:[{nome:'Queijo parmesão',quantidade:1,precoUnitario:10,total:10}],
+  observacao:'[DISPONIBILIDADE A CONFIRMAR — Estoque não cadastrado]\n[PEDIDO FORA DO HORÁRIO · Retirada amanhã]'
+ }));
+ for(const v of ['Lasanha','Queijo parmesão','Promoções / packs','Cupom','10,00','5,00','PIX A COBRAR','45,00','PEDIDO FORA DO HORÁRIO'])assert.ok(html.includes(v),v);
+ assert.doesNotMatch(html,/DISPONIBILIDADE A CONFIRMAR/);
+ assert.doesNotMatch(html,/Descontos totais/);
+});
