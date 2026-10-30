@@ -1,5 +1,5 @@
 importScripts('./order-alerts-worker.js');
-const CACHE='john-erp-pwa-v8.22.84-upsell-recursion-payment-availability-20261028-order-review';
+const CACHE='john-erp-pwa-v8.22.85-thermal-financial-receipt-20261030';
 
 const TX='./transaction-persistence-v8-22-13.js';
 const MULTI='./multiempresa-v8-12-0.js';
