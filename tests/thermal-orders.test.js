@@ -40,7 +40,7 @@ test('comanda mostra valores oficiais de cada item, descontos e total Pix sem de
  });
  const html=h.api.receipt(o);
  for(const text of ['Lasanha Molho Branco','Panqueca','Unit.:','30,00','15,00','PIX A COBRAR','69.195.483/0001-23'])assert.ok(html.includes(text),text);
- assert.match(html,/Descontos totais/);assert.match(html,/15,00/);
+ assert.match(html,/Promoções \/ packs/);assert.match(html,/Cupom/);assert.match(html,/10,00/);assert.match(html,/5,00/);
  assert.match(html,/PIX A COBRAR[^<]*40,00/);
  assert.doesNotMatch(html,/DISPONIBILIDADE A CONFIRMAR/);
  assert.match(html,/PEDIDO FORA DO HORÁRIO/);
