@@ -1,5 +1,5 @@
 importScripts('./order-alerts-worker.js');
-const CACHE='john-erp-pwa-v8.22.87-revision-before-accept-20261030';
+const CACHE='john-erp-pwa-v8.22.88-thermal-price-revision-20261030';
 
 const TX='./transaction-persistence-v8-22-13.js';
 const MULTI='./multiempresa-v8-12-0.js';
