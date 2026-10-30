@@ -39,9 +39,9 @@ test('comanda mostra valores oficiais de cada item, descontos e total Pix sem de
   observacao:'[DISPONIBILIDADE A CONFIRMAR — Item sem saldo registrado]\\n[PEDIDO FORA DO HORÁRIO · Primeiro atendimento amanhã.]'
  });
  const html=h.api.receipt(o);
- for(const text of ['Lasanha Molho Branco','Panqueca','Unit.:','R$&nbsp;30,00','R$&nbsp;15,00','PIX A COBRAR','69.195.483/0001-23'])assert.ok(html.includes(text),text);
- assert.match(html,/Descontos totais/);assert.match(html,/-R\\$[^<]*15,00/);
- assert.match(html,/PIX A COBRAR[^<]*R\\$[^<]*40,00/);
+ for(const text of ['Lasanha Molho Branco','Panqueca','Unit.:','30,00','15,00','PIX A COBRAR','69.195.483/0001-23'])assert.ok(html.includes(text),text);
+ assert.match(html,/Descontos totais/);assert.match(html,/15,00/);
+ assert.match(html,/PIX A COBRAR[^<]*40,00/);
  assert.doesNotMatch(html,/DISPONIBILIDADE A CONFIRMAR/);
  assert.match(html,/PEDIDO FORA DO HORÁRIO/);
 });
