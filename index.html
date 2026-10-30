@@ -826,6 +826,7 @@ hr{border-top:1px dashed #cbd5e1}
     <div class="nav">
       <button class="active" data-page="dashboard">📊 Dashboard</button>
       <button data-page="produtos">📦 Cadastro de Produtos</button>
+      <button data-page="custoPrecoVenda">💰 Custo × Preço de Venda</button>
       <button data-page="entradas">🚚 Entrada de Produtos</button>
       <button data-page="estoque">📚 Estoque</button>
       <button data-page="patrimonio">🏢 Patrimônio</button>
@@ -901,6 +902,17 @@ hr{border-top:1px dashed #cbd5e1}
       <div class="panel"><div class="panel-head"><h2>Produtos com custo atualizado</h2></div><div class="panel-body table-wrap"><table><thead><tr><th>Produto</th><th>Tipos</th><th>Último custo</th><th>Estoque atual</th></tr></thead><tbody id="dashTabela"></tbody></table></div></div>
     </section>
 
+    <section id="custoPrecoVenda" class="page hidden">
+<div class="topbar"><div><h1>💰 Custo × Preço de Venda</h1><div class="subtitle">Simule a margem sobre o preço de venda. Nenhum preço será alterado sem clicar em Aplicar.</div></div></div>
+<div class="panel"><div class="panel-head"><h2>Simulador de precificação</h2></div><div class="panel-body"><div class="grid">
+<div class="field w12"><label>Produto (opcional)</label><input id="cpBusca" placeholder="Pesquise por nome ou código" autocomplete="off"><select id="cpProduto"><option value="">Simulação sem vínculo com produto</option></select></div>
+<div class="field w6"><label>Custo unitário (R$)</label><input id="cpCusto" type="number" step="0.0001" min="0" value="0"></div>
+<div class="field w6"><label>Margem desejada (%)</label><input id="cpMargem" type="number" step="0.01" min="0" max="99.99" value="30"></div>
+<div class="field w6"><label>Despesas e impostos sobre venda (%) — opcional</label><input id="cpDespesas" type="number" step="0.01" min="0" max="99.99" value="0"></div>
+<div class="field w6"><label>Preço de venda sugerido (R$)</label><input id="cpPreco" readonly></div>
+<div class="field w6"><label>Lucro estimado (R$)</label><input id="cpLucro" readonly></div>
+<div class="field w6"><label>Margem líquida estimada (%)</label><input id="cpMargemReal" readonly></div>
+</div><p id="cpDetalhe" class="subtitle" aria-live="polite"></p><div class="actions"><button type="button" class="btn primary" id="cpAplicar">Aplicar preço ao produto selecionado</button><button type="button" class="btn secondary" id="cpLimpar">Limpar simulação</button></div><small>Fórmula: preço = custo ÷ [1 − (margem desejada + despesas variáveis)/100]. A margem desejada é a margem de lucro sobre a venda, após as despesas informadas, e não o markup. Não altera vendas anteriores nem preços promocionais.</small></div></div></section>
     <section id="produtos" class="page hidden">
       <div class="topbar"><div><h1>Cadastro de Produtos</h1><div class="subtitle">Um produto pode possuir mais de um tipo simultaneamente</div></div><div class="actions"><button class="btn secondary" type="button" onclick="baixarTemplateProdutos()">⬇ Template de importação</button><button class="btn secondary" type="button" onclick="exportarProdutos()">📤 Exportar produtos</button><button class="btn secondary" type="button" onclick="document.getElementById('importarProdutosArquivo').click()">📥 Importar produtos</button><button class="btn secondary" type="button" onclick="document.getElementById('migrarProdutosArquivo').click()">🛟 Migrar produtos de backup</button><button class="btn primary" onclick="novoProduto()">Novo produto</button><input id="importarProdutosArquivo" type="file" accept=".csv,text/csv" hidden><input id="migrarProdutosArquivo" type="file" accept=".json,application/json" hidden onchange="migrarProdutosDeBackup(event)"></div></div>
       <div class="panel">
@@ -12519,6 +12531,55 @@ setTimeout(enforce,600);
 <script src="./order-alerts-v8-22-51.js?v=82251"></script>
 <script>document.addEventListener("change",e=>{if(e.target?.id==="produtoPackTipo")alternarCamposPack()});</script>
 <script src="./product-list-edit-v8-22-80.js?v=82280"></script>
+<script id="modulo-custo-preco-venda">
+(function(){
+'use strict';
+const el=id=>document.getElementById(id), norm=v=>String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase(),num=v=>Number(v),fmt=v=>Number(v).toFixed(2);
+function listar(){
+ const termo=norm(el('cpBusca').value.trim()),atual=el('cpProduto').value;
+ const lista=(db.produtos||[]).filter(p=>!termo||norm(String(p.codigo||'')+' '+String(p.nome||'')).includes(termo)).sort((a,b)=>String(a.nome).localeCompare(String(b.nome),'pt-BR'));
+ const sel=el('cpProduto');sel.replaceChildren(new Option('Simulação sem vínculo com produto',''));
+ lista.forEach(p=>sel.add(new Option((p.codigo||'')+' · '+(p.nome||''),String(p.id))));
+ if(lista.some(p=>String(p.id)===atual))sel.value=atual;
+ else if(termo&&lista.length===1){sel.value=String(lista[0].id);selecionar()}
+}
+function selecionar(){const p=(db.produtos||[]).find(x=>String(x.id)===el('cpProduto').value);if(p){el('cpCusto').value=Number(custoProduto(p.id)||0).toFixed(4);el('cpMargem').value=Number(p.margem??30)}calcular()}
+function calcular(){
+ const custo=num(el('cpCusto').value),m=num(el('cpMargem').value),d=num(el('cpDespesas').value),den=1-(m+d)/100;
+ const valido=[custo,m,d].every(Number.isFinite)&&custo>=0&&m>=0&&d>=0&&den>0;
+ if(!valido){['cpPreco','cpLucro','cpMargemReal'].forEach(id=>el(id).value='');el('cpDetalhe').textContent='Confira os valores: custo não negativo e soma de margem + despesas inferior a 100%.';el('cpAplicar').disabled=true;return}
+ const preco=Math.ceil((custo/den)*100-1e-8)/100,despesa=preco*d/100,lucro=preco-custo-despesa;
+ el('cpPreco').value=fmt(preco);el('cpLucro').value=fmt(lucro);el('cpMargemReal').value=preco>0?fmt(lucro/preco*100):'0.00';
+ el('cpDetalhe').textContent='Custo '+custo.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})+' + despesas '+despesa.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})+' + lucro '+lucro.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})+'. Preço arredondado para cima em centavos.';
+ el('cpAplicar').disabled=!el('cpProduto').value;
+}
+function aplicar(){
+ const p=(db.produtos||[]).find(x=>String(x.id)===el('cpProduto').value),preco=num(el('cpPreco').value),m=num(el('cpMargem').value);
+ if(!p||!Number.isFinite(preco)||preco<=0)return toast('Selecione um produto e calcule um preço válido.','erro');
+ if(!confirm('Atualizar o preço regular de '+p.nome+' para R$ '+fmt(preco).replace('.',',')+'?'))return;
+ const velho=p.precoVenda,antigaMargem=p.margem;
+ p.precoVenda=preco;p.margem=m;p.atualizadoEm=new Date().toISOString();
+ try{
+ __johnLocalStorage.setItem(DB_KEY,JSON.stringify(db));
+ const salvo=JSON.parse(__johnLocalStorage.getItem(DB_KEY)||'{}').produtos?.find(x=>String(x.id)===String(p.id));
+ if(!salvo||Number(salvo.precoVenda)!==preco)throw Error('Preço não persistido');
+ try{window.preservarBackupProdutos?.()}catch(e){console.warn(e)}
+ try{renderAll()}catch(e){console.warn('Renderização secundária',e)}
+ toast('Preço regular atualizado e salvo.','', 'Preço atualizado');
+ }catch(e){p.precoVenda=velho;p.margem=antigaMargem;console.error(e);toast('Falha ao salvar preço.','erro')}
+}
+document.addEventListener('DOMContentLoaded',()=>{
+ if(!el('cpProduto'))return;
+ el('cpBusca').addEventListener('input',listar);
+ el('cpProduto').addEventListener('change',selecionar);
+ ['cpCusto','cpMargem','cpDespesas'].forEach(id=>el(id).addEventListener('input',calcular));
+ el('cpAplicar').addEventListener('click',aplicar);
+ el('cpLimpar').addEventListener('click',()=>{el('cpBusca').value='';el('cpCusto').value='0';el('cpMargem').value='30';el('cpDespesas').value='0';listar();el('cpProduto').value='';calcular()});
+ document.querySelectorAll('.nav [data-page="custoPrecoVenda"]').forEach(b=>b.addEventListener('click',()=>{listar();calcular()}));
+ listar();calcular();
+});
+})();
+</script>
 </body>
 <!-- JOHN ERP V8.6.2 HOTFIX: preserve ecommerce price on product metadata edits -->
 </html>
