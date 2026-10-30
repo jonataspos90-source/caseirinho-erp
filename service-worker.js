@@ -1,5 +1,5 @@
 importScripts('./order-alerts-worker.js');
-const CACHE='john-erp-pwa-v8.22.86-revision-whatsapp-thermal-20261030';
+const CACHE='john-erp-pwa-v8.22.87-revision-before-accept-20261030';
 
 const TX='./transaction-persistence-v8-22-13.js';
 const MULTI='./multiempresa-v8-12-0.js';
@@ -74,7 +74,7 @@ const PUBLISH_FIX_TAG='<script src="./catalog-publish-fix-v8-22-8.js?v=82283"></
 const STORE_SETTINGS_TAG='<script src="./store-settings-sync-v8-22-13.js?v=82244"></'+'script>';
 const PIX_DOCUMENT_TAG='<script src="./pix-document-fix-v8-22-13.js?v=82244"></'+'script>';
 const PIX_OFFICIAL_TAG='<script src="./caseirinho-pix-config-v8-22-35.js?v=82244"></'+'script>';
-const ORDER_REVISION_TAG='<script src="./ecommerce-order-revision-v8-22-37.js?v=82286"></'+'script>';
+const ORDER_REVISION_TAG='<script src="./ecommerce-order-revision-v8-22-37.js?v=82287"></'+'script>';
 const PREREG_TAG='<script src="./ecommerce-preregistration-live-v8-22-38.js?v=82244"></'+'script>';
 const DELIVERY_MOTO_TAG='<script src="./delivery-moto-config-v8-22-39.js?v=82244"></'+'script>';
 const INBOX_FOCUS_TAG='<script src="./ecommerce-inbox-focus-v8-22-40.js?v=82273"></'+'script>';
@@ -109,7 +109,7 @@ async function injectScripts(response){
   html=html.replace(/((?:ecommerce-customer-experience-v8-13-0|caseirinho-encomendas-v8-22-70)\.js\?v=)[^"'\s<>]+/g,(_,prefix)=>prefix+'20261028-payment-flow');
   html=html.replace(/(caseirinho-encomendas-v8-22-70\.js\?v=)[^"'\s<>]+/g,(_,prefix)=>prefix+'20261028-order-review');
   html=html.replace(/<script[^>]+ecommerce-order-revision-v8-22-36\.js[^>]*><\/script>/gi,'');
-  html=html.replace(/(ecommerce-order-revision-v8-22-37\.js\?v=)[^\"'\s<>]+/g,(_,prefix)=>prefix+'82286');
+  html=html.replace(/(ecommerce-order-revision-v8-22-37\.js\?v=)[^\"'\s<>]+/g,(_,prefix)=>prefix+'82287');
   html=html.replace(/(caseirinho-commerce-sync-v8-21\.js\?v=)\d+/gi,(_,prefix)=>prefix+'82283');
   html=html.replace(/(ecommerce-upsell-v8-22-23\.js\?v=)\d+/gi,(_,prefix)=>prefix+'82284');
   html=html.replace(/(catalog-publish-fix-v8-22-8\.js\?v=)\d+/gi,(_,prefix)=>prefix+'82283');
