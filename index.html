@@ -2017,7 +2017,26 @@ $('produtoForm').onsubmit=e=>{
  e.preventDefault(); const tiposSel=[...document.querySelectorAll('[name=tipoProduto]:checked')].map(x=>x.value);
  if(!tiposSel.length)return toast('Selecione pelo menos um tipo de produto.');
  const editando=Boolean($('produtoId').value); const id=$('produtoId').value||uid(); const existente=editando?produto(id):null; const codigo=existente?.codigo||$('produtoCodigo').value||proximoCodigo(); const associados=tiposSel.includes('Revenda')?getAssociados():[];const temCaixa=$('produtoTemCaixa').value==='sim';const gtin=somenteDigitos($('produtoGtin').value);let plu=somenteDigitos($('produtoPlu').value);if(gtin&&![8,12,13,14].includes(gtin.length))return toast('Informe um GTIN com 8, 12, 13 ou 14 números.');if(tiposSel.includes('Revenda')&&!gtin&&!plu)plu=proximoPlu(id);if(plu&&Number(plu)<100)return toast('O PLU deve ser igual ou maior que 100.');if(plu&&db.produtos.some(p=>p.id!==id&&String(p.plu||'')===plu))return toast('Este PLU já está sendo utilizado por outro produto.');if(gtin)plu='';const caixarias=temCaixa?obterCaixariasProdutoForm():[];if(temCaixa&&!caixarias.length)return toast('Cadastre ao menos uma caixaria com fator maior que zero.');const emn=Number($('produtoEstoqueMin').value)||0,emx=Number($('produtoEstoqueMax').value)||0;if((tiposSel.includes('Revenda')||tiposSel.includes('Produto acabado'))&&emx>0&&emx<emn)return toast('O estoque máximo não pode ser menor que o estoque mínimo.'); const obj={...(existente||{}),id,nome:$('produtoNome').value.trim(),codigo,status:$('produtoStatus').value||'ATIVO',unidade:$('produtoUnidade').value,gtin,plu,temCaixa,caixarias,embalagem:temCaixa?(caixarias[0]?.tipo||'Caixa'):'',fator:temCaixa?(caixarias[0]?.fator||1):1,custoInicial:Number($('produtoCusto').value)||0,margem:Number($('produtoMargem').value)||0,estoqueMinimo:(tiposSel.includes('Revenda')||tiposSel.includes('Produto acabado'))?(Number($('produtoEstoqueMin').value)||0):0,estoqueMaximo:(tiposSel.includes('Revenda')||tiposSel.includes('Produto acabado'))?(Number($('produtoEstoqueMax').value)||0):0,tipos:tiposSel,associados,anexos:[...produtoAnexosTemp],obs:$('produtoObs').value.trim(),criadoEm:existente?.criadoEm||new Date().toISOString(),atualizadoEm:new Date().toISOString(),operadorAtualizacao:usuarioAtual()?.nome||'Sistema'};
- const i=db.produtos.findIndex(x=>x.id===id);if(i>=0)db.produtos[i]=obj;else db.produtos.push(obj);confirmarSequenciaProduto(obj.codigo);save();try{atualizarProdutosPedido()}catch(e){console.error(e)}limparProdutoForm();toast(`${editando?'Produto atualizado':'Produto cadastrado'} com sucesso. Código ${obj.codigo} · ${obj.nome}.`,'',editando?'Produto atualizado':'Produto cadastrado');
+ if(!obj.nome)return toast('Informe a descrição do produto.','erro');
+ const i=db.produtos.findIndex(x=>String(x.id)===String(id));
+ if(editando&&i<0)return toast('Produto não encontrado para atualização.','erro');
+ const anterior=i>=0?db.produtos[i]:null;
+ if(i>=0)db.produtos[i]=obj;else db.produtos.push(obj);
+ try{
+   __johnLocalStorage.setItem(DB_KEY,JSON.stringify(db));
+   const copia=JSON.parse(__johnLocalStorage.getItem(DB_KEY)||'{}');
+   if(!(copia.produtos||[]).some(p=>String(p.id)===String(id)&&p.nome===obj.nome))throw new Error('Persistência não confirmada');
+ }catch(erro){
+   if(i>=0)db.produtos[i]=anterior;else db.produtos=db.produtos.filter(p=>String(p.id)!==String(id));
+   console.error('Falha ao persistir cadastro de produto',erro);
+   return toast('Não foi possível gravar o cadastro. Verifique o armazenamento do navegador.','erro');
+ }
+ confirmarSequenciaProduto(obj.codigo);
+ try{window.preservarBackupProdutos?.()}catch(err){console.warn(err)}
+ try{renderAll()}catch(err){console.error('Falha ao atualizar telas',err);try{renderProdutos()}catch(_){}}
+ try{atualizarProdutosPedido()}catch(err){console.warn(err)}
+ limparProdutoForm();
+ toast(`${editando?'Produto atualizado':'Produto cadastrado'} com sucesso. Código ${obj.codigo} · ${obj.nome}.`,'',editando?'Produto atualizado':'Produto cadastrado');
 };
 
 
