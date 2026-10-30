@@ -26,3 +26,28 @@ test('monitor consulta pedidos sem sessão do ERP e usa a mesma proteção de du
 test('recupera hoje em São Paulo sem testes, cancelados ou reenvio de comandas',()=>{const h=harness();const state={enabled:true,since:Date.now(),seen:{old:'anterior',sent:'encaminhado',failed:'falha'}};const rows=[order('old',{createdAt:'2026-10-23T10:00:00Z'}),order('sent',{createdAt:'2026-10-23T11:00:00Z'}),order('failed',{createdAt:'2026-10-23T11:00:00Z'}),order('test',{createdAt:'2026-10-23T11:00:00Z',cliente:{telefone:'5511989310929'}}),order('cancel',{createdAt:'2026-10-23T11:00:00Z',status:'CANCELADO'}),order('yesterday',{createdAt:'2026-10-23T01:00:00Z'})];assert.equal(h.api.recoverTodayRows(rows,state,'2026-10-23'),1);assert.deepEqual([...state.pending],['old']);assert.equal(h.api.recoverTodayRows(rows,state,'2026-10-23'),0)});
 test('pedido anterior enfileirado é impresso uma única vez',async()=>{const h=harness();const o=order('old',{createdAt:'2026-10-23T10:00:00Z'});const state={enabled:true,since:Date.now(),seen:{old:'anterior'}};h.api.recoverTodayRows([o],state,'2026-10-23');h.put('caseirinho_thermal_v1',state);h.put('john_ecommerce_cloud_inbox_v1',[o]);await h.tick();await h.tick();assert.equal(h.jobs.length,1);assert.equal(h.state().pending.length,0)});
 test('aviso fala Chegou um novo pedido, Caseirinho! em português',async()=>{const h=harness();const spoken=[];h.ctx.window.SpeechSynthesisUtterance=function(t){this.text=t};h.ctx.window.speechSynthesis={getVoices:()=>[],speak:u=>spoken.push(u)};await h.api.enableSound();assert.equal(spoken[0].text,'Chegou um novo pedido, Caseirinho!');assert.equal(spoken[0].lang,'pt-BR');assert.equal(spoken[0].pitch,1.35);assert.equal(spoken[0].rate,1.08);enable(h);h.put('john_ecommerce_cloud_inbox_v1',[order('sound')]);await h.tick();await h.tick();assert.equal(spoken.length,2)});
+
+test('comanda mostra valores oficiais de cada item, descontos e total Pix sem descontar promoções duas vezes',()=>{
+ const h=harness();
+ const o=order('financeiro',{
+  formaPagamento:'Pix pelo QR Code do CNPJ (conferência manual)',
+  subtotalOriginal:55,subtotal:45,descontoPromocional:10,descontoCupom:5,valorFrete:0,total:40,
+  itens:[
+   {nome:'Lasanha Molho Branco',quantidade:1,precoUnitario:30,total:30,totalOriginal:35,economia:5},
+   {nome:'Panqueca',quantidade:2,precoUnitario:7.5,total:15,totalOriginal:20,economia:5}
+  ],
+  observacao:'[DISPONIBILIDADE A CONFIRMAR — Item sem saldo registrado]\\n[PEDIDO FORA DO HORÁRIO · Primeiro atendimento amanhã.]'
+ });
+ const html=h.api.receipt(o);
+ for(const text of ['Lasanha Molho Branco','Panqueca','Unit.:','R$&nbsp;30,00','R$&nbsp;15,00','PIX A COBRAR','69.195.483/0001-23'])assert.ok(html.includes(text),text);
+ assert.match(html,/Descontos totais/);assert.match(html,/-R\\$[^<]*15,00/);
+ assert.match(html,/PIX A COBRAR[^<]*R\\$[^<]*40,00/);
+ assert.doesNotMatch(html,/DISPONIBILIDADE A CONFIRMAR/);
+ assert.match(html,/PEDIDO FORA DO HORÁRIO/);
+});
+test('sem total oficial a comanda não inventa um valor Pix nem marca pagamento como confirmado',()=>{
+ const h=harness(),o=order('sem-total',{formaPagamento:'Pix',itens:[{nome:'Item sem preço',quantidade:2}]});
+ const html=h.api.receipt(o);
+ assert.match(html,/Conferir valor no ERP/);
+ assert.match(html,/PENDENTE — NÃO PAGO/);
+});
