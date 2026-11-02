@@ -18,3 +18,41 @@
 @media(max-width:1150px){.side{width:210px}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.two{grid-template-columns:1fr}}
 @media(max-width:790px){.layout{display:block}.side{height:auto;width:100%;padding:10px 12px;position:relative}.brand{padding:5px 4px 10px;border:0}.brand .emblem{width:39px;height:39px}.brand b{font-size:19px}.side-bottom{display:none}.nav{display:flex;gap:5px;overflow-x:auto;margin:2px -4px 0;padding:2px 4px 8px}.nav button{white-space:nowrap;padding:10px 12px;font-size:12px}.app{padding:20px 12px 44px}.topbar{align-items:flex-start;flex-direction:column}.menu-grid{grid-template-columns:1fr}.card{padding:15px}.stat{padding:14px}.stat .n{font-size:26px}.three{grid-template-columns:1fr}}
 @media(max-width:390px){.stats{grid-template-columns:1fr 1fr}.stat .n{font-size:23px}.stat strong{font-size:11px}.toolbar input{min-width:100%}}
+
+
+/* V3 — Gestão de Produtos, registros em cartões no celular e atalhos inferiores */
+.product-card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px;margin-top:14px}
+.product-card,.mobile-record{background:#fffdf9;border:1px solid #dfe4da;border-radius:16px;padding:16px;box-shadow:0 4px 14px #233c2c0a}
+.product-card h3{font-size:17px;line-height:1.35;margin:10px 0 5px;color:#183c2e}
+.product-card small{display:block;min-height:25px}.product-card .btn{width:100%;margin-top:12px}
+.price-row{padding:10px 0;border-top:1px solid #e9e9df;margin-top:10px;display:flex;flex-direction:column;gap:5px}
+.price-row b{font-size:23px;color:#276847}.price-row span{font-size:12px;color:#58665c}
+.form-label{font-size:13px;font-weight:750;display:block;margin:13px 0 5px;color:#1e3c2d}
+#productEditForm input{display:block;width:100%;padding:12px;border:1px solid #cdd9cd;border-radius:10px;font-size:17px;background:white}
+.mobile-list{display:grid;gap:11px;margin-top:10px}
+.mobile-record{padding:15px;background:#fff}
+.mobile-record-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;overflow-wrap:anywhere}
+.mobile-record-head strong{font-size:16px;color:#1c3e2d}
+.mobile-record p{font-size:13px;margin:10px 0;line-height:1.7;color:#4e6053}
+.record-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+.record-actions .btn{flex:1;min-width:108px}
+.mobile-bottom-nav{display:none}
+@media(max-width:790px){
+ .app{padding-bottom:106px}
+ .mobile-bottom-nav{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));position:fixed;bottom:0;left:0;right:0;z-index:40;padding:6px 4px max(8px,env(safe-area-inset-bottom));background:#fffdf9;border-top:1px solid #d2ddce;box-shadow:0 -6px 22px #0b26141a}
+ .mobile-bottom-nav button{border:0;background:transparent;color:#365a44;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:8px 1px;font-size:20px;border-radius:10px;min-height:54px}
+ .mobile-bottom-nav button small{font-size:10px;line-height:1.2;font-weight:750}
+ .mobile-bottom-nav button.active{background:#e6f3e8;color:#174327}
+ .section-head{align-items:flex-start;gap:10px}
+ .section-head .btn{flex-shrink:0;max-width:130px;white-space:normal;text-align:center}
+ .product-card-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+ .product-card{padding:12px}.product-card h3{font-size:14px}.product-card .price-row b{font-size:19px}
+ .product-card .btn{font-size:12px;padding:9px 5px;white-space:normal;line-height:1.3}
+ .topbar .actions{gap:6px}.topbar .actions .btn{font-size:13px;padding:9px 11px}
+ .table-wrap{max-width:100%;overflow-x:auto}
+}
+@media(max-width:420px){
+ .product-card-grid{grid-template-columns:1fr}
+ .section-head{flex-wrap:wrap}
+ .mobile-record .record-actions .btn{font-size:12px}
+}
