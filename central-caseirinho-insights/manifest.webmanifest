@@ -1,0 +1,19 @@
+{
+  "id": "./",
+  "name": "Central Caseirinho Insights",
+  "short_name": "Caseirinho Insights",
+  "description": "Painel independente do Caseirinho Massas Artesanais, com insights, CRM e cardápio.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f7f5ef",
+  "theme_color": "#183c2e",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
