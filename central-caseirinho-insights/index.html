@@ -1,0 +1,64 @@
+<!doctype html><html lang="pt-BR"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#183c2e"><meta name="description" content="Central Caseirinho Insights — painel administrativo independente de CRM, acessos, pedidos e cardápio.">
+<title>Central Caseirinho Insights | CRM e Loja</title>
+<link rel="stylesheet" href="./styles.css?v=1">
+<link rel="manifest" href="./manifest.webmanifest">
+</head><body>
+<div class="auth-screen" id="loginScreen">
+ <div class="auth"><div style="font-size:45px">🍝</div><p class="eyebrow">Caseirinho Massas Artesanais</p>
+ <h2>Central de Insights</h2><p>Aplicativo independente para acompanhar os clientes, o movimento do app, os pedidos e o atendimento pelo WhatsApp.</p>
+ <form id="loginForm"><label for="apiUrl">Endereço da API</label>
+ <input id="apiUrl" type="url" required value="https://john-cloud-api-production.up.railway.app" autocomplete="url">
+ <label for="accessToken">Token ou sessão administrativa do ERP</label>
+ <input id="accessToken" type="password" placeholder="Cole seu token do ERP" autocomplete="off">
+ <button type="submit" class="btn primary" style="width:100%;margin-top:8px">🔐 Entrar com segurança</button>
+ <button type="button" class="btn" id="reuseSession" style="width:100%;margin-top:8px">Usar sessão já aberta do ERP</button>
+ </form>
+ <p class="notice" id="loginNotice" role="status">Os dados dos clientes são consultados pela API autenticada e não ficam gravados nesta página pública.</p>
+ <p><small>Se o token não estiver disponível, abra o ERP e entre com um usuário autorizado.</small></p>
+ </div>
+</div>
+<div class="layout">
+<aside class="side">
+ <div class="brand"><span class="emblem">🍝</span><span><b>Caseirinho</b><small>Central Insights</small></span></div>
+ <nav class="nav" aria-label="Seções">
+ <button type="button" class="active" data-view="dashboard">📊 Visão geral</button>
+ <button type="button" data-view="contacts">👥 CRM e contatos</button>
+ <button type="button" data-view="ranking">🏆 Ranking</button>
+ <button type="button" data-view="orders">🛒 Pedidos</button>
+ <button type="button" data-view="menu">🍝 Cardápio</button>
+ <button type="button" data-view="requests">🔔 Solicitações <span id="requestCount" class="num" hidden>0</span></button>
+ <button type="button" data-view="settings">⚙️ Configurações</button>
+ </nav>
+ <div class="side-bottom">💚 Nossa família para a sua!<br><a href="https://jonataspos90-source.github.io/caseirinho-loja/" target="_blank" rel="noopener">Abrir loja Caseirinho ↗</a><br><span id="sideSync">Conectando…</span></div>
+</aside>
+<main class="app">
+ <header class="topbar"><div><span class="eyebrow">Painel exclusivo • Caseirinho Massas Artesanais</span><h1 id="pageTitle">Visão geral</h1><p class="subtitle" id="lastSync">Carregando informações...</p></div>
+ <div class="actions"><a class="btn" href="https://jonataspos90-source.github.io/caseirinho-loja/" target="_blank" rel="noopener">↗ Abrir loja</a><button class="btn primary" id="refreshBtn" type="button">↻ Atualizar</button><button class="btn" id="logoutBtn" type="button">Sair</button></div></header>
+ <div class="notice" id="globalNotice">As visitas são contadas apenas quando houver eventos da nova instrumentação; pings não são visitas. O cadastro não representa necessariamente uma compra.</div>
+ <section id="dashboard" class="section active">
+  <div class="grid stats" id="statGrid"><div class="stat">Carregando indicadores…</div></div>
+  <div class="grid two"><article class="card"><h2>📈 Movimentação da loja</h2><p>Atividade real dos dispositivos, sem confundir com visitas.</p><div id="trafficPanel"></div><div id="analyticsPanel"></div></article>
+  <article class="card"><h2>⚠️ Prioridades</h2><div id="priorityPanel"></div><h3>🔔 Solicitações pendentes</h3><div id="recentRequests"></div></article></div>
+  <div class="card" style="margin-top:15px"><h2>👤 Novos contatos e clientes</h2><p>Clientes identificados e cadastros recentes, quando houver identificação verificável.</p><div id="recentContacts"></div></div>
+ </section>
+ <section id="contacts" class="section"><div class="section-head"><div><h2>👥 CRM e contatos</h2><p>Nome, WhatsApp, pedidos, última interação, visitas comprovadas e abordagem individual.</p></div><button class="btn" id="csvContacts">⬇ Exportar CSV</button></div>
+  <div class="toolbar"><input type="search" id="contactSearch" placeholder="Pesquisar cliente ou WhatsApp..." aria-label="Pesquisar clientes"><select id="contactFilter"><option value="all">Todos os contatos</option><option value="orders">Já fizeram pedido</option><option value="leads">Apenas pré-cadastro</option><option value="visits">Com visitas identificadas</option><option value="marketing">Autorizaram ofertas</option></select><span class="badge" id="contactTotal">– contatos</span></div>
+  <div id="contactTable"></div>
+  <div class="notice">O aceite da política de privacidade não autoriza campanhas. Use mensagens promocionais somente com consentimento próprio. O botão WhatsApp abre a conversa para sua revisão; não dispara mensagens sozinho.</div>
+ </section>
+ <section id="ranking" class="section"><div class="section-head"><div><h2>🏆 Mais acessados</h2><p>Ranking dos últimos 7 dias, usando apenas visitas associadas a clientes identificados.</p></div></div><div id="rankingTable"></div></section>
+ <section id="orders" class="section"><div class="section-head"><div><h2>🛒 Pedidos da loja</h2><p>Histórico recente de pedidos feitos no aplicativo e situação da integração com o ERP.</p></div></div><div class="toolbar"><input type="search" id="orderSearch" placeholder="Buscar pedido, nome ou telefone..."><select id="orderFilter"><option value="all">Todos</option><option value="PENDENTE">Integração pendente</option><option value="IMPORTANDO">Importando</option></select></div><div id="ordersTable"></div></section>
+ <section id="menu" class="section"><div class="section-head"><div><h2>🍝 Cardápio escrito</h2><p>Preços publicados no Neon. Selecione uma categoria ou envie o resumo com o link do aplicativo.</p></div></div>
+  <div class="toolbar"><select class="menu-select" id="menuCategory"><option value="all">Todas as categorias</option></select><button class="btn" id="copyMenu">📋 Copiar cardápio</button><button class="btn whatsapp" id="menuShare">💬 Preparar envio</button></div>
+  <div id="priceWarnings"></div><div class="menu-grid"><article class="card"><h2>Produtos e valores</h2><div id="menuItems"></div></article><article class="card"><h2>Mensagem pronta</h2><div id="menuText" class="menu-list"></div><p><small>Ao escolher uma categoria, o texto é atualizado. Para cardápios longos, a mensagem é resumida e inclui o endereço da loja.</small></p></article></div>
+ </section>
+ <section id="requests" class="section"><div class="section-head"><div><h2>🔔 Solicitações de cardápio</h2><p>Quando o cliente pedir pelo botão do app, aparece aqui para responder pelo WhatsApp.</p></div><button class="btn gold" id="enableSound">🔊 Ativar alertas</button></div><div id="requestsTable"></div><div class="notice">Apenas pedidos feitos pelo botão do aplicativo são detectados. Mensagens recebidas diretamente no WhatsApp exigem conexão com a API oficial do WhatsApp Business.</div></section>
+ <section id="settings" class="section"><div class="card"><h2>⚙️ Conexão e segurança</h2><p><b>Fonte:</b> Neon, projeto da loja Caseirinho, por meio da API autenticada John ERP Cloud.</p><p><b>Loja:</b> <a href="https://jonataspos90-source.github.io/caseirinho-loja/" target="_blank" rel="noopener">Abrir site oficial</a></p><p><b>API:</b> <span id="apiLabel"></span></p><p><b>Atualização automática:</b> a cada 30 segundos para pedidos de cardápio, a cada 2 minutos para demais painéis.</p><p><b>Privacidade:</b> nenhum WhatsApp é publicado na hospedagem estática, salvo intencionalmente pelo administrador ao abrir a conversa. O token é utilizado apenas para consulta à API.</p><button class="btn" id="clearSession">Encerrar sessão</button><div id="apiState"></div></div></section>
+ <p class="footer">Central Caseirinho Insights • Ferramenta administrativa independente. Os indicadores de visita dependem de instrumentação publicada na loja e não podem ser reconstruídos a partir de pings antigos.</p>
+</main></div>
+<div id="toast" class="toast" role="status" hidden></div>
+<div id="modal" class="modal-bg" hidden><div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><h2 id="modalTitle">Mensagem para WhatsApp</h2><div id="modalContent"></div><div class="toolbar" style="justify-content:flex-end;margin-top:20px"><button class="btn" id="modalClose">Fechar</button></div></div></div>
+<script src="./app.js?v=1" defer></script>
+</body></html>
