@@ -80,7 +80,7 @@ function nav(tab){
  st.view=tab;
  document.querySelectorAll('.section').forEach(x=>x.classList.toggle('active',x.id===tab));
  document.querySelectorAll('[data-view]').forEach(x=>x.classList.toggle('active',x.dataset.view===tab));
- const labels={dashboard:'Visão geral',contacts:'CRM e contatos',ranking:'Ranking de acessos',orders:'Pedidos',menu:'Cardápio escrito',requests:'Solicitações de cardápio',settings:'Configurações'};
+ const labels={dashboard:'Visão geral',contacts:'CRM e contatos',ranking:'Ranking de acessos',orders:'Pedidos',menu:'Cardápio escrito',products:'Produtos e preços',reports:'Relatórios e PDF',requests:'Solicitações de cardápio',settings:'Configurações'};
  E('pageTitle').textContent=labels[tab]||'Central de Insights';
  window.scrollTo({top:0,behavior:'smooth'});
  render();
@@ -123,12 +123,22 @@ function renderOverview(){
  const recent=st.contacts.filter(x=>x.first_registration&&Date.now()-new Date(x.first_registration).getTime()<86400000).sort((a,b)=>new Date(b.first_registration)-new Date(a.first_registration)).slice(0,7);
  E('recentContacts').innerHTML=recent.length?table(['Cliente','WhatsApp','Primeiro cadastro','Pedidos'],recent.map(x=>'<tr><td>'+esc(x.name)+'</td><td>'+esc(tel(x.phone))+'</td><td>'+dt(x.first_registration)+'</td><td>'+n(x.orders)+'</td></tr>')):cellEmpty('Nenhum primeiro cadastro comprovado nas últimas 24 horas.');
 }
-function contactButtons(c){return '<button type="button" class="btn small whatsapp" data-action="hello" data-phone="'+esc(c.phone)+'">💬 Mensagem</button> <button type="button" class="btn small gold" data-action="catalog" data-phone="'+esc(c.phone)+'">🍝 Cardápio</button>';}
+function contactButtons(c){return '<button type="button" class="btn small whatsapp" data-action="hello" data-phone="'+esc(c.phone)+'">💬 Mensagem</button> <button type="button" class="btn small gold" data-action="catalog" data-phone="'+esc(c.phone)+'">🍝 Cardápio</button> <button type="button" class="btn small" data-action="customerOrders" data-phone="'+esc(c.phone)+'">📦 Ver compras</button>';}
 function renderContacts(){
  const q=s(E('contactSearch').value).toLowerCase().trim(),filter=E('contactFilter').value;
  const list=st.contacts.filter(x=>(s(x.name)+' '+s(x.phone)).toLowerCase().includes(q)&&(
  filter==='all'||filter==='orders'&&n(x.orders)>0||filter==='leads'&&n(x.orders)===0||filter==='visits'&&n(x.visits)>0||filter==='erp'&&n(x.erp_records)>0||filter==='store'&&(n(x.registrations)>0||n(x.orders)>0||!!x.last_identified)||filter==='marketing'&&!!x.marketing_optin));
  E('contactTotal').textContent=list.length+' contatos';
+ if(window.matchMedia('(max-width:790px)').matches){
+  E('contactTable').innerHTML=list.length?'<div class="mobile-list">'+list.map(x=>{
+   const latest=[x.last_registration,x.last_order,x.last_identified,x.last_erp].filter(Boolean).sort().at(-1);
+   return '<article class="mobile-record"><div class="mobile-record-head"><strong>'+esc(x.name)+'</strong><span class="badge '+(n(x.orders)>0?'good':'light')+'">'+(n(x.orders)>0?'Cliente':'Contato')+'</span></div>'+
+   '<p>📱 '+esc(tel(x.phone))+'<br>📦 Pedidos: <b>'+n(x.orders)+'</b> · Visitas confirmadas: <b>'+n(x.visits)+'</b><br>🕒 '+dt(latest)+'</p>'+
+   (x.optout?'<span class="badge bad">Não contatar</span>':'<div class="record-actions">'+contactButtons(x)+'</div>')+'</article>';
+  }).join('')+'</div>':cellEmpty('Nenhum contato encontrado.');
+  return;
+ }
+
  E('contactTable').innerHTML=table(['Cliente / vínculo','WhatsApp','Visitas confirmadas','Pedidos','Última interação','WhatsApp'],list.map(x=>{
  const latest=[x.last_registration,x.last_order,x.last_identified].filter(Boolean).sort().at(-1);
  return '<tr><td><b>'+esc(x.name)+'</b><br><span class="badge '+(n(x.orders)>0?'good':'light')+'">'+(n(x.orders)>0?'Cliente com pedido':n(x.registrations)>0?'Pré-cadastro da loja':n(x.erp_records)>0?'Cliente do ERP':'Identificado no app')+'</span> '+(n(x.erp_records)>0?'<span class="badge light">CRM ERP</span> ':'')+(n(x.registrations)>0?'<span class="badge light">Loja</span> ':'')+(x.optout?'<span class="badge bad">Não contatar</span>':x.marketing_optin?'<span class="badge good">Marketing autorizado</span>':'')+'</td><td>'+esc(tel(x.phone))+'</td><td>'+n(x.visits)+'</td><td>'+n(x.orders)+'</td><td>'+dt(latest)+'</td><td class="actions-cell">'+(x.optout?'<small class="muted">Contato bloqueado</small>':contactButtons(x))+'</td></tr>';
@@ -143,8 +153,12 @@ function renderRanking(){
 }
 function renderOrders(){
  const q=s(E('orderSearch').value).toLowerCase().trim(),f=E('orderFilter').value;
- const rows=st.orders.filter(x=>(s(x.code)+' '+s(x.name)+' '+s(x.phone)).toLowerCase().includes(q)&&(f==='all'||x.integration_status===f));
- E('ordersTable').innerHTML=table(['Data','Pedido','Cliente','Valor','Status','Integração / ERP'],rows.map(x=>'<tr><td>'+dt(x.created_at)+'</td><td><b>'+esc(x.code)+'</b></td><td>'+esc(x.name||'—')+'<br><small>'+esc(tel(x.phone))+'</small></td><td>'+ (n(x.total)>0?brl(x.total):'Consultar no ERP')+'</td><td>'+badge(x.status)+'</td><td>'+badge(x.integration_status)+'<br><small class="muted">ERP: '+esc(x.erp_order_number||'não informado')+'</small></td></tr>'));
+ const rows=st.orders.filter(x=>(s(x.code)+' '+s(x.name)+' '+s(x.phone)+' '+(x.items||[]).map(i=>i.name).join(' ')).toLowerCase().includes(q)&&(f==='all'||x.integration_status===f));
+ if(window.matchMedia('(max-width:790px)').matches){
+  E('ordersTable').innerHTML=rows.length?'<div class="mobile-list">'+rows.map(x=>'<article class="mobile-record"><div class="mobile-record-head"><strong>Pedido #'+esc(x.code)+'</strong>'+badge(x.status)+'</div><p><b>'+esc(x.name||'Cliente')+'</b> · '+dt(x.created_at)+'</p><p><b>'+brl(x.total)+'</b> · '+(x.items||[]).length+' item(ns)</p><p>'+badge(x.integration_status)+'</p><div class="record-actions">'+orderButton(x)+'</div></article>').join('')+'</div>':cellEmpty('Nenhum pedido encontrado.');
+ }else{
+  E('ordersTable').innerHTML=table(['Data','Pedido','Cliente','Itens pedidos','Total','Status / ERP','Ações'],rows.map(x=>'<tr><td>'+dt(x.created_at)+'</td><td><b>'+esc(x.code)+'</b></td><td>'+esc(x.name||'—')+'<br><small>'+esc(tel(x.phone))+'</small></td><td>'+esc((x.items||[]).map(i=>n(i.quantity)+'× '+i.name).join(', '))+'</td><td><b>'+brl(x.total)+'</b></td><td>'+badge(x.status)+'<br>'+badge(x.integration_status)+'</td><td class="actions-cell">'+orderButton(x)+'</td></tr>'));
+ }
 }
 const expected=new Map([['Panqueca Palmito',13.99],['Molho 250 gr - Sugo',12.99],['Molho 500 gr - Sugo',15.99],['Molho 1 Kg - Sugo',24.99],['Macarrão Talharim com Massa Caseira G (900 gr) - Molho Branco',31.99]]);
 function warnings(){
@@ -202,6 +216,7 @@ function render(){
  if(st.view==='ranking')renderRanking();
  if(st.view==='orders')renderOrders();
  if(st.view==='menu')renderMenu();
+ if(st.view==='products')renderProducts();
  if(st.view==='requests')renderRequests();
  E('apiLabel').textContent=st.api;
  E('apiState').innerHTML='<p class="notice success">Última consulta: '+dt(st.lastUpdated)+'. Dados recebidos exclusivamente da API autenticada.</p>';
@@ -400,6 +415,12 @@ function bind(){
  E('orderFilter').addEventListener('change',renderOrders);
  E('menuCategory').addEventListener('change',renderMenu);
  E('csvContacts').addEventListener('click',csv);
+ E('productSearch').addEventListener('input',renderProducts);
+ E('productCategory').addEventListener('change',renderProducts);
+ E('productsRefresh').addEventListener('click',loadAll);
+ document.addEventListener('submit',e=>{if(e.target?.id==='productEditForm')return saveProduct(e);});
+ document.querySelectorAll('[data-report]').forEach(b=>b.addEventListener('click',()=>pdfReport(b.dataset.report)));
+
  E('copyMenu').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(E('menuText').textContent);toast('Cardápio copiado!');}catch(_){toast('Copie o texto manualmente.',true);}});
  E('menuShare').addEventListener('click',()=>{
  const txt=menuParts(null);window.__menuParts=txt;
@@ -421,6 +442,10 @@ function bind(){
  document.addEventListener('click',e=>{
  const b=e.target.closest('[data-action]');if(!b)return;
  const type=b.dataset.action,phone=b.dataset.phone,id=b.dataset.id;
+ if(type==='customerOrders')return showCustomerOrders(phone);
+ if(type==='viewOrder')return showOrder(b.dataset.order);
+ if(type==='pdfOrder')return pdfOrder(b.dataset.order);
+ if(type==='editProduct')return editProduct(b.dataset.product);
  if(type==='mark')return markHandled(id);
  if(type==='hello'){const c=clientFor(phone);if(c.optout)return toast('Cliente marcou não contatar.',true);return openWhats(phone,hello(c));}
  if(type==='catalog'||type==='respond')return prepareMenu(phone);
