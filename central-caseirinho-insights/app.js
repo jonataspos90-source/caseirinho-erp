@@ -17,14 +17,54 @@ function modal(title,html){E('modalTitle').textContent=title;E('modalContent').i
 function hideModal(){E('modal').hidden=true;E('modalContent').innerHTML='';}
 function getSaved(){let out={};try{out=JSON.parse(localStorage.getItem('john_cloud_config_v1')||'{}')||{}}catch(_){}
 return{api:s(out.apiUrl||DEFAULT_API).replace(/\/+$/,''),token:s(out.apiKey||out.token||'')};}
+const TRUSTED_KEY='caseirinho_insights_device_session_v2', LOGOUT_KEY='caseirinho_insights_logged_out_v2';
 function tokenSetup(){
- let a={};try{a=JSON.parse(sessionStorage.getItem('caseirinho_hub_session')||'{}')}catch(_){}
- if(a.token)st.token=a.token;if(a.api)st.api=a.api;
- const erp=getSaved();if(!st.token&&erp.token){st.token=erp.token;st.api=erp.api;}
+ let sess={},trusted={};
+ try{sess=JSON.parse(sessionStorage.getItem('caseirinho_hub_session')||'{}')}catch(_){}
+ try{trusted=JSON.parse(localStorage.getItem(TRUSTED_KEY)||'{}')}catch(_){}
+ if(trusted.token){st.token=trusted.token;st.api=trusted.api||DEFAULT_API;E('rememberDevice').checked=true;}
+ if(sess.token){st.token=sess.token;st.api=sess.api||st.api;}
+ const erp=getSaved();
+ if(!st.token&&localStorage.getItem(LOGOUT_KEY)!=='1'&&erp.token){st.token=erp.token;st.api=erp.api;}
  E('apiUrl').value=st.api;E('apiLabel').textContent=st.api;
 }
-function saveSession(){try{sessionStorage.setItem('caseirinho_hub_session',JSON.stringify({token:st.token,api:st.api}))}catch(_){}}
-function logout(){st.token='';st.contacts=[];st.summary=null;st.requests=[];st.knownReady=false;try{sessionStorage.removeItem('caseirinho_hub_session')}catch(_){}E('accessToken').value='';E('loginScreen').hidden=false;E('loginNotice').textContent='Sessão encerrada. Entre novamente com seu token do ERP.';}
+function saveSession(){
+ try{sessionStorage.setItem('caseirinho_hub_session',JSON.stringify({token:st.token,api:st.api}));}catch(_){}
+ try{
+  localStorage.removeItem(LOGOUT_KEY);
+  if(E('rememberDevice').checked&&st.token)localStorage.setItem(TRUSTED_KEY,JSON.stringify({token:st.token,api:st.api}));
+  else localStorage.removeItem(TRUSTED_KEY);
+ }catch(_){}
+}
+function logout(){
+ st.token='';st.contacts=[];st.summary=null;st.requests=[];st.knownReady=false;
+ try{sessionStorage.removeItem('caseirinho_hub_session');localStorage.removeItem(TRUSTED_KEY);localStorage.setItem(LOGOUT_KEY,'1');}catch(_){}
+ E('rememberDevice').checked=false;E('accessToken').value='';E('loginScreen').hidden=false;
+ E('loginNotice').textContent='Sessão encerrada. Entre novamente com seu token ou use a sessão do ERP.';
+}
+let installEvent=null;
+function isInstalled(){return !!(window.matchMedia?.('(display-mode: standalone)').matches||navigator.standalone===true);}
+function showInstallSteps(){
+ const samsung=/SamsungBrowser/i.test(navigator.userAgent),android=/Android/i.test(navigator.userAgent);
+ const steps=samsung?'No Samsung Internet: menu ☰ → Adicionar página a → Tela inicial.':
+ android?'No Google Chrome: menu ⋮ → Instalar aplicativo (ou Adicionar à tela inicial) → Instalar.':
+ 'No iPhone (Safari): Compartilhar → Adicionar à Tela de Início.';
+ modal('📲 Instalar Caseirinho Insights','<p>'+steps+'</p><p class="notice success">Depois, basta tocar no ícone da tela inicial para abrir diretamente a Central.</p><p>Marque "Este é meu celular" antes de entrar se quiser manter sua sessão em um aparelho pessoal.</p>');
+}
+async function installApp(){
+ if(isInstalled()){toast('O aplicativo já está instalado! Abra pelo ícone da tela inicial.');return;}
+ if(!installEvent){showInstallSteps();return;}
+ const ev=installEvent;installEvent=null;
+ try{await ev.prompt();const choice=await ev.userChoice;if(choice?.outcome==='accepted')toast('Instalação aceita! Veja o ícone na tela inicial.');}
+ catch(_){showInstallSteps();}
+}
+function setupInstall(){
+ for(const id of ['installAppBtn','installAppMain'])E(id)?.addEventListener('click',installApp);
+ window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();installEvent=event;});
+ window.addEventListener('appinstalled',()=>{installEvent=null;E('installAppMain').hidden=true;E('installAppBtn').textContent='✅ Instalado';toast('Central Caseirinho instalada!');});
+ if(isInstalled()){E('installAppMain').hidden=true;E('installAppBtn').textContent='✅ Já instalado';E('installAppBtn').disabled=true;}
+ if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js',{scope:'./'}).catch(()=>{});
+}
 async function api(path,options){
  if(!st.token)throw Error('É necessário entrar com seu usuário administrativo.');
  const response=await fetch(st.api+'/api/v1/admin/store/insights/'+path,{
@@ -240,6 +280,7 @@ function csv(){
  const link=document.createElement('a');link.href=url;link.download='caseirinho-contatos-'+new Date().toISOString().slice(0,10)+'.csv';link.click();URL.revokeObjectURL(url);
 }
 function bind(){
+ setupInstall();
  document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>nav(b.dataset.view)));
  E('refreshBtn').addEventListener('click',loadAll);
  E('logoutBtn').addEventListener('click',logout);
