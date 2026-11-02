@@ -37,3 +37,14 @@ Verifique divergências de preços publicadas antes de compartilhar o catálogo;
 6. Para remover o acesso persistente, toque em **Sair** dentro da Central. Se precisar revogar um token, faça isso na administração do ERP.
 
 A versão PWA inclui manifest e service worker. O cache local armazena **somente arquivos estáticos** do aplicativo; nenhuma consulta privada ao CRM, pedidos ou token de acesso passa pelo cache do service worker. Quando offline, a interface pode abrir, mas os dados do Neon não são consultáveis.
+
+## Gestão prática — versão 3 (02/11/2026)
+
+- No celular, uma barra de acesso rápido inferior tem **Início / Clientes / Pedidos / Preços / PDF**. As telas de CRM e pedidos usam cartões para não exigir rolagem horizontal da tabela.
+- **🏷️ Produtos e preços** permite localizar um produto e editar preço em reais, quantidade mínima e quantidade máxima (0 = sem limite). A gravação exige MASTER/ADMINISTRADOR, confirmação do operador, controle de edição simultânea, transação que atualiza `erp_records.produtos.ecommerce` e `storefront_catalog`, e evento de auditoria `INSIGHTS_PRODUCT_TERMS_UPDATED`. Promoções ativas são sinalizadas para revisão.
+- **👥 CRM → Ver compras** consulta todos os pedidos localizados pelo WhatsApp no banco, sem atribuir a esse cliente pedidos de terceiros.
+- **🛒 Pedidos → Ver itens / PDF** mostra produto, quantidade, preço unitário, total, frete, descontos informados, pagamento e situação. O PDF é obtido via Imprimir → Salvar como PDF no celular.
+- **📄 Relatórios / PDF** disponibiliza clientes, pedidos com itens e produtos com condições comerciais. Não usa serviços externos para gerar o documento.
+- A vitrine da loja já usa `quantidadeMinima` e `limitePedido` no carrinho. A Central **não** modifica preços automaticamente; só altera produtos por uma ação confirmada de edição.
+
+Para atualizar um app já instalado, abra-o com conexão à internet e use o botão **Atualizar** ou feche e abra novamente; a PWA usa cache de interface V3.
