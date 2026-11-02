@@ -2,7 +2,7 @@
 'use strict';
 const STORE='https://jonataspos90-source.github.io/caseirinho-loja/';
 const DEFAULT_API='https://john-cloud-api-production.up.railway.app';
-const st={api:DEFAULT_API,token:'',summary:null,contacts:[],orders:[],catalog:[],requests:[],view:'dashboard',syncing:false,sound:false,known:new Set(),knownReady:false,lastUpdated:null};
+const st={api:DEFAULT_API,token:'',summary:null,contacts:[],orders:[],catalog:[],categories:[],drafts:[],requests:[],view:'dashboard',syncing:false,sound:false,known:new Set(),knownReady:false,lastUpdated:null};
 const E=id=>document.getElementById(id);
 const s=x=>String(x==null?'':x), n=x=>Number(x)||0;
 const esc=x=>s(x).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
@@ -224,17 +224,19 @@ function render(){
 async function loadAll(){
  if(st.syncing||!st.token)return;
  st.syncing=true;E('refreshBtn').disabled=true;E('lastSync').textContent='Sincronizando dados do Neon…';
- const paths=['summary','contacts','orders','catalog','requests'];
+ const paths=['summary','contacts','orders','catalog','requests','product-categories','product-drafts'];
  const responses=await Promise.allSettled(paths.map(x=>api(x)));
  const errors=[];
  for(let i=0;i<paths.length;i++){
  const x=responses[i],key=paths[i];
- if(x.status==='rejected'){errors.push(key+': '+x.reason.message);continue}
+ if(x.status==='rejected'){if(!['product-categories','product-drafts'].includes(key))errors.push(key+': '+x.reason.message);continue}
  const val=x.value;
  if(key==='summary')st.summary=val;
  if(key==='contacts')st.contacts=val.contacts||[];
  if(key==='orders')st.orders=val.orders||[];
  if(key==='catalog')st.catalog=val.items||[];
+ if(key==='product-categories')st.categories=val.categories||[];
+ if(key==='product-drafts')st.drafts=val.drafts||[];
  if(key==='requests')updateRequestData(val);
  }
  st.lastUpdated=new Date();
@@ -301,14 +303,138 @@ function renderProducts(){
  select.innerHTML='<option value="all">Todas as categorias</option>'+cats.map(x=>'<option value="'+esc(x)+'">'+esc(x)+'</option>').join('');
  if(cats.includes(prev))select.value=prev;else select.value='all';
  const selected=st.catalog.filter(x=>(select.value==='all'||x.category===select.value)&&(s(x.name)+' '+s(x.category)+' '+s(x.variation)).toLowerCase().includes(q));
- E('productsCount').textContent=selected.length+' produtos';
+ E('productsCount').textContent=selected.length+' publicados';
+ renderDrafts();
  if(!selected.length){E('productsList').innerHTML=cellEmpty('Não há produtos com esses critérios.');return;}
  E('productsList').innerHTML='<div class="product-card-grid">'+selected.map(x=>
- '<article class="product-card"><div><span class="badge light">'+esc(x.category)+'</span> '+(x.promotionActive?'<span class="badge warn">Promoção ativa</span>':'')+
+ '<article class="product-card"><div><div class="product-photo">'+(x.image?'<img src="'+esc(x.image)+'" alt="Foto de '+esc(x.name)+'" loading="lazy">':'<span>📷 Sem foto</span>')+'</div><span class="badge light">'+esc(x.category)+'</span> '+(x.promotionActive?'<span class="badge warn">Promoção ativa</span>':'')+
  '<h3>'+esc(x.name)+'</h3><small class="muted">'+esc(x.variation||x.availability||'')+'</small></div>'+
  '<div class="price-row"><b>'+brl(x.price)+'</b><span>Mínimo: '+n(x.minimum)+' · Máximo: '+(n(x.maximum)||'Sem limite')+'</span></div>'+
- '<button class="btn primary" type="button" data-action="editProduct" data-product="'+esc(x.id)+'">✏️ Alterar preço / mínimo</button></article>'
+ '<button class="btn primary" type="button" data-action="editProduct" data-product="'+esc(x.id)+'">✏️ Preço / mínimo</button><button class="btn gold" type="button" data-action="photosProduct" data-product="'+esc(x.id)+'">📷 Alterar fotos</button></article>'
  ).join('')+'</div>';
+}
+
+function renderDrafts(){
+ const e=E('draftProducts');if(!e)return;
+ const drafts=st.drafts||[];
+ e.innerHTML=drafts.length?'<div class="card" style="margin-bottom:16px"><h3>🗂️ Rascunhos de produtos ('+drafts.length+')</h3><p>Não aparecem para o cliente até a publicação.</p><div class="mobile-list">'+drafts.map(p=>
+ '<div class="mobile-record"><div class="mobile-record-head"><b>'+esc(p.name)+'</b><span class="badge warn">Rascunho</span></div>'+
+ '<p>'+esc(p.category)+' · '+brl(p.price)+' · '+(p.images||[]).length+' foto(s)</p>'+
+ '<div class="record-actions"><button class="btn small" data-action="photosProduct" data-product="'+esc(p.id)+'">📷 Fotos</button>'+
+ '<button class="btn small primary" data-action="publishDraft" data-product="'+esc(p.id)+'">🚀 Publicar na loja</button></div></div>').join('')+'</div></div>':'';
+}
+let previewURLs=[];
+function clearPhotoPreviews(){previewURLs.forEach(url=>URL.revokeObjectURL(url));previewURLs=[];}
+function previewFiles(files,target){
+ clearPhotoPreviews();
+ const el=E(target);if(!el)return;
+ const a=Array.from(files||[]).slice(0,5);
+ el.innerHTML=a.length?'<div class="photo-preview">'+a.map(x=>{
+  const u=URL.createObjectURL(x);previewURLs.push(u);
+  return '<div><img src="'+esc(u)+'" alt="Foto selecionada"><small>'+esc(x.name)+'</small></div>';
+ }).join('')+'</div>':'<span class="muted">Nenhuma foto escolhida.</span>';
+}
+function categoryOptions(){
+ return (st.categories||[]).map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name)+'</option>').join('');
+}
+function openCreateProduct(){
+ if(!st.categories.length){toast('As categorias não foram carregadas. Atualize a Central e confira seu acesso administrativo.',true);return;}
+ const html='<div class="notice success"><b>Cadastro integrado:</b> o novo produto terá código próprio no ERP e poderá ser publicado imediatamente no aplicativo Caseirinho. As fotos ficarão no banco da loja.</div>'+
+ '<form id="productCreateForm" class="product-form">'+
+ '<label for="newProductName" class="form-label">Nome do produto *</label><input id="newProductName" name="name" required maxlength="160" placeholder="Ex.: Empadão de Frango 500 g">'+
+ '<label for="newProductShort" class="form-label">Nome comercial (opcional)</label><input id="newProductShort" name="shortName" maxlength="160" placeholder="Como aparecerá na vitrine">'+
+ '<div class="form-grid"><div><label for="newProductCategory" class="form-label">Categoria *</label><select id="newProductCategory" name="categoryId" required><option value="">Selecione…</option>'+categoryOptions()+'</select></div>'+
+ '<div><label for="newProductUnit" class="form-label">Unidade *</label><select id="newProductUnit" name="unit"><option value="UN">Unidade (UN)</option><option value="KG">Quilograma (KG)</option><option value="G">Grama (G)</option><option value="PCT">Pacote (PCT)</option><option value="CX">Caixa (CX)</option><option value="L">Litro (L)</option><option value="ML">Mililitro (ML)</option></select></div></div>'+
+ '<label for="newProductDescription" class="form-label">Descrição para o cliente</label><textarea id="newProductDescription" name="description" rows="3" maxlength="1200" placeholder="Ingredientes, recheio, peso aproximado, modo de preparo…"></textarea>'+
+ '<div class="form-grid"><div><label class="form-label" for="newProductPrice">Preço de venda (R$) *</label><input id="newProductPrice" name="price" inputmode="decimal" type="number" min=".01" step=".01" required placeholder="29,99"></div><div><label class="form-label" for="newProductCost">Custo estimado (R$) — opcional</label><input id="newProductCost" name="cost" inputmode="decimal" type="number" min="0" step=".01" value="0"></div></div>'+
+ '<div class="form-grid"><div><label class="form-label" for="newProductMinimum">Quantidade mínima</label><input id="newProductMinimum" name="minimum" type="number" min=".01" step=".01" value="1" required></div><div><label class="form-label" for="newProductMaximum">Quantidade máxima (0 = sem limite)</label><input id="newProductMaximum" name="maximum" type="number" min="0" step=".01" value="0" required></div></div>'+
+ '<div class="form-grid"><div><label class="form-label" for="newProductAvailability">Disponibilidade</label><select id="newProductAvailability" name="availability"><option value="AMBOS">Pronta entrega ou encomenda</option><option value="PRONTA_ENTREGA">Pronta entrega</option><option value="SOB_ENCOMENDA">Sob encomenda</option></select></div><div><label class="form-label" for="newProductLead">Antecedência (dias)</label><input id="newProductLead" name="leadDays" type="number" min="0" max="120" step="1" value="0"></div></div>'+
+ '<label class="form-label" for="newProductPhotos">📸 Fotos do produto (1 a 5)</label><input id="newProductPhotos" type="file" accept="image/png,image/jpeg,image/webp,image/*" multiple>'+
+ '<small class="muted">A primeira foto será a principal. Escolha da galeria ou tire com a câmera. As imagens serão otimizadas antes do envio.</small>'+
+ '<div id="newProductPhotoPreview" class="photo-preview-wrap"></div>'+
+ '<div class="form-toggles"><label><input type="checkbox" name="featured"> ⭐ Destacar na vitrine</label>'+
+ '<label><input type="checkbox" name="newItem"> ✨ Marcar como novidade</label>'+
+ '<label><input type="checkbox" id="newProductPublish" name="publish" checked> 🚀 Publicar agora na loja</label></div>'+
+ '<div class="notice"><b>Publicação:</b> para aparecer no e-commerce, selecione ao menos uma foto. Se ainda não estiver pronto, desmarque Publicar agora para salvar como rascunho.</div>'+
+ '<button type="submit" class="btn primary" style="width:100%">💾 Cadastrar e salvar</button></form>';
+ modal('➕ Cadastrar produto',html);
+}
+async function compressImage(file){
+ if(!file||!file.type.startsWith('image/'))throw Error('Selecione um arquivo de imagem.');
+ if(file.size>16000000)throw Error('Esta foto é muito grande. Selecione imagem com menos de 16 MB.');
+ const url=URL.createObjectURL(file);
+ try{
+  const img=new Image();img.decoding='async';img.src=url;
+  await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=()=>reject(Error('Não foi possível ler a imagem.'));});
+  let scale=Math.min(1,1400/Math.max(img.naturalWidth,img.naturalHeight));
+  let data='';
+  for(let turn=0;turn<4;turn++){
+   const canvas=document.createElement('canvas');
+   canvas.width=Math.max(1,Math.round(img.naturalWidth*scale));canvas.height=Math.max(1,Math.round(img.naturalHeight*scale));
+   const ctx=canvas.getContext('2d');if(!ctx)throw Error('Seu navegador não conseguiu preparar a foto.');
+   ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0,canvas.width,canvas.height);
+   data=canvas.toDataURL('image/jpeg',Math.max(.5,.85-turn*.12));
+   if((data.length*.75)<2350000)break;
+   scale*=.75;
+  }
+  if(data.length*.75>2500000)throw Error('Não foi possível reduzir esta foto para o limite de 2,5 MB.');
+  return {filename:s(file.name||'foto')+'.jpg',dataUrl:data};
+ }finally{URL.revokeObjectURL(url);}
+}
+async function photosPayload(input){
+ const files=Array.from(input?.files||[]);
+ if(files.length>5)throw Error('É permitido escolher até cinco fotos.');
+ const output=[];for(const file of files)output.push(await compressImage(file));
+ return output;
+}
+async function saveNewProduct(event){
+ event.preventDefault();const form=event.target,button=form.querySelector('[type=submit]');
+ button.disabled=true;button.textContent='Preparando fotos e salvando…';
+ try{
+  const fd=new FormData(form),publish=E('newProductPublish').checked;
+  const images=await photosPayload(E('newProductPhotos'));
+  if(publish&&!images.length)throw Error('Selecione ao menos uma foto para publicar na loja.');
+  const payload={name:s(fd.get('name')),shortName:s(fd.get('shortName')),description:s(fd.get('description')),
+   categoryId:s(fd.get('categoryId')),unit:s(fd.get('unit')),price:Number(fd.get('price')),cost:Number(fd.get('cost')||0),
+   minimum:Number(fd.get('minimum')),maximum:Number(fd.get('maximum')),availability:s(fd.get('availability')),
+   leadDays:Number(fd.get('leadDays')||0),featured:fd.get('featured')==='on',newItem:fd.get('newItem')==='on',publish,images};
+  if(!window.confirm('Confirmar cadastro de '+payload.name+' por '+brl(payload.price)+'? '+(publish?'O produto será publicado no e-commerce.':'Será salvo apenas como rascunho.')))return;
+  const out=await api('products',{method:'POST',body:payload});
+  clearPhotoPreviews();hideModal();toast(out.published?'✅ Produto publicado na loja! Código '+out.code:'✅ Rascunho salvo. Código '+out.code);
+  await loadAll();nav('products');
+ }catch(err){toast('Falha ao cadastrar: '+err.message,true);}
+ finally{button.disabled=false;button.textContent='💾 Cadastrar e salvar';}
+}
+function editProductPhotos(id){
+ const product=st.catalog.find(x=>x.id===id)||st.drafts.find(x=>x.id===id);
+ if(!product)return toast('Produto não encontrado. Atualize a Central.',true);
+ modal('📷 Fotos de '+s(product.name),
+ '<p>Troque as fotos de <b>'+esc(product.name)+'</b>. A primeira imagem será a principal. As novas imagens substituirão a galeria anterior.</p>'+
+ (product.image?'<div class="product-photo"><img src="'+esc(product.image)+'" alt="Foto atual do produto"></div>':'')+
+ '<form id="productPhotoForm" data-product="'+esc(id)+'" class="product-form"><label class="form-label" for="replacePhotos">Selecionar de 1 a 5 fotos</label>'+
+ '<input id="replacePhotos" type="file" accept="image/png,image/jpeg,image/webp,image/*" multiple required>'+
+ '<div id="replacePhotoPreview" class="photo-preview-wrap"></div><p class="muted">As fotos são otimizadas e armazenadas no Caseirinho. Nenhuma alteração será feita antes da sua confirmação.</p>'+
+ '<button class="btn primary" type="submit">✅ Salvar fotos no ERP e na loja</button></form>');
+}
+async function saveProductPhotos(event){
+ event.preventDefault();const form=event.target,id=form.dataset.product,btn=form.querySelector('[type=submit]');
+ btn.disabled=true;btn.textContent='Otimizando fotos…';
+ try{
+  const images=await photosPayload(E('replacePhotos'));
+  if(!images.length)throw Error('Selecione pelo menos uma foto.');
+  if(!window.confirm('Substituir a galeria atual do produto pelas '+images.length+' foto(s) escolhida(s)?'))return;
+  const result=await api('products/'+encodeURIComponent(id)+'/photos',{method:'PATCH',body:{images}});
+  hideModal();clearPhotoPreviews();toast(result.published?'✅ Fotos publicadas na loja!':'✅ Fotos adicionadas ao rascunho.');
+  await loadAll();nav('products');
+ }catch(err){toast('Falha ao salvar fotos: '+err.message,true);}
+ finally{btn.disabled=false;btn.textContent='✅ Salvar fotos no ERP e na loja';}
+}
+async function publishDraft(id){
+ const draft=st.drafts.find(x=>x.id===id);if(!draft)return toast('Rascunho indisponível. Atualize.',true);
+ if(!draft.images?.length){toast('Inclua pelo menos uma foto antes de publicar.',true);editProductPhotos(id);return;}
+ if(!window.confirm('Publicar '+draft.name+' por '+brl(draft.price)+' no aplicativo Caseirinho?'))return;
+ try{await api('products/'+encodeURIComponent(id)+'/publish',{method:'PATCH',body:{}});toast('✅ Produto publicado no e-commerce!');await loadAll();nav('products');}
+ catch(err){toast('Não foi possível publicar: '+err.message,true);}
 }
 function editProduct(id){
  const x=st.catalog.find(p=>p.id===id);if(!x)return toast('Produto não localizado; atualize o cadastro.',true);
@@ -418,7 +544,9 @@ function bind(){
  E('productSearch').addEventListener('input',renderProducts);
  E('productCategory').addEventListener('change',renderProducts);
  E('productsRefresh').addEventListener('click',loadAll);
- document.addEventListener('submit',e=>{if(e.target?.id==='productEditForm')return saveProduct(e);});
+ E('createProduct').addEventListener('click',openCreateProduct);
+ document.addEventListener('change',event=>{if(event.target?.id==='newProductPhotos')previewFiles(event.target.files,'newProductPhotoPreview');if(event.target?.id==='replacePhotos')previewFiles(event.target.files,'replacePhotoPreview');});
+ document.addEventListener('submit',e=>{if(e.target?.id==='productEditForm')return saveProduct(e);if(e.target?.id==='productCreateForm')return saveNewProduct(e);if(e.target?.id==='productPhotoForm')return saveProductPhotos(e);});
  document.querySelectorAll('[data-report]').forEach(b=>b.addEventListener('click',()=>pdfReport(b.dataset.report)));
 
  E('copyMenu').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(E('menuText').textContent);toast('Cardápio copiado!');}catch(_){toast('Copie o texto manualmente.',true);}});
@@ -446,6 +574,8 @@ function bind(){
  if(type==='viewOrder')return showOrder(b.dataset.order);
  if(type==='pdfOrder')return pdfOrder(b.dataset.order);
  if(type==='editProduct')return editProduct(b.dataset.product);
+ if(type==='photosProduct')return editProductPhotos(b.dataset.product);
+ if(type==='publishDraft')return publishDraft(b.dataset.product);
  if(type==='mark')return markHandled(id);
  if(type==='hello'){const c=clientFor(phone);if(c.optout)return toast('Cliente marcou não contatar.',true);return openWhats(phone,hello(c));}
  if(type==='catalog'||type==='respond')return prepareMenu(phone);
