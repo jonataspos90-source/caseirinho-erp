@@ -279,6 +279,115 @@ function csv(){
  const url=URL.createObjectURL(new Blob([data],{type:'text/csv;charset=utf-8'}));
  const link=document.createElement('a');link.href=url;link.download='caseirinho-contatos-'+new Date().toISOString().slice(0,10)+'.csv';link.click();URL.revokeObjectURL(url);
 }
+
+function renderProducts(){
+ const q=s(E('productSearch')?.value).toLowerCase().trim(),select=E('productCategory'),prev=select.value;
+ const cats=[...new Set(st.catalog.map(x=>x.category))].sort((a,b)=>s(a).localeCompare(s(b),'pt-BR'));
+ select.innerHTML='<option value="all">Todas as categorias</option>'+cats.map(x=>'<option value="'+esc(x)+'">'+esc(x)+'</option>').join('');
+ if(cats.includes(prev))select.value=prev;else select.value='all';
+ const selected=st.catalog.filter(x=>(select.value==='all'||x.category===select.value)&&(s(x.name)+' '+s(x.category)+' '+s(x.variation)).toLowerCase().includes(q));
+ E('productsCount').textContent=selected.length+' produtos';
+ if(!selected.length){E('productsList').innerHTML=cellEmpty('Não há produtos com esses critérios.');return;}
+ E('productsList').innerHTML='<div class="product-card-grid">'+selected.map(x=>
+ '<article class="product-card"><div><span class="badge light">'+esc(x.category)+'</span> '+(x.promotionActive?'<span class="badge warn">Promoção ativa</span>':'')+
+ '<h3>'+esc(x.name)+'</h3><small class="muted">'+esc(x.variation||x.availability||'')+'</small></div>'+
+ '<div class="price-row"><b>'+brl(x.price)+'</b><span>Mínimo: '+n(x.minimum)+' · Máximo: '+(n(x.maximum)||'Sem limite')+'</span></div>'+
+ '<button class="btn primary" type="button" data-action="editProduct" data-product="'+esc(x.id)+'">✏️ Alterar preço / mínimo</button></article>'
+ ).join('')+'</div>';
+}
+function editProduct(id){
+ const x=st.catalog.find(p=>p.id===id);if(!x)return toast('Produto não localizado; atualize o cadastro.',true);
+ const html='<div class="notice">Você está alterando o cadastro principal do ERP e o catálogo publicado da loja. Confirme os valores antes de salvar.</div>'+
+ '<form id="productEditForm" data-product="'+esc(x.id)+'"><p><b>'+esc(x.name)+'</b><br><small>'+esc(x.category)+' · '+esc(x.variation||'')+'</small></p>'+
+ '<label class="form-label" for="editPrice">💰 Preço de venda (R$)</label>'+
+ '<input id="editPrice" type="number" min="0.01" max="1000000" step="0.01" inputmode="decimal" required value="'+n(x.price)+'">'+
+ '<label class="form-label" for="editMinimum">📦 Quantidade mínima por pedido</label>'+
+ '<input id="editMinimum" type="number" min="0.01" max="99999" step="0.01" inputmode="decimal" required value="'+n(x.minimum||1)+'">'+
+ '<label class="form-label" for="editMaximum">📦 Quantidade máxima (0 = sem limite)</label>'+
+ '<input id="editMaximum" type="number" min="0" max="99999" step="0.01" inputmode="decimal" required value="'+n(x.maximum)+'">'+
+ (x.promotionActive?'<div class="notice">⚠️ Há promoção ativa neste produto. O preço promocional deve ser conferido separadamente no ERP.</div>':'')+
+ '<p class="muted">Alteração registrada com data e usuário. Se outro operador modificar o produto, a gravação será recusada para evitar conflito.</p>'+
+ '<button class="btn primary" type="submit">✅ Salvar no ERP e na loja</button></form>';
+ modal('✏️ Editar produto',html);
+}
+async function saveProduct(e){
+ e.preventDefault();
+ const form=e.target,productId=form?.dataset.product;
+ const x=st.catalog.find(v=>v.id===productId);
+ if(!x)return toast('Produto desatualizado. Atualize antes de salvar.',true);
+ const price=Number(E('editPrice').value),minimum=Number(E('editMinimum').value),maximum=Number(E('editMaximum').value);
+ if(!Number.isFinite(price)||price<=0||!Number.isFinite(minimum)||minimum<=0||!Number.isFinite(maximum)||maximum<0||(maximum>0&&maximum<minimum))return toast('Preencha valores válidos. Máximo deve ser zero ou maior que o mínimo.',true);
+ if(!window.confirm('Confirmar alteração em '+x.name+'? Preço: '+brl(price)+' | Mínimo: '+minimum+' | Máximo: '+(maximum||'sem limite')+'. A alteração será publicada no catálogo.'))return;
+ const button=form.querySelector('[type=submit]');button.disabled=true;button.textContent='Salvando…';
+ try{
+  const r=await api('catalog/'+encodeURIComponent(productId)+'/terms',{method:'PATCH',body:{price,minimum,maximum,expectedUpdatedAt:x.updatedAt}});
+  hideModal();toast('✅ Produto atualizado no ERP e na loja.');
+  if(r.warning)toast(r.warning,true);
+  await loadAll();nav('products');
+ }catch(err){toast('Não foi possível salvar: '+err.message,true);button.disabled=false;button.textContent='✅ Salvar no ERP e na loja';}
+}
+function itemListHtml(order){
+ const lines=(Array.isArray(order.items)?order.items:[]).map(x=>'<tr><td>'+esc(x.name||x.code)+'</td><td>'+n(x.quantity)+'</td><td>'+brl(x.unitPrice)+'</td><td>'+brl(x.total)+'</td></tr>');
+ return '<div class="table-wrap"><table class="table"><thead><tr><th>Produto</th><th>Qtde.</th><th>Unitário</th><th>Total</th></tr></thead><tbody>'+lines.join('')+'</tbody></table></div>';
+}
+function orderDetailsHtml(order){
+ return '<p><b>Pedido #'+esc(order.code||'—')+'</b> • '+dt(order.created_at)+'</p>'+
+ '<p><b>Cliente:</b> '+esc(order.name||'Não informado')+'<br><b>WhatsApp:</b> '+esc(tel(order.phone))+
+ '<br><b>Status:</b> '+esc(order.status||'—')+' · <b>Integração:</b> '+esc(order.integration_status||'—')+
+ '<br><b>Pagamento:</b> '+esc(order.payment||'Não informado')+'<br><b>Modalidade:</b> '+esc(order.modality||'—')+'</p>'+
+ itemListHtml(order)+
+ '<p><b>Subtotal:</b> '+brl(order.subtotal)+'<br><b>Frete:</b> '+brl(order.freight)+
+ '<br><b>Desconto promocional informado:</b> '+brl(order.discount)+
+ '<br><b>Total do pedido:</b> '+brl(order.total)+'</p>';
+}
+function orderButton(order){
+ return '<button class="btn small" type="button" data-action="viewOrder" data-order="'+esc(order.code)+'">📦 Ver itens</button> '+
+ '<button class="btn small gold" type="button" data-action="pdfOrder" data-order="'+esc(order.code)+'">📄 PDF</button>';
+}
+function showOrder(code){
+ const x=st.orders.find(v=>s(v.code)===s(code))||(window.__customerOrders||[]).find(v=>s(v.code)===s(code));
+ if(!x)return toast('Pedido não localizado. Atualize os pedidos.',true);
+ modal('🛒 Pedido '+x.code,orderDetailsHtml(x)+'<div class="toolbar"><button class="btn primary" data-action="pdfOrder" data-order="'+esc(x.code)+'">📄 Imprimir / salvar PDF</button></div>');
+}
+async function showCustomerOrders(phone){
+ const c=clientFor(phone);
+ modal('📦 Pedidos de '+s(c.name),'<p>Buscando histórico completo deste WhatsApp...</p>');
+ try{
+ const result=await api('customer-orders?phone='+encodeURIComponent(digits(phone)));
+ window.__customerOrders=result.orders||[];
+ const rows=window.__customerOrders.map(x=>'<tr><td>'+dt(x.created_at)+'</td><td><b>'+esc(x.code)+'</b><br>'+badge(x.status)+'</td><td>'+brl(x.total)+'</td><td class="actions-cell">'+orderButton(x)+'</td></tr>');
+ modal('📦 Compras de '+s(c.name),' <p><b>'+window.__customerOrders.length+' pedido(s)</b> associado(s) a este WhatsApp.</p>'+table(['Data','Pedido','Total','Detalhes / PDF'],rows));
+ }catch(err){modal('📦 Compras de '+s(c.name),'<div class="notice error">'+esc(err.message)+'</div>');}
+}
+function printDocument(title,html){
+ const w=window.open('','_blank');
+ if(!w){toast('O navegador bloqueou a janela. Habilite pop-ups para gerar o PDF.',true);return;}
+ const styles='body{font-family:Arial,sans-serif;color:#263b2d;margin:25px;font-size:12px}header{padding:18px 0;border-bottom:3px solid #244936;margin-bottom:25px}h1{font-family:Georgia,serif;font-size:24px}table{width:100%;border-collapse:collapse}td,th{border-bottom:1px solid #ddd;padding:8px 6px;text-align:left;vertical-align:top}th{background:#f4f5f0}p{line-height:1.5}.badge{font-size:10px}footer{margin-top:35px;font-size:10px;color:#666}@media print{@page{size:A4;margin:13mm}button{display:none}}';
+ const page='<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>'+esc(title)+'</title><style>'+styles+'</style></head><body>'+
+ '<header><h1>🍝 Caseirinho Massas Artesanais</h1><h2>'+esc(title)+'</h2><p>Gerado em '+dt(new Date())+' • Central Insights</p></header>'+html+
+ '<footer>Uso interno e atendimento. Informações obtidas dos registros do Caseirinho no momento da consulta.</footer></body></html>';
+ w.document.open();w.document.write(page);w.document.close();
+ w.focus();setTimeout(()=>{try{w.print();}catch(_){toast('Abra o menu da nova aba e escolha Imprimir → Salvar como PDF.',true)}},450);
+}
+function pdfOrder(code){
+ const x=st.orders.find(v=>s(v.code)===s(code))||(window.__customerOrders||[]).find(v=>s(v.code)===s(code));
+ if(!x)return toast('Pedido não localizado.',true);
+ printDocument('Comprovante do Pedido '+s(x.code),orderDetailsHtml(x));
+}
+function pdfReport(type){
+ if(type==='contacts'){
+ const rows=st.contacts.map(x=>'<tr><td>'+esc(x.name)+'</td><td>'+esc(tel(x.phone))+'</td><td>'+n(x.orders)+'</td><td>'+n(x.visits)+'</td><td>'+dt(x.last_order||x.last_registration)+'</td></tr>');
+ printDocument('Relatório CRM / Clientes',table(['Nome','WhatsApp','Pedidos','Visitas verificadas','Última interação'],rows));return;
+ }
+ if(type==='orders'){
+ const rows=st.orders.map(x=>'<tr><td>'+esc(x.code)+'</td><td>'+dt(x.created_at)+'</td><td>'+esc(x.name)+'</td><td>'+esc(x.status)+'</td><td>'+brl(x.total)+'</td><td>'+esc((x.items||[]).map(v=>n(v.quantity)+'x '+v.name).join('; '))+'</td></tr>');
+ printDocument('Relatório de Pedidos',table(['Pedido','Data','Cliente','Status','Total','Itens'],rows));return;
+ }
+ if(type==='products'){
+ const rows=st.catalog.map(x=>'<tr><td>'+esc(x.category)+'</td><td>'+esc(x.name)+'</td><td>'+brl(x.price)+'</td><td>'+n(x.minimum)+'</td><td>'+(n(x.maximum)||'Sem limite')+'</td></tr>');
+ printDocument('Relatório de Produtos e Preços',table(['Categoria','Produto','Preço','Mínimo','Máximo'],rows));
+ }
+}
 function bind(){
  setupInstall();
  document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>nav(b.dataset.view)));
