@@ -48,3 +48,15 @@ A versão PWA inclui manifest e service worker. O cache local armazena **somente
 - A vitrine da loja já usa `quantidadeMinima` e `limitePedido` no carrinho. A Central **não** modifica preços automaticamente; só altera produtos por uma ação confirmada de edição.
 
 Para atualizar um app já instalado, abra-o com conexão à internet e use o botão **Atualizar** ou feche e abra novamente; a PWA usa cache de interface V3.
+
+## Cadastro completo de produtos — V4 (02/11/2026)
+
+Abra **🏷️ Produtos e preços → ➕ Novo produto** para cadastrar um produto no ERP e na loja com nome, nome comercial, categoria oficial, descrição, preço de venda, custo estimado opcional, unidade, quantidade mínima/máxima, disponibilidade (pronta entrega/encomenda), antecedência, destaque/novidade e até 5 fotos do celular (galeria/câmera).
+
+A primeira imagem é a principal. A Central compacta fotos para JPEG com até 2,5 MB cada. O back-end valida assinatura de imagem e, após confirmação, grava fotos na tabela `storefront_media`, produto em `erp_records` e catálogo em `storefront_catalog` na **mesma transação**, usando código sequencial e auditoria. Se não for publicado, o produto fica como **rascunho** e pode receber fotos e ser publicado posteriormente.
+
+Em um produto publicado, toque **📷 Alterar fotos** para substituir a galeria. Não altere uma foto usando link aleatório da internet: o arquivo deve ser selecionado do dispositivo. A Central não publica produtos sem foto nem cadastra duplicatas com nome igual. Usuários autorizados MASTER/ADMINISTRADOR; nenhuma criação automática na execução de testes.
+
+**Atenção:** promoções e packs do produto continuam sendo administrados separadamente; alterar preço comum não muda automaticamente preço promocional. Preço de venda no e-commerce usa `ecommerce.precoEcommerce`. O número do código é gerado automaticamente e pode ser consultado no ERP.
+
+**Melhorias futuras sugeridas:** gestão de grade P/M/G e sabores com preços independentes, ficha técnica e margem, estoque x encomenda, lotes/validade, combos/cupons, histórico de mudanças, aprovação de publicação e importação em lote.
