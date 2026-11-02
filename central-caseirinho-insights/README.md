@@ -26,3 +26,14 @@ Interface autônoma para celular e computador, instalável como PWA quando o nav
 Dados pessoais só são retornados por rota adminAuth com papel autorizado; nunca são embarcados no HTML estático. O token é usado em sessão (ou recuperado do armazenamento local já usado pelo ERP). O sistema não envia mensagens automaticamente nem grava dados de clientes em URLs públicas. O modo standalone não prova instalação: apenas appinstalled reportado gera PWA_INSTALLED. Pings não contam visitas. Abertura de conversa no WhatsApp não comprova envio da mensagem; confirme manualmente. Solicitações recebidas diretamente pelo WhatsApp requerem API oficial do WhatsApp Business.
 
 Verifique divergências de preços publicadas antes de compartilhar o catálogo; a Central não corrige valores no ERP automaticamente.
+
+## Instalar na tela inicial do celular (Android)
+
+1. No celular, abra https://jonataspos90-source.github.io/caseirinho-erp/central-caseirinho-insights/ pelo **Google Chrome**.
+2. Toque em **📲 Instalar app no meu celular** e confirme a solicitação. Caso o navegador não ofereça o prompt, use o menu **⋮ → Instalar aplicativo** (ou **Adicionar à tela inicial**).
+3. No Samsung Internet, use **☰ → Adicionar página a → Tela inicial**.
+4. Entre com sessão autorizada do ERP. Se o aparelho for exclusivamente seu e tiver bloqueio de tela, marque **Este é meu celular. Manter meu acesso neste aparelho** antes de entrar.
+5. Depois, basta tocar no ícone **Caseirinho Insights** da tela inicial. O ícone é o oficial do Caseirinho, e a Central abre em modo independente, sem barras comuns do navegador.
+6. Para remover o acesso persistente, toque em **Sair** dentro da Central. Se precisar revogar um token, faça isso na administração do ERP.
+
+A versão PWA inclui manifest e service worker. O cache local armazena **somente arquivos estáticos** do aplicativo; nenhuma consulta privada ao CRM, pedidos ou token de acesso passa pelo cache do service worker. Quando offline, a interface pode abrir, mas os dados do Neon não são consultáveis.
