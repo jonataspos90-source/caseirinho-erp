@@ -2,7 +2,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#183c2e"><meta name="description" content="Central Caseirinho Insights — painel administrativo independente de CRM, acessos, pedidos e cardápio.">
 <title>Central Caseirinho Insights | CRM e Loja</title>
-<link rel="stylesheet" href="./styles.css?v=2">
+<link rel="stylesheet" href="./styles.css?v=3">
 <link rel="manifest" href="./manifest.webmanifest"><link rel="icon" type="image/png" sizes="192x192" href="/caseirinho-loja/icons/icon-192.png"><link rel="apple-touch-icon" href="/caseirinho-loja/icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default">
 </head><body>
 <div class="auth-screen" id="loginScreen">
@@ -29,6 +29,8 @@
  <button type="button" data-view="contacts">👥 CRM e contatos</button>
  <button type="button" data-view="ranking">🏆 Ranking</button>
  <button type="button" data-view="orders">🛒 Pedidos</button>
+ <button type="button" data-view="products">🏷️ Produtos e preços</button>
+ <button type="button" data-view="reports">📄 Relatórios / PDF</button>
  <button type="button" data-view="menu">🍝 Cardápio</button>
  <button type="button" data-view="requests">🔔 Solicitações <span id="requestCount" class="num" hidden>0</span></button>
  <button type="button" data-view="settings">⚙️ Configurações</button>
@@ -56,11 +58,33 @@
   <div class="toolbar"><select class="menu-select" id="menuCategory"><option value="all">Todas as categorias</option></select><button class="btn" id="copyMenu">📋 Copiar cardápio</button><button class="btn whatsapp" id="menuShare">💬 Preparar envio</button></div>
   <div id="priceWarnings"></div><div class="menu-grid"><article class="card"><h2>Produtos e valores</h2><div id="menuItems"></div></article><article class="card"><h2>Mensagem pronta</h2><div id="menuText" class="menu-list"></div><p><small>Ao escolher uma categoria, o texto é atualizado. Para cardápios longos, a mensagem é resumida e inclui o endereço da loja.</small></p></article></div>
  </section>
- <section id="requests" class="section"><div class="section-head"><div><h2>🔔 Solicitações de cardápio</h2><p>Quando o cliente pedir pelo botão do app, aparece aqui para responder pelo WhatsApp.</p></div><button class="btn gold" id="enableSound">🔊 Ativar alertas</button></div><div id="requestsTable"></div><div class="notice">Apenas pedidos feitos pelo botão do aplicativo são detectados. Mensagens recebidas diretamente no WhatsApp exigem conexão com a API oficial do WhatsApp Business.</div></section>
+ <section id="products" class="section">
+ <div class="section-head"><div><h2>🏷️ Produtos e preços</h2><p>Edite preço, quantidade mínima e quantidade máxima para pedidos feitos na loja. A gravação atualiza o cadastro ERP e o catálogo do app.</p></div><button class="btn" type="button" id="productsRefresh">↻ Atualizar produtos</button></div>
+ <div class="notice">Atenção: mudanças de preço e quantidade são reais. Somente administradores autorizados conseguem salvar. Promoções e packs continuam com suas próprias regras, que devem ser conferidas no ERP.</div>
+ <div class="toolbar"><input type="search" id="productSearch" placeholder="🔍 Buscar produto por nome ou categoria..." autocomplete="off"><select id="productCategory"><option value="all">Todas as categorias</option></select><span id="productsCount" class="badge">– produtos</span></div>
+ <div id="productsList"></div>
+</section>
+<section id="reports" class="section">
+ <div class="section-head"><div><h2>📄 Relatórios e PDF</h2><p>Relatórios prontos para imprimir ou salvar em PDF diretamente pelo celular.</p></div></div>
+ <div class="grid three">
+ <article class="card"><h3>👥 Clientes e CRM</h3><p>Nome, WhatsApp, quantidade de pedidos, visitas comprovadas e último contato.</p><button class="btn primary" data-report="contacts" type="button">📄 PDF dos clientes</button></article>
+ <article class="card"><h3>🛒 Pedidos e vendas</h3><p>Código, cliente, situação, valores e itens que foram pedidos.</p><button class="btn primary" data-report="orders" type="button">📄 PDF dos pedidos</button></article>
+ <article class="card"><h3>🍝 Produtos e valores</h3><p>Todos os produtos, preços, quantidade mínima e limite máximo.</p><button class="btn primary" data-report="products" type="button">📄 PDF dos produtos</button></article>
+ </div>
+ <div class="notice">No Android, toque em <b>Imprimir</b> e escolha <b>Salvar como PDF</b>. Os PDFs são gerados no seu navegador, sem enviar os dados a outros serviços.</div>
+</section>
+<section id="requests" class="section"><div class="section-head"><div><h2>🔔 Solicitações de cardápio</h2><p>Quando o cliente pedir pelo botão do app, aparece aqui para responder pelo WhatsApp.</p></div><button class="btn gold" id="enableSound">🔊 Ativar alertas</button></div><div id="requestsTable"></div><div class="notice">Apenas pedidos feitos pelo botão do aplicativo são detectados. Mensagens recebidas diretamente no WhatsApp exigem conexão com a API oficial do WhatsApp Business.</div></section>
  <section id="settings" class="section"><div class="card"><h2>⚙️ Conexão e segurança</h2><p><b>Fonte:</b> Neon, projeto da loja Caseirinho, por meio da API autenticada John ERP Cloud.</p><p><b>Loja:</b> <a href="https://jonataspos90-source.github.io/caseirinho-loja/" target="_blank" rel="noopener">Abrir site oficial</a></p><p><b>API:</b> <span id="apiLabel"></span></p><p><b>Atualização automática:</b> a cada 30 segundos para pedidos de cardápio, a cada 2 minutos para demais painéis.</p><p><b>Privacidade:</b> nenhum WhatsApp é publicado na hospedagem estática, salvo intencionalmente pelo administrador ao abrir a conversa. O token é utilizado apenas para consulta à API.</p><button class="btn" id="clearSession">Encerrar sessão</button><div id="apiState"></div></div></section>
  <p class="footer">Central Caseirinho Insights • Ferramenta administrativa independente. Os indicadores de visita dependem de instrumentação publicada na loja e não podem ser reconstruídos a partir de pings antigos.</p>
 </main></div>
+<nav class="mobile-bottom-nav" aria-label="Acesso rápido">
+ <button type="button" data-view="dashboard">📊<small>Início</small></button>
+ <button type="button" data-view="contacts">👥<small>Clientes</small></button>
+ <button type="button" data-view="orders">🛒<small>Pedidos</small></button>
+ <button type="button" data-view="products">🏷️<small>Preços</small></button>
+ <button type="button" data-view="reports">📄<small>PDF</small></button>
+ </nav>
 <div id="toast" class="toast" role="status" hidden></div>
 <div id="modal" class="modal-bg" hidden><div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><h2 id="modalTitle">Mensagem para WhatsApp</h2><div id="modalContent"></div><div class="toolbar" style="justify-content:flex-end;margin-top:20px"><button class="btn" id="modalClose">Fechar</button></div></div></div>
-<script src="./app.js?v=2" defer></script>
+<script src="./app.js?v=3" defer></script>
 </body></html>
