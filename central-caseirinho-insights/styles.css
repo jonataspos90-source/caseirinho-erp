@@ -69,3 +69,25 @@
 .product-card .btn.gold{margin-top:7px}
 @media(max-width:790px){.product-form input,.product-form select,.product-form textarea{font-size:16px!important}.photo-preview img{height:85px}.form-grid{gap:9px}.product-photo{height:140px}}
 @media(max-width:390px){.form-grid{grid-template-columns:1fr}.photo-preview{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+
+/* V5 — Relatório de vendas por produto / curva ABC / média móvel 42 dias */
+.sales-filter-card{margin-bottom:15px}
+.sales-filter-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
+.sales-filter-grid label{display:flex;flex-direction:column;gap:7px;font-weight:750;color:#244633;font-size:13px}
+.sales-filter-grid input{border:1px solid #d6dfd4;border-radius:12px;background:#fff;font-size:17px;padding:12px 14px;max-width:100%;width:100%;color:#244633;min-width:0}
+.sales-filter-card .toolbar{margin-bottom:0}
+.sales-track{height:9px;overflow:hidden;background:#eceee6;border-radius:30px;margin:9px 0}
+.sales-fill{height:100%;min-width:0;background:linear-gradient(90deg,#2b6950,#d3b464);border-radius:30px}
+.sales-fill.abc-A{background:#2b8050}.sales-fill.abc-B{background:#d5a53a}.sales-fill.abc-C{background:#b5b2a8}
+.sales-top-row{margin:11px 0 14px}
+.sales-top-title{display:flex;align-items:baseline;justify-content:space-between;gap:12px;font-size:13px}
+.sales-top-title span{min-width:0;flex:1}.sales-top-title strong{flex-shrink:0;white-space:nowrap;color:#193f2e}
+.sales-top-title small{display:block;font-size:11px;color:#79877b;font-weight:400;margin-top:3px}
+.sales-abc-row{display:flex;align-items:center;gap:12px;margin:15px 0}
+.abc-badge{display:inline-flex;align-items:center;justify-content:center;width:33px;height:33px;border-radius:9px;font-weight:900;font-size:15px;flex-shrink:0;background:#ecede8;color:#61665e}
+.abc-badge.abc-A{background:#e0f7e6;color:#166e3c}.abc-badge.abc-B{background:#fff2d1;color:#875b12}.abc-badge.abc-C{background:#f4e5e8;color:#9b4a57}
+.sales-mobile-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:11px}
+.sales-mobile-grid span{display:flex;flex-direction:column;gap:4px;background:#f5f7f2;border-radius:9px;padding:9px 10px;color:#6f796e;font-size:11px}
+.sales-mobile-grid span b{color:#1c4431;font-size:15px}
+@media(max-width:790px){.sales-filter-card{padding:14px}.sales-filter-card .toolbar .btn{padding:7px 9px;min-height:35px;font-size:12px}.sales-filter-grid{gap:9px}.sales-filter-grid input{padding:10px 7px;font-size:16px}.sales-top-title{font-size:12px}.sales-mobile-grid span b{font-size:14px}}
