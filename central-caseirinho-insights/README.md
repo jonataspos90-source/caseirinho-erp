@@ -136,3 +136,18 @@ No menu **🛒 Pedidos**, procure um pedido e toque em **✅ Entrega / Cashback*
 Filtros novos: Aguardando entrega/retirada, Cashback a decidir, Cashback liberado e Pedidos concluídos. Cards resumem quantidade aguardando, créditos, valor total liberado e pedidos concluídos.
 
 **Validação:** leitura real do banco no tenant `john-default` e simulação de finalização utilizando banco fictício em memória (nenhum pedido real foi modificado por testes). Confirme uma transação real no aplicativo e a correspondência do lançamento antes de considerar homologação integral. Atualização PWA V9.
+
+## V10 — 📋 Fichas Técnicas, custos, 💚 Cashback e 🔔 Novos pedidos
+
+**📋 Fichas Técnicas**: nova área de cadastro e edição que usa exatamente `erp_records(entity_type='fichas')`, com os produtos e insumos já cadastrados no ERP. Foram encontradas 51 fichas para 47 produtos. Permite informar produto acabado/subproduto, componentes, quantidades, custo unitário manual opcional, rendimento, unidade, custo adicional e modo de preparo. O salvamento é transacional, exige administrador e é auditado por `INSIGHTS_FICHA_CREATED/UPDATED`; a tela não cria SKUs nem altera preço de venda automaticamente. Fichas legadas duplicadas podem ser editadas; nova ficha ativa duplicada é bloqueada.
+
+**Custo técnico**: o cálculo reutilizável `src/services/caseirinhoFichaCosts132.js` soma componentes na unidade cadastrada (média/último custo de entrada/custo inicial do ERP ou custo manual do componente), admite subficha de subproduto, soma custo adicional e divide pelo rendimento. Componentes sem custo, falta de rendimento, ficha ausente ou dependência circular recebem alertas explícitos — **não** se presume custo zero. Quando a composição não tem custo confiável, margem fica em branco.
+
+**📈 Relatório de vendas e curva ABC**: a API `product-sales-abc` agora inclui `costStatus`, `unitCost`, `estimatedTotalCost`, `estimatedMargin`, `hasFicha`. Produtos acabados sem ficha mostram **⚠️ Não possui ficha técnica** e botão para cadastrar. Produtos com ficha incompleta mostram **⚠️ Custo incompleto**. Relatório, CSV e PDF exibem esses avisos. Custos são estimativas na data da consulta — não uma recomposição histórica do custo da venda. Em 22/09 a 02/11/2026, 32 itens vendidos como produtos acabados não tinham ficha identificada.
+
+**💚 Cashback dos Clientes**: o módulo consulta `cashback_accounts`, `cashback_transactions` e reservas ativas. Exibe saldo contábil, saldo disponível, reservado, crédito acumulado, cashback utilizado, quantidade de pedidos creditados e extrato individual com número do pedido e situação de cada movimento. Permite filtrar, pesquisar por nome ou WhatsApp e exportar CSV. Dados privados disponíveis apenas em rota autenticada e filtrada por tenant.
+
+**🔔 Novos Pedidos**: consulta `new-orders-alert` a cada 30 segundos com usuário logado; anuncia apenas IDs não vistos (sem tratar pedidos antigos como novos no primeiro carregamento). Um aviso visual fica disponível na Central, com ação **Ver pedidos**. O operador pode ativar som pelo botão **Ativar alerta sonoro** na tela de pedidos; a opção é lembrada no navegador. Quando o navegador oferece permissão, tenta também uma notificação local com a Central ativa. Pedidos explicitamente marcados como teste são excluídos. **Não são notificações push garantidas com o aplicativo fechado**; isso requer implementação adicional de push, service worker, VAPID, dispositivos autorizados e envio backend.
+
+**Acesso:** perfil ERP autenticado; criação/edição da ficha exige MASTER/ADMINISTRADOR/PLATFORM_OWNER. V10 atualiza service worker/cache. A criação de ficha foi simulada sem gravar dados de teste; confirmar posteriormente um cadastro verdadeiro e sua atualização no ERP antes da homologação integral.
+
