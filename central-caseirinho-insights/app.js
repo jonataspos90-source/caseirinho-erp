@@ -187,9 +187,22 @@ function renderRanking(){
  table(['Posição','Cliente','WhatsApp','Visitas registradas','Última entrada','Pedidos'],ranked.map((x,i)=>'<tr><td><strong>'+(i+1)+'</strong></td><td>'+esc(x.name)+'</td><td>'+esc(tel(x.phone))+'</td><td>'+n(x.visits)+'</td><td>'+dt(x.last_visit)+'</td><td>'+n(x.orders)+'</td></tr>')):
  '<div class="empty"><b>Sem dados suficientes para ranking</b><p>Não existem visitas comprovadas com STORE_ANALYTICS_STORE_OPEN e IDENTIFIED vinculados ao mesmo dispositivo e visitId. Não usamos pings ou pré-cadastros como visitas.</p></div>';
 }
+function renderOrderFulfillmentKpis(){
+ const items=[...st.fulfillment.values()];
+ const ready=items.filter(x=>!x.completed&&x.integration==='IMPORTADO'&&x.erpLinked&&['ACEITO','ABERTO','PRONTO'].includes(x.status));
+ const granted=items.filter(x=>Number(x.credit)>0);
+ const complete=items.filter(x=>x.completed);
+ E('orderFulfillmentKpis').innerHTML=[
+  statsCard('📦','Aguardando conclusão',ready.length,'Pedidos integrados e não entregues'),
+  statsCard('💚','Cashback a decidir',ready.filter(x=>x.approval==='PENDENTE'&&x.eligible).length,'Apenas pedidos elegíveis'),
+  statsCard('✅','Créditos liberados',granted.length,brl(granted.reduce((sum,x)=>sum+Number(x.credit||0),0))+' em cashback'),
+  statsCard('🎉','Entregues / retirados',complete.length,'Pedidos com situação finalizada')
+ ].join('');
+}
 function renderOrders(){
+ renderOrderFulfillmentKpis();
  const q=s(E('orderSearch').value).toLowerCase().trim(),f=E('orderFilter').value;
- const rows=st.orders.filter(x=>(s(x.code)+' '+s(x.name)+' '+s(x.phone)+' '+(x.items||[]).map(i=>i.name).join(' ')).toLowerCase().includes(q)&&(f==='all'||x.integration_status===f));
+ const rows=st.orders.filter(x=>{const v=st.fulfillment.get(s(x.code));const match=(s(x.code)+' '+s(x.name)+' '+s(x.phone)+' '+(x.items||[]).map(i=>i.name).join(' ')).toLowerCase().includes(q);const status=s(v?.status||x.status).toUpperCase();const integrated=v?.integration==='IMPORTADO'&&v?.erpLinked;const filter=f==='all'||x.integration_status===f||f==='READY'&&integrated&&!v?.completed&&['ACEITO','ABERTO','PRONTO'].includes(status)||f==='CASHBACK_PENDING'&&integrated&&!v?.completed&&v?.approval==='PENDENTE'||f==='CASHBACK_GRANTED'&&n(v?.credit)>0||f==='COMPLETED'&&v?.completed;return match&&filter;});
  if(window.matchMedia('(max-width:790px)').matches){
   E('ordersTable').innerHTML=rows.length?'<div class="mobile-list">'+rows.map(x=>'<article class="mobile-record"><div class="mobile-record-head"><strong>Pedido #'+esc(x.code)+'</strong>'+badge(x.status)+'</div><p><b>'+esc(x.name||'Cliente')+'</b> · '+dt(x.created_at)+'</p><p><b>'+brl(x.total)+'</b> · '+(x.items||[]).length+' item(ns)</p><p>'+badge(x.integration_status)+'</p><div class="record-actions">'+orderButton(x)+'</div></article>').join('')+'</div>':cellEmpty('Nenhum pedido encontrado.');
  }else{
@@ -1011,6 +1024,7 @@ function bind(){
  E('contactFilter').addEventListener('change',renderContacts);
  E('orderSearch').addEventListener('input',renderOrders);
  E('orderFilter').addEventListener('change',renderOrders);
+ E('refreshFulfillment').addEventListener('click',refreshFulfillment);
  E('menuCategory').addEventListener('change',renderMenu);
  E('csvContacts').addEventListener('click',csv);
  E('productSearch').addEventListener('input',renderProducts);
