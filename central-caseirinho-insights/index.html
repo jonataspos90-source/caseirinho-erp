@@ -2,7 +2,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#183c2e"><meta name="description" content="Central Caseirinho Insights — painel administrativo independente de CRM, acessos, pedidos e cardápio.">
 <title>Central Caseirinho Insights | CRM e Loja</title>
-<link rel="stylesheet" href="./styles.css?v=10">
+<link rel="stylesheet" href="./styles.css?v=11">
 <link rel="manifest" href="./manifest.webmanifest"><link rel="icon" type="image/png" sizes="192x192" href="/caseirinho-loja/icons/icon-192.png"><link rel="apple-touch-icon" href="/caseirinho-loja/icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default">
 </head><body>
 <div class="auth-screen" id="loginScreen">
@@ -30,6 +30,7 @@
  <button type="button" data-view="products">🏷️ Produtos e preços</button>
  <button type="button" data-view="fichas">📋 Fichas Técnicas</button>
  <button type="button" data-view="cashbacks">💚 Cashback Clientes</button>
+ <button type="button" data-view="coupons">🎟️ Cupons e Utilizações</button>
  <button type="button" data-view="merch">🎁 Grades e Packs</button>
  <button type="button" data-view="reports">📄 Relatórios / PDF</button>
  <button type="button" data-view="sales">📈 Vendas / Curva ABC</button>
@@ -125,7 +126,30 @@
  <div class="toolbar"><input id="cashbackSearch" type="search" placeholder="Pesquisar nome ou WhatsApp..."><select id="cashbackFilter"><option value="all">Todos os clientes</option><option value="available">Com saldo disponível</option><option value="used">Já utilizaram cashback</option><option value="zero">Sem saldo atual</option></select><button class="btn" id="csvCashbacks">⬇ CSV</button></div>
  <div id="cashbackList"></div>
  </section>
- <section id="merch" class="section">
+ <section id="coupons" class="section">
+ <div class="section-head"><div><h2>🎟️ Cupons e Utilizações</h2><p>Cadastre campanhas com vigência e descubra quais clientes utilizaram cada cupom.</p></div><button type="button" class="btn" id="refreshCoupons">↻ Atualizar</button></div>
+ <div class="notice">O cupom <b>CASEIRINHO10</b> mantém exclusivamente 10% na primeira compra. A vigência e a ativação podem ser controladas aqui, sem desativar a regra de primeira compra. Cupons novos não são exibidos publicamente: só são validados quando o cliente digita o código.</div>
+ <div class="merch-tabs"><button class="btn primary" type="button" data-coupon-tab="config">🎫 Gerenciar cupons</button><button class="btn" type="button" data-coupon-tab="report">📊 Relatório de utilização</button></div>
+ <div id="couponError" class="notice error" hidden></div>
+ <div id="couponConfigTab">
+  <div class="section-head"><div><h3>Cupons da loja</h3><p>Defina percentual ou valor fixo, valor mínimo e período de validade.</p></div><button class="btn primary" type="button" id="newCoupon">➕ Cadastrar cupom</button></div>
+  <div id="couponKpis" class="grid stats"></div><div id="couponCards"></div>
+ </div>
+ <div id="couponReportTab" hidden>
+  <article class="card">
+   <div class="sales-filter-grid"><label>📅 De<input id="couponDateFrom" type="date"></label><label>📅 Até<input id="couponDateTo" type="date"></label></div>
+   <div class="toolbar"><select id="couponReportCode"><option value="all">Todos os cupons</option></select>
+    <select id="couponReportStatus"><option value="all">Todos os pedidos</option><option value="accepted">✅ Aceitos / entregues</option><option value="pending">⏳ Pendentes</option><option value="other">Outros status</option></select>
+    <input type="search" id="couponReportSearch" placeholder="Cliente, pedido ou WhatsApp...">
+    <button class="btn primary" type="button" id="runCouponReport">🔎 Consultar</button></div>
+  </article>
+  <div id="couponReportKpis" class="grid stats"></div>
+  <div class="grid two"><article class="card"><h3>📊 Utilização por cupom</h3><div id="couponRanking"></div></article>
+   <article class="card"><h3>📌 Interpretação</h3><p>Pedidos com cupom <b>NOVOS/PENDENTES</b> são mostrados separadamente e não representam vendas confirmadas.</p><p>Os descontos são os valores registrados nos pedidos. A confirmação do pagamento precisa ser conferida no financeiro.</p></article></div>
+  <article class="card"><div class="section-head"><div><h3>👤 Quem utilizou os cupons</h3><p>Nome, WhatsApp, código, desconto, pedido e situação.</p></div><div class="actions"><button class="btn" id="couponExportCsv" type="button">⬇ CSV</button><button class="btn gold" id="couponExportPdf" type="button">📄 PDF</button></div></div><div id="couponReportTable"></div></article>
+ </div>
+</section>
+<section id="merch" class="section">
  <div class="section-head"><div><h2>🎁 Grades e Packs Virtuais</h2><p>Organize tamanhos, pesos, sabores e combos promocionais que aparecem no e-commerce.</p></div><button id="refreshMerch" class="btn" type="button">↻ Atualizar</button></div>
  <div class="notice"><b>Cadastros sincronizados:</b> use produtos já publicados na loja. Cada variação mantém seu código e preço; packs aplicam benefícios na compra, sem criar um produto físico adicional. Nenhuma alteração é feita sem sua confirmação.</div>
  <div class="merch-tabs"><button type="button" id="merchGradesTab" data-merch-tab="grades" class="btn primary">📐 Grades e variações</button><button type="button" id="merchPacksTab" data-merch-tab="packs" class="btn">🎁 Packs virtuais</button></div>
@@ -152,10 +176,11 @@
  <button type="button" data-view="products">🏷️<small>Preços</small></button>
  <button type="button" data-view="fichas">📋<small>Fichas</small></button>
  <button type="button" data-view="cashbacks">💚<small>Saldos</small></button>
+ <button type="button" data-view="coupons">🎟️<small>Cupons</small></button>
  <button type="button" data-view="merch">🎁<small>Packs</small></button>
  <button type="button" data-view="sales">📈<small>Vendas</small></button>
  </nav>
 <div id="toast" class="toast" role="status" hidden></div>
 <div id="modal" class="modal-bg" hidden><div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><h2 id="modalTitle">Mensagem para WhatsApp</h2><div id="modalContent"></div><div class="toolbar" style="justify-content:flex-end;margin-top:20px"><button class="btn" id="modalClose">Fechar</button></div></div></div>
-<script src="./app.js?v=10" defer></script>
+<script src="./app.js?v=11" defer></script>
 </body></html>
