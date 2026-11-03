@@ -46,7 +46,7 @@ function enhance(){
   campaignLink.style.cssText='background:#131313;color:white;text-decoration:none;border-radius:9px;padding:10px 14px;display:inline-flex;align-items:center;min-height:42px';
   wrap.appendChild(campaignLink);
   const seasonalLink=document.createElement('a');
-  seasonalLink.href='./central-caseirinho-insights/?view=sazonais&v=17';
+  seasonalLink.href='./central-caseirinho-insights/?view=sazonais&v=18';
   seasonalLink.target='_blank';seasonalLink.rel='noopener noreferrer';seasonalLink.className='btn primary';
   seasonalLink.textContent='🎄 Encomendas Sazonais · Datas e sinal 50%';
   seasonalLink.title='Criar datas sazonais, quantidades mínimas, limite de valor e acompanhar sinal/saldo.';
