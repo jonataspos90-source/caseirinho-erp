@@ -1484,8 +1484,8 @@ async function loadBlackFriday(){
   const d=await api('black-friday');st.bfData=d;
   const saved=[...st.bfSelected.keys()];st.bfSelected=new Map(saved.filter(id=>(d.items||[]).some(p=>p.id===id)).map(id=>[id,st.bfSelected.get(id)]));
   const first=(d.items||[]).find(x=>x.promotion?.enabled);
-  if(!E('bfStart').value){const now=Date.now(),current=first?.promotion?.startAt||new Date(now+15*60000).toISOString();E('bfStart').value=bfLocalDateTime(current);}
-  if(!E('bfEnd').value){const now=Date.now(),current=first?.promotion?.endAt||new Date(now+7*86400000).toISOString();E('bfEnd').value=bfLocalDateTime(current);}
+  if(!E('bfStart').value&&first?.promotion?.startAt)E('bfStart').value=bfLocalDateTime(first.promotion.startAt);
+  if(!E('bfEnd').value&&first?.promotion?.endAt)E('bfEnd').value=bfLocalDateTime(first.promotion.endAt);
   E('bfMessage').hidden=true;renderBlackFriday();
  }catch(err){bfStatus('Não foi possível carregar a campanha: '+err.message,true);}
 }
