@@ -2,7 +2,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#183c2e"><meta name="description" content="Central Caseirinho Insights — painel administrativo independente de CRM, acessos, pedidos e cardápio.">
 <title>Central Caseirinho Insights | CRM e Loja</title>
-<link rel="stylesheet" href="./styles.css?v=4">
+<link rel="stylesheet" href="./styles.css?v=5">
 <link rel="manifest" href="./manifest.webmanifest"><link rel="icon" type="image/png" sizes="192x192" href="/caseirinho-loja/icons/icon-192.png"><link rel="apple-touch-icon" href="/caseirinho-loja/icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default">
 </head><body>
 <div class="auth-screen" id="loginScreen">
@@ -31,6 +31,7 @@
  <button type="button" data-view="orders">🛒 Pedidos</button>
  <button type="button" data-view="products">🏷️ Produtos e preços</button>
  <button type="button" data-view="reports">📄 Relatórios / PDF</button>
+ <button type="button" data-view="sales">📈 Vendas / Curva ABC</button>
  <button type="button" data-view="menu">🍝 Cardápio</button>
  <button type="button" data-view="requests">🔔 Solicitações <span id="requestCount" class="num" hidden>0</span></button>
  <button type="button" data-view="settings">⚙️ Configurações</button>
@@ -73,6 +74,41 @@
  </div>
  <div class="notice">No Android, toque em <b>Imprimir</b> e escolha <b>Salvar como PDF</b>. Os PDFs são gerados no seu navegador, sem enviar os dados a outros serviços.</div>
 </section>
+<section id="sales" class="section">
+ <div class="section-head"><div><h2>📈 Vendas por Produto e Curva ABC</h2><p>Vendas do aplicativo Caseirinho, ranking Top 10 e média dos últimos 42 dias.</p></div><button id="salesRefresh" class="btn primary" type="button">🔎 Consultar</button></div>
+ <article class="card sales-filter-card">
+ <div class="sales-filter-grid">
+  <label>📅 De<input id="salesDateFrom" type="date" aria-label="Data inicial"></label>
+  <label>📅 Até<input id="salesDateTo" type="date" aria-label="Data final"></label>
+ </div>
+ <div class="toolbar" style="margin-top:12px"><button class="btn small" type="button" data-sales-range="7">7 dias</button>
+ <button class="btn small" type="button" data-sales-range="30">30 dias</button>
+ <button class="btn small gold" type="button" data-sales-range="42">42 dias</button>
+ <button class="btn small" type="button" data-sales-range="90">90 dias</button>
+ <button class="btn small" type="button" data-sales-range="month">Mês atual</button></div>
+ </article>
+ <div id="salesError" class="notice error" hidden></div>
+ <div id="salesNote" class="notice">Escolha as datas e toque em Consultar. A média de 42 dias usa uma janela independente encerrada na data Até.</div>
+ <div class="grid stats" id="salesKpis"></div>
+ <div class="grid two" style="margin-bottom:14px">
+  <article class="card"><h3>🏆 Top 10 por faturamento</h3><div id="salesTopRevenue"></div></article>
+  <article class="card"><h3>📦 Top 10 por quantidade</h3><div id="salesTopQuantity"></div></article>
+ </div>
+ <div class="grid two" style="margin-bottom:14px">
+  <article class="card"><h3>📊 Curva ABC — faturamento dos itens</h3>
+  <p class="muted">A: primeiros ~80% da receita • B: próximos ~15% • C: últimos ~5%.</p>
+  <div id="salesAbcSummary"></div></article>
+  <article class="card"><h3>🏷️ Vendas por categoria</h3><div id="salesCategories"></div></article>
+ </div>
+ <div class="card"><div class="section-head"><div><h3>📋 Análise detalhada por produto</h3><p>Quantidade, faturamento, participação acumulada, curva e média por dia/semana em 42 dias.</p></div>
+ <div class="actions"><button id="salesCsv" class="btn" type="button">⬇ CSV</button><button id="salesPdf" class="btn gold" type="button">📄 PDF</button></div></div>
+ <div class="toolbar">
+  <input id="salesSearch" type="search" placeholder="Buscar produto / código / categoria...">
+  <select id="salesABCFilter"><option value="all">Todas as curvas</option><option value="A">Curva A</option><option value="B">Curva B</option><option value="C">Curva C</option></select>
+  <select id="salesCategoryFilter"><option value="all">Todas as categorias</option></select>
+ </div><div id="salesTable"></div></div>
+ <div class="notice"><b>Regras do relatório:</b> considere vendas aceitas, entregues, retiradas ou concluídas. Pedidos novos/pendentes, cancelados/rejeitados e testes identificados são excluídos. A média de 42 dias inclui dias sem venda. O faturamento ABC considera o valor dos itens, sem frete e sem ratear descontos aplicados somente ao pedido. Não duplica vendas importadas no ERP.</div>
+</section>
 <section id="requests" class="section"><div class="section-head"><div><h2>🔔 Solicitações de cardápio</h2><p>Quando o cliente pedir pelo botão do app, aparece aqui para responder pelo WhatsApp.</p></div><button class="btn gold" id="enableSound">🔊 Ativar alertas</button></div><div id="requestsTable"></div><div class="notice">Apenas pedidos feitos pelo botão do aplicativo são detectados. Mensagens recebidas diretamente no WhatsApp exigem conexão com a API oficial do WhatsApp Business.</div></section>
  <section id="settings" class="section"><div class="card"><h2>⚙️ Conexão e segurança</h2><p><b>Fonte:</b> Neon, projeto da loja Caseirinho, por meio da API autenticada John ERP Cloud.</p><p><b>Loja:</b> <a href="https://jonataspos90-source.github.io/caseirinho-loja/" target="_blank" rel="noopener">Abrir site oficial</a></p><p><b>API:</b> <span id="apiLabel"></span></p><p><b>Atualização automática:</b> a cada 30 segundos para pedidos de cardápio, a cada 2 minutos para demais painéis.</p><p><b>Privacidade:</b> nenhum WhatsApp é publicado na hospedagem estática, salvo intencionalmente pelo administrador ao abrir a conversa. O token é utilizado apenas para consulta à API.</p><button class="btn" id="clearSession">Encerrar sessão</button><div id="apiState"></div></div></section>
  <p class="footer">Central Caseirinho Insights • Ferramenta administrativa independente. Os indicadores de visita dependem de instrumentação publicada na loja e não podem ser reconstruídos a partir de pings antigos.</p>
@@ -82,9 +118,9 @@
  <button type="button" data-view="contacts">👥<small>Clientes</small></button>
  <button type="button" data-view="orders">🛒<small>Pedidos</small></button>
  <button type="button" data-view="products">🏷️<small>Preços</small></button>
- <button type="button" data-view="reports">📄<small>PDF</small></button>
+ <button type="button" data-view="sales">📈<small>Vendas</small></button>
  </nav>
 <div id="toast" class="toast" role="status" hidden></div>
 <div id="modal" class="modal-bg" hidden><div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><h2 id="modalTitle">Mensagem para WhatsApp</h2><div id="modalContent"></div><div class="toolbar" style="justify-content:flex-end;margin-top:20px"><button class="btn" id="modalClose">Fechar</button></div></div></div>
-<script src="./app.js?v=4" defer></script>
+<script src="./app.js?v=5" defer></script>
 </body></html>
