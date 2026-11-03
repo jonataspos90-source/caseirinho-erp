@@ -39,7 +39,7 @@ function enhance(){
   const select=document.createElement('select');select.id='produtoFiltroTipo';select.style='min-width:180px;max-width:260px';select.setAttribute('aria-label','Filtrar por tipo de produto');wrap.appendChild(select);search.parentElement.insertBefore(wrap,search);
   select.addEventListener('change',()=>window.renderProdutos());
   const campaignLink=document.createElement('a');
-  campaignLink.id='johnBlackFridayCampaignLink';campaignLink.href='./central-caseirinho-insights/?view=blackfriday&v=15';
+  campaignLink.id='johnBlackFridayCampaignLink';campaignLink.href='./central-caseirinho-insights/?view=blackfriday&v=16';
   campaignLink.target='_blank';campaignLink.rel='noopener noreferrer';campaignLink.className='btn primary';
   campaignLink.textContent='🖤 Black Friday · Preços e vigência';
   campaignLink.title='Gerenciar campanha Black Friday sincronizada ao ERP e ao e-commerce.';
