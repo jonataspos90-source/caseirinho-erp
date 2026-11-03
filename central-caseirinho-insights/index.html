@@ -2,7 +2,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#183c2e"><meta name="description" content="Central Caseirinho Insights — painel administrativo independente de CRM, acessos, pedidos e cardápio.">
 <title>Central Caseirinho Insights | CRM e Loja</title>
-<link rel="stylesheet" href="./styles.css?v=14">
+<link rel="stylesheet" href="./styles.css?v=15">
 <link rel="manifest" href="./manifest.webmanifest"><link rel="icon" type="image/png" sizes="192x192" href="/caseirinho-loja/icons/icon-192.png"><link rel="apple-touch-icon" href="/caseirinho-loja/icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default">
 </head><body>
 <div class="auth-screen" id="loginScreen">
@@ -28,6 +28,7 @@
  <button type="button" data-view="ranking">🏆 Ranking</button>
  <button type="button" data-view="orders">🛒 Pedidos</button>
  <button type="button" data-view="products">🏷️ Produtos e preços</button>
+ <button type="button" data-view="blackfriday">🖤 Black Friday</button>
  <button type="button" data-view="fichas">📋 Fichas Técnicas</button>
  <button type="button" data-view="cashbacks">💚 Cashback Clientes</button>
  <button type="button" data-view="coupons">🎟️ Cupons e Utilizações</button>
@@ -150,6 +151,23 @@
   <article class="card"><div class="section-head"><div><h3>👤 Quem utilizou os cupons</h3><p>Nome, WhatsApp, código, desconto, pedido e situação.</p></div><div class="actions"><button class="btn" id="couponExportCsv" type="button">⬇ CSV</button><button class="btn gold" id="couponExportPdf" type="button">📄 PDF</button></div></div><div id="couponReportTable"></div></article>
  </div>
 </section>
+<section id="blackfriday" class="section">
+ <div class="section-head"><div><h2>🖤 Black Friday • Campanhas</h2><p>Cadastre produtos e preços especiais com início e término automáticos. Publicação integrada ao ERP e à loja.</p></div><button type="button" id="bfRefresh" class="btn">↻ Atualizar</button></div>
+ <div class="notice"><strong>Tarja preta na loja + vigência vermelha:</strong> o preço especial só começa a valer no horário programado e termina automaticamente. O preço normal fica preservado. Produtos em pack ou outra promoção ativa não podem receber campanhas conflitantes.</div>
+ <div id="bfMessage" class="notice" hidden aria-live="polite"></div>
+ <article class="card">
+  <div class="section-head"><div><h3>📅 Vigência da Black Friday</h3><p>Horário de Brasília (São Paulo)</p></div></div>
+  <div class="form-grid">
+    <label>Início da promoção<input id="bfStart" type="datetime-local" required></label>
+    <label>Término da promoção<input id="bfEnd" type="datetime-local" required></label>
+  </div>
+  <div class="toolbar"><input id="bfSearch" type="search" placeholder="Buscar produto por nome ou código..."><select id="bfFilter"><option value="all">Todos os produtos</option><option value="campaign">🖤 Com Black Friday</option><option value="available">✅ Disponíveis para campanha</option><option value="conflict">⚠️ Promoção ou pack existente</option></select></div>
+  <div class="section-head"><div><h3>🎁 Produtos participantes</h3><p>Marque os produtos e informe o preço especial de cada um.</p></div><span id="bfSelectedCount" class="badge">0 selecionados</span></div>
+  <div id="bfProducts"></div>
+  <div class="notice">Ao salvar, os produtos selecionados terão preço promocional e vigência no ERP e no catálogo da loja. A tarja só aparecerá durante a vigência. Para cancelar uma campanha já gravada, use <b>Desativar</b> no produto.</div>
+  <button type="button" class="btn primary" id="bfPublish" style="width:100%">🖤 Salvar e publicar Black Friday</button>
+ </article>
+</section>
 <section id="merch" class="section">
  <div class="section-head"><div><h2>🎁 Grades e Packs Virtuais</h2><p>Organize tamanhos, pesos, sabores e combos promocionais que aparecem no e-commerce.</p></div><button id="refreshMerch" class="btn" type="button">↻ Atualizar</button></div>
  <div class="notice"><b>Cadastros sincronizados:</b> use produtos já publicados na loja. Cada variação mantém seu código e preço; packs aplicam benefícios na compra, sem criar um produto físico adicional. Nenhuma alteração é feita sem sua confirmação.</div>
@@ -175,6 +193,7 @@
  <button type="button" data-view="contacts">👥<small>Clientes</small></button>
  <button type="button" data-view="orders">🛒<small>Pedidos</small></button>
  <button type="button" data-view="products">🏷️<small>Preços</small></button>
+ <button type="button" data-view="blackfriday">🖤<small>Black Friday</small></button>
  <button type="button" data-view="fichas">📋<small>Fichas</small></button>
  <button type="button" data-view="cashbacks">💚<small>Saldos</small></button>
  <button type="button" data-view="coupons">🎟️<small>Cupons</small></button>
@@ -183,5 +202,5 @@
  </nav>
 <div id="toast" class="toast" role="status" hidden></div>
 <div id="modal" class="modal-bg" hidden><div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><h2 id="modalTitle">Mensagem para WhatsApp</h2><div id="modalContent"></div><div class="toolbar" style="justify-content:flex-end;margin-top:20px"><button class="btn" id="modalClose">Fechar</button></div></div></div>
-<script src="./app.js?v=14" defer></script>
+<script src="./app.js?v=15" defer></script>
 </body></html>
