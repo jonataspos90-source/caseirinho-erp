@@ -1,6 +1,6 @@
 /* Central Caseirinho Insights — cache SOMENTE de arquivos públicos; nenhuma informação de clientes */
-const CACHE='caseirinho-insights-app-shell-v13';
-const SHELL=['./','./index.html','./styles.css?v=13','./app.js?v=13','./manifest.webmanifest','./icon.svg'];
+const CACHE='caseirinho-insights-app-shell-v14';
+const SHELL=['./','./index.html','./styles.css?v=14','./app.js?v=14','./manifest.webmanifest','./icon.svg'];
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting()));
 });
