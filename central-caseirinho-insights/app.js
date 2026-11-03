@@ -101,12 +101,21 @@ function setupInstall(){
 }
 async function api(path,options){
  if(!st.token)throw Error('É necessário entrar com seu usuário administrativo.');
- const response=await fetch(st.api+'/api/v1/admin/store/insights/'+path,{
-  method:options&&options.method||'GET',cache:'no-store',
-  headers:{Authorization:'Bearer '+st.token,'Cache-Control':'no-store','Content-Type':'application/json'},
-  body:options&&options.body?JSON.stringify(options.body):undefined
- });
- let data={};try{data=await response.json()}catch(_){}
+ let response;
+ const method=options&&options.method||'GET';
+ try{
+  response=await fetch(st.api+'/api/v1/admin/store/insights/'+path,{
+   method,cache:'no-store',credentials:'omit',
+   headers:{Authorization:'Bearer '+st.token,'Cache-Control':'no-store','Content-Type':'application/json'},
+   body:options&&options.body?JSON.stringify(options.body):undefined
+  });
+ }catch(cause){
+  const err=new Error(navigator.onLine===false
+   ?'O celular está sem conexão. Sua alteração não foi confirmada. Reconecte e confira antes de tentar novamente.'
+   :'Não foi possível conectar ao servidor. O aplicativo verificará se a alteração foi recebida antes de permitir nova tentativa.');
+  err.networkError=true;err.cause=cause;throw err;
+ }
+ let data={};try{data=await response.json();}catch(_){}
  if(!response.ok){const err=new Error(s(data.error||('HTTP '+response.status)));err.httpStatus=response.status;throw err;}
  return data;
 }
@@ -511,8 +520,19 @@ function editProduct(id){
  '<input id="editMaximum" type="number" min="0" max="99999" step="0.01" inputmode="decimal" required value="'+n(x.maximum)+'">'+
  (x.promotionActive?'<div class="notice">⚠️ Há promoção ativa neste produto. O preço promocional deve ser conferido separadamente no ERP.</div>':'')+
  '<p class="muted">Alteração registrada com data e usuário. Se outro operador modificar o produto, a gravação será recusada para evitar conflito.</p>'+
+ '<div id="productSaveStatus" class="notice" role="status" hidden></div>'+
  '<button class="btn primary" type="submit">✅ Salvar no ERP e na loja</button></form>';
  modal('✏️ Editar produto',html);
+}
+function productTermsMatch(product,price,minimum,maximum){
+ if(!product)return false;
+ return [n(product.price),n(product.minimum),n(product.maximum)].every((v,i)=>
+  Math.abs(v-[price,minimum,maximum][i])<0.0001);
+}
+async function getVerifiedProduct(id){
+ // Always consult the server, never trust a local product card or cached GET for save verification.
+ const fresh=await api('catalog');
+ return (fresh.items||[]).find(x=>s(x.id)===s(id))||null;
 }
 async function saveProduct(e){
  e.preventDefault();
@@ -520,15 +540,39 @@ async function saveProduct(e){
  const x=st.catalog.find(v=>v.id===productId);
  if(!x)return toast('Produto desatualizado. Atualize antes de salvar.',true);
  const price=Number(E('editPrice').value),minimum=Number(E('editMinimum').value),maximum=Number(E('editMaximum').value);
- if(!Number.isFinite(price)||price<=0||!Number.isFinite(minimum)||minimum<=0||!Number.isFinite(maximum)||maximum<0||(maximum>0&&maximum<minimum))return toast('Preencha valores válidos. Máximo deve ser zero ou maior que o mínimo.',true);
+ if(!Number.isFinite(price)||price<=0||!Number.isFinite(minimum)||minimum<=0||!Number.isFinite(maximum)||maximum<0||(maximum>0&&maximum<minimum)){
+  toast('Preencha valores válidos. Máximo deve ser zero ou maior que o mínimo.',true);return;
+ }
  if(!window.confirm('Confirmar alteração em '+x.name+'? Preço: '+brl(price)+' | Mínimo: '+minimum+' | Máximo: '+(maximum||'sem limite')+'. A alteração será publicada no catálogo.'))return;
- const button=form.querySelector('[type=submit]');button.disabled=true;button.textContent='Salvando…';
- try{
-  const r=await api('catalog/'+encodeURIComponent(productId)+'/terms',{method:'PATCH',body:{price,minimum,maximum,expectedUpdatedAt:x.updatedAt}});
-  hideModal();toast('✅ Produto atualizado no ERP e na loja.');
-  if(r.warning)toast(r.warning,true);
-  await loadAll();nav('products');
- }catch(err){toast('Não foi possível salvar: '+err.message,true);button.disabled=false;button.textContent='✅ Salvar no ERP e na loja';}
+ const button=form.querySelector('[type=submit]'),message=E('productSaveStatus');
+ const feedback=(text,cls='warn')=>{if(message){message.hidden=false;message.className='notice '+cls;message.textContent=text;}};
+ const original=button.textContent;
+ button.disabled=true;button.textContent='Verificando gravação…';
+ feedback('Enviando alteração para o ERP e o e-commerce…');
+ let reply=null,networkError=null;
+ try{reply=await api('catalog/'+encodeURIComponent(productId)+'/terms',{method:'PATCH',body:{price,minimum,maximum,expectedUpdatedAt:x.updatedAt}});}
+ catch(err){if(!err.networkError){feedback('Alteração não salva: '+err.message,'error');toast('Não foi possível salvar: '+err.message,true);button.disabled=false;button.textContent=original;return;}networkError=err;}
+ let verified=null,verificationError=null;
+ try{verified=await getVerifiedProduct(productId);}catch(err){verificationError=err;}
+ // A lost response may follow a committed write; verifying avoids accidental double saves.
+ if(verified&&productTermsMatch(verified,price,minimum,maximum)){
+  st.catalog=st.catalog.map(p=>p.id===productId?{...p,...verified}:p);
+  hideModal();toast('✅ Preço e quantidades confirmados na loja e no ERP!');
+  if(reply?.warning)toast(reply.warning,true);
+  // Saving succeeded: a later refresh failure must not be presented as a failed save.
+  try{await loadAll();}catch(_){}nav('products');return;
+ }
+ if(reply){
+  // Server returned success but a read can be interrupted or delayed; never claim publication without proof.
+  feedback(verificationError
+   ?'O servidor recebeu a alteração, mas a conferência final falhou. Atualize quando a internet estabilizar antes de enviar novamente.'
+   :'A API recebeu o cadastro, porém o catálogo retornou valores diferentes. Atualize os produtos antes de tentar novamente.','warn');
+ }else if(verified){
+  feedback('A tentativa não foi concluída. O catálogo ainda informa '+brl(verified.price)+' para este produto. Seus dados continuam preenchidos; confira e toque Salvar novamente.','error');
+ }else{
+  feedback((networkError?.message||'Falha de conexão')+' Não tente enviar repetidas vezes: primeiro recarregue quando a internet estiver disponível.','error');
+ }
+ button.disabled=false;button.textContent=original;
 }
 function itemListHtml(order){
  const lines=(Array.isArray(order.items)?order.items:[]).map(x=>'<tr><td>'+esc(x.name||x.code)+'</td><td>'+n(x.quantity)+'</td><td>'+brl(x.unitPrice)+'</td><td>'+brl(x.total)+'</td></tr>');
