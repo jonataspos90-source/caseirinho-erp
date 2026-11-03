@@ -49,7 +49,7 @@ function showInstallSteps(){
  const steps=samsung?'No Samsung Internet: menu ☰ → Adicionar página a → Tela inicial.':
  android?'No Google Chrome: menu ⋮ → Instalar aplicativo (ou Adicionar à tela inicial) → Instalar.':
  'No iPhone (Safari): Compartilhar → Adicionar à Tela de Início.';
- modal('📲 Instalar Caseirinho Insights','<p>'+steps+'</p><p class="notice success">Depois, basta tocar no ícone da tela inicial para abrir diretamente a Central.</p><p>Marque "Este é meu celular" antes de entrar se quiser manter sua sessão em um aparelho pessoal.</p>');
+ modal('📲 Instalar Caseirinho Insights','<p>'+steps+'</p><p class="notice success">Depois, basta tocar no ícone da tela inicial para abrir diretamente a Central.</p><p>O login usa a senha do ERP, sem salvar sua senha.</p>');
 }
 async function installApp(){
  if(isInstalled()){toast('O aplicativo já está instalado! Abra pelo ícone da tela inicial.');return;}
@@ -59,10 +59,10 @@ async function installApp(){
  catch(_){showInstallSteps();}
 }
 function setupInstall(){
- for(const id of ['installAppBtn','installAppMain'])E(id)?.addEventListener('click',installApp);
+ for(const id of ['installAppMain'])E(id)?.addEventListener('click',installApp);
  window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();installEvent=event;});
- window.addEventListener('appinstalled',()=>{installEvent=null;E('installAppMain').hidden=true;E('installAppBtn').textContent='✅ Instalado';toast('Central Caseirinho instalada!');});
- if(isInstalled()){E('installAppMain').hidden=true;E('installAppBtn').textContent='✅ Já instalado';E('installAppBtn').disabled=true;}
+ window.addEventListener('appinstalled',()=>{installEvent=null;E('installAppMain').hidden=true;toast('Central Caseirinho instalada!');});
+ if(isInstalled())E('installAppMain').hidden=true;
  if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js',{scope:'./'}).catch(()=>{});
 }
 async function api(path,options){
