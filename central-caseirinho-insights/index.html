@@ -2,7 +2,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#183c2e"><meta name="description" content="Central Caseirinho Insights — painel administrativo independente de CRM, acessos, pedidos e cardápio.">
 <title>Central Caseirinho Insights | CRM e Loja</title>
-<link rel="stylesheet" href="./styles.css?v=16">
+<link rel="stylesheet" href="./styles.css?v=17">
 <link rel="manifest" href="./manifest.webmanifest"><link rel="icon" type="image/png" sizes="192x192" href="/caseirinho-loja/icons/icon-192.png"><link rel="apple-touch-icon" href="/caseirinho-loja/icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default">
 </head><body>
 <div class="auth-screen" id="loginScreen">
@@ -29,6 +29,7 @@
  <button type="button" data-view="orders">🛒 Pedidos</button>
  <button type="button" data-view="products">🏷️ Produtos e preços</button>
  <button type="button" data-view="blackfriday">🖤 Black Friday</button>
+ <button type="button" data-view="sazonais">🎄 Encomendas Sazonais</button>
  <button type="button" data-view="fichas">📋 Fichas Técnicas</button>
  <button type="button" data-view="cashbacks">💚 Cashback Clientes</button>
  <button type="button" data-view="coupons">🎟️ Cupons e Utilizações</button>
@@ -168,6 +169,40 @@
   <button type="button" class="btn primary" id="bfPublish" style="width:100%">🖤 Salvar e publicar Black Friday</button>
  </article>
 </section>
+<section id="sazonais" class="section">
+ <div class="section-head"><div><h2>🎄 Encomendas Sazonais</h2><p>Crie campanhas para Natal, Final de Ano, Páscoa, Dia das Mães e outras datas. Controle produtos, quantidades, sinal e saldo.</p></div><button type="button" class="btn" id="seasonRefresh">↻ Atualizar</button></div>
+ <div class="notice">💚 Sinal de 50% na encomenda, 50% restantes na entrega ou retirada. A produção começa somente após confirmação efetiva do sinal. Pagamentos nunca são marcados como recebidos automaticamente por informar uma forma de pagamento.</div>
+ <div class="grid stats" id="seasonStats"></div>
+ <div class="merch-tabs"><button type="button" class="btn primary" data-season-admin-tab="campaigns">📅 Campanhas</button><button type="button" class="btn" data-season-admin-tab="orders">📦 Pedidos e Sinais</button></div>
+ <div id="seasonNotice" class="notice" hidden></div>
+ <div id="seasonCampaignsPanel">
+  <article class="card">
+   <div class="section-head"><div><h3>➕ Criar / Editar campanha</h3><p>Para uma nova campanha, deixe “Nova campanha” selecionado.</p></div></div>
+   <div class="form-grid">
+    <label>Campanha<select id="seasonCampaignSelect"><option value="">Nova campanha</option></select></label>
+    <label>Nome da campanha *<input id="seasonTitle" type="text" maxlength="100" placeholder="Ex.: Encomendas de Natal" required></label>
+    <label class="full">Texto do banner<input id="seasonBanner" type="text" maxlength="160" placeholder="Ex.: Seu Natal mais saboroso com Caseirinho!"></label>
+    <label class="full">Descrição da campanha<textarea id="seasonDescription" rows="2" maxlength="600" placeholder="Produtos para ocasiões especiais"></textarea></label>
+    <label>Receber pedidos de *<input id="seasonFrom" type="date"></label>
+    <label>Encomendar até *<input id="seasonUntil" type="date"></label>
+    <label class="full">Datas disponíveis para retirada/entrega * (uma por linha, AAAA-MM-DD)<textarea id="seasonDates" rows="3" placeholder="2026-12-23&#10;2026-12-24"></textarea></label>
+    <label>Pedido mínimo (R$)<input id="seasonMinValue" type="number" step=".01" min="0" value="0"></label>
+    <label>Valor máximo da encomenda (R$; 0 = sem limite)<input id="seasonMaxValue" type="number" step=".01" min="0" value="0"></label>
+    <label>Quantidade mínima total (UN)<input id="seasonMinTotalQty" type="number" min="1" step="1" value="1"></label>
+    <label>Permissões de atendimento<div class="season-checks"><label><input id="seasonPickup" type="checkbox" checked> Retirada</label><label><input id="seasonDelivery" type="checkbox" checked> Entrega</label><label><input id="seasonActive" type="checkbox" checked> Campanha ativa</label></div></label>
+   </div>
+   <h3>🍝 Produtos participantes e quantidade mínima</h3>
+   <div class="toolbar"><input id="seasonProductSearch" type="search" placeholder="Buscar produtos por nome ou código..."><span id="seasonSelected" class="badge">0 selecionados</span></div>
+   <div id="seasonProductList" class="season-admin-products"></div>
+   <button id="seasonSave" class="btn primary" type="button" style="width:100%">💾 Salvar e publicar campanha</button>
+  </article>
+  <div id="seasonCampaignCards"></div>
+ </div>
+ <div id="seasonOrdersPanel" hidden>
+  <div class="toolbar"><input type="search" id="seasonOrderSearch" placeholder="Buscar cliente, campanha ou pedido..."><select id="seasonOrderFilter"><option value="all">Todas as encomendas</option><option value="deposit">⏳ Sinal pendente</option><option value="paid">✅ Sinal confirmado</option><option value="balance">💰 Saldo pendente</option><option value="completed">🎉 Quitadas</option></select><button id="seasonLoadOrders" type="button" class="btn">↻ Atualizar encomendas</button></div>
+  <div id="seasonOrderList"></div>
+ </div>
+</section>
 <section id="merch" class="section">
  <div class="section-head"><div><h2>🎁 Grades e Packs Virtuais</h2><p>Organize tamanhos, pesos, sabores e combos promocionais que aparecem no e-commerce.</p></div><button id="refreshMerch" class="btn" type="button">↻ Atualizar</button></div>
  <div class="notice"><b>Cadastros sincronizados:</b> use produtos já publicados na loja. Cada variação mantém seu código e preço; packs aplicam benefícios na compra, sem criar um produto físico adicional. Nenhuma alteração é feita sem sua confirmação.</div>
@@ -194,6 +229,7 @@
  <button type="button" data-view="orders">🛒<small>Pedidos</small></button>
  <button type="button" data-view="products">🏷️<small>Preços</small></button>
  <button type="button" data-view="blackfriday">🖤<small>Black Friday</small></button>
+ <button type="button" data-view="sazonais">🎄<small>Encomendas</small></button>
  <button type="button" data-view="fichas">📋<small>Fichas</small></button>
  <button type="button" data-view="cashbacks">💚<small>Saldos</small></button>
  <button type="button" data-view="coupons">🎟️<small>Cupons</small></button>
@@ -202,5 +238,5 @@
  </nav>
 <div id="toast" class="toast" role="status" hidden></div>
 <div id="modal" class="modal-bg" hidden><div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><h2 id="modalTitle">Mensagem para WhatsApp</h2><div id="modalContent"></div><div class="toolbar" style="justify-content:flex-end;margin-top:20px"><button class="btn" id="modalClose">Fechar</button></div></div></div>
-<script src="./app.js?v=16" defer></script>
+<script src="./app.js?v=17" defer></script>
 </body></html>
