@@ -200,3 +200,23 @@
  #couponReportTab .toolbar input[type=search]{grid-column:1/-1}
  #couponReportTab .toolbar button{grid-column:1/-1}
 }
+
+
+/* V15 — Gerenciamento de campanhas Black Friday no celular */
+.bf-product-list{display:grid;gap:10px;margin:14px 0 18px;max-height:610px;overflow:auto;padding:2px}
+.bf-product-row{border:1px solid #d3ddd1;border-radius:13px;padding:11px;display:grid;grid-template-columns:minmax(0,1.7fr) auto minmax(145px,.85fr);gap:9px;align-items:center;background:#fff}
+.bf-product-choice{display:flex;align-items:center;gap:9px;min-width:0;cursor:pointer}
+.bf-product-choice>input{height:20px;width:20px;flex:none;accent-color:#131313}
+.bf-product-choice span{display:flex;flex-direction:column;min-width:0;gap:3px}
+.bf-product-choice b{color:#1b3928;line-height:1.25;font-size:13px}
+.bf-product-choice small{color:#687e6c;font-size:11px}
+.bf-price-field{display:flex;flex-direction:column;gap:5px;font-weight:750;color:#9c1631;font-size:11px}
+.bf-price-field input{border:1px solid #d7d5d0;border-radius:9px;width:100%;padding:9px;min-width:0;background:#fff;font-size:15px}
+.bf-published{grid-column:1 / -1;background:#fff0f2;color:#a61d36;font-size:12px;border:1px solid #ffd2d5;padding:8px 10px;border-radius:8px}
+.bf-published .btn{margin-left:7px}
+#blackfriday .card{padding:18px}
+#blackfriday .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}
+#blackfriday .form-grid label{display:flex;flex-direction:column;gap:8px;font-size:12px;font-weight:800}
+#blackfriday .form-grid input{padding:12px;min-width:0;border-radius:9px;border:1px solid #d5ddd2;font-size:14px}
+@media(max-width:700px){.bf-product-row{grid-template-columns:minmax(0,1fr) minmax(118px,.7fr)}.bf-product-choice{grid-column:1}.bf-product-row>.badge{grid-column:1/-1;justify-self:start;grid-row:2}.bf-price-field{grid-column:2;grid-row:1}.bf-product-list{max-height:65vh}}
+@media(max-width:410px){#blackfriday .form-grid{grid-template-columns:1fr}.bf-product-row{grid-template-columns:1fr}.bf-price-field{grid-column:1;grid-row:auto}.bf-product-row>.badge{grid-row:auto}}
