@@ -632,7 +632,7 @@ function renderSales(){
  '<div style="flex:1"><div class="sales-top-title"><b>'+x.products+' produtos</b><strong>'+brl(x.revenue)+'</strong></div>'+
  salesBar(x.revenue/maxABC*100,'abc-'+x.abc)+'</div></div>').join('');
  const maxCat=Math.max(1,...(d.categories||[]).map(x=>x.revenue));
- E('salesCategories').innerHTML=(d.categories||[]).map(x=>'<div class="sales-top-row"><div class="sales-top-title"><b>'+esc(x.name)+' <small>('+x.products+')</small></b><strong>'+brl(x.revenue)+'</strong></div>'+salesBar(x.revenue/maxCat*100)+'</div>').join('')||cellEmpty('Sem categorias vendidas.');
+ E('salesCategories').innerHTML=(d.categories||[]).map(x=>'<div class="sales-top-row"><div class="sales-top-title"><b>'+abcBadge(x.abc||'—')+' '+esc(x.name)+' <small>('+x.products+' produtos)</small></b><strong>'+brl(x.revenue)+'</strong></div>'+salesBar(x.revenue/maxCat*100)+'<small class="muted">'+pctBR(x.sharePct)+' da receita · Acumulado: '+pctBR(x.cumulativePct)+'</small></div>').join('')||cellEmpty('Sem categorias vendidas.');
  const filter=E('salesCategoryFilter'),selected=filter.value;
  filter.innerHTML='<option value="all">Todas as categorias</option>'+(d.categories||[]).map(x=>'<option value="'+esc(x.name)+'">'+esc(x.name)+'</option>').join('');
  if((d.categories||[]).some(x=>x.name===selected))filter.value=selected;
@@ -655,8 +655,9 @@ function salesPDF(){
  '<p><b>Pedidos:</b> '+t.orders+' · <b>Produtos:</b> '+t.products+' · <b>Unidades:</b> '+qtyBR(t.quantity)+
  ' · <b>Receita dos itens:</b> '+brl(t.itemRevenue)+'</p>';
  const abc=table(['ABC','Produtos','Unidades','Receita'],(d.abcSummary||[]).map(x=>'<tr><td>'+esc(x.abc)+'</td><td>'+x.products+'</td><td>'+qtyBR(x.quantity)+'</td><td>'+brl(x.revenue)+'</td></tr>'));
+ const categoryRows=(d.categories||[]).map(x=>'<tr><td>'+esc(x.abc)+'</td><td>'+esc(x.name)+'</td><td>'+x.products+'</td><td>'+qtyBR(x.quantity)+'</td><td>'+brl(x.revenue)+'</td><td>'+pctBR(x.sharePct)+'</td></tr>');
  const rows=salesFilterProducts().map(x=>'<tr><td>'+esc(x.abc)+'</td><td>'+esc(x.code)+'</td><td>'+esc(x.name)+'</td><td>'+esc(x.category)+'</td><td>'+qtyBR(x.quantity)+'</td><td>'+brl(x.revenue)+'</td><td>'+pctBR(x.sharePct)+'</td><td>'+pctBR(x.cumulativePct)+'</td><td>'+qtyBR(x.dailyAverageQty42d)+'</td></tr>');
- const body=head+'<h3>Resumo Curva ABC</h3>'+abc+'<h3>Vendas detalhadas por produto</h3>'+
+ const body=head+'<h3>Resumo Curva ABC</h3>'+abc+'<h3>Curva ABC por categoria</h3>'+table(['ABC','Categoria','Produtos','Qtd.','Receita','Participação'],categoryRows)+'<h3>Vendas detalhadas por produto</h3>'+
  table(['ABC','Código','Produto','Categoria','Qtd.','Receita','%','Acumulado','Média/dia 42d'],rows)+
  '<p><small>Fonte: e-commerce Caseirinho, pedidos ACEITO/ENTREGUE/RETIRADO/CONCLUIDO. Excluídos pendentes, cancelados, rejeitados e testes identificados. Frete/descontos de pedido não rateados. A média inclui dias sem vendas.</small></p>';
  printDocument('Vendas por Produto • Curva ABC',body);
