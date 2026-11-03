@@ -521,7 +521,7 @@ function editProduct(id){
  (x.promotionActive?'<div class="notice">⚠️ Há promoção ativa neste produto. O preço promocional deve ser conferido separadamente no ERP.</div>':'')+
  '<p class="muted">Alteração registrada com data e usuário. Se outro operador modificar o produto, a gravação será recusada para evitar conflito.</p>'+
  '<div id="productSaveStatus" class="notice" role="status" hidden></div>'+
- '<button class="btn primary" type="submit">✅ Salvar no ERP e na loja</button></form>';
+ '<div class="toolbar"><button class="btn primary" type="submit">✅ Salvar no ERP e na loja</button><button class="btn" type="button" id="verifyProductTerms">🔎 Conferir preço publicado</button></div></form>';
  modal('✏️ Editar produto',html);
 }
 function productTermsMatch(product,price,minimum,maximum){
@@ -533,6 +533,28 @@ async function getVerifiedProduct(id){
  // Always consult the server, never trust a local product card or cached GET for save verification.
  const fresh=await api('catalog');
  return (fresh.items||[]).find(x=>s(x.id)===s(id))||null;
+}
+async function verifyProductTerms(){
+ const form=E('productEditForm');if(!form)return;
+ const id=form.dataset.product,button=E('verifyProductTerms'),status=E('productSaveStatus');
+ const expected={price:Number(E('editPrice').value),minimum:Number(E('editMinimum').value),maximum:Number(E('editMaximum').value)};
+ const original=button.textContent;button.disabled=true;button.textContent='Conferindo...';
+ try{
+  const published=await getVerifiedProduct(id);
+  if(!published)throw Error('Produto não localizado na loja. Atualize o cadastro.');
+  status.hidden=false;
+  if(productTermsMatch(published,expected.price,expected.minimum,expected.maximum)){
+   status.className='notice success';
+   status.textContent='✅ CONFIRMADO no e-commerce: '+brl(published.price)+' · mínimo '+published.minimum+' · máximo '+published.maximum+'.';
+   st.catalog=st.catalog.map(x=>x.id===id?{...x,...published}:x);
+  }else{
+   status.className='notice warn';
+   status.textContent='⚠️ Ainda NÃO corresponde ao que está preenchido. Valor publicado: '+brl(published.price)+' · mínimo '+published.minimum+' · máximo '+published.maximum+'. O formulário foi mantido sem reenviar nada.';
+  }
+ }catch(error){
+  status.hidden=false;status.className='notice error';
+  status.textContent='Não foi possível consultar o valor publicado: '+error.message+'. Aguarde a conexão voltar; nenhum dado foi reenviado.';
+ }finally{button.disabled=false;button.textContent=original;}
 }
 async function saveProduct(e){
  e.preventDefault();
@@ -1442,6 +1464,7 @@ function bind(){
  bindMerch();
  document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>nav(b.dataset.view)));
  E('refreshBtn').addEventListener('click',async()=>{await loadAll();if(st.view==='sales')await loadSales();});
+ document.addEventListener('click',e=>{if(e.target?.id==='verifyProductTerms')verifyProductTerms();});
  E('logoutBtn').addEventListener('click',logout);
  E('clearSession').addEventListener('click',logout);
  E('contactSearch').addEventListener('input',renderContacts);
