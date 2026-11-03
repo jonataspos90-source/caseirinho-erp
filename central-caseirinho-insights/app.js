@@ -2,7 +2,7 @@
 'use strict';
 const STORE='https://jonataspos90-source.github.io/caseirinho-loja/';
 const DEFAULT_API='https://john-cloud-api-production.up.railway.app';
-const st={api:DEFAULT_API,token:'',summary:null,contacts:[],orders:[],catalog:[],categories:[],drafts:[],requests:[],sales:null,salesLoaded:false,merch:{grades:[],packs:[]},merchTab:'grades',gradeSelected:new Map(),packSelected:new Set(),merchLoaded:false,fulfillment:new Map(),view:'dashboard',syncing:false,sound:false,known:new Set(),knownReady:false,lastUpdated:null};
+const st={api:DEFAULT_API,token:'',summary:null,contacts:[],orders:[],catalog:[],categories:[],drafts:[],requests:[],sales:null,salesLoaded:false,merch:{grades:[],packs:[]},merchTab:'grades',gradeSelected:new Map(),packSelected:new Set(),merchLoaded:false,fulfillment:new Map(),fichasData:null,cashbacksData:null,orderAlertSeen:null,orderAlertEnabled:false,view:'dashboard',syncing:false,sound:false,known:new Set(),knownReady:false,lastUpdated:null};
 const E=id=>document.getElementById(id);
 const s=x=>String(x==null?'':x), n=x=>Number(x)||0;
 const esc=x=>s(x).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
@@ -114,12 +114,14 @@ function nav(tab){
  st.view=tab;
  document.querySelectorAll('.section').forEach(x=>x.classList.toggle('active',x.id===tab));
  document.querySelectorAll('[data-view]').forEach(x=>x.classList.toggle('active',x.dataset.view===tab));
- const labels={dashboard:'Visão geral',contacts:'CRM e contatos',ranking:'Ranking de acessos',orders:'Pedidos',menu:'Cardápio escrito',products:'Produtos e preços',reports:'Relatórios e PDF',sales:'Vendas e Curva ABC',merch:'Grades e Packs',requests:'Solicitações de cardápio',settings:'Configurações'};
+ const labels={dashboard:'Visão geral',contacts:'CRM e contatos',ranking:'Ranking de acessos',orders:'Pedidos',menu:'Cardápio escrito',products:'Produtos e preços',reports:'Relatórios e PDF',sales:'Vendas e Curva ABC',merch:'Grades e Packs',fichas:'Fichas Técnicas',cashbacks:'Cashback Clientes',requests:'Solicitações de cardápio',settings:'Configurações'};
  E('pageTitle').textContent=labels[tab]||'Central de Insights';
  window.scrollTo({top:0,behavior:'smooth'});
  render();
  if(tab==='sales'&&!st.salesLoaded)loadSales();
  if(tab==='merch'&&!st.merchLoaded)loadMerch();
+ if(tab==='fichas'&&!st.fichasData)loadFichas();
+ if(tab==='cashbacks'&&!st.cashbacksData)loadCashbacks();
 }
 function badge(x){const v=s(x).toUpperCase();return '<span class="badge '+(v.includes('PENDENTE')?'warn':v.includes('IMPORTANDO')?'light':v.includes('NOVO')?'light':v.includes('IMPORTADO')||v.includes('CONCLU')||v.includes('APROV')?'good':'')+'">'+esc(x||'—')+'</span>';}
 function cellEmpty(title){return '<div class="empty">'+esc(title)+'</div>';}
@@ -268,6 +270,8 @@ function render(){
  if(st.view==='products')renderProducts();
  if(st.view==='sales')renderSales();
  if(st.view==='merch')renderMerch();
+ if(st.view==='fichas')renderFichas();
+ if(st.view==='cashbacks')renderCashbacks();
  if(st.view==='requests')renderRequests();
  E('apiLabel').textContent=st.api;
  E('apiState').innerHTML='<p class="notice success">Última consulta: '+dt(st.lastUpdated)+'. Dados recebidos exclusivamente da API autenticada.</p>';
@@ -1013,8 +1017,200 @@ async function releaseOrderCashback(code){
   await loadAll();nav('orders');
  }catch(error){toast('Falha ao liberar cashback: '+error.message,true);}
 }
+
+/* Fichas Técnicas — espelha erp_records(entity_type=fichas). */
+async function loadFichas(){
+ E('fichaStatus').className='notice';E('fichaStatus').textContent='Consultando fichas técnicas e custos no ERP…';
+ try{
+  const result=await api('fichas');st.fichasData=result;
+  E('fichaStatus').textContent='Fichas sincronizadas com o ERP. Custo estimado pelos insumos atuais; não representa custo contábil histórico.';
+  renderFichas();
+ }catch(err){E('fichaStatus').className='notice error';E('fichaStatus').textContent='Falha ao consultar fichas: '+err.message;}
+}
+function fichaProducts(){return st.fichasData?.products||[]}
+function fichaFor(id){return (st.fichasData?.fichas||[]).filter(f=>s(f.productId)===s(id)&&s(f.status).toUpperCase()!=='INATIVO').sort((a,b)=>new Date(b.updatedAt)-new Date(a.updatedAt))[0]}
+function fichaWarning(p){
+ if(!p||p.costStatus==='SEM_FICHA_TECNICA')return '<span class="badge warn">⚠️ Não possui ficha técnica</span>';
+ if(p.costStatus==='CUSTO_CALCULADO')return '<span class="badge good">✅ Custo: '+brl(p.unitCost)+'</span>';
+ if(p.costStatus==='CUSTO_ESTOQUE')return '<span class="badge light">Custo de estoque: '+brl(p.unitCost)+'</span>';
+ return '<span class="badge warn">⚠️ Ficha/custo incompleto</span>';
+}
+function isFinishedProduct(p){return (p.types||[]).some(t=>s(t).toLowerCase().includes('produto acabado'))}
+function renderFichas(){
+ if(!st.fichasData)return;
+ const products=fichaProducts(),fichas=st.fichasData.fichas||[],missing=products.filter(p=>isFinishedProduct(p)&&p.costStatus==='SEM_FICHA_TECNICA');
+ const incomplete=products.filter(p=>p.hasFicha&&p.costStatus!=='CUSTO_CALCULADO');
+ E('fichasKpis').innerHTML=[
+  statsCard('📋','Fichas cadastradas',fichas.length,'Existentes no ERP'),
+  statsCard('⚠️','Acabados sem ficha',missing.length,'Atenção ao custo dos produtos vendidos'),
+  statsCard('🧮','Custo incompleto',incomplete.length,'Falta de rendimento, insumos ou custo'),
+  statsCard('✅','Custo calculado',products.filter(p=>p.costStatus==='CUSTO_CALCULADO').length,'Custo atual por unidade')
+ ].join('');
+ const q=s(E('fichaSearch').value).trim().toLowerCase(),filter=E('fichaFilter').value;
+ const list=products.filter(p=>(s(p.name)+' '+s(p.code)).toLowerCase().includes(q)&&(filter==='all'||filter==='sem_ficha'&&isFinishedProduct(p)&&p.costStatus==='SEM_FICHA_TECNICA'||filter==='incomplete'&&p.hasFicha&&p.costStatus!=='CUSTO_CALCULADO'||filter==='ok'&&p.costStatus==='CUSTO_CALCULADO'));
+ E('fichasList').innerHTML=list.length?'<div class="mobile-list">'+list.map(p=>{
+  const existing=fichaFor(p.id);
+  return '<article class="mobile-record"><div class="mobile-record-head"><b>'+esc(p.name)+'</b>'+fichaWarning(p)+'</div><p>'+esc(p.code)+' · '+esc(p.unit)+' · '+esc((p.types||[]).join(', '))+'</p>'+
+   (p.hasFicha&&p.warnings?.length?'<p class="muted">'+esc(p.warnings.join(' · '))+'</p>':'')+
+   '<div class="record-actions"><button type="button" class="btn small primary" data-ficha-edit="'+esc(p.id)+'">'+(existing?'✏️ Editar ficha':'➕ Cadastrar ficha')+'</button></div></article>';
+ }).join('')+'</div>':cellEmpty('Nenhum produto encontrado neste filtro.');
+}
+function fichaOptions(selected){
+ return '<option value="">Selecione um produto…</option>'+fichaProducts().map(p=>'<option value="'+esc(p.id)+'" '+(s(p.id)===s(selected)?'selected':'')+'>'+esc(p.name)+' · '+esc(p.code||'sem código')+' ('+esc(p.unit)+')</option>').join('');
+}
+function fichaComponentRow(component={}){
+ const row=document.createElement('div');row.className='ficha-component-row';
+ row.innerHTML='<label>Insumo ou subproduto<select data-ficha-insumo required>'+fichaOptions(component.produtoId)+'</select></label>'+
+ '<label>Quantidade<input type="number" min="0.000001" step="any" data-ficha-qty required value="'+esc(component.quantidade??1)+'"></label>'+
+ '<label>Custo unitário manual (opcional)<input type="number" min="0.01" step=".01" data-ficha-manual placeholder="Automático" value="'+esc(component.custoUnitarioManual??'')+'"></label>'+
+ '<button class="btn small" type="button" data-ficha-remove>✖ Remover</button>';
+ return row;
+}
+function openFicha(productId='',fichaId=''){
+ if(!st.fichasData)return toast('Carregue as fichas técnicas antes de cadastrar.',true);
+ const existing=(st.fichasData.fichas||[]).find(f=>s(f.id)===s(fichaId))||fichaFor(productId)||null;
+ const pId=productId||existing?.productId||'';
+ const html='<form id="fichaForm" data-id="'+esc(existing?.id||'')+'" class="product-form">'+
+ '<label>Produto acabado / subproduto<select id="fichaProduct" name="productId" required>'+fichaOptions(pId)+'</select></label>'+
+ '<div class="form-grid"><label>Rendimento da receita<input name="yield" type="number" min="0.000001" step="any" required value="'+esc(existing?.yield||1)+'"></label>'+
+ '<label>Unidade de rendimento<select name="unit">'+['UN','KG','G','L','ML','PCT','CX'].map(v=>'<option value="'+v+'" '+(s(existing?.unit||'UN')===v?'selected':'')+'>'+v+'</option>').join('')+'</select></label></div>'+
+ '<div class="form-grid"><label>Custo adicional total (R$)<input name="extraCost" type="number" min="0" step=".01" value="'+esc(existing?.extraCost||0)+'"></label>'+
+ '<label>Quantidade mínima de produção<input name="minimumProduction" type="number" min="1" step="1" value="'+esc(existing?.minimumProduction||1)+'"></label></div>'+
+ '<div class="form-grid"><label>Antecedência (dias)<input name="leadDays" type="number" min="0" max="365" value="'+esc(existing?.leadDays||0)+'"></label>'+
+ '<label>Dia de produção (0–7)<input name="productionDay" type="number" min="0" max="7" value="'+esc(existing?.productionDay||0)+'"></label></div>'+
+ '<h3>Ingredientes / insumos da ficha</h3><p class="muted">A quantidade deve usar a unidade cadastrada no próprio insumo. Ex.: 0,5 KG para 500 g quando a unidade for KG.</p>'+
+ '<div id="fichaComponentList"></div><button type="button" class="btn" id="addFichaComponent">➕ Adicionar insumo</button>'+
+ '<label>Modo de preparo / observações<textarea name="notes" rows="5" maxlength="10000">'+esc(existing?.notes||'')+'</textarea></label>'+
+ '<div class="notice">A ficha será salva no ERP. Um custo incompleto será sinalizado em vez de presumir um valor. A publicação não altera automaticamente preços de venda.</div>'+
+ '<button type="submit" class="btn primary" style="width:100%">💾 Salvar ficha técnica</button></form>';
+ modal(existing?'✏️ Editar ficha técnica':'➕ Cadastrar ficha técnica',html);
+ E('addFichaComponent').addEventListener('click',()=>E('fichaComponentList').appendChild(fichaComponentRow()));
+ const old=existing?.components?.length?existing.components:[{}];
+ old.forEach(part=>E('fichaComponentList').appendChild(fichaComponentRow(part)));
+ E('fichaComponentList').addEventListener('click',e=>{if(e.target.closest('[data-ficha-remove]')){const rows=E('fichaComponentList').querySelectorAll('.ficha-component-row');if(rows.length>1)e.target.closest('.ficha-component-row').remove();}});
+ E('fichaProduct').addEventListener('change',()=>{const f=fichaFor(E('fichaProduct').value);if(f&&s(f.id)!==s(E('fichaForm').dataset.id))toast('Este produto já possui ficha. Escolha Editar ficha na lista.',true);});
+}
+async function saveFicha(e){
+ e.preventDefault();const form=e.target,fd=new FormData(form),lines=[...form.querySelectorAll('.ficha-component-row')];
+ const components=lines.map(line=>{
+  const manual=line.querySelector('[data-ficha-manual]').value;
+  return {productId:line.querySelector('[data-ficha-insumo]').value,quantity:Number(line.querySelector('[data-ficha-qty]').value),manualCost:manual===''?null:Number(manual)};
+ });
+ const payload={id:form.dataset.id||undefined,productId:s(fd.get('productId')),yield:Number(fd.get('yield')),unit:s(fd.get('unit')),extraCost:Number(fd.get('extraCost')),components,
+  minimumProduction:Number(fd.get('minimumProduction')),leadDays:Number(fd.get('leadDays')),productionDay:Number(fd.get('productionDay')),notes:s(fd.get('notes'))};
+ if(!payload.productId||components.some(x=>!x.productId||x.quantity<=0))return toast('Revise o produto, os componentes e as quantidades.',true);
+ if(!window.confirm('Salvar a ficha técnica com '+components.length+' componente(s) diretamente no ERP Caseirinho?'))return;
+ const btn=form.querySelector('[type=submit]');btn.disabled=true;btn.textContent='Salvando ficha…';
+ try{await api('fichas',{method:'POST',body:payload});hideModal();toast('✅ Ficha técnica salva no ERP.');await loadFichas();if(st.salesLoaded)await loadSales();nav('fichas');}
+ catch(err){toast('Falha ao salvar ficha: '+err.message,true);}
+ finally{btn.disabled=false;btn.textContent='💾 Salvar ficha técnica';}
+}
+/* Histórico real de cashback: inclui somente lançamentos do ledger contábil do programa. */
+async function loadCashbacks(){
+ E('cashbackError').hidden=true;
+ try{st.cashbacksData=await api('cashback-customers');renderCashbacks();}
+ catch(err){E('cashbackError').hidden=false;E('cashbackError').textContent='Erro ao consultar saldos: '+err.message;}
+}
+function filteredCashbacks(){
+ const d=st.cashbacksData;if(!d)return[];
+ const q=s(E('cashbackSearch').value).toLowerCase(),filter=E('cashbackFilter').value;
+ return(d.customers||[]).filter(x=>(s(x.name)+' '+s(x.phone)).toLowerCase().includes(q)&&(filter==='all'||filter==='available'&&x.available>0||filter==='used'&&x.used>0||filter==='zero'&&x.available<=0));
+}
+function renderCashbacks(){
+ const d=st.cashbacksData;if(!d)return;
+ const t=d.totals||{};
+ E('cashbackKpis').innerHTML=[
+  statsCard('👤','Clientes com conta',t.customers||0,'Cadastro de cashback'),
+  statsCard('💚','Disponível',brl(t.available),'Descontadas reservas ativas'),
+  statsCard('🏦','Crédito acumulado',brl(t.credited),'Créditos confirmados'),
+  statsCard('🛒','Cashback utilizado',brl(t.used),'Débitos realizados')
+ ].join('');
+ const list=filteredCashbacks();
+ E('cashbackList').innerHTML=list.length?'<div class="mobile-list">'+list.map(x=>
+  '<article class="mobile-record"><div class="mobile-record-head"><b>'+esc(x.name)+'</b><span class="badge good">'+brl(x.available)+' disponível</span></div>'+
+  '<p>📱 '+esc(tel(x.phone))+' · '+x.ordersCredited+' pedido(s) com crédito</p>'+
+  '<div class="cashback-summary"><div><small>Creditado</small><b>'+brl(x.credited)+'</b></div><div><small>Utilizado</small><b>'+brl(x.used)+'</b></div><div><small>Reservado</small><b>'+brl(x.reserved)+'</b></div></div>'+
+  '<div class="record-actions"><button class="btn small primary" type="button" data-cashback-history="'+esc(x.id)+'">📑 Ver extrato</button></div></article>').join('')+'</div>':cellEmpty('Nenhuma conta de cashback encontrada para estes filtros.');
+}
+async function showCashbackHistory(id){
+ modal('💚 Extrato do cliente','<p>Consultando movimentações confirmadas...</p>');
+ try{
+  const d=await api('cashback-customers/'+encodeURIComponent(id)+'/history');
+  const rows=(d.history||[]).map(x=>'<tr><td>'+dt(x.created_at)+'</td><td>'+esc(x.order_code||'—')+'</td><td>'+esc(x.transaction_type)+'</td><td>'+brl(x.amount)+'</td><td>'+esc(x.status)+'</td></tr>');
+  modal('💚 Cashback · '+s(d.customer?.name),'<p><b>Cliente:</b> '+esc(d.customer?.name||'')+'<br><b>WhatsApp:</b> '+esc(tel(d.customer?.phone||''))+'</p>'+
+  table(['Data','Pedido','Movimento','Valor','Status'],rows));
+ }catch(err){modal('💚 Cashback','<div class="notice error">'+esc(err.message)+'</div>');}
+}
+function cashbackCSV(){
+ if(!st.cashbacksData)return toast('Atualize os saldos antes de exportar.',true);
+ const lines=[['Nome','WhatsApp','Disponível','Reservado','Saldo líquido','Creditado','Utilizado','Pedidos creditados'],...filteredCashbacks().map(x=>[x.name,x.phone,x.available,x.reserved,x.balance,x.credited,x.used,x.ordersCredited])];
+ const csv='\ufeff'+lines.map(row=>row.map(v=>'"'+s(v).replace(/"/g,'""')+'"').join(';')).join('\r\n');
+ const u=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})),a=document.createElement('a');a.href=u;a.download='caseirinho-cashback-clientes.csv';a.click();URL.revokeObjectURL(u);
+}
+/* Aviso de novos pedidos enquanto o aplicativo está ativo. Não é push em segundo plano. */
+const ORDER_SEEN_KEY='caseirinho_insights_seen_orders_v10';
+function alertSeen(){
+ if(st.orderAlertSeen)return st.orderAlertSeen;
+ try{const raw=JSON.parse(localStorage.getItem(ORDER_SEEN_KEY)||'[]');st.orderAlertSeen=new Set(Array.isArray(raw)?raw:[]);}
+ catch(_){st.orderAlertSeen=new Set();}
+ return st.orderAlertSeen;
+}
+function toggleOrderAlerts(){
+ st.orderAlertEnabled=!st.orderAlertEnabled;
+ st.sound=st.orderAlertEnabled;
+ try{localStorage.setItem('caseirinho_insights_alert_enabled_v10',st.orderAlertEnabled?'true':'false');}catch(_){}
+ E('orderAlertToggle').textContent=st.orderAlertEnabled?'🔔 Alertas ativados':'🔕 Ativar alerta sonoro';
+ if(st.orderAlertEnabled){
+  beep();
+  if('Notification'in window&&Notification.permission==='default')Notification.requestPermission().catch(()=>{});
+  toast('🔔 Alertas ativados. Mantenha a Central aberta para receber avisos de novos pedidos.');
+ }
+}
+async function pollNewOrders(){
+ if(!st.token)return;
+ try{
+  const data=await api('new-orders-alert'),items=data.orders||[],seen=alertSeen();
+  const fresh=items.filter(x=>!seen.has(s(x.id))&&new Date(x.createdAt).getTime()>Date.now()-8*3600000);
+  const first=seen.size===0;
+  items.forEach(x=>seen.add(s(x.id)));
+  if(seen.size>350){const keep=items.map(x=>s(x.id));st.orderAlertSeen=new Set(keep);}
+  try{localStorage.setItem(ORDER_SEEN_KEY,JSON.stringify([...st.orderAlertSeen].slice(-350)));}catch(_){}
+  if(!first&&fresh.length){
+   E('newOrderBannerText').textContent=fresh.length+' novo(s) pedido(s): '+fresh.slice(0,3).map(x=>'#'+x.code+' · '+x.name+' · '+brl(x.total)).join(' | ');
+   E('newOrderBanner').hidden=false;
+   if(st.orderAlertEnabled){beep();setTimeout(beep,350);
+    if('Notification'in window&&Notification.permission==='granted'&&document.visibilityState!=='visible'){
+     try{new Notification('🍝 Caseirinho · '+fresh.length+' novo(s) pedido(s)',{body:fresh.slice(0,2).map(x=>'#'+x.code+' · '+brl(x.total)).join(' | '),tag:'caseirinho-new-orders'});}catch(_){}
+    }
+   }
+   toast('🔔 '+fresh.length+' novo(s) pedido(s) na loja!');
+  }
+ }catch(_){/* Evita falsos alarmes se estiver offline. */}
+}
+function bindMoreFeatures(){
+ E('fichaSearch').addEventListener('input',renderFichas);
+ E('fichaFilter').addEventListener('change',renderFichas);
+ E('newFicha').addEventListener('click',()=>openFicha());
+ E('refreshFichas').addEventListener('click',loadFichas);
+ E('refreshCashbacks').addEventListener('click',loadCashbacks);
+ E('cashbackSearch').addEventListener('input',renderCashbacks);
+ E('cashbackFilter').addEventListener('change',renderCashbacks);
+ E('csvCashbacks').addEventListener('click',cashbackCSV);
+ E('orderAlertToggle').addEventListener('click',toggleOrderAlerts);
+ E('openNewOrders').addEventListener('click',()=>{E('newOrderBanner').hidden=true;nav('orders');loadAll();});
+ E('dismissNewOrders').addEventListener('click',()=>E('newOrderBanner').hidden=true);
+ document.addEventListener('click',e=>{
+  const ficha=e.target.closest('[data-ficha-edit]');if(ficha)return openFicha(ficha.dataset.fichaEdit);
+  const cashback=e.target.closest('[data-cashback-history]');if(cashback)return showCashbackHistory(cashback.dataset.cashbackHistory);
+ });
+ document.addEventListener('submit',e=>{if(e.target?.id==='fichaForm')saveFicha(e);});
+ try{st.orderAlertEnabled=localStorage.getItem('caseirinho_insights_alert_enabled_v10')==='true';}catch(_){}
+ st.sound=st.orderAlertEnabled;
+ E('orderAlertToggle').textContent=st.orderAlertEnabled?'🔔 Alertas ativados':'🔕 Ativar alerta sonoro';
+}
 function bind(){
  setupInstall();
+ bindMoreFeatures();
  bindMerch();
  document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>nav(b.dataset.view)));
  E('refreshBtn').addEventListener('click',async()=>{await loadAll();if(st.view==='sales')await loadSales();});
@@ -1085,6 +1281,8 @@ async function init(){
  if(st.token){await loadAll();}else E('loginScreen').hidden=false;
  setInterval(loadRequests,30000);
  setInterval(loadAll,120000);
+ await pollNewOrders();
+ setInterval(pollNewOrders,30000);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
