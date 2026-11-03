@@ -2,7 +2,7 @@
 'use strict';
 const STORE='https://jonataspos90-source.github.io/caseirinho-loja/';
 const DEFAULT_API='https://john-cloud-api-production.up.railway.app';
-const st={api:DEFAULT_API,token:'',summary:null,contacts:[],orders:[],catalog:[],categories:[],drafts:[],requests:[],sales:null,salesLoaded:false,view:'dashboard',syncing:false,sound:false,known:new Set(),knownReady:false,lastUpdated:null};
+const st={api:DEFAULT_API,token:'',summary:null,contacts:[],orders:[],catalog:[],categories:[],drafts:[],requests:[],sales:null,salesLoaded:false,merch:{grades:[],packs:[]},merchTab:'grades',gradeSelected:new Map(),packSelected:new Set(),merchLoaded:false,view:'dashboard',syncing:false,sound:false,known:new Set(),knownReady:false,lastUpdated:null};
 const E=id=>document.getElementById(id);
 const s=x=>String(x==null?'':x), n=x=>Number(x)||0;
 const esc=x=>s(x).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
@@ -114,11 +114,12 @@ function nav(tab){
  st.view=tab;
  document.querySelectorAll('.section').forEach(x=>x.classList.toggle('active',x.id===tab));
  document.querySelectorAll('[data-view]').forEach(x=>x.classList.toggle('active',x.dataset.view===tab));
- const labels={dashboard:'Visão geral',contacts:'CRM e contatos',ranking:'Ranking de acessos',orders:'Pedidos',menu:'Cardápio escrito',products:'Produtos e preços',reports:'Relatórios e PDF',sales:'Vendas e Curva ABC',requests:'Solicitações de cardápio',settings:'Configurações'};
+ const labels={dashboard:'Visão geral',contacts:'CRM e contatos',ranking:'Ranking de acessos',orders:'Pedidos',menu:'Cardápio escrito',products:'Produtos e preços',reports:'Relatórios e PDF',sales:'Vendas e Curva ABC',merch:'Grades e Packs',requests:'Solicitações de cardápio',settings:'Configurações'};
  E('pageTitle').textContent=labels[tab]||'Central de Insights';
  window.scrollTo({top:0,behavior:'smooth'});
  render();
  if(tab==='sales'&&!st.salesLoaded)loadSales();
+ if(tab==='merch'&&!st.merchLoaded)loadMerch();
 }
 function badge(x){const v=s(x).toUpperCase();return '<span class="badge '+(v.includes('PENDENTE')?'warn':v.includes('IMPORTANDO')?'light':v.includes('NOVO')?'light':v.includes('IMPORTADO')||v.includes('CONCLU')||v.includes('APROV')?'good':'')+'">'+esc(x||'—')+'</span>';}
 function cellEmpty(title){return '<div class="empty">'+esc(title)+'</div>';}
@@ -253,6 +254,7 @@ function render(){
  if(st.view==='menu')renderMenu();
  if(st.view==='products')renderProducts();
  if(st.view==='sales')renderSales();
+ if(st.view==='merch')renderMerch();
  if(st.view==='requests')renderRequests();
  E('apiLabel').textContent=st.api;
  E('apiState').innerHTML='<p class="notice success">Última consulta: '+dt(st.lastUpdated)+'. Dados recebidos exclusivamente da API autenticada.</p>';
@@ -260,7 +262,7 @@ function render(){
 async function loadAll(){
  if(st.syncing||!st.token)return;
  st.syncing=true;E('refreshBtn').disabled=true;E('lastSync').textContent='Sincronizando dados do Neon…';
- const paths=['summary','contacts','orders','catalog','requests','product-categories','product-drafts'];
+ const paths=['summary','contacts','orders','catalog','requests','product-categories','product-drafts','merchandising'];
  const responses=await Promise.allSettled(paths.map(x=>api(x)));
  if(responses.slice(0,5).every(x=>x.status==='rejected'&&x.reason?.httpStatus===401)){
   logout();E('loginNotice').textContent='Sua sessão expirou. Entre novamente com o usuário e senha do ERP.';
@@ -269,7 +271,7 @@ async function loadAll(){
  const errors=[];
  for(let i=0;i<paths.length;i++){
  const x=responses[i],key=paths[i];
- if(x.status==='rejected'){if(!['product-categories','product-drafts'].includes(key))errors.push(key+': '+x.reason.message);continue}
+ if(x.status==='rejected'){if(!['product-categories','product-drafts','merchandising'].includes(key))errors.push(key+': '+x.reason.message);continue}
  const val=x.value;
  if(key==='summary')st.summary=val;
  if(key==='contacts')st.contacts=val.contacts||[];
@@ -277,6 +279,7 @@ async function loadAll(){
  if(key==='catalog')st.catalog=val.items||[];
  if(key==='product-categories')st.categories=val.categories||[];
  if(key==='product-drafts')st.drafts=val.drafts||[];
+ if(key==='merchandising'){st.merch={grades:val.grades||[],packs:val.packs||[]};st.merchLoaded=true;}
  if(key==='requests')updateRequestData(val);
  }
  st.lastUpdated=new Date();
@@ -700,8 +703,221 @@ function salesPDF(){
  '<p><small>Fonte: e-commerce Caseirinho, pedidos ACEITO/ENTREGUE/RETIRADO/CONCLUIDO. Excluídos pendentes, cancelados, rejeitados e testes identificados. Frete/descontos de pedido não rateados. A média inclui dias sem vendas.</small></p>';
  printDocument('Vendas por Produto • Curva ABC',body);
 }
+
+/** Cadastro de Grades e Packs — os IDs referenciam produtos existentes, sem criar um SKU fictício. */
+function merchProducts(){
+ return (st.catalog||[]).filter(x=>s(x.id)&&Number(x.price)>0).sort((a,b)=>s(a.name).localeCompare(s(b.name),'pt-BR'));
+}
+async function loadMerch(){
+ E('merchStatus').hidden=false;E('merchStatus').textContent='Buscando grades e packs no ERP...';
+ try{
+  const d=await api('merchandising');
+  st.merch={grades:d.grades||[],packs:d.packs||[]};st.merchLoaded=true;
+  E('merchStatus').hidden=true;renderMerch();
+ }catch(e){E('merchStatus').hidden=false;E('merchStatus').className='notice error';E('merchStatus').textContent='Não foi possível consultar grades e packs: '+e.message;}
+}
+function merchSwitch(tab){
+ st.merchTab=tab;
+ E('merchGradeSection').hidden=tab!=='grades';
+ E('merchPackSection').hidden=tab!=='packs';
+ E('merchGradesTab').className='btn'+(tab==='grades'?' primary':'');
+ E('merchPacksTab').className='btn'+(tab==='packs'?' primary':'');
+ renderMerch();
+}
+function labelForProduct(id){const p=merchProducts().find(x=>s(x.id)===s(id));return p?p.name:'Produto não publicado ('+s(id)+')';}
+function renderMerch(){
+ if(!st.merchLoaded){E('merchGradesList').innerHTML=cellEmpty('Carregue as grades e packs para começar.');return;}
+ E('merchGradeSection').hidden=st.merchTab!=='grades';
+ E('merchPackSection').hidden=st.merchTab!=='packs';
+ const gradeQuery=s(E('gradeSearch').value).toLocaleLowerCase('pt-BR'),status=E('gradeStatusFilter').value;
+ const grades=(st.merch.grades||[]).filter(x=>s(x.name).toLocaleLowerCase('pt-BR').includes(gradeQuery)&&(status==='all'||status==='active'&&x.active||status==='inactive'&&!x.active));
+ E('merchGradesList').innerHTML=grades.length?'<div class="merch-grid">'+grades.map(x=>
+ '<article class="card merch-card"><div class="mobile-record-head"><h3>'+esc(x.name)+'</h3>'+(x.active?'<span class="badge good">Ativa</span>':'<span class="badge warn">Inativa</span>')+'</div>'+
+ '<p><b>'+esc(x.title||x.type)+'</b> · '+(x.variants||[]).length+' variações</p>'+
+ '<div class="merch-variants">'+(x.variants||[]).map(v=>'<div><b>'+esc(v.label)+'</b><span>'+esc(labelForProduct(v.productId))+'</span></div>').join('')+'</div>'+
+ '<div class="record-actions"><button class="btn small primary" type="button" data-merch-action="editGrade" data-id="'+esc(x.id)+'">✏️ Editar grade</button> '+
+ (x.active?'<button class="btn small danger" type="button" data-merch-action="disableGrade" data-id="'+esc(x.id)+'">Desativar</button>':'')+'</div></article>').join('')+'</div>':cellEmpty('Nenhuma grade encontrada neste filtro.');
+ const packQuery=s(E('packSearch').value).toLocaleLowerCase('pt-BR');
+ const packs=(st.merch.packs||[]).filter(x=>s(x.name).toLocaleLowerCase('pt-BR').includes(packQuery));
+ E('merchPacksList').innerHTML=packs.length?'<div class="merch-grid">'+packs.map(x=>{
+  const offer=x.type==='LEVE_X_PAGUE_Y'?'Leve '+x.quantityTake+', pague '+x.quantityPay:'Compre '+x.triggerQuantity+' e leve '+labelForProduct(x.benefitProductId)+' por '+brl(x.benefitPrice);
+  return '<article class="card merch-card"><div class="mobile-record-head"><h3>'+esc(x.name)+'</h3><span class="badge good">Ativo</span></div>'+
+  '<p class="badge warn">'+esc(offer)+'</p><p><b>Produtos participantes:</b></p><div class="merch-variants">'+(x.productIds||[]).map(pid=>'<div><span>'+esc(labelForProduct(pid))+'</span></div>').join('')+'</div>'+
+  '<div class="record-actions"><button class="btn small primary" type="button" data-merch-action="editPack" data-id="'+esc(x.id)+'">✏️ Editar pack</button> '+
+  '<button class="btn small danger" type="button" data-merch-action="disablePack" data-id="'+esc(x.id)+'">Desativar</button></div></article>';
+ }).join('')+'</div>':cellEmpty('Nenhum pack virtual ativo encontrado.');
+}
+function gradeOptions(){
+ return ['TAMANHO','PESO','SABOR','RECHEIO','APRESENTACAO'].map(x=>'<option value="'+x+'">'+esc({TAMANHO:'📏 Tamanho (P/M/G)',PESO:'⚖️ Peso (500 g / 1 kg)',SABOR:'😋 Sabor',RECHEIO:'🥟 Recheio',APRESENTACAO:'📦 Apresentação'}[x])+'</option>').join('');
+}
+function merchPickerItems(kind){
+ const q=s(E(kind+'PickSearch')?.value).toLocaleLowerCase('pt-BR');
+ const selected=kind==='grade'?st.gradeSelected:st.packSelected,products=merchProducts();
+ const filtered=products.filter(x=>(s(x.name)+' '+s(x.category)+' '+s(x.id)).toLocaleLowerCase('pt-BR').includes(q)).slice(0,80);
+ E(kind+'PickList').innerHTML=filtered.length?filtered.map(p=>
+ '<label class="merch-pick-row"><input type="checkbox" data-merch-pick="'+kind+'" value="'+esc(p.id)+'" '+(selected.has(s(p.id))?'checked':'')+'>'+
+ '<span><b>'+esc(p.name)+'</b><small>'+esc(p.category)+' · '+brl(p.price)+'</small></span></label>'
+ ).join(''):cellEmpty('Nenhum produto publicado corresponde à busca.');
+}
+function rememberGradeFields(){
+ for(const el of document.querySelectorAll('[data-grade-variant-row]')){
+  const id=el.dataset.gradeVariantRow,value=st.gradeSelected.get(id);if(!value)continue;
+  value.label=el.querySelector('[data-grade-label]').value.trim();
+  value.price=el.querySelector('[data-grade-price]').value;
+ }
+ const cover=document.querySelector('input[name="gradeCover"]:checked');
+ if(cover)st.gradeCoverId=cover.value;
+}
+function renderGradeSelected(){
+ const wrap=E('gradeSelectedList');if(!wrap)return;
+ const list=[...st.gradeSelected.entries()];
+ if(!st.gradeCoverId||!st.gradeSelected.has(st.gradeCoverId))st.gradeCoverId=list[0]?.[0]||'';
+ wrap.innerHTML=list.length?list.map(([id,v],index)=>
+ '<div class="merch-edit-row" data-grade-variant-row="'+esc(id)+'">'+
+ '<div class="merch-edit-name"><strong>'+(index+1)+'. '+esc(labelForProduct(id))+'</strong><small>SKU vinculado ao catálogo original</small></div>'+
+ '<label>Rótulo<input data-grade-label maxlength="90" required value="'+esc(v.label||'')+'" placeholder="Ex.: M - 500 g"></label>'+
+ '<label>Preço (R$)<input data-grade-price type="number" min="0.01" step="0.01" required value="'+esc(v.price)+'"></label>'+
+ '<label class="merch-cover"><input type="radio" name="gradeCover" value="'+esc(id)+'" '+(id===st.gradeCoverId?'checked':'')+'> Foto de capa</label>'+
+ '</div>').join(''):'<div class="notice">Selecione pelo menos dois produtos publicados.</div>';
+ E('gradeCount').textContent=list.length+' produto(s) selecionado(s)';
+}
+function gradeModal(id){
+ const g=(st.merch.grades||[]).find(x=>s(x.id)===s(id));const missing=(g?.variants||[]).filter(v=>!merchProducts().some(p=>s(p.id)===s(v.productId)));
+ if(missing.length){toast('Algumas variações desta grade não estão publicadas. Corrija no ERP antes de editar.',true);return;}
+ st.gradeSelected=new Map((g?.variants||[]).map(v=>{const p=merchProducts().find(x=>s(x.id)===s(v.productId));return[s(v.productId),{label:s(v.label),price:p?.price||''}]}));
+ st.gradeCoverId=g?.coverId||'';
+ modal((g?'✏️ Editar':'➕ Criar')+' grade',
+ '<form id="gradeManageForm" data-id="'+esc(g?.id||'')+'" class="product-form">'+
+ '<label class="form-label">Nome da grade *</label><input name="name" required maxlength="150" value="'+esc(g?.name||'')+'" placeholder="Ex.: Lasanha Molho Branco">'+
+ '<div class="form-grid"><label>Tipo de escolha<select name="type">'+gradeOptions()+'</select></label><label>Título da escolha<input name="title" maxlength="40" value="'+esc(g?.title||'Tamanho')+'"></label></div>'+
+ '<label class="form-label">Descrição (opcional)</label><textarea name="description" rows="2" maxlength="600">'+esc(g?.description||'')+'</textarea>'+
+ '<h3>1. Escolha os produtos da grade</h3><input id="gradePickSearch" type="search" placeholder="Buscar produto ou tamanho...">'+
+ '<div id="gradePickList" class="merch-pick-list"></div><h3>2. Rótulos, preços e foto de capa</h3><span id="gradeCount" class="badge">0 selecionados</span>'+
+ '<div id="gradeSelectedList"></div>'+
+ '<div class="notice">Cada variação mantém seu código. O preço que você informar será atualizado no ERP e na loja. A grade usa a foto do produto marcado como capa.</div>'+
+ '<button type="submit" class="btn primary" style="width:100%">✅ Salvar e publicar grade</button></form>');
+ E('gradeManageForm').elements.type.value=g?.type||'TAMANHO';
+ merchPickerItems('grade');renderGradeSelected();
+}
+async function saveGrade(e){
+ e.preventDefault();rememberGradeFields();
+ const form=e.target,fd=new FormData(form);
+ const variants=[...st.gradeSelected].map(([productId,v])=>({productId,label:s(v.label),price:Number(v.price)}));
+ if(variants.length<2||variants.length>24){toast('A grade precisa de 2 a 24 produtos.',true);return;}
+ if(variants.some(v=>!v.label||!Number.isFinite(v.price)||v.price<=0)){toast('Revise os rótulos e preços de todas as variações.',true);return;}
+ const payload={id:form.dataset.id||undefined,name:s(fd.get('name')),type:s(fd.get('type')),title:s(fd.get('title')),description:s(fd.get('description')),coverId:st.gradeCoverId,variants};
+ if(!window.confirm('Salvar grade '+payload.name+' com '+variants.length+' variações? Os preços e vínculos serão atualizados no ERP e na loja.'))return;
+ const btn=form.querySelector('[type=submit]');btn.disabled=true;btn.textContent='Publicando grade...';
+ try{
+  const response=await api('merchandising/grades',{method:'POST',body:payload});
+  hideModal();toast('✅ Grade publicada com '+response.linked+' variações.');
+  await loadAll();nav('merch');
+ }catch(error){toast('Não foi possível publicar: '+error.message,true);}
+ finally{btn.disabled=false;btn.textContent='✅ Salvar e publicar grade';}
+}
+function renderPackSelected(){
+ const e=E('packSelectedNames');if(!e)return;
+ const ids=[...st.packSelected];
+ e.innerHTML=ids.length?'<b>'+ids.length+' produto(s):</b><br>'+ids.map(id=>'<span class="badge light">'+esc(labelForProduct(id))+'</span> ').join(''):'Selecione um ou mais produtos.';
+ const selector=E('packBenefit');if(!selector)return;
+ const old=selector.value;
+ selector.innerHTML=ids.map(id=>'<option value="'+esc(id)+'">'+esc(labelForProduct(id))+'</option>').join('');
+ if(ids.includes(old))selector.value=old;else if(ids.length)selector.value=ids[0];
+}
+function packTypeChanged(){
+ const special=E('packType').value==='COMPRA_X_LEVE_Y_POR_VALOR';
+ E('packTakePay').hidden=special;
+ E('packSpecial').hidden=!special;
+}
+function packModal(id){
+ const p=(st.merch.packs||[]).find(x=>s(x.id)===s(id));
+ st.packSelected=new Set(p?.productIds||[]);
+ modal((p?'✏️ Editar':'➕ Criar')+' pack virtual',
+ '<form id="packManageForm" data-id="'+esc(p?.id||'')+'" class="product-form">'+
+ '<label class="form-label">Nome da oferta *</label><input name="name" required maxlength="150" value="'+esc(p?.name||'')+'" placeholder="Ex.: Empadas — Leve 5, pague 4">'+
+ '<label class="form-label">Modelo do pack</label><select id="packType" name="type">'+
+ '<option value="LEVE_X_PAGUE_Y">Leve X, pague Y</option><option value="COMPRA_X_LEVE_Y_POR_VALOR">Compre X e leve um item por valor especial</option></select>'+
+ '<div class="form-grid" id="packTakePay"><label>Quantidade que leva (X)<input name="quantityTake" type="number" min="2" max="200" step="1" value="'+(p?.quantityTake||5)+'"></label>'+
+ '<label>Quantidade que paga (Y)<input name="quantityPay" type="number" min="1" max="199" step="1" value="'+(p?.quantityPay||4)+'"></label></div>'+
+ '<div id="packSpecial" hidden><div class="form-grid"><label>Quantidade gatilho<input name="triggerQuantity" type="number" min="1" max="200" step="1" value="'+(p?.triggerQuantity||2)+'"></label>'+
+ '<label>Preço especial (R$)<input name="benefitPrice" type="number" min="0.01" step="0.01" value="'+(p?.benefitPrice||1)+'"></label></div>'+
+ '<label>Produto beneficiado<select id="packBenefit" name="benefitProductId"></select></label></div>'+
+ '<h3>Produtos participantes do pack</h3><input type="search" id="packPickSearch" placeholder="Buscar itens e sabores...">'+
+ '<div id="packPickList" class="merch-pick-list"></div><div class="notice" id="packSelectedNames"></div>'+
+ '<div class="notice">Você pode misturar sabores do mesmo pack. No Leve X, pague Y, o desconto respeita a regra do e-commerce, considerando os preços dos produtos participantes. Ofertas que conflitem com um pack ativo são bloqueadas.</div>'+
+ '<button type="submit" class="btn primary" style="width:100%">🎁 Salvar e publicar pack</button></form>');
+ E('packType').value=p?.type||'LEVE_X_PAGUE_Y';
+ merchPickerItems('pack');renderPackSelected();packTypeChanged();
+ if(p?.benefitProductId&&st.packSelected.has(p.benefitProductId))E('packBenefit').value=p.benefitProductId;
+}
+async function savePack(e){
+ e.preventDefault();const form=e.target,fd=new FormData(form);
+ const type=s(fd.get('type')),ids=[...st.packSelected],payload={id:form.dataset.id||undefined,name:s(fd.get('name')),type,productIds:ids};
+ if(!ids.length){toast('Selecione pelo menos um produto.',true);return;}
+ if(type==='LEVE_X_PAGUE_Y'){
+  payload.quantityTake=Number(fd.get('quantityTake'));payload.quantityPay=Number(fd.get('quantityPay'));
+  if(!Number.isInteger(payload.quantityTake)||!Number.isInteger(payload.quantityPay)||payload.quantityPay>=payload.quantityTake||payload.quantityPay<1){toast('Exemplo válido: leve 5, pague 4.',true);return;}
+ }else{
+  payload.triggerQuantity=Number(fd.get('triggerQuantity'));payload.benefitPrice=Number(fd.get('benefitPrice'));payload.benefitProductId=s(fd.get('benefitProductId'));
+ }
+ if(!window.confirm('Publicar '+payload.name+' para '+ids.length+' produto(s)? A oferta ficará ativa na loja.'))return;
+ const btn=form.querySelector('[type=submit]');btn.disabled=true;btn.textContent='Publicando pack...';
+ try{await api('merchandising/packs',{method:'POST',body:payload});hideModal();toast('✅ Pack publicado na loja.');await loadAll();nav('merch');merchSwitch('packs');}
+ catch(error){toast('Falha ao publicar: '+error.message,true);}finally{btn.disabled=false;btn.textContent='🎁 Salvar e publicar pack';}
+}
+async function disableMerch(type,id){
+ const records=type==='grades'?st.merch.grades:st.merch.packs,rec=(records||[]).find(x=>s(x.id)===s(id));
+ if(!rec)return;
+ const message='Desativar '+rec.name+'? A oferta/grade será desvinculada na loja. Os produtos individuais permanecerão disponíveis e com seus preços.';
+ if(!window.confirm(message))return;
+ try{await api('merchandising/'+type+'/'+encodeURIComponent(id)+'/deactivate',{method:'PATCH',body:{}});toast('✅ '+(type==='grades'?'Grade':'Pack')+' desativado.');await loadAll();nav('merch');}
+ catch(e){toast('Não foi possível desativar: '+e.message,true);}
+}
+function bindMerch(){
+ E('merchGradesTab').addEventListener('click',()=>merchSwitch('grades'));
+ E('merchPacksTab').addEventListener('click',()=>merchSwitch('packs'));
+ E('refreshMerch').addEventListener('click',loadMerch);
+ E('newGradeButton').addEventListener('click',()=>gradeModal());
+ E('newPackButton').addEventListener('click',()=>packModal());
+ E('gradeSearch').addEventListener('input',renderMerch);
+ E('packSearch').addEventListener('input',renderMerch);
+ E('gradeStatusFilter').addEventListener('change',renderMerch);
+ document.addEventListener('input',e=>{
+  if(e.target?.id==='gradePickSearch')merchPickerItems('grade');
+  if(e.target?.id==='packPickSearch')merchPickerItems('pack');
+ });
+ document.addEventListener('change',e=>{
+  if(e.target?.id==='packType')packTypeChanged();
+  if(e.target?.name==='gradeCover')st.gradeCoverId=e.target.value;
+  const type=e.target?.dataset?.merchPick;if(!type)return;
+  const id=e.target.value,product=merchProducts().find(x=>s(x.id)===id);
+  if(!product)return;
+  if(type==='grade'){
+   rememberGradeFields();
+   if(e.target.checked)st.gradeSelected.set(id,{label:product.variation||product.name,price:product.price});
+   else st.gradeSelected.delete(id);
+   renderGradeSelected();
+  }else{
+   if(e.target.checked)st.packSelected.add(id);else st.packSelected.delete(id);
+   renderPackSelected();
+  }
+ });
+ document.addEventListener('submit',e=>{
+  if(e.target?.id==='gradeManageForm')return saveGrade(e);
+  if(e.target?.id==='packManageForm')return savePack(e);
+ });
+ document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-merch-action]');if(!b)return;
+  const id=b.dataset.id,type=b.dataset.merchAction;
+  if(type==='editGrade')gradeModal(id);
+  if(type==='editPack')packModal(id);
+  if(type==='disableGrade')disableMerch('grades',id);
+  if(type==='disablePack')disableMerch('packs',id);
+ });
+}
 function bind(){
  setupInstall();
+ bindMerch();
  document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>nav(b.dataset.view)));
  E('refreshBtn').addEventListener('click',async()=>{await loadAll();if(st.view==='sales')await loadSales();});
  E('logoutBtn').addEventListener('click',logout);
