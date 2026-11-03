@@ -796,7 +796,7 @@ function gradeModal(id){
  '<div id="gradeSelectedList"></div>'+
  '<div class="notice">Cada variação mantém seu código. O preço que você informar será atualizado no ERP e na loja. A grade usa a foto do produto marcado como capa.</div>'+
  '<button type="submit" class="btn primary" style="width:100%">✅ Salvar e publicar grade</button></form>');
- E('gradeManageForm').elements.type.value=g?.type||'TAMANHO';
+ E('gradeManageForm').querySelector('select[name="type"]').value=g?.type||'TAMANHO';
  merchPickerItems('grade');renderGradeSelected();
 }
 async function saveGrade(e){
