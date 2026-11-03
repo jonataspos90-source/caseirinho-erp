@@ -15,32 +15,66 @@ let toastTimer;
 function toast(msg,error){const e=E('toast');e.hidden=false;e.textContent=msg;e.style.background=error?'#932d32':'#183c2e';clearTimeout(toastTimer);toastTimer=setTimeout(()=>e.hidden=true,4200);}
 function modal(title,html){E('modalTitle').textContent=title;E('modalContent').innerHTML=html;E('modal').hidden=false;}
 function hideModal(){E('modal').hidden=true;E('modalContent').innerHTML='';}
-function getSaved(){let out={};try{out=JSON.parse(localStorage.getItem('john_cloud_config_v1')||'{}')||{}}catch(_){}
-return{api:s(out.apiUrl||DEFAULT_API).replace(/\/+$/,''),token:s(out.apiKey||out.token||'')};}
-const TRUSTED_KEY='caseirinho_insights_device_session_v2', LOGOUT_KEY='caseirinho_insights_logged_out_v2';
+
+const ERP_SESSION_KEY='caseirinho_insights_erp_session_v6';
+const ERP_LAST_USERNAME_KEY='caseirinho_insights_last_username_v6';
 function tokenSetup(){
- let sess={},trusted={};
- try{sess=JSON.parse(sessionStorage.getItem('caseirinho_hub_session')||'{}')}catch(_){}
- try{trusted=JSON.parse(localStorage.getItem(TRUSTED_KEY)||'{}')}catch(_){}
- if(trusted.token){st.token=trusted.token;st.api=trusted.api||DEFAULT_API;E('rememberDevice').checked=true;}
- if(sess.token){st.token=sess.token;st.api=sess.api||st.api;}
- const erp=getSaved();
- if(!st.token&&localStorage.getItem(LOGOUT_KEY)!=='1'&&erp.token){st.token=erp.token;st.api=erp.api;}
- E('apiUrl').value=st.api;E('apiLabel').textContent=st.api;
+ st.api=DEFAULT_API;
+ try{
+  localStorage.removeItem('caseirinho_insights_device_session_v2');
+  sessionStorage.removeItem('caseirinho_hub_session');
+  const saved=JSON.parse(sessionStorage.getItem(ERP_SESSION_KEY)||'{}');
+  if(saved.token&&Number(saved.expiresAt)>Date.now()+10000){st.token=saved.token;st.sessionExpiry=Number(saved.expiresAt);}
+  else sessionStorage.removeItem(ERP_SESSION_KEY);
+ }catch(_){}
+ try{E('erpUsername').value=localStorage.getItem(ERP_LAST_USERNAME_KEY)||'';}catch(_){}
+ E('apiLabel').textContent=DEFAULT_API;
 }
 function saveSession(){
- try{sessionStorage.setItem('caseirinho_hub_session',JSON.stringify({token:st.token,api:st.api}));}catch(_){}
- try{
-  localStorage.removeItem(LOGOUT_KEY);
-  if(E('rememberDevice').checked&&st.token)localStorage.setItem(TRUSTED_KEY,JSON.stringify({token:st.token,api:st.api}));
-  else localStorage.removeItem(TRUSTED_KEY);
- }catch(_){}
+ if(st.token&&st.sessionExpiry){
+  try{sessionStorage.setItem(ERP_SESSION_KEY,JSON.stringify({token:st.token,expiresAt:st.sessionExpiry}));}catch(_){}
+ }
 }
 function logout(){
- st.token='';st.contacts=[];st.summary=null;st.requests=[];st.knownReady=false;
- try{sessionStorage.removeItem('caseirinho_hub_session');localStorage.removeItem(TRUSTED_KEY);localStorage.setItem(LOGOUT_KEY,'1');}catch(_){}
- E('rememberDevice').checked=false;E('accessToken').value='';E('loginScreen').hidden=false;
- E('loginNotice').textContent='Sessão encerrada. Entre novamente com seu token ou use a sessão do ERP.';
+ st.token='';st.sessionExpiry=0;st.summary=null;st.contacts=[];st.requests=[];st.knownReady=false;
+ try{sessionStorage.removeItem(ERP_SESSION_KEY);}catch(_){}
+ E('erpPassword').value='';E('loginScreen').hidden=false;
+ E('loginNotice').className='notice';
+ E('loginNotice').textContent='Entre com seu usuário e senha do ERP Caseirinho.';
+}
+async function loginWithERP(e){
+ e.preventDefault();
+ const user=E('erpUsername').value.trim().toLowerCase(),pass=E('erpPassword').value,btn=E('erpLoginBtn');
+ if(!user||!pass)return;
+ btn.disabled=true;btn.textContent='Conferindo...';
+ E('loginNotice').className='notice';E('loginNotice').textContent='Verificando seu acesso no ERP…';
+ try{
+  const resp=await fetch(DEFAULT_API+'/api/v1/public/store/caseirinho/erp-login',{
+   method:'POST',cache:'no-store',credentials:'omit',
+   headers:{'Content-Type':'application/json','Cache-Control':'no-store'},
+   body:JSON.stringify({login:user,senha:pass})
+  });
+  let data={};try{data=await resp.json();}catch(_){}
+  if(!resp.ok||!data.ok||!data.token)throw Error(data.error||'Login ou senha inválidos.');
+  const profile=String(data.usuario?.perfil||'').toUpperCase();
+  if(!['MASTER','ADMINISTRADOR','GERENTE','PLATFORM_OWNER'].includes(profile))
+   throw Error('Seu usuário do ERP não tem permissão para acessar esta Central.');
+  let expiry=0;
+  try{expiry=Number(JSON.parse(atob(data.token.split('.')[0].replace(/-/g,'+').replace(/_/g,'/'))).exp)||0;}catch(_){}
+  if(expiry<=Date.now())throw Error('Sessão recebida do ERP está inválida ou expirada.');
+  st.token=data.token;st.sessionExpiry=expiry;E('erpPassword').value='';
+  await api('summary');
+  saveSession();
+  try{localStorage.setItem(ERP_LAST_USERNAME_KEY,user);}catch(_){}
+  E('loginScreen').hidden=true;
+  await loadAll();
+ }catch(error){
+  st.token='';st.sessionExpiry=0;
+  try{sessionStorage.removeItem(ERP_SESSION_KEY);}catch(_){}
+  E('erpPassword').value='';E('loginScreen').hidden=false;
+  E('loginNotice').className='notice error';
+  E('loginNotice').textContent=error.message||'Não foi possível entrar.';
+ }finally{btn.disabled=false;btn.textContent='🔐 Entrar';}
 }
 let installEvent=null;
 function isInstalled(){return !!(window.matchMedia?.('(display-mode: standalone)').matches||navigator.standalone===true);}
