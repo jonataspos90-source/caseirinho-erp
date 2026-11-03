@@ -1284,12 +1284,12 @@ function couponEditModal(code=''){
  '<label class="form-label">Código do cupom *</label><input name="code" required maxlength="40" pattern="[A-Za-z0-9_]{3,40}" autocapitalize="characters" placeholder="Ex.: VOLTEI15" value="'+esc(record?.code||'')+'" '+(record?'readonly':'')+'>'+
  '<div class="form-grid"><label>Modalidade<select name="type" '+(special?'disabled':'')+'><option value="PERCENT">Percentual (%)</option><option value="FIXED">Valor fixo (R$)</option></select></label>'+
  '<label>Desconto aplicado<input type="number" name="value" min=".01" max="100000" step=".01" required value="'+esc(record?.value??10)+'" '+(special?'readonly':'')+'></label></div>'+
- '<div class="form-grid"><label>Pedido mínimo (R$)<input name="minSubtotal" type="number" min="0" step=".01" value="'+esc(record?.minSubtotal||0)+'"></label>'+
- '<label>Desconto máximo (R$)<input name="maxDiscount" type="number" min="0" step=".01" value="'+esc(record?.maxDiscount||0)+'"></label></div>'+
+ '<div class="form-grid"><label>Pedido mínimo (R$)<input name="minSubtotal" type="number" min="0" step=".01" value="'+esc(record?.minSubtotal||0)+'" '+(special?'readonly':'')+'></label>'+
+ '<label>Desconto máximo (R$)<input name="maxDiscount" type="number" min="0" step=".01" value="'+esc(record?.maxDiscount||0)+'" '+(special?'readonly':'')+'></label></div>'+
  '<div class="form-grid"><label>📅 Início da vigência (São Paulo)<input name="startAt" type="datetime-local" value="'+esc(couponDateInput(record?.startAt))+'"></label>'+
  '<label>📅 Fim da vigência (São Paulo)<input name="endAt" type="datetime-local" value="'+esc(couponDateInput(record?.endAt))+'"></label></div>'+
  '<label class="coupon-toggle"><input name="active" type="checkbox" '+(record?.active===false?'':'checked')+'> Cupom ativo</label>'+
- (special?'<div class="notice warn">O CASEIRINHO10 permanece obrigatório para primeira compra, desconto fixo de 10%. Não é possível transformar em cupom genérico.</div>':
+ (special?'<div class="notice warn">O CASEIRINHO10 mantém 10% na primeira compra. Aqui só é possível controlar ativação e vigência; os demais campos permanecem bloqueados para preservar a regra existente.</div>':
  '<div class="notice">Se não definir o fim da vigência, o cupom continuará válido até ser desativado. Não confunda limitar a data com limitar a quantidade de clientes.</div>')+
  '<button type="submit" class="btn primary" style="width:100%">💾 Salvar e publicar cupom</button></form>');
  E('couponManageForm').querySelector('select[name="type"]').value=record?.type||'PERCENT';
