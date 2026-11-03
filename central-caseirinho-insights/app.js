@@ -646,6 +646,12 @@ function salesFilterProducts(){
  const report=st.sales||{},q=s(E('salesSearch')?.value).trim().toLocaleLowerCase('pt-BR'),a=E('salesABCFilter').value,cat=E('salesCategoryFilter').value;
  return (report.products||[]).filter(x=>(a==='all'||x.abc===a)&&(cat==='all'||x.category===cat)&&(s(x.name)+' '+s(x.code)+' '+s(x.category)).toLocaleLowerCase('pt-BR').includes(q));
 }
+function salesCostDisplay(x){
+ if(x.costStatus==='SEM_FICHA_TECNICA')return '<span class="badge warn">⚠️ Não possui ficha técnica</span> <button class="btn small" type="button" data-sales-ficha="'+esc(x.productId)+'">➕ Cadastrar</button>';
+ if(['CUSTO_INCOMPLETO','SEM_CUSTO_INSUMO','CICLO_NA_FICHA'].includes(x.costStatus))return '<span class="badge warn">⚠️ Custo incompleto</span>';
+ if(x.costStatus==='PRODUTO_NAO_CADASTRADO')return '<span class="badge warn">Produto sem vínculo ERP</span>';
+ return x.unitCost!=null?'<strong>'+brl(x.unitCost)+'</strong>':'<span class="badge light">Sem custo calculado</span>';
+}
 function renderSalesDetails(){
  if(!st.sales)return;
  const filtered=salesFilterProducts();
@@ -654,17 +660,17 @@ function renderSalesDetails(){
  '<td>'+qtyBR(x.quantity)+'</td><td><b>'+brl(x.revenue)+'</b></td>'+
  '<td>'+pctBR(x.sharePct)+'</td><td>'+pctBR(x.cumulativePct)+'</td>'+
  '<td><b>'+qtyBR(x.dailyAverageQty42d)+'</b>/dia<br><small>'+qtyBR(x.weeklyAverageQty42d)+'/semana</small></td>'+
- '<td>'+qtyBR(x.quantity42d)+'</td></tr>');
+ '<td>'+qtyBR(x.quantity42d)+'</td><td>'+salesCostDisplay(x)+'</td><td>'+(x.estimatedMargin!=null?brl(x.estimatedMargin):'—')+'</td></tr>');
  if(window.matchMedia('(max-width:790px)').matches){
   E('salesTable').innerHTML=filtered.length?'<div class="mobile-list">'+filtered.map((x,i)=>
    '<article class="mobile-record"><div class="mobile-record-head"><div><b>'+esc(x.name)+'</b><br><small class="muted">'+esc(x.category)+'</small></div>'+abcBadge(x.abc)+'</div>'+
    '<div class="sales-mobile-grid"><span>Quantidade vendida<b>'+qtyBR(x.quantity)+'</b></span><span>Faturamento<b>'+brl(x.revenue)+'</b></span>'+
    '<span>Participação<b>'+pctBR(x.sharePct)+'</b></span><span>Acumulado ABC<b>'+pctBR(x.cumulativePct)+'</b></span>'+
    '<span>Média em 42 dias<b>'+qtyBR(x.dailyAverageQty42d)+'/dia</b></span><span>Por semana (42d)<b>'+qtyBR(x.weeklyAverageQty42d)+'</b></span></div>'+
-   '<div class="muted" style="font-size:11px;margin-top:8px">Vendido em 42 dias: '+qtyBR(x.quantity42d)+' · '+brl(x.revenue42d)+'</div></article>'
+   '<div class="muted" style="font-size:11px;margin-top:8px">Vendido em 42 dias: '+qtyBR(x.quantity42d)+' · '+brl(x.revenue42d)+'</div><div class="sales-cost-warning">Custo/unidade: '+salesCostDisplay(x)+'<br>Margem estimada: '+(x.estimatedMargin!=null?brl(x.estimatedMargin):'—')+'</div></article>'
   ).join('')+'</div>':cellEmpty('Não há produtos para estes filtros.');
  }else{
-  E('salesTable').innerHTML=table(['ABC','Produto / categoria','Qtd.','Receita itens','Participação','Acum. ABC','Média 42d','Qtd. 42d'],rows);
+  E('salesTable').innerHTML=table(['ABC','Produto / categoria','Qtd.','Receita itens','Participação','Acum. ABC','Média 42d','Qtd. 42d','Custo / ficha','Margem estimada'],rows);
  }
 }
 function renderSales(){
@@ -683,7 +689,9 @@ function renderSales(){
   statsCard('⏳','Pedidos pendentes excluídos',total.pendingExcluded,'Apenas pedidos confirmados entram'),
   statsCard('❌','Cancelados / rejeitados',total.canceledExcluded,'Não contados como venda'),
   statsCard('🧪','Testes identificados',total.testRecords,'Removidos quando reconhecíveis'),
-  statsCard('📊','Período de média',42+' dias','Até '+displayISODate(win.to))
+  statsCard('📊','Período de média',42+' dias','Até '+displayISODate(win.to)),
+  statsCard('⚠️','Sem ficha técnica',total.finishedWithoutFicha||0,'Produtos acabados vendidos sem ficha'),
+  statsCard('🧮','Custo incompleto',total.incompleteCost||0,'Itens sem margem confiável')
  ].join('');
  E('salesTopRevenue').innerHTML=salesTopList(d.topRevenue||[],'revenue');
  E('salesTopQuantity').innerHTML=salesTopList(d.topQuantity||[],'qty');
@@ -701,8 +709,8 @@ function renderSales(){
 }
 function salesCSV(){
  if(!st.sales)return toast('Consulte o relatório antes de exportar.',true);
- const p=st.sales.period,header=['Classe ABC','Código','Produto','Categoria','Unidade','Quantidade período','Faturamento de itens (R$)','% participação','% acumulado','Pedidos','Última venda','Quantidade nos 42 dias','Receita nos 42 dias','Média diária 42 dias','Média semanal 42 dias'];
- const data=[header,...salesFilterProducts().map(x=>[x.abc,x.code,x.name,x.category,x.unit,x.quantity,x.revenue,x.sharePct,x.cumulativePct,x.orders,dt(x.lastSale),x.quantity42d,x.revenue42d,x.dailyAverageQty42d,x.weeklyAverageQty42d])];
+ const p=st.sales.period,header=['Classe ABC','Código','Produto','Categoria','Unidade','Quantidade período','Faturamento de itens (R$)','% participação','% acumulado','Pedidos','Última venda','Quantidade nos 42 dias','Receita nos 42 dias','Média diária 42 dias','Média semanal 42 dias','Ficha técnica','Situação do custo','Custo unitário estimado','Custo total estimado','Margem estimada'];
+ const data=[header,...salesFilterProducts().map(x=>[x.abc,x.code,x.name,x.category,x.unit,x.quantity,x.revenue,x.sharePct,x.cumulativePct,x.orders,dt(x.lastSale),x.quantity42d,x.revenue42d,x.dailyAverageQty42d,x.weeklyAverageQty42d,x.hasFicha?'SIM':'NÃO',x.costStatus,x.unitCost??'',x.estimatedTotalCost??'',x.estimatedMargin??''])];
  const csv='\ufeff'+data.map(row=>row.map(v=>'"'+s(v).replace(/"/g,'""')+'"').join(';')).join('\r\n');
  const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
  const a=document.createElement('a');a.href=url;a.download='caseirinho-vendas-curva-abc-'+p.from+'-a-'+p.to+'.csv';a.click();URL.revokeObjectURL(url);
@@ -718,7 +726,7 @@ function salesPDF(){
  const categoryRows=(d.categories||[]).map(x=>'<tr><td>'+esc(x.abc)+'</td><td>'+esc(x.name)+'</td><td>'+x.products+'</td><td>'+qtyBR(x.quantity)+'</td><td>'+brl(x.revenue)+'</td><td>'+pctBR(x.sharePct)+'</td></tr>');
  const rows=salesFilterProducts().map(x=>'<tr><td>'+esc(x.abc)+'</td><td>'+esc(x.code)+'</td><td>'+esc(x.name)+'</td><td>'+esc(x.category)+'</td><td>'+qtyBR(x.quantity)+'</td><td>'+brl(x.revenue)+'</td><td>'+pctBR(x.sharePct)+'</td><td>'+pctBR(x.cumulativePct)+'</td><td>'+qtyBR(x.dailyAverageQty42d)+'</td></tr>');
  const body=head+'<h3>Resumo Curva ABC</h3>'+abc+'<h3>Curva ABC por categoria</h3>'+table(['ABC','Categoria','Produtos','Qtd.','Receita','Participação'],categoryRows)+'<h3>Vendas detalhadas por produto</h3>'+
- table(['ABC','Código','Produto','Categoria','Qtd.','Receita','%','Acumulado','Média/dia 42d'],rows)+
+ table(['ABC','Código','Produto','Categoria','Qtd.','Receita','%','Acumulado','Média/dia 42d','Custo / Ficha'],rows)+
  '<p><small>Fonte: e-commerce Caseirinho, pedidos ACEITO/ENTREGUE/RETIRADO/CONCLUIDO. Excluídos pendentes, cancelados, rejeitados e testes identificados. Frete/descontos de pedido não rateados. A média inclui dias sem vendas.</small></p>';
  printDocument('Vendas por Produto • Curva ABC',body);
 }
@@ -1232,6 +1240,7 @@ function bind(){
  E('salesCategoryFilter').addEventListener('change',renderSalesDetails);
  E('salesCsv').addEventListener('click',salesCSV);
  E('salesPdf').addEventListener('click',salesPDF);
+ document.addEventListener('click',e=>{const b=e.target.closest('[data-sales-ficha]');if(!b)return;nav('fichas');if(st.fichasData)openFicha(b.dataset.salesFicha);else loadFichas().then(()=>{if(st.fichasData)openFicha(b.dataset.salesFicha);});});
  document.querySelectorAll('[data-sales-range]').forEach(x=>x.addEventListener('click',()=>selectSalesDays(x.dataset.salesRange)));
 
  E('productsRefresh').addEventListener('click',loadAll);
