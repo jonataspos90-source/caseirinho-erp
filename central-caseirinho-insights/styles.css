@@ -177,3 +177,26 @@
  .ficha-component-row{grid-template-columns:1fr}
  .ficha-component-row label:first-child{grid-column:1}
 }
+
+
+/* V11 — Gestão de cupons e relatório de utilização */
+#couponConfigTab .merch-grid{margin-top:17px}
+#couponConfigTab .merch-card .record-actions{flex-wrap:wrap}
+#couponConfigTab .merch-card .mobile-record-head{gap:10px;flex-wrap:wrap}
+#couponConfigTab .merch-card h3{overflow-wrap:anywhere}
+#couponConfigTab .merch-card p{line-height:1.6}
+#couponReportTab .sales-filter-grid{margin-bottom:12px}
+#couponReportTab .toolbar{align-items:center;flex-wrap:wrap}
+#couponReportTab .toolbar input[type=search]{min-width:200px;flex:1}
+#couponReportTab .toolbar select{min-width:170px}
+#couponReportTable .mobile-record{margin-bottom:10px}
+#couponReportTable .sales-mobile-grid span b{overflow-wrap:anywhere;font-size:13px}
+.coupon-toggle{margin:12px 0 17px;display:flex;flex-direction:row;align-items:center;gap:10px;font-weight:750;color:#224c36;font-size:14px}
+.coupon-toggle input{width:20px;height:20px;accent-color:#1e7344}
+#couponManageForm input[readonly],#couponManageForm select[disabled]{background:#f0f1ed;color:#6c786e}
+@media(max-width:790px){
+ #couponReportTab .toolbar{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+ #couponReportTab .toolbar input[type=search],#couponReportTab .toolbar select{min-width:0;width:100%}
+ #couponReportTab .toolbar input[type=search]{grid-column:1/-1}
+ #couponReportTab .toolbar button{grid-column:1/-1}
+}
