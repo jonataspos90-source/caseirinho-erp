@@ -107,7 +107,7 @@ async function api(path,options){
   body:options&&options.body?JSON.stringify(options.body):undefined
  });
  let data={};try{data=await response.json()}catch(_){}
- if(!response.ok)throw Error(s(data.error||('HTTP '+response.status)));
+ if(!response.ok){const err=new Error(s(data.error||('HTTP '+response.status)));err.httpStatus=response.status;throw err;}
  return data;
 }
 function nav(tab){
@@ -262,6 +262,10 @@ async function loadAll(){
  st.syncing=true;E('refreshBtn').disabled=true;E('lastSync').textContent='Sincronizando dados do Neon…';
  const paths=['summary','contacts','orders','catalog','requests','product-categories','product-drafts'];
  const responses=await Promise.allSettled(paths.map(x=>api(x)));
+ if(responses.slice(0,5).every(x=>x.status==='rejected'&&x.reason?.httpStatus===401)){
+  logout();E('loginNotice').textContent='Sua sessão expirou. Entre novamente com o usuário e senha do ERP.';
+  st.syncing=false;E('refreshBtn').disabled=false;return;
+ }
  const errors=[];
  for(let i=0;i<paths.length;i++){
  const x=responses[i],key=paths[i];
