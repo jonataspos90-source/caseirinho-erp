@@ -2,7 +2,7 @@
 'use strict';
 const STORE='https://jonataspos90-source.github.io/caseirinho-loja/';
 const DEFAULT_API='https://john-cloud-api-production.up.railway.app';
-const st={api:DEFAULT_API,token:'',summary:null,contacts:[],orders:[],catalog:[],categories:[],drafts:[],requests:[],sales:null,salesLoaded:false,merch:{grades:[],packs:[]},merchTab:'grades',gradeSelected:new Map(),packSelected:new Set(),merchLoaded:false,fulfillment:new Map(),fichasData:null,cashbacksData:null,couponsData:null,couponReport:null,couponTab:'config',bfData:null,bfSelected:new Map(),orderAlertSeen:null,orderAlertEnabled:false,view:'dashboard',syncing:false,sound:false,known:new Set(),knownReady:false,lastUpdated:null};
+const st={api:DEFAULT_API,token:'',summary:null,contacts:[],orders:[],catalog:[],categories:[],drafts:[],requests:[],sales:null,salesLoaded:false,merch:{grades:[],packs:[]},merchTab:'grades',gradeSelected:new Map(),packSelected:new Set(),merchLoaded:false,fulfillment:new Map(),fichasData:null,cashbacksData:null,couponsData:null,couponReport:null,couponTab:'config',bfData:null,bfSelected:new Map(),seasonData:null,seasonOrders:null,seasonProductRules:new Map(),seasonAdminTab:'campaigns',orderAlertSeen:null,orderAlertEnabled:false,view:'dashboard',syncing:false,sound:false,known:new Set(),knownReady:false,lastUpdated:null};
 const E=id=>document.getElementById(id);
 const s=x=>String(x==null?'':x), n=x=>Number(x)||0;
 const esc=x=>s(x).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
@@ -124,7 +124,7 @@ function nav(tab){
  st.view=tab;
  document.querySelectorAll('.section').forEach(x=>x.classList.toggle('active',x.id===tab));
  document.querySelectorAll('[data-view]').forEach(x=>x.classList.toggle('active',x.dataset.view===tab));
- const labels={dashboard:'Visão geral',contacts:'CRM e contatos',ranking:'Ranking de acessos',orders:'Pedidos',menu:'Cardápio escrito',products:'Produtos e preços',blackfriday:'Black Friday',reports:'Relatórios e PDF',sales:'Vendas e Curva ABC',merch:'Grades e Packs',fichas:'Fichas Técnicas',cashbacks:'Cashback Clientes',coupons:'Cupons e Utilizações',requests:'Solicitações de cardápio',settings:'Configurações'};
+ const labels={dashboard:'Visão geral',contacts:'CRM e contatos',ranking:'Ranking de acessos',orders:'Pedidos',menu:'Cardápio escrito',products:'Produtos e preços',blackfriday:'Black Friday',sazonais:'Encomendas Sazonais',reports:'Relatórios e PDF',sales:'Vendas e Curva ABC',merch:'Grades e Packs',fichas:'Fichas Técnicas',cashbacks:'Cashback Clientes',coupons:'Cupons e Utilizações',requests:'Solicitações de cardápio',settings:'Configurações'};
  E('pageTitle').textContent=labels[tab]||'Central de Insights';
  window.scrollTo({top:0,behavior:'smooth'});
  render();
@@ -134,6 +134,7 @@ function nav(tab){
  if(tab==='cashbacks'&&!st.cashbacksData)loadCashbacks();
  if(tab==='coupons'&&!st.couponsData)loadCoupons();
  if(tab==='blackfriday'&&!st.bfData)loadBlackFriday();
+ if(tab==='sazonais'&&!st.seasonData)loadSeasonAdmin();
 }
 function badge(x){const v=s(x).toUpperCase();return '<span class="badge '+(v.includes('PENDENTE')?'warn':v.includes('IMPORTANDO')?'light':v.includes('NOVO')?'light':v.includes('IMPORTADO')||v.includes('CONCLU')||v.includes('APROV')?'good':'')+'">'+esc(x||'—')+'</span>';}
 function cellEmpty(title){return '<div class="empty">'+esc(title)+'</div>';}
@@ -286,6 +287,7 @@ function render(){
  if(st.view==='cashbacks')renderCashbacks();
  if(st.view==='coupons')renderCoupons();
  if(st.view==='blackfriday')renderBlackFriday();
+ if(st.view==='sazonais')renderSeasonAdmin();
  if(st.view==='requests')renderRequests();
  E('apiLabel').textContent=st.api;
  E('apiState').innerHTML='<p class="notice success">Última consulta: '+dt(st.lastUpdated)+'. Dados recebidos exclusivamente da API autenticada.</p>';
@@ -1573,8 +1575,156 @@ function bindBlackFriday(){
  });
  E('bfPublish').addEventListener('click',publishBlackFriday);
 }
+
+/* Módulo sazonal — campanhas ERP e fechamento de sinal/saldo discriminados. */
+function seasonAlert(message,error=false){
+ const node=E('seasonNotice');node.hidden=false;node.textContent=message;node.className='notice '+(error?'error':'success');
+}
+function seasonCurrent(){return(st.seasonData?.campaigns||[]).find(x=>x.id===E('seasonCampaignSelect').value)}
+async function loadSeasonAdmin(){
+ try{
+  st.seasonData=await api('seasonal-campaigns');
+  renderSeasonAdmin();
+ }catch(err){seasonAlert('Falha ao carregar campanhas: '+err.message,true);}
+}
+function seasonTextDate(x){
+ if(!x)return'—';const [y,m,d]=s(x).split('-');return d+'/'+m+'/'+y;
+}
+function seasonSaveEdits(){
+ document.querySelectorAll('[data-season-product]').forEach(el=>{
+  const id=el.dataset.seasonProduct;
+  if(!st.seasonProductRules.has(id))return;
+  st.seasonProductRules.set(id,{id,minQuantity:Number(el.querySelector('[data-season-min]').value)||1,maxQuantity:Number(el.querySelector('[data-season-max]').value)||0});
+ });
+}
+function seasonChooseCampaign(id){
+ const campaign=(st.seasonData?.campaigns||[]).find(x=>x.id===id);
+ st.seasonProductRules=new Map((campaign?.products||[]).map(x=>[x.id,{...x}]));
+ const setters={seasonTitle:campaign?.title||'',seasonBanner:campaign?.bannerText||'',seasonDescription:campaign?.description||'',
+ seasonFrom:campaign?.orderFrom||'',seasonUntil:campaign?.orderUntil||'',seasonDates:(campaign?.fulfillmentDates||[]).join('\n'),
+ seasonMinValue:campaign?.minimumOrderValue||0,seasonMaxValue:campaign?.maximumOrderValue||0,seasonMinTotalQty:campaign?.minTotalQuantity||1};
+ Object.entries(setters).forEach(([k,v])=>E(k).value=v);
+ E('seasonPickup').checked=campaign?.allowPickup!==false;E('seasonDelivery').checked=campaign?.allowDelivery!==false;E('seasonActive').checked=campaign?.active!==false;
+ renderSeasonProducts();
+}
+function seasonProductsFiltered(){
+ const q=s(E('seasonProductSearch').value).toLowerCase();
+ return(st.seasonData?.products||[]).filter(p=>(s(p.name)+' '+s(p.id)).toLowerCase().includes(q));
+}
+function renderSeasonProducts(){
+ const items=seasonProductsFiltered();
+ E('seasonSelected').textContent=st.seasonProductRules.size+' selecionado(s)';
+ E('seasonProductList').innerHTML=items.map(p=>{
+  const rule=st.seasonProductRules.get(p.id),picked=!!rule;
+  return '<div class="season-admin-product" data-season-product="'+esc(p.id)+'">'+
+    '<label class="season-admin-choice"><input type="checkbox" data-season-check value="'+esc(p.id)+'" '+(picked?'checked':'')+'>'+
+    '<span><b>'+esc(p.name)+'</b><small>Preço atual: '+brl(p.price)+' · '+esc(p.category||'')+'</small></span></label>'+
+    '<label>Mínimo por produto<input data-season-min type="number" min="1" step="1" value="'+esc(rule?.minQuantity??1)+'"></label>'+
+    '<label>Máximo (0 = livre)<input data-season-max type="number" min="0" step="1" value="'+esc(rule?.maxQuantity??0)+'"></label></div>';
+ }).join('')||cellEmpty('Nenhum produto encontrado.');
+}
+function renderSeasonAdmin(){
+ if(!st.seasonData)return;
+ const campaigns=st.seasonData.campaigns||[],orders=st.seasonOrders?.orders||[];
+ E('seasonStats').innerHTML=[
+  statsCard('🎄','Campanhas',campaigns.length,'Datas sazonais cadastradas'),
+  statsCard('📅','Em aberto',campaigns.filter(c=>c.status==='ABERTA').length,'Aceitando encomendas'),
+  statsCard('💚','Sinal pendente',orders.filter(o=>o.seasonal?.depositStatus!=='PAID').length,'Encomendas não confirmadas'),
+  statsCard('💰','Saldo pendente',brl(orders.reduce((sum,o)=>sum+(o.seasonal?.balanceStatus==='PAID'?0:n(o.seasonal?.balanceDue)),0)),'Valor a receber na entrega')
+ ].join('');
+ const current=E('seasonCampaignSelect').value;
+ E('seasonCampaignSelect').innerHTML='<option value="">➕ Nova campanha</option>'+
+  campaigns.map(c=>'<option value="'+esc(c.id)+'">'+esc(c.title)+' · '+esc(c.status)+'</option>').join('');
+ E('seasonCampaignSelect').value=campaigns.some(c=>c.id===current)?current:'';
+ E('seasonCampaignCards').innerHTML=campaigns.map(c=>'<article class="card season-campaign-card"><div class="mobile-record-head"><b>🎄 '+esc(c.title)+'</b><span class="badge '+(c.status==='ABERTA'?'good':'light')+'">'+esc(c.status)+'</span></div>'+
+ '<p>Encomendar: '+esc(seasonTextDate(c.orderFrom))+' a '+esc(seasonTextDate(c.orderUntil))+'</p><p>Entrega/retirada: '+c.fulfillmentDates.map(seasonTextDate).map(esc).join(' · ')+'</p>'+
+ '<p>Produtos: '+c.products.length+' · Mínimo total: '+c.minTotalQuantity+' · Sinal: 50%</p>'+
+ '<button type="button" class="btn small primary" data-season-edit="'+esc(c.id)+'">✏️ Editar campanha</button></article>').join('');
+ renderSeasonProducts();
+ renderSeasonOrders();
+}
+async function seasonLoadOrders(){
+ try{st.seasonOrders=await api('seasonal-orders');renderSeasonAdmin();}catch(err){seasonAlert('Falha ao consultar encomendas: '+err.message,true);}
+}
+function seasonOrderFilter(){
+ const q=s(E('seasonOrderSearch').value).toLowerCase(),filter=E('seasonOrderFilter').value;
+ return(st.seasonOrders?.orders||[]).filter(o=>(s(o.code)+' '+s(o.name)+' '+s(o.phone)+' '+s(o.seasonal?.campaignTitle)).toLowerCase().includes(q)&&
+ (filter==='all'||filter==='deposit'&&o.seasonal?.depositStatus!=='PAID'||filter==='paid'&&o.seasonal?.depositStatus==='PAID'||filter==='balance'&&o.seasonal?.depositStatus==='PAID'&&o.seasonal?.balanceStatus!=='PAID'||filter==='completed'&&o.seasonal?.balanceStatus==='PAID'));
+}
+function renderSeasonOrders(){
+ const holder=E('seasonOrderList');if(!st.seasonOrders){holder.innerHTML=cellEmpty('Toque em Atualizar encomendas para consultar os pedidos.');return;}
+ const items=seasonOrderFilter();
+ holder.innerHTML=items.length?'<div class="mobile-list">'+items.map(o=>{
+  const f=o.seasonal||{},depositOk=f.depositStatus==='PAID',balanceOk=f.balanceStatus==='PAID';
+  return '<article class="mobile-record"><div class="mobile-record-head"><b>🎄 '+esc(o.code)+'</b><span class="badge '+(balanceOk?'good':'warn')+'">'+esc(balanceOk?'Quitado':depositOk?'Sinal pago':'Sinal pendente')+'</span></div>'+
+  '<p><b>'+esc(o.name)+'</b> · '+esc(o.phone)+'<br>'+esc(f.campaignTitle)+' · '+esc(seasonTextDate(o.deliveryDate))+' · '+esc(o.mode==='ENTREGA'?'Entrega':'Retirada')+'</p>'+
+  '<p>💰 Total: <b>'+brl(o.total)+'</b> · Sinal: <b>'+brl(f.depositDue)+'</b> · Saldo: <b>'+brl(f.balanceDue)+'</b></p>'+
+  '<div class="record-actions">'+(!depositOk?'<button class="btn small primary" data-season-settle="'+esc(o.id)+'" data-stage="DEPOSIT">💚 Confirmar sinal recebido</button>':'<span class="badge good">✅ Sinal confirmado</span>')+
+  (depositOk&&!balanceOk?'<button class="btn small gold" data-season-settle="'+esc(o.id)+'" data-stage="BALANCE">💰 Confirmar saldo na entrega</button>':'')+
+  (balanceOk?'<span class="badge good">✅ Saldo quitado</span>':'')+'</div></article>';
+ }).join('')+'</div>':cellEmpty('Nenhuma encomenda encontrada neste filtro.');
+}
+function seasonAdminTab(tab){
+ st.seasonAdminTab=tab;E('seasonCampaignsPanel').hidden=tab!=='campaigns';E('seasonOrdersPanel').hidden=tab!=='orders';
+ document.querySelectorAll('[data-season-admin-tab]').forEach(b=>b.className='btn'+(b.dataset.seasonAdminTab===tab?' primary':''));
+ if(tab==='orders')seasonLoadOrders();
+}
+async function saveSeasonalCampaign(){
+ seasonSaveEdits();
+ const dates=s(E('seasonDates').value).split(/[\n,;]+/).map(x=>x.trim()).filter(Boolean);
+ const body={id:E('seasonCampaignSelect').value||undefined,title:s(E('seasonTitle').value).trim(),description:s(E('seasonDescription').value).trim(),
+ bannerText:s(E('seasonBanner').value).trim(),orderFrom:E('seasonFrom').value,orderUntil:E('seasonUntil').value,fulfillmentDates:[...new Set(dates)].sort(),
+ minimumOrderValue:Number(E('seasonMinValue').value)||0,maximumOrderValue:Number(E('seasonMaxValue').value)||0,minTotalQuantity:Number(E('seasonMinTotalQty').value)||1,
+ allowPickup:E('seasonPickup').checked,allowDelivery:E('seasonDelivery').checked,active:E('seasonActive').checked,
+ products:[...st.seasonProductRules.values()]};
+ if(!body.title||!body.orderFrom||!body.orderUntil||!body.fulfillmentDates.length||!body.products.length)return seasonAlert('Informe campanha, prazo, datas de atendimento e pelo menos um produto.',true);
+ if(!window.confirm('Publicar '+body.title+' com '+body.products.length+' produtos? Os clientes poderão encomendar, pagando 50% de sinal e o restante na entrega.'))return;
+ const btn=E('seasonSave');btn.disabled=true;btn.textContent='Publicando...';
+ try{
+  await api('seasonal-campaigns',{method:'POST',body});
+  await loadSeasonAdmin();E('seasonCampaignSelect').value='';seasonChooseCampaign('');
+  seasonAlert('✅ Campanha publicada. O banner aparecerá no e-commerce enquanto a campanha estiver disponível.');
+ }catch(err){seasonAlert('Falha na publicação: '+err.message,true);}
+ finally{btn.disabled=false;btn.textContent='💾 Salvar e publicar campanha';}
+}
+async function seasonConfirmPayment(id,stage){
+ const o=(st.seasonOrders?.orders||[]).find(x=>x.id===id);if(!o)return;
+ const isBalance=stage==='BALANCE',amount=isBalance?o.seasonal.balanceDue:o.seasonal.depositDue;
+ const accepted=window.confirm((isBalance?'Confirmo que a encomenda foi entregue/retirada E recebi o saldo de ':'Confirmo que recebi efetivamente o sinal de ')+brl(amount)+' do pedido '+o.code+'? Não confirme somente pelo comprovante enviado pelo cliente.');
+ if(!accepted)return;
+ try{
+  await api('seasonal-orders/'+encodeURIComponent(id)+'/confirm-payment',{method:'POST',body:{stage,paymentVerified:true,delivered:isBalance}});
+  seasonAlert('✅ Recebimento '+(isBalance?'do saldo':'do sinal')+' registrado para '+o.code+'.');
+  await seasonLoadOrders();
+ }catch(err){seasonAlert('Não foi possível confirmar: '+err.message,true);}
+}
+function bindSeasonAdmin(){
+ E('seasonRefresh').addEventListener('click',async()=>{await loadSeasonAdmin();if(st.seasonAdminTab==='orders')await seasonLoadOrders();});
+ E('seasonCampaignSelect').addEventListener('change',()=>seasonChooseCampaign(E('seasonCampaignSelect').value));
+ E('seasonProductSearch').addEventListener('input',()=>{seasonSaveEdits();renderSeasonProducts();});
+ E('seasonProductList').addEventListener('change',e=>{
+  const el=e.target.closest('[data-season-check]');if(!el)return;
+  seasonSaveEdits();const id=el.value;
+  if(el.checked)st.seasonProductRules.set(id,{id,minQuantity:1,maxQuantity:0});
+  else st.seasonProductRules.delete(id);
+  renderSeasonProducts();
+ });
+ E('seasonProductList').addEventListener('input',e=>{
+  const row=e.target.closest('[data-season-product]');if(row&&st.seasonProductRules.has(row.dataset.seasonProduct))seasonSaveEdits();
+ });
+ E('seasonSave').addEventListener('click',saveSeasonalCampaign);
+ document.querySelectorAll('[data-season-admin-tab]').forEach(b=>b.addEventListener('click',()=>seasonAdminTab(b.dataset.seasonAdminTab)));
+ E('seasonLoadOrders').addEventListener('click',seasonLoadOrders);
+ E('seasonOrderSearch').addEventListener('input',renderSeasonOrders);
+ E('seasonOrderFilter').addEventListener('change',renderSeasonOrders);
+ document.addEventListener('click',e=>{
+  const edit=e.target.closest('[data-season-edit]');if(edit){E('seasonCampaignSelect').value=edit.dataset.seasonEdit;seasonChooseCampaign(edit.dataset.seasonEdit);}
+  const settle=e.target.closest('[data-season-settle]');if(settle)seasonConfirmPayment(settle.dataset.seasonSettle,settle.dataset.stage);
+ });
+}
 function bind(){
  setupInstall();
+ bindSeasonAdmin();
  bindBlackFriday();
  bindCouponModule();
  bindMoreFeatures();
