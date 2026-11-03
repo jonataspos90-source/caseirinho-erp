@@ -2,7 +2,7 @@
 'use strict';
 const STORE='https://jonataspos90-source.github.io/caseirinho-loja/';
 const DEFAULT_API='https://john-cloud-api-production.up.railway.app';
-const st={api:DEFAULT_API,token:'',summary:null,contacts:[],orders:[],catalog:[],categories:[],drafts:[],requests:[],sales:null,salesLoaded:false,merch:{grades:[],packs:[]},merchTab:'grades',gradeSelected:new Map(),packSelected:new Set(),merchLoaded:false,fulfillment:new Map(),fichasData:null,cashbacksData:null,orderAlertSeen:null,orderAlertEnabled:false,view:'dashboard',syncing:false,sound:false,known:new Set(),knownReady:false,lastUpdated:null};
+const st={api:DEFAULT_API,token:'',summary:null,contacts:[],orders:[],catalog:[],categories:[],drafts:[],requests:[],sales:null,salesLoaded:false,merch:{grades:[],packs:[]},merchTab:'grades',gradeSelected:new Map(),packSelected:new Set(),merchLoaded:false,fulfillment:new Map(),fichasData:null,cashbacksData:null,couponsData:null,couponReport:null,couponTab:'config',orderAlertSeen:null,orderAlertEnabled:false,view:'dashboard',syncing:false,sound:false,known:new Set(),knownReady:false,lastUpdated:null};
 const E=id=>document.getElementById(id);
 const s=x=>String(x==null?'':x), n=x=>Number(x)||0;
 const esc=x=>s(x).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
@@ -114,7 +114,7 @@ function nav(tab){
  st.view=tab;
  document.querySelectorAll('.section').forEach(x=>x.classList.toggle('active',x.id===tab));
  document.querySelectorAll('[data-view]').forEach(x=>x.classList.toggle('active',x.dataset.view===tab));
- const labels={dashboard:'Visão geral',contacts:'CRM e contatos',ranking:'Ranking de acessos',orders:'Pedidos',menu:'Cardápio escrito',products:'Produtos e preços',reports:'Relatórios e PDF',sales:'Vendas e Curva ABC',merch:'Grades e Packs',fichas:'Fichas Técnicas',cashbacks:'Cashback Clientes',requests:'Solicitações de cardápio',settings:'Configurações'};
+ const labels={dashboard:'Visão geral',contacts:'CRM e contatos',ranking:'Ranking de acessos',orders:'Pedidos',menu:'Cardápio escrito',products:'Produtos e preços',reports:'Relatórios e PDF',sales:'Vendas e Curva ABC',merch:'Grades e Packs',fichas:'Fichas Técnicas',cashbacks:'Cashback Clientes',coupons:'Cupons e Utilizações',requests:'Solicitações de cardápio',settings:'Configurações'};
  E('pageTitle').textContent=labels[tab]||'Central de Insights';
  window.scrollTo({top:0,behavior:'smooth'});
  render();
@@ -122,6 +122,7 @@ function nav(tab){
  if(tab==='merch'&&!st.merchLoaded)loadMerch();
  if(tab==='fichas'&&!st.fichasData)loadFichas();
  if(tab==='cashbacks'&&!st.cashbacksData)loadCashbacks();
+ if(tab==='coupons'&&!st.couponsData)loadCoupons();
 }
 function badge(x){const v=s(x).toUpperCase();return '<span class="badge '+(v.includes('PENDENTE')?'warn':v.includes('IMPORTANDO')?'light':v.includes('NOVO')?'light':v.includes('IMPORTADO')||v.includes('CONCLU')||v.includes('APROV')?'good':'')+'">'+esc(x||'—')+'</span>';}
 function cellEmpty(title){return '<div class="empty">'+esc(title)+'</div>';}
@@ -272,6 +273,7 @@ function render(){
  if(st.view==='merch')renderMerch();
  if(st.view==='fichas')renderFichas();
  if(st.view==='cashbacks')renderCashbacks();
+ if(st.view==='coupons')renderCoupons();
  if(st.view==='requests')renderRequests();
  E('apiLabel').textContent=st.api;
  E('apiState').innerHTML='<p class="notice success">Última consulta: '+dt(st.lastUpdated)+'. Dados recebidos exclusivamente da API autenticada.</p>';
@@ -1216,8 +1218,181 @@ function bindMoreFeatures(){
  st.sound=st.orderAlertEnabled;
  E('orderAlertToggle').textContent=st.orderAlertEnabled?'🔔 Alertas ativados':'🔕 Ativar alerta sonoro';
 }
+
+/* Cupons: campanhas com vigência e relatório de utilização, integradas ao motorComercial do e-commerce. */
+function couponDate(iso){
+ if(!iso)return null;
+ const v=s(iso);
+ if(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(v))return new Date(v+':00-03:00');
+ return new Date(v);
+}
+function couponDateInput(value){
+ if(!value)return'';
+ const v=s(value);if(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(v))return v.slice(0,16);
+ return '';
+}
+function couponStatus(c){
+ if(!c.active)return {text:'Inativo',kind:'warn'};
+ const now=Date.now(),start=couponDate(c.startAt),end=couponDate(c.endAt);
+ if(start&&start.getTime()>now)return {text:'Agendado',kind:'light'};
+ if(end&&end.getTime()<now)return {text:'Expirado',kind:'warn'};
+ return {text:'Vigente',kind:'good'};
+}
+function couponTab(tab){
+ st.couponTab=tab;
+ E('couponConfigTab').hidden=tab!=='config';
+ E('couponReportTab').hidden=tab!=='report';
+ document.querySelectorAll('[data-coupon-tab]').forEach(b=>b.className='btn'+(b.dataset.couponTab===tab?' primary':''));
+ if(tab==='report'&&!st.couponReport)loadCouponReport();
+ renderCoupons();
+}
+async function loadCoupons(){
+ E('couponError').hidden=true;
+ try{st.couponsData=await api('coupons');renderCoupons();}
+ catch(err){E('couponError').hidden=false;E('couponError').textContent='Falha ao consultar cupons: '+err.message;}
+}
+function renderCoupons(){
+ if(!st.couponsData)return;
+ const list=st.couponsData.coupons||[],current=list.filter(c=>couponStatus(c).text==='Vigente');
+ E('couponKpis').innerHTML=[
+  statsCard('🎟️','Cupons cadastrados',list.length,'Campanhas na loja'),
+  statsCard('🟢','Cupons vigentes',current.length,'Ativos e dentro das datas'),
+  statsCard('⏳','Agendados',list.filter(c=>couponStatus(c).text==='Agendado').length,'Início futuro'),
+  statsCard('⌛','Expirados',list.filter(c=>couponStatus(c).text==='Expirado').length,'Não aplicáveis no momento')
+ ].join('');
+ E('couponCards').innerHTML=list.length?'<div class="merch-grid">'+list.map(c=>{
+  const status=couponStatus(c),special=c.code==='CASEIRINHO10';
+  const descr=(c.type==='PERCENT'?n(c.value).toLocaleString('pt-BR',{maximumFractionDigits:2})+'%':brl(c.value))+' de desconto';
+  return '<article class="card merch-card"><div class="mobile-record-head"><h3>🎫 '+esc(c.code)+'</h3><span class="badge '+status.kind+'">'+status.text+'</span></div>'+
+    '<p><b>'+esc(descr)+'</b>'+(special?' · Primeira compra, uso único':'')+'</p>'+
+    '<p>Pedido mínimo: '+brl(c.minSubtotal)+' · Desconto máximo: '+(c.maxDiscount>0?brl(c.maxDiscount):'Sem teto adicional')+'</p>'+
+    '<p>📅 Início: '+(c.startAt?dt(couponDate(c.startAt)):'Imediato')+'<br>📅 Término: '+(c.endAt?dt(couponDate(c.endAt)):'Sem data final')+'</p>'+
+    '<div class="record-actions"><button class="btn small primary" type="button" data-coupon-action="edit" data-code="'+esc(c.code)+'">✏️ Editar vigência / valores</button>'+
+    '<button class="btn small" type="button" data-coupon-action="toggle" data-code="'+esc(c.code)+'">'+(c.active?'⛔ Desativar':'✅ Ativar')+'</button></div></article>';
+ }).join('')+'</div>':cellEmpty('Nenhum cupom cadastrado.');
+ const old=E('couponReportCode').value;
+ const codes=[...new Set([...(st.couponsData.coupons||[]).map(x=>x.code),...(st.couponReport?.coupons||[]).map(x=>x.code)])];
+ E('couponReportCode').innerHTML='<option value="all">Todos os cupons</option>'+codes.map(x=>'<option value="'+esc(x)+'">'+esc(x)+'</option>').join('');
+ E('couponReportCode').value=codes.includes(old)?old:'all';
+ if(st.couponReport)renderCouponReport();
+}
+function couponEditModal(code=''){
+ if(!st.couponsData)return toast('Atualize os cupons antes de editar.',true);
+ const record=(st.couponsData.coupons||[]).find(x=>x.code===code),special=code==='CASEIRINHO10';
+ modal(record?'✏️ Editar cupom '+code:'➕ Cadastrar cupom',
+ '<form id="couponManageForm" data-original="'+esc(record?.code||'')+'" class="product-form">'+
+ '<label class="form-label">Código do cupom *</label><input name="code" required maxlength="40" pattern="[A-Za-z0-9_]{3,40}" autocapitalize="characters" placeholder="Ex.: VOLTEI15" value="'+esc(record?.code||'')+'" '+(record?'readonly':'')+'>'+
+ '<div class="form-grid"><label>Modalidade<select name="type" '+(special?'disabled':'')+'><option value="PERCENT">Percentual (%)</option><option value="FIXED">Valor fixo (R$)</option></select></label>'+
+ '<label>Desconto aplicado<input type="number" name="value" min=".01" max="100000" step=".01" required value="'+esc(record?.value??10)+'" '+(special?'readonly':'')+'></label></div>'+
+ '<div class="form-grid"><label>Pedido mínimo (R$)<input name="minSubtotal" type="number" min="0" step=".01" value="'+esc(record?.minSubtotal||0)+'"></label>'+
+ '<label>Desconto máximo (R$)<input name="maxDiscount" type="number" min="0" step=".01" value="'+esc(record?.maxDiscount||0)+'"></label></div>'+
+ '<div class="form-grid"><label>📅 Início da vigência (São Paulo)<input name="startAt" type="datetime-local" value="'+esc(couponDateInput(record?.startAt))+'"></label>'+
+ '<label>📅 Fim da vigência (São Paulo)<input name="endAt" type="datetime-local" value="'+esc(couponDateInput(record?.endAt))+'"></label></div>'+
+ '<label class="coupon-toggle"><input name="active" type="checkbox" '+(record?.active===false?'':'checked')+'> Cupom ativo</label>'+
+ (special?'<div class="notice warn">O CASEIRINHO10 permanece obrigatório para primeira compra, desconto fixo de 10%. Não é possível transformar em cupom genérico.</div>':
+ '<div class="notice">Se não definir o fim da vigência, o cupom continuará válido até ser desativado. Não confunda limitar a data com limitar a quantidade de clientes.</div>')+
+ '<button type="submit" class="btn primary" style="width:100%">💾 Salvar e publicar cupom</button></form>');
+ E('couponManageForm').querySelector('select[name="type"]').value=record?.type||'PERCENT';
+}
+async function saveCoupon(e){
+ e.preventDefault();const form=e.target,fd=new FormData(form);
+ const isSpecial=s(fd.get('code')).toUpperCase()==='CASEIRINHO10';
+ const payload={existingCode:form.dataset.original||'',code:s(fd.get('code')).toUpperCase(),type:isSpecial?'PERCENT':s(fd.get('type')),value:isSpecial?10:Number(fd.get('value')),
+  minSubtotal:Number(fd.get('minSubtotal')||0),maxDiscount:Number(fd.get('maxDiscount')||0),startAt:s(fd.get('startAt'))||null,endAt:s(fd.get('endAt'))||null,active:fd.get('active')==='on'};
+ if(payload.startAt&&payload.endAt&&payload.endAt<=payload.startAt)return toast('Fim da vigência precisa ser posterior ao início.',true);
+ if(!window.confirm('Publicar '+payload.code+' ('+(payload.type==='PERCENT'?payload.value+'%':brl(payload.value))+') no e-commerce? As novas validações usarão a vigência configurada.'))return;
+ const btn=form.querySelector('[type=submit]');btn.disabled=true;btn.textContent='Salvando cupom...';
+ try{await api('coupons',{method:'POST',body:payload});hideModal();toast('🎟️ Cupom '+payload.code+' salvo no e-commerce.');await loadCoupons();nav('coupons');}
+ catch(err){toast('Erro ao publicar cupom: '+err.message,true);}
+ finally{btn.disabled=false;btn.textContent='💾 Salvar e publicar cupom';}
+}
+async function toggleCoupon(code){
+ const c=(st.couponsData?.coupons||[]).find(x=>x.code===code);if(!c)return;
+ const active=!c.active;
+ if(!window.confirm((active?'Ativar':'Desativar')+' o cupom '+code+' para novos pedidos?'))return;
+ try{await api('coupons/'+encodeURIComponent(code)+'/status',{method:'PATCH',body:{active}});toast('✅ Cupom '+code+' '+(active?'ativado':'desativado')+'.');await loadCoupons();}
+ catch(e){toast('Falha ao alterar cupom: '+e.message,true);}
+}
+function initCouponDates(){
+ if(E('couponDateTo').value)return;
+ const today=saoPauloToday();
+ E('couponDateTo').value=today;E('couponDateFrom').value=shiftDateISO(today,-41);
+}
+async function loadCouponReport(){
+ initCouponDates();
+ const from=E('couponDateFrom').value,to=E('couponDateTo').value;
+ if(!from||!to||from>to){E('couponError').hidden=false;E('couponError').textContent='Escolha datas válidas para o relatório.';return;}
+ E('couponError').hidden=true;
+ E('runCouponReport').disabled=true;E('runCouponReport').textContent='Consultando...';
+ try{st.couponReport=await api('coupon-report?from='+encodeURIComponent(from)+'&to='+encodeURIComponent(to));renderCoupons();}
+ catch(e){E('couponError').hidden=false;E('couponError').textContent='Não foi possível consultar utilização: '+e.message;}
+ finally{E('runCouponReport').disabled=false;E('runCouponReport').textContent='🔎 Consultar';}
+}
+function couponReportRows(){
+ const d=st.couponReport;if(!d)return[];
+ const code=E('couponReportCode').value,status=E('couponReportStatus').value,search=s(E('couponReportSearch').value).toLowerCase();
+ return (d.orders||[]).filter(x=>(code==='all'||x.coupon===code)&&
+ (status==='all'||status==='accepted'&&x.counted||status==='pending'&&['NOVO','ABERTO','AGUARDANDO_COTACAO_FRETE'].includes(x.status)||status==='other'&&!x.counted&&!['NOVO','ABERTO','AGUARDANDO_COTACAO_FRETE'].includes(x.status))&&
+ (s(x.name)+' '+s(x.phone)+' '+s(x.code)+' '+s(x.coupon)).toLowerCase().includes(search));
+}
+function renderCouponReport(){
+ const d=st.couponReport;if(!d)return;
+ const rows=couponReportRows(),approved=rows.filter(x=>x.counted),pending=rows.filter(x=>['NOVO','ABERTO','AGUARDANDO_COTACAO_FRETE'].includes(x.status));
+ E('couponReportKpis').innerHTML=[
+  statsCard('🎫','Cupons registrados',rows.length,'Pedidos com código aplicado'),
+  statsCard('✅','Pedidos aceitos',approved.length,'Ainda não comprova pagamento'),
+  statsCard('⏳','Pedidos pendentes',pending.length,'Não contam como venda confirmada'),
+  statsCard('💰','Descontos aceitos',brl(approved.reduce((sum,x)=>sum+Number(x.discount||0),0)),'Desconto registrado, não baixa financeira')
+ ].join('');
+ const rank=[...new Set(rows.map(x=>x.coupon))].map(code=>{const ar=rows.filter(x=>x.coupon===code);return {code,orders:ar.length,accepted:ar.filter(x=>x.counted).length,discount:ar.filter(x=>x.counted).reduce((sum,x)=>sum+x.discount,0)};}).sort((a,b)=>b.accepted-a.accepted||b.orders-a.orders);
+ E('couponRanking').innerHTML=rank.map((x,i)=>'<div class="sales-top-row"><div class="sales-top-title"><b>'+(i+1)+'. '+esc(x.code)+'</b><strong>'+x.accepted+' aceito(s)</strong></div><small>'+x.orders+' registro(s) · '+brl(x.discount)+' de desconto</small></div>').join('')||cellEmpty('Sem cupons no período.');
+ const lines=rows.map(x=>'<tr><td>'+esc(x.name)+'</td><td>'+esc(tel(x.phone))+'</td><td><b>'+esc(x.coupon)+'</b></td><td>'+esc(x.code)+'</td><td>'+dt(x.createdAt)+'</td><td>'+brl(x.discount)+'</td><td>'+badge(x.status)+'</td></tr>');
+ if(window.matchMedia('(max-width:790px)').matches){
+  E('couponReportTable').innerHTML=rows.length?'<div class="mobile-list">'+rows.map(x=>
+  '<article class="mobile-record"><div class="mobile-record-head"><b>'+esc(x.name)+'</b><span class="badge '+(x.counted?'good':'warn')+'">'+esc(x.status)+'</span></div>'+
+  '<p>📱 '+esc(tel(x.phone))+' · Pedido '+esc(x.code)+'</p><div class="sales-mobile-grid"><span>Cupom<b>'+esc(x.coupon)+'</b></span><span>Desconto<b>'+brl(x.discount)+'</b></span><span>Valor final<b>'+brl(x.total)+'</b></span><span>Data<b>'+dt(x.createdAt)+'</b></span></div></article>'
+  ).join('')+'</div>':cellEmpty('Nenhum uso de cupom encontrado.');
+ }else E('couponReportTable').innerHTML=table(['Cliente','WhatsApp','Cupom','Pedido','Data','Desconto','Situação'],lines);
+}
+function exportCouponCsv(){
+ if(!st.couponReport)return toast('Consulte o relatório antes de exportar.',true);
+ const headers=['Cliente','WhatsApp','Cupom','Pedido','Data','Situação','Desconto','Valor do pedido','Aceito'];
+ const rows=[headers,...couponReportRows().map(x=>[x.name,x.phone,x.coupon,x.code,dt(x.createdAt),x.status,x.discount,x.total,x.counted?'Sim':'Não'])];
+ const csv='\ufeff'+rows.map(row=>row.map(v=>'"'+s(v).replace(/"/g,'""')+'"').join(';')).join('\r\n');
+ const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})),a=document.createElement('a');a.href=url;a.download='caseirinho-utilizacao-cupons-'+st.couponReport.period.from+'-a-'+st.couponReport.period.to+'.csv';a.click();URL.revokeObjectURL(url);
+}
+function exportCouponPdf(){
+ if(!st.couponReport)return toast('Consulte o relatório antes de imprimir.',true);
+ const d=st.couponReport,rows=couponReportRows(),accepted=rows.filter(x=>x.counted);
+ const lines=rows.map(x=>'<tr><td>'+esc(x.name)+'</td><td>'+esc(tel(x.phone))+'</td><td>'+esc(x.coupon)+'</td><td>'+esc(x.code)+'</td><td>'+dt(x.createdAt)+'</td><td>'+brl(x.discount)+'</td><td>'+esc(x.status)+'</td></tr>');
+ const body='<p><b>Período:</b> '+displayISODate(d.period.from)+' a '+displayISODate(d.period.to)+
+ '</p><p><b>Cupons registrados:</b> '+rows.length+' · <b>Pedidos aceitos:</b> '+accepted.length+
+ ' · <b>Descontos aceitos:</b> '+brl(accepted.reduce((sum,x)=>sum+x.discount,0))+'</p>'+
+ table(['Cliente','WhatsApp','Cupom','Pedido','Data','Desconto','Status'],lines)+
+ '<p><small>Fonte: pedidos da loja. Registros pendentes não são vendas concluídas e descontos não comprovam pagamento.</small></p>';
+ printDocument('Relatório de Cupons • Caseirinho',body);
+}
+function bindCouponModule(){
+ E('refreshCoupons').addEventListener('click',async()=>{await loadCoupons();if(st.couponTab==='report')await loadCouponReport();});
+ E('newCoupon').addEventListener('click',()=>couponEditModal());
+ document.querySelectorAll('[data-coupon-tab]').forEach(b=>b.addEventListener('click',()=>couponTab(b.dataset.couponTab)));
+ E('runCouponReport').addEventListener('click',loadCouponReport);
+ E('couponReportCode').addEventListener('change',renderCouponReport);
+ E('couponReportStatus').addEventListener('change',renderCouponReport);
+ E('couponReportSearch').addEventListener('input',renderCouponReport);
+ E('couponExportCsv').addEventListener('click',exportCouponCsv);
+ E('couponExportPdf').addEventListener('click',exportCouponPdf);
+ document.addEventListener('submit',e=>{if(e.target?.id==='couponManageForm')return saveCoupon(e);});
+ document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-coupon-action]');if(!b)return;
+  if(b.dataset.couponAction==='edit')couponEditModal(b.dataset.code);
+  if(b.dataset.couponAction==='toggle')toggleCoupon(b.dataset.code);
+ });
+ initCouponDates();
+}
 function bind(){
  setupInstall();
+ bindCouponModule();
  bindMoreFeatures();
  bindMerch();
  document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>nav(b.dataset.view)));
