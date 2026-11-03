@@ -1,5 +1,5 @@
 importScripts('./order-alerts-worker.js');
-const CACHE='john-erp-pwa-v8.22.89-black-friday-link-20261103';
+const CACHE='john-erp-pwa-v8.22.90-seasonal-campaigns-20261103';
 
 const TX='./transaction-persistence-v8-22-13.js';
 const MULTI='./multiempresa-v8-12-0.js';
