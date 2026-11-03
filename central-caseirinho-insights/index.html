@@ -2,23 +2,21 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#183c2e"><meta name="description" content="Central Caseirinho Insights — painel administrativo independente de CRM, acessos, pedidos e cardápio.">
 <title>Central Caseirinho Insights | CRM e Loja</title>
-<link rel="stylesheet" href="./styles.css?v=5">
+<link rel="stylesheet" href="./styles.css?v=6">
 <link rel="manifest" href="./manifest.webmanifest"><link rel="icon" type="image/png" sizes="192x192" href="/caseirinho-loja/icons/icon-192.png"><link rel="apple-touch-icon" href="/caseirinho-loja/icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default">
 </head><body>
 <div class="auth-screen" id="loginScreen">
  <div class="auth"><div style="font-size:45px">🍝</div><p class="eyebrow">Caseirinho Massas Artesanais</p>
  <h2>Central de Insights</h2><p>Aplicativo independente para acompanhar os clientes, o movimento do app, os pedidos e o atendimento pelo WhatsApp.</p>
- <form id="loginForm"><label for="apiUrl">Endereço da API</label>
- <input id="apiUrl" type="url" required value="https://john-cloud-api-production.up.railway.app" autocomplete="url">
- <label for="accessToken">Token ou sessão administrativa do ERP</label>
- <input id="accessToken" type="password" placeholder="Cole seu token do ERP" autocomplete="off">
- <label for="rememberDevice" class="remember-box" style="display:flex;gap:10px;align-items:flex-start;cursor:pointer;margin:12px 0 5px"><input type="checkbox" id="rememberDevice" style="width:18px;min-height:auto;margin:2px 0"><span style="font-size:13px;font-weight:650">Este é meu celular. Manter meu acesso neste aparelho.</span></label><small class="muted" style="display:block;margin:0 0 9px;line-height:1.5">Use somente em dispositivo pessoal e protegido por bloqueio de tela. Você poderá encerrar a sessão pelo botão Sair.</small>
- <button type="submit" class="btn primary" style="width:100%;margin-top:8px">🔐 Entrar com segurança</button>
- <button type="button" class="btn" id="reuseSession" style="width:100%;margin-top:8px">Usar sessão já aberta do ERP</button>
- <button type="button" class="btn gold" id="installAppBtn" style="width:100%;margin-top:12px">📲 Instalar app no meu celular</button><p id="installHint" style="text-align:center;margin:7px 0 0;font-size:12px">Depois, abra pelo ícone na tela inicial.</p>
+ <form id="loginForm" autocomplete="on">
+ <label for="erpUsername">👤 Usuário do ERP</label>
+ <input id="erpUsername" name="username" type="text" autocapitalize="none" autocorrect="off" spellcheck="false" maxlength="80" autocomplete="username" placeholder="Digite seu usuário" required>
+ <label for="erpPassword">🔒 Senha do ERP</label>
+ <input id="erpPassword" name="password" type="password" maxlength="200" autocomplete="current-password" placeholder="Digite sua senha" required>
+ <button type="submit" class="btn primary" id="erpLoginBtn" style="width:100%;margin-top:12px">🔐 Entrar</button>
  </form>
- <p class="notice" id="loginNotice" role="status">Os dados dos clientes são consultados pela API autenticada e não ficam gravados nesta página pública.</p>
- <p><small>Se o token não estiver disponível, abra o ERP e entre com um usuário autorizado.</small></p>
+ <p class="notice" id="loginNotice" role="status">Use o mesmo usuário e a mesma senha que você utiliza no ERP Caseirinho.</p>
+ <p class="subtitle" style="font-size:12px">A Central respeita as permissões do ERP. Seu login é verificado com segurança e a senha não é armazenada neste aplicativo.</p>
  </div>
 </div>
 <div class="layout">
@@ -122,5 +120,5 @@
  </nav>
 <div id="toast" class="toast" role="status" hidden></div>
 <div id="modal" class="modal-bg" hidden><div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><h2 id="modalTitle">Mensagem para WhatsApp</h2><div id="modalContent"></div><div class="toolbar" style="justify-content:flex-end;margin-top:20px"><button class="btn" id="modalClose">Fechar</button></div></div></div>
-<script src="./app.js?v=5" defer></script>
+<script src="./app.js?v=6" defer></script>
 </body></html>
