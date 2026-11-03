@@ -29,7 +29,6 @@
  <button type="button" data-view="orders">🛒 Pedidos</button>
  <button type="button" data-view="products">🏷️ Produtos e preços</button>
  <button type="button" data-view="blackfriday">🖤 Black Friday</button>
- <button type="button" data-view="seasonal">🎄 Encomendas Sazonais</button>
  <button type="button" data-view="sazonais">🎄 Encomendas Sazonais</button>
  <button type="button" data-view="fichas">📋 Fichas Técnicas</button>
  <button type="button" data-view="cashbacks">💚 Cashback Clientes</button>
@@ -204,44 +203,6 @@
   <div id="seasonOrderList"></div>
  </div>
 </section>
-<section id="seasonal" class="section">
- <div class="section-head"><div><h2>🎄 Encomendas Sazonais</h2><p>Campanhas para Natal, Ano Novo, Páscoa e outras datas: banner, produtos, datas e sinal de 50%.</p></div><button type="button" class="btn" id="seasonalAdminRefresh">↻ Atualizar</button></div>
- <div class="notice">💚 <b>Sinal de 50% no Pix</b> e <b>50% no recebimento</b>. Pedidos são registrados mesmo que o pagamento esteja pendente; confirme o sinal somente após conferir o crédito no banco. O valor total permanece no pedido do ERP.</div>
- <div class="merch-tabs"><button class="btn primary" type="button" data-seasonal-admin-tab="campaigns">🎁 Campanhas e produtos</button><button class="btn" type="button" data-seasonal-admin-tab="orders">📦 Encomendas / pagamentos</button></div>
- <div id="seasonalAdminError" class="notice error" hidden></div>
- <div id="seasonalAdminCampaigns">
-  <div id="seasonalAdminKpis" class="grid stats"></div>
-  <div id="seasonalAdminCards"></div>
-  <article class="card"><h3>➕ Cadastrar ou editar campanha</h3>
-   <form id="seasonalAdminForm" class="product-form">
-    <input type="hidden" id="seasonalCampaignId">
-    <div class="form-grid">
-      <label>Nome da data sazonal *<input id="seasonalTitle" required maxlength="100" placeholder="Ex.: Encomendas de Final de Ano"></label>
-      <label>Texto de destaque no banner<input id="seasonalBannerTextAdmin" maxlength="160" placeholder="Garanta sua ceia com sabor caseiro!"></label>
-    </div>
-    <label>Descrição da campanha<textarea id="seasonalDescription" maxlength="600" rows="2" placeholder="Informações sobre os produtos e a campanha"></textarea></label>
-    <div class="form-grid"><label>Receber encomendas de *<input type="date" id="seasonalOrderFrom" required></label><label>Até *<input type="date" id="seasonalOrderUntil" required></label></div>
-    <label>Datas para retirada/entrega (uma data por linha) *<textarea id="seasonalFulfillmentDates" rows="4" placeholder="2026-12-23&#10;2026-12-24" required></textarea><small>Somente essas datas poderão ser escolhidas no checkout.</small></label>
-    <div class="form-grid">
-      <label>Quantidade mínima total de itens<input id="seasonalMinQty" type="number" min="1" step="1" value="1" required></label>
-      <label>Pedido mínimo (R$)<input id="seasonalMinValue" type="number" min="0" step=".01" value="0"></label>
-      <label>Valor máximo do pedido (R$; 0 = sem limite)<input id="seasonalMaxValue" type="number" min="0" step=".01" value="0"></label>
-    </div>
-    <div class="toolbar"><label><input id="seasonalPickup" type="checkbox" checked> Retirada</label><label><input id="seasonalDelivery" type="checkbox" checked> Entrega</label><label><input id="seasonalActive" type="checkbox" checked> Campanha ativa</label></div>
-    <h3>🛍️ Produtos participantes</h3><p>Marque os produtos do ERP e defina mínimo e máximo por produto. O preço de venda publicado é mantido.</p>
-    <div class="toolbar"><input id="seasonalProductSearch" type="search" placeholder="Pesquisar nome ou código do produto"><b id="seasonalAdminSelected">0 selecionados</b></div>
-    <div id="seasonalAdminProducts" class="seasonal-admin-products"></div>
-    <div class="notice">O preço do sinal é calculado pela API com os produtos e o frete confirmados. A confirmação do pagamento deve ser feita na Central, com referência do recebimento.</div>
-    <div class="toolbar"><button id="seasonalAdminSubmit" class="btn primary" type="submit">✅ Publicar campanha no ERP e loja</button><button id="seasonalAdminClear" class="btn" type="button">Limpar formulário</button></div>
-   </form>
-  </article>
- </div>
- <div id="seasonalAdminOrders" hidden>
-  <div id="seasonalAdminOrderKpis" class="grid stats"></div>
-  <div class="toolbar"><input id="seasonalAdminOrderSearch" type="search" placeholder="Buscar cliente ou pedido"><select id="seasonalAdminOrderStatus"><option value="all">Todos os pedidos</option><option value="deposit">Sinal pendente</option><option value="paid">Sinal confirmado</option><option value="balance">Saldo pendente</option><option value="settled">Quitados</option></select><input id="seasonalAdminOrderDate" type="date" title="Filtrar data de entrega/retirada"></div>
-  <div id="seasonalAdminOrderList"></div>
- </div>
-</section>
 <section id="merch" class="section">
  <div class="section-head"><div><h2>🎁 Grades e Packs Virtuais</h2><p>Organize tamanhos, pesos, sabores e combos promocionais que aparecem no e-commerce.</p></div><button id="refreshMerch" class="btn" type="button">↻ Atualizar</button></div>
  <div class="notice"><b>Cadastros sincronizados:</b> use produtos já publicados na loja. Cada variação mantém seu código e preço; packs aplicam benefícios na compra, sem criar um produto físico adicional. Nenhuma alteração é feita sem sua confirmação.</div>
@@ -268,7 +229,6 @@
  <button type="button" data-view="orders">🛒<small>Pedidos</small></button>
  <button type="button" data-view="products">🏷️<small>Preços</small></button>
  <button type="button" data-view="blackfriday">🖤<small>Black Friday</small></button>
- <button type="button" data-view="seasonal">🎄<small>Encomendas</small></button>
  <button type="button" data-view="sazonais">🎄<small>Encomendas</small></button>
  <button type="button" data-view="fichas">📋<small>Fichas</small></button>
  <button type="button" data-view="cashbacks">💚<small>Saldos</small></button>
