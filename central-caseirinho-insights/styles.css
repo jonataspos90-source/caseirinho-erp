@@ -135,3 +135,17 @@
  .merch-edit-row{grid-template-columns:1fr}
  .merch-edit-row .merch-cover{grid-column:1}
 }
+
+
+/* V9 — Confirmação de entrega e cashback por pedido */
+.cashback-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:14px 0}
+.cashback-summary>div{border:1px solid #e3e9de;background:#f4f8f1;border-radius:12px;padding:12px 8px;text-align:center;min-width:0}
+.cashback-summary small{display:block;font-size:11px;color:#667c6b}
+.cashback-summary b{display:block;color:#1c5939;font-size:17px;overflow-wrap:anywhere;margin-top:4px}
+.fulfillment-options{display:grid;gap:10px;margin:12px 0 18px}
+.fulfillment-options label{border:1px solid #dce6d7;padding:12px;border-radius:12px;background:#f9fbf7;display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;font-weight:650;color:#254633}
+.fulfillment-options label:has(input:checked){border-color:#2b7a4d;background:#e9f7ed}
+.fulfillment-options input[type=radio],.fulfillment-options input[type=checkbox]{flex:0 0 auto;width:20px;height:20px;accent-color:#196a42}
+#modalContent:has(.cashback-summary)>button.btn{margin:9px 0;min-height:44px}
+#modalContent .notice ul{padding-left:18px;margin:7px 0}
+@media(max-width:450px){.cashback-summary{gap:5px}.cashback-summary>div{padding:10px 4px}.cashback-summary b{font-size:14px}}
