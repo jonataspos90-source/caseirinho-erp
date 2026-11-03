@@ -2,7 +2,7 @@
 'use strict';
 const STORE='https://jonataspos90-source.github.io/caseirinho-loja/';
 const DEFAULT_API='https://john-cloud-api-production.up.railway.app';
-const st={api:DEFAULT_API,token:'',summary:null,contacts:[],orders:[],catalog:[],categories:[],drafts:[],requests:[],sales:null,salesLoaded:false,merch:{grades:[],packs:[]},merchTab:'grades',gradeSelected:new Map(),packSelected:new Set(),merchLoaded:false,fulfillment:new Map(),fichasData:null,cashbacksData:null,couponsData:null,couponReport:null,couponTab:'config',orderAlertSeen:null,orderAlertEnabled:false,view:'dashboard',syncing:false,sound:false,known:new Set(),knownReady:false,lastUpdated:null};
+const st={api:DEFAULT_API,token:'',summary:null,contacts:[],orders:[],catalog:[],categories:[],drafts:[],requests:[],sales:null,salesLoaded:false,merch:{grades:[],packs:[]},merchTab:'grades',gradeSelected:new Map(),packSelected:new Set(),merchLoaded:false,fulfillment:new Map(),fichasData:null,cashbacksData:null,couponsData:null,couponReport:null,couponTab:'config',bfData:null,bfSelected:new Map(),orderAlertSeen:null,orderAlertEnabled:false,view:'dashboard',syncing:false,sound:false,known:new Set(),knownReady:false,lastUpdated:null};
 const E=id=>document.getElementById(id);
 const s=x=>String(x==null?'':x), n=x=>Number(x)||0;
 const esc=x=>s(x).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
@@ -123,7 +123,7 @@ function nav(tab){
  st.view=tab;
  document.querySelectorAll('.section').forEach(x=>x.classList.toggle('active',x.id===tab));
  document.querySelectorAll('[data-view]').forEach(x=>x.classList.toggle('active',x.dataset.view===tab));
- const labels={dashboard:'Visão geral',contacts:'CRM e contatos',ranking:'Ranking de acessos',orders:'Pedidos',menu:'Cardápio escrito',products:'Produtos e preços',reports:'Relatórios e PDF',sales:'Vendas e Curva ABC',merch:'Grades e Packs',fichas:'Fichas Técnicas',cashbacks:'Cashback Clientes',coupons:'Cupons e Utilizações',requests:'Solicitações de cardápio',settings:'Configurações'};
+ const labels={dashboard:'Visão geral',contacts:'CRM e contatos',ranking:'Ranking de acessos',orders:'Pedidos',menu:'Cardápio escrito',products:'Produtos e preços',blackfriday:'Black Friday',reports:'Relatórios e PDF',sales:'Vendas e Curva ABC',merch:'Grades e Packs',fichas:'Fichas Técnicas',cashbacks:'Cashback Clientes',coupons:'Cupons e Utilizações',requests:'Solicitações de cardápio',settings:'Configurações'};
  E('pageTitle').textContent=labels[tab]||'Central de Insights';
  window.scrollTo({top:0,behavior:'smooth'});
  render();
@@ -132,6 +132,7 @@ function nav(tab){
  if(tab==='fichas'&&!st.fichasData)loadFichas();
  if(tab==='cashbacks'&&!st.cashbacksData)loadCashbacks();
  if(tab==='coupons'&&!st.couponsData)loadCoupons();
+ if(tab==='blackfriday'&&!st.bfData)loadBlackFriday();
 }
 function badge(x){const v=s(x).toUpperCase();return '<span class="badge '+(v.includes('PENDENTE')?'warn':v.includes('IMPORTANDO')?'light':v.includes('NOVO')?'light':v.includes('IMPORTADO')||v.includes('CONCLU')||v.includes('APROV')?'good':'')+'">'+esc(x||'—')+'</span>';}
 function cellEmpty(title){return '<div class="empty">'+esc(title)+'</div>';}
@@ -283,6 +284,7 @@ function render(){
  if(st.view==='fichas')renderFichas();
  if(st.view==='cashbacks')renderCashbacks();
  if(st.view==='coupons')renderCoupons();
+ if(st.view==='blackfriday')renderBlackFriday();
  if(st.view==='requests')renderRequests();
  E('apiLabel').textContent=st.api;
  E('apiState').innerHTML='<p class="notice success">Última consulta: '+dt(st.lastUpdated)+'. Dados recebidos exclusivamente da API autenticada.</p>';
@@ -1457,8 +1459,122 @@ function bindCouponModule(){
  });
  initCouponDates();
 }
+
+/* Black Friday • preço/prazo únicos no ERP e loja, somente se promo habilitada e dentro da vigência. */
+function bfStatus(text,err=false){
+ const e=E('bfMessage');if(!e)return;
+ e.hidden=false;e.className='notice '+(err?'error':'success');e.textContent=text;
+}
+function bfLocalDateTime(value){
+ if(!value)return'';
+ const d=new Date(value);if(Number.isNaN(d.getTime()))return'';
+ const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(d);
+ const f=Object.fromEntries(parts.map(p=>[p.type,p.value]));
+ return f.year+'-'+f.month+'-'+f.day+'T'+f.hour+':'+f.minute;
+}
+function bfPrice(v){return Number(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});}
+function bfState(p){
+ const sale=p.promotion||{};
+ if(!sale.enabled)return {label:'Inativa',css:'light'};
+ return {label:({ACTIVE:'🖤 Em promoção',SCHEDULED:'📅 Agendada',EXPIRED:'⌛ Encerrada',INACTIVE:'Desativada',INVALID:'Data inválida'})[sale.status]||'Sem campanha',css:sale.status==='ACTIVE'?'good':sale.status==='SCHEDULED'?'light':'warn'};
+}
+async function loadBlackFriday(){
+ try{
+  const d=await api('black-friday');st.bfData=d;
+  const saved=[...st.bfSelected.keys()];st.bfSelected=new Map(saved.filter(id=>(d.items||[]).some(p=>p.id===id)).map(id=>[id,st.bfSelected.get(id)]));
+  const first=(d.items||[]).find(x=>x.promotion?.enabled);
+  if(!E('bfStart').value){const now=Date.now(),current=first?.promotion?.startAt||new Date(now+15*60000).toISOString();E('bfStart').value=bfLocalDateTime(current);}
+  if(!E('bfEnd').value){const now=Date.now(),current=first?.promotion?.endAt||new Date(now+7*86400000).toISOString();E('bfEnd').value=bfLocalDateTime(current);}
+  E('bfMessage').hidden=true;renderBlackFriday();
+ }catch(err){bfStatus('Não foi possível carregar a campanha: '+err.message,true);}
+}
+function bfRemember(){
+ document.querySelectorAll('[data-bf-row]').forEach(row=>{
+  const id=row.dataset.bfRow;if(!st.bfSelected.has(id))return;
+  st.bfSelected.set(id,row.querySelector('[data-bf-price]')?.value||'');
+ });
+}
+function renderBlackFriday(){
+ if(!st.bfData)return;
+ const all=st.bfData.items||[],q=s(E('bfSearch').value).toLowerCase(),filter=E('bfFilter').value;
+ const filtered=all.filter(p=>(s(p.name)+' '+s(p.code)).toLowerCase().includes(q)&&
+  (filter==='all'||filter==='campaign'&&p.promotion||filter==='available'&&!p.hasOtherPromotion&&!p.hasPack||filter==='conflict'&&(p.hasOtherPromotion||p.hasPack)));
+ E('bfSelectedCount').textContent=st.bfSelected.size+' selecionado(s)';
+ E('bfProducts').innerHTML=filtered.length?'<div class="bf-product-list">'+filtered.map(p=>{
+  const blocked=p.hasOtherPromotion||p.hasPack,status=bfState(p);
+  const selected=st.bfSelected.has(p.id),v=selected?st.bfSelected.get(p.id):(p.promotion?.price||'');
+  const reason=blocked?'⚠️ '+(p.hasOtherPromotion?'Outra promoção ativa':'Pack ativo'):'';
+  return '<div class="bf-product-row" data-bf-row="'+esc(p.id)+'">'+
+   '<label class="bf-product-choice"><input type="checkbox" data-bf-check value="'+esc(p.id)+'" '+(selected?'checked':'')+' '+(blocked?'disabled':'')+'><span><b>'+esc(p.name)+'</b><small>'+esc(p.code)+' · Preço normal '+bfPrice(p.price)+'</small></span></label>'+
+   '<span class="badge '+status.css+'">'+esc(reason||status.label)+'</span>'+
+   '<label class="bf-price-field">Preço Black Friday (R$)<input data-bf-price type="number" min=".01" max="'+esc(p.price)+'" step=".01" inputmode="decimal" '+(blocked?'disabled':'')+' value="'+esc(v)+'" placeholder="Ex.: '+esc((Number(p.price)*.85).toFixed(2))+'"></label>'+
+   (p.promotion?'<div class="bf-published">Vigência cadastrada: <b>'+esc(dt(p.promotion.startAt))+' até '+esc(dt(p.promotion.endAt))+'</b>'+
+     ' · <button type="button" class="btn small" data-bf-disable="'+esc(p.id)+'">⛔ Desativar</button></div>':'')+
+   '</div>';
+ }).join('')+'</div>':cellEmpty('Nenhum produto neste filtro.');
+}
+function bfOnChange(e){
+ const checkbox=e.target.closest('[data-bf-check]');
+ if(!checkbox)return;
+ bfRemember();
+ const id=checkbox.value,product=(st.bfData?.items||[]).find(x=>x.id===id);
+ if(!product)return;
+ if(checkbox.checked)st.bfSelected.set(id,s(checkbox.closest('[data-bf-row]').querySelector('[data-bf-price]').value)||s(product.promotion?.price||''));
+ else st.bfSelected.delete(id);
+ renderBlackFriday();
+}
+function bfMoment(v){
+ if(!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(s(v)))throw Error('Informe início e término da vigência.');
+ return s(v)+':00-03:00';
+}
+async function publishBlackFriday(){
+ bfRemember();
+ const products=st.bfData?.items||[],items=[...st.bfSelected.entries()].map(([id,val])=>({id,price:Number(val)}));
+ if(!items.length)return bfStatus('Escolha pelo menos um produto para a campanha.',true);
+ if(items.length>50)return bfStatus('É possível publicar no máximo 50 produtos por operação.',true);
+ for(const item of items){
+  const p=products.find(x=>x.id===item.id);
+  if(!p||!Number.isFinite(item.price)||item.price<=0||item.price>=Number(p.price))return bfStatus('O preço de cada produto selecionado precisa ser maior que zero e menor que o valor normal. Corrija '+s(p?.name)+'.',true);
+ }
+ let startAt,endAt;
+ try{startAt=bfMoment(E('bfStart').value);endAt=bfMoment(E('bfEnd').value);}catch(err){return bfStatus(err.message,true);}
+ if(Date.parse(startAt)>=Date.parse(endAt)||Date.parse(endAt)<=Date.now())return bfStatus('A data final precisa ser posterior ao início e estar no futuro.',true);
+ const msg='Publicar BLACK FRIDAY para '+items.length+' produto(s)? Vigência: '+dt(startAt)+' até '+dt(endAt)+'. O preço normal será preservado; o especial entrará em vigor somente nas datas configuradas.';
+ if(!window.confirm(msg))return;
+ const btn=E('bfPublish');btn.disabled=true;btn.textContent='Publicando campanha...';
+ try{
+  const out=await api('black-friday',{method:'POST',body:{startAt,endAt,items}});
+  st.bfSelected.clear();
+  await loadBlackFriday();
+  bfStatus('✅ Black Friday publicada no ERP e loja para '+out.products.length+' produto(s). A tarja aparecerá somente durante a vigência.');
+ }catch(err){bfStatus('❌ Não foi possível confirmar a publicação: '+err.message+'. Atualize para conferir antes de tentar novamente.',true);}
+ finally{btn.disabled=false;btn.textContent='🖤 Salvar e publicar Black Friday';}
+}
+async function deactivateBlackFriday(id){
+ const p=(st.bfData?.items||[]).find(x=>x.id===id);if(!p)return;
+ if(!window.confirm('Desativar a Black Friday para '+p.name+'? O preço regular continuará publicado na loja.'))return;
+ try{
+  await api('black-friday/'+encodeURIComponent(id)+'/deactivate',{method:'PATCH',body:{}});
+  await loadBlackFriday();bfStatus('✅ Black Friday desativada para '+p.name+'.');
+ }catch(err){bfStatus('Não foi possível desativar: '+err.message,true);}
+}
+function bindBlackFriday(){
+ E('bfRefresh').addEventListener('click',async()=>{bfRemember();await loadBlackFriday();});
+ E('bfSearch').addEventListener('input',()=>{bfRemember();renderBlackFriday();});
+ E('bfFilter').addEventListener('change',()=>{bfRemember();renderBlackFriday();});
+ E('bfProducts').addEventListener('change',bfOnChange);
+ E('bfProducts').addEventListener('input',e=>{
+  const row=e.target.closest('[data-bf-row]');
+  if(row&&e.target.matches('[data-bf-price]')&&st.bfSelected.has(row.dataset.bfRow))st.bfSelected.set(row.dataset.bfRow,e.target.value);
+ });
+ E('bfProducts').addEventListener('click',e=>{
+  const button=e.target.closest('[data-bf-disable]');if(button)deactivateBlackFriday(button.dataset.bfDisable);
+ });
+ E('bfPublish').addEventListener('click',publishBlackFriday);
+}
 function bind(){
  setupInstall();
+ bindBlackFriday();
  bindCouponModule();
  bindMoreFeatures();
  bindMerch();
@@ -1530,7 +1646,7 @@ function bind(){
 }
 async function init(){
  tokenSetup();bind();
- if(st.token){await loadAll();}else E('loginScreen').hidden=false;
+ if(st.token){await loadAll();if(new URLSearchParams(location.search).get('view')==='blackfriday')nav('blackfriday');}else E('loginScreen').hidden=false;
  setInterval(loadRequests,30000);
  setInterval(loadAll,120000);
  await pollNewOrders();
