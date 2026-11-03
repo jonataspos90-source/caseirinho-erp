@@ -151,3 +151,28 @@ Filtros novos: Aguardando entrega/retirada, Cashback a decidir, Cashback liberad
 
 **Acesso:** perfil ERP autenticado; criação/edição da ficha exige MASTER/ADMINISTRADOR/PLATFORM_OWNER. V10 atualiza service worker/cache. A criação de ficha foi simulada sem gravar dados de teste; confirmar posteriormente um cadastro verdadeiro e sua atualização no ERP antes da homologação integral.
 
+
+## 🎟️ Gestão de cupons e relatório de utilização — V11 (03/11/2026)
+
+**Menu:** Central Caseirinho Insights → **🎟️ Cupons e Utilizações** → abas **Gerenciar Cupons** e **Relatório de Utilização**.
+
+### Gestão de cupons
+- Consulta diretamente os cupons do e-commerce em `storefront_config.payload.motorComercial.coupons`, sem criar base paralela.
+- Cadastro e edição de código (ao editar o código fica fixo), modalidade **percentual** ou **valor fixo**, valor, mínimo do pedido, limite máximo do desconto, status ativo/inativo e **início/fim da vigência** no horário de São Paulo.
+- Valida que a data final seja posterior à data inicial. Ao salvar novas datas, registra offset `-03:00`. Quando um período termina, o cupom deixa de validar no endpoint público já existente `/store/:slug/coupon/validate` (para cupons genéricos).
+- **CASEIRINHO10 é especial e protegido:** mantém 10% na primeira compra, não pode ser convertido em cupom geral. Na Central só altere ativação e vigência; a API administrativa protege a modalidade, percentual e sinalizador `firstPurchase=true`. A validação específica `/api/v1/cupons/validar` continua exigindo WhatsApp elegível.
+- Alterações são publicadas em transação na configuração da loja, incrementam a versão e geram evento auditável no `sync_events`. Não altera pedidos históricos nem devolve descontos retroativamente.
+- Não foram implementadas cotas globais/per-clientes para cupons genéricos. Não afirmar controle de quantidade de clientes até existir validação autoritativa na confirmação de cada pedido.
+
+### Relatório de utilização
+- Fonte: `public.storefront_orders` do tenant, campos `payload.cupom` e `payload.comercial.coupon` deduplicados por pedido. Exclui registros explicitamente marcados como teste.
+- Filtra data De/Até (até 730 dias), cupom, status (aceitos/pendentes/outros) e busca nome, WhatsApp, pedido ou cupom.
+- Exibe Cliente, WhatsApp, código, pedido, data, desconto e status; totais e agrupamento por cupom; exportação CSV e PDF.
+- Status **ACEITO**, **ENTREGUE**, **RETIRADO**, **CONCLUIDO** contam como **pedido aceito/atendido**, mas **não comprovam liquidação financeira**. Os pedidos **NOVO/ABERTO/AGUARDANDO_COTACAO_FRETE** ficam separados e não são tratados como vendas concluídas.
+- Consulta real de 01/10 a 02/11/2026: 9 registros com cupom, sendo 5 aceitos, 4 novos; `CASEIRINHO10` 8 registros (4 aceitos) e `FIDELIDADE7` 1 (aceito). Descontos nos aceitos R$ 55,16.
+- API autenticada `GET /api/v1/admin/store/insights/coupons`, `POST .../coupons`, `PATCH .../coupons/:code/status`, `GET .../coupon-report?from=...&to=...`. Edição exige administrador.
+
+### Confirmação de pedidos e cashback
+- Não é seguro marcar todos os pedidos `ACEITO` como `ENTREGUE` sem saber se efetivamente houve entrega e liquidação. O módulo **Pedidos → ✅ Entrega / Cashback** (V9) permite confirmação individual com conferência explícita de entrega e pagamento, e concede apenas créditos elegíveis conforme ledger e política.
+- Consulta de 03/11/2026 mostrou 65 pedidos ACEITOS/IMPORTADOS ainda sem conclusão e 39 NOVOS/PENDENTES. Nenhum deles foi alterado pela implementação de cupons; cupons aplicados não significam entrega.
+- Backend V11 implantado no Railway. Interface e cache V11 enviados ao GitHub. Cadastro de cupom testado com mock sem gravar campanhas de teste no banco real; ações reais de criação/edição aguardam homologação via aparelho.
