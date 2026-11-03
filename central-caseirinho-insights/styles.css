@@ -149,3 +149,31 @@
 #modalContent:has(.cashback-summary)>button.btn{margin:9px 0;min-height:44px}
 #modalContent .notice ul{padding-left:18px;margin:7px 0}
 @media(max-width:450px){.cashback-summary{gap:5px}.cashback-summary>div{padding:10px 4px}.cashback-summary b{font-size:14px}}
+
+
+/* V10 — Fichas técnicas, custos, cashback e avisos de novos pedidos */
+.new-order-alert{border:2px solid #e0aa38;background:#fff4d7;display:flex;gap:12px;align-items:center;flex-wrap:wrap;position:sticky;top:8px;z-index:48;box-shadow:0 4px 18px #46350823}
+.new-order-alert strong,.new-order-alert b{color:#684807}
+.new-order-alert span{flex:1;min-width:180px;color:#483b13;font-size:13px}
+[hidden]{display:none!important}
+.ficha-component-row{display:grid;grid-template-columns:minmax(0,2fr) minmax(95px,.7fr) minmax(120px,1fr) auto;align-items:end;gap:9px;padding:12px;margin:10px 0;background:#f7f9f3;border-radius:12px;border:1px solid #dfe7da}
+.ficha-component-row label{display:flex;flex-direction:column;gap:6px;font-weight:700;font-size:12px;color:#2d503b;min-width:0}
+.ficha-component-row select,.ficha-component-row input{max-width:100%;width:100%;border:1px solid #d1dbd0;border-radius:9px;padding:10px;min-width:0;background:white;color:#20432c;font-size:14px}
+.ficha-component-row .btn{white-space:nowrap}
+.sales-cost-warning{border-top:1px solid #dce3d7;margin-top:10px;padding-top:10px;font-size:12px;line-height:1.9;color:#29563c}
+.sales-cost-warning .btn{padding:4px 6px}
+#fichasList .mobile-record-head{gap:12px;flex-wrap:wrap}
+#cashbackList .mobile-record-head{gap:10px}
+#cashbackList .cashback-summary{margin:10px 0}
+@media(max-width:790px){
+ .ficha-component-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+ .ficha-component-row label:first-child{grid-column:1/-1}
+ .ficha-component-row .btn{grid-column:1/-1}
+ .mobile-bottom-nav{display:flex;overflow-x:auto;justify-content:flex-start;scrollbar-width:thin;scroll-snap-type:x proximity;gap:3px;-webkit-overflow-scrolling:touch}
+ .mobile-bottom-nav button{flex:0 0 63px;scroll-snap-align:start;min-width:0}
+}
+@media(max-width:400px){
+ .new-order-alert{gap:6px}
+ .ficha-component-row{grid-template-columns:1fr}
+ .ficha-component-row label:first-child{grid-column:1}
+}
