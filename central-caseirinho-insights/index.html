@@ -2,7 +2,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#183c2e"><meta name="description" content="Central Caseirinho Insights — painel administrativo independente de CRM, acessos, pedidos e cardápio.">
 <title>Central Caseirinho Insights | CRM e Loja</title>
-<link rel="stylesheet" href="./styles.css?v=9">
+<link rel="stylesheet" href="./styles.css?v=10">
 <link rel="manifest" href="./manifest.webmanifest"><link rel="icon" type="image/png" sizes="192x192" href="/caseirinho-loja/icons/icon-192.png"><link rel="apple-touch-icon" href="/caseirinho-loja/icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default">
 </head><body>
 <div class="auth-screen" id="loginScreen">
@@ -28,6 +28,8 @@
  <button type="button" data-view="ranking">🏆 Ranking</button>
  <button type="button" data-view="orders">🛒 Pedidos</button>
  <button type="button" data-view="products">🏷️ Produtos e preços</button>
+ <button type="button" data-view="fichas">📋 Fichas Técnicas</button>
+ <button type="button" data-view="cashbacks">💚 Cashback Clientes</button>
  <button type="button" data-view="merch">🎁 Grades e Packs</button>
  <button type="button" data-view="reports">📄 Relatórios / PDF</button>
  <button type="button" data-view="sales">📈 Vendas / Curva ABC</button>
@@ -40,6 +42,7 @@
 <main class="app">
  <header class="topbar"><div><span class="eyebrow">Painel exclusivo • Caseirinho Massas Artesanais</span><h1 id="pageTitle">Visão geral</h1><p class="subtitle" id="lastSync">Carregando informações...</p></div>
  <div class="actions"><a class="btn" href="https://jonataspos90-source.github.io/caseirinho-loja/" target="_blank" rel="noopener">↗ Abrir loja</a><button class="btn gold" id="installAppMain" type="button">📲 Instalar</button><button class="btn primary" id="refreshBtn" type="button">↻ Atualizar</button><button class="btn" id="logoutBtn" type="button">Sair</button></div></header>
+ <div id="newOrderBanner" class="notice new-order-alert" role="alert" hidden><b>🔔 Novo pedido recebido!</b> <span id="newOrderBannerText"></span> <button class="btn small primary" type="button" id="openNewOrders">Ver pedidos</button> <button class="btn small" type="button" id="dismissNewOrders">Dispensar</button></div>
  <div class="notice" id="globalNotice">As visitas são contadas apenas quando houver eventos da nova instrumentação; pings não são visitas. O cadastro não representa necessariamente uma compra.</div>
  <section id="dashboard" class="section active">
   <div class="grid stats" id="statGrid"><div class="stat">Carregando indicadores…</div></div>
@@ -53,7 +56,7 @@
   <div class="notice">O aceite da política de privacidade não autoriza campanhas. Use mensagens promocionais somente com consentimento próprio. O botão WhatsApp abre a conversa para sua revisão; não dispara mensagens sozinho.</div>
  </section>
  <section id="ranking" class="section"><div class="section-head"><div><h2>🏆 Mais acessados</h2><p>Ranking dos últimos 7 dias, usando apenas visitas associadas a clientes identificados.</p></div></div><div id="rankingTable"></div></section>
- <section id="orders" class="section"><div class="section-head"><div><h2>🛒 Pedidos da loja</h2><p>Histórico recente de pedidos feitos no aplicativo e situação da integração com o ERP.</p></div></div><div class="toolbar"><input type="search" id="orderSearch" placeholder="Buscar pedido, nome ou telefone..."><select id="orderFilter"><option value="all">Todos</option><option value="PENDENTE">Integração pendente</option><option value="IMPORTANDO">Importando</option><option value="READY">📦 Aguardando entrega / retirada</option><option value="CASHBACK_PENDING">💚 Cashback a decidir</option><option value="CASHBACK_GRANTED">✅ Cashback liberado</option><option value="COMPLETED">✅ Pedidos concluídos</option></select><button id="refreshFulfillment" type="button" class="btn">↻ Atualizar entregas</button></div><div class="grid stats" id="orderFulfillmentKpis"></div><div class="notice">Para finalizar um pedido, toque em <b>✅ Entrega / Cashback</b>. Selecione aprovar ou não liberar o cashback, confirme a entrega e a conferência do pagamento. O status será atualizado no e-commerce e no ERP; a ação não cria recebimento financeiro.</div><div id="ordersTable"></div></section>
+ <section id="orders" class="section"><div class="section-head"><div><h2>🛒 Pedidos da loja</h2><button class="btn small" type="button" id="orderAlertToggle">🔔 Ativar alerta sonoro</button><p>Histórico recente de pedidos feitos no aplicativo e situação da integração com o ERP.</p></div></div><div class="toolbar"><input type="search" id="orderSearch" placeholder="Buscar pedido, nome ou telefone..."><select id="orderFilter"><option value="all">Todos</option><option value="PENDENTE">Integração pendente</option><option value="IMPORTANDO">Importando</option><option value="READY">📦 Aguardando entrega / retirada</option><option value="CASHBACK_PENDING">💚 Cashback a decidir</option><option value="CASHBACK_GRANTED">✅ Cashback liberado</option><option value="COMPLETED">✅ Pedidos concluídos</option></select><button id="refreshFulfillment" type="button" class="btn">↻ Atualizar entregas</button></div><div class="grid stats" id="orderFulfillmentKpis"></div><div class="notice">Para finalizar um pedido, toque em <b>✅ Entrega / Cashback</b>. Selecione aprovar ou não liberar o cashback, confirme a entrega e a conferência do pagamento. O status será atualizado no e-commerce e no ERP; a ação não cria recebimento financeiro.</div><div id="ordersTable"></div></section>
  <section id="menu" class="section"><div class="section-head"><div><h2>🍝 Cardápio escrito</h2><p>Preços publicados no Neon. Selecione uma categoria ou envie o resumo com o link do aplicativo.</p></div></div>
   <div class="toolbar"><select class="menu-select" id="menuCategory"><option value="all">Todas as categorias</option></select><button class="btn" id="copyMenu">📋 Copiar cardápio</button><button class="btn whatsapp" id="menuShare">💬 Preparar envio</button></div>
   <div id="priceWarnings"></div><div class="menu-grid"><article class="card"><h2>Produtos e valores</h2><div id="menuItems"></div></article><article class="card"><h2>Mensagem pronta</h2><div id="menuText" class="menu-list"></div><p><small>Ao escolher uma categoria, o texto é atualizado. Para cardápios longos, a mensagem é resumida e inclui o endereço da loja.</small></p></article></div>
@@ -108,7 +111,21 @@
  </div><div id="salesTable"></div></div>
  <div class="notice"><b>Regras do relatório:</b> considere vendas aceitas, entregues, retiradas ou concluídas. Pedidos novos/pendentes, cancelados/rejeitados e testes identificados são excluídos. A média de 42 dias inclui dias sem venda. O faturamento ABC considera o valor dos itens, sem frete e sem ratear descontos aplicados somente ao pedido. Não duplica vendas importadas no ERP.</div>
 </section>
-<section id="merch" class="section">
+<section id="fichas" class="section">
+ <div class="section-head"><div><h2>📋 Fichas Técnicas do ERP</h2><p>Consulte, cadastre ou altere fichas diretamente no mesmo cadastro usado pelo ERP Caseirinho.</p></div><div class="actions"><button class="btn primary" id="newFicha">➕ Nova ficha</button><button class="btn" id="refreshFichas">↻ Atualizar</button></div></div>
+ <div id="fichaStatus" class="notice">O custo unitário é calculado a partir dos componentes e do rendimento. Insumo sem custo não gera margem presumida.</div>
+ <div class="grid stats" id="fichasKpis"></div>
+ <div class="toolbar"><input id="fichaSearch" type="search" placeholder="Buscar nome ou código do produto..."><select id="fichaFilter"><option value="all">Todos os produtos</option><option value="sem_ficha">⚠️ Produto acabado sem ficha</option><option value="incomplete">⚠️ Fichas com custo incompleto</option><option value="ok">✅ Custo calculado</option></select></div>
+ <div id="fichasList"></div>
+ </section>
+ <section id="cashbacks" class="section">
+ <div class="section-head"><div><h2>💚 Cashback dos Clientes</h2><p>Saldo disponível, créditos, utilização e movimentações verificadas no Neon.</p></div><button class="btn primary" id="refreshCashbacks">↻ Atualizar saldos</button></div>
+ <div class="notice">Saldo disponível = lançamentos válidos menos reservas ativas. Nenhum saldo é inventado com base em pedidos pendentes.</div>
+ <div id="cashbackError" class="notice error" hidden></div><div class="grid stats" id="cashbackKpis"></div>
+ <div class="toolbar"><input id="cashbackSearch" type="search" placeholder="Pesquisar nome ou WhatsApp..."><select id="cashbackFilter"><option value="all">Todos os clientes</option><option value="available">Com saldo disponível</option><option value="used">Já utilizaram cashback</option><option value="zero">Sem saldo atual</option></select><button class="btn" id="csvCashbacks">⬇ CSV</button></div>
+ <div id="cashbackList"></div>
+ </section>
+ <section id="merch" class="section">
  <div class="section-head"><div><h2>🎁 Grades e Packs Virtuais</h2><p>Organize tamanhos, pesos, sabores e combos promocionais que aparecem no e-commerce.</p></div><button id="refreshMerch" class="btn" type="button">↻ Atualizar</button></div>
  <div class="notice"><b>Cadastros sincronizados:</b> use produtos já publicados na loja. Cada variação mantém seu código e preço; packs aplicam benefícios na compra, sem criar um produto físico adicional. Nenhuma alteração é feita sem sua confirmação.</div>
  <div class="merch-tabs"><button type="button" id="merchGradesTab" data-merch-tab="grades" class="btn primary">📐 Grades e variações</button><button type="button" id="merchPacksTab" data-merch-tab="packs" class="btn">🎁 Packs virtuais</button></div>
@@ -133,10 +150,12 @@
  <button type="button" data-view="contacts">👥<small>Clientes</small></button>
  <button type="button" data-view="orders">🛒<small>Pedidos</small></button>
  <button type="button" data-view="products">🏷️<small>Preços</small></button>
+ <button type="button" data-view="fichas">📋<small>Fichas</small></button>
+ <button type="button" data-view="cashbacks">💚<small>Saldos</small></button>
  <button type="button" data-view="merch">🎁<small>Packs</small></button>
  <button type="button" data-view="sales">📈<small>Vendas</small></button>
  </nav>
 <div id="toast" class="toast" role="status" hidden></div>
 <div id="modal" class="modal-bg" hidden><div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><h2 id="modalTitle">Mensagem para WhatsApp</h2><div id="modalContent"></div><div class="toolbar" style="justify-content:flex-end;margin-top:20px"><button class="btn" id="modalClose">Fechar</button></div></div></div>
-<script src="./app.js?v=9" defer></script>
+<script src="./app.js?v=10" defer></script>
 </body></html>
