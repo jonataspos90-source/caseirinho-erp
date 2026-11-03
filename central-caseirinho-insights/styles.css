@@ -220,3 +220,28 @@
 #blackfriday .form-grid input{padding:12px;min-width:0;border-radius:9px;border:1px solid #d5ddd2;font-size:14px}
 @media(max-width:700px){.bf-product-row{grid-template-columns:minmax(0,1fr) minmax(118px,.7fr)}.bf-product-choice{grid-column:1}.bf-product-row>.badge{grid-column:1/-1;justify-self:start;grid-row:2}.bf-price-field{grid-column:2;grid-row:1}.bf-product-list{max-height:65vh}}
 @media(max-width:410px){#blackfriday .form-grid{grid-template-columns:1fr}.bf-product-row{grid-template-columns:1fr}.bf-price-field{grid-column:1;grid-row:auto}.bf-product-row>.badge{grid-row:auto}}
+
+
+/* V17 — Encomendas sazonais e controle financeiro de sinal/saldo */
+#sazonais .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:15px 0}
+#sazonais .form-grid>label{display:flex;flex-direction:column;gap:7px;font-weight:750;color:#294b37;font-size:12px;min-width:0}
+#sazonais .form-grid>label.full{grid-column:1/-1}
+#sazonais .form-grid input:not([type="checkbox"]),#sazonais .form-grid textarea,#sazonais .form-grid select{width:100%;min-width:0;padding:11px;border:1px solid #d4ddcf;border-radius:9px;background:#fff;color:#1d3f2b;font-size:14px}
+#sazonais .season-checks{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+#sazonais .season-checks label{display:flex;align-items:center;gap:5px;font-weight:750}
+#sazonais input[type=checkbox]{width:19px;height:19px;accent-color:#165a3b}
+.season-admin-products{display:grid;gap:9px;max-height:510px;overflow-y:auto;margin:12px 0 17px}
+.season-admin-product{border:1px solid #d8e3d4;background:#fafffa;border-radius:12px;display:grid;grid-template-columns:minmax(0,1.5fr) minmax(85px,.6fr) minmax(85px,.6fr);gap:10px;align-items:center;padding:11px}
+.season-admin-product label{font-size:12px;color:#355942;font-weight:700;display:flex;flex-direction:column;gap:6px}
+.season-admin-product input[type=number]{width:100%;min-width:0;padding:9px;border:1px solid #d9ddcf;border-radius:8px;background:white}
+.season-admin-choice{display:flex!important;flex-direction:row!important;align-items:center;gap:9px!important}
+.season-admin-choice span{display:flex;flex-direction:column;gap:2px;min-width:0}
+.season-admin-choice b{font-size:13px;color:#1c4430}
+.season-admin-choice small{font-size:11px;color:#627969}
+.season-campaign-card{margin:12px 0}
+.season-campaign-card p{font-size:13px;color:#375b42;line-height:1.5}
+#seasonOrderList .mobile-record{margin:10px 0}
+#seasonOrderList .record-actions{display:flex;flex-wrap:wrap;gap:10px}
+#seasonOrderList .record-actions .btn{min-height:43px}
+@media(max-width:750px){.season-admin-product{grid-template-columns:minmax(0,1fr) minmax(0,.65fr)}.season-admin-choice{grid-column:1/-1}#sazonais .form-grid{gap:9px}}
+@media(max-width:410px){#sazonais .form-grid{grid-template-columns:1fr}#sazonais .form-grid>label.full{grid-column:1}.season-admin-product{grid-template-columns:1fr 1fr}.season-admin-choice{grid-column:1/-1}}
