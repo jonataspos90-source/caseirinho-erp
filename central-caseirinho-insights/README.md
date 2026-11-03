@@ -117,3 +117,22 @@ Abra **🎁 Grades e Packs** no menu da Central ou toque em **Packs** na barra i
 **Importante:** o cadastro da Central vincula SKUs existentes; para criar novos SKUs/tamanhos antes, utilize o módulo **Produtos e preços → Novo produto**. O desconto do pack é calculado pelo motor promocional já existente no e-commerce, e não pela Central. A Central não cria vendas de teste nem altera ofertas sem confirmação.
 
 A leitura foi validada no Neon, que apresentou 29 grades e dois packs ativos. Gravações foram testadas somente com mocks, sem mudar os produtos reais. Atualização da PWA: arquivos de versão 8.
+
+## 📦 Entrega/Retirada e 💚 Cashback por pedido — V9
+
+No menu **🛒 Pedidos**, procure um pedido e toque em **✅ Entrega / Cashback**. Também funciona pela tela de itens do pedido.
+
+- O painel consulta, por código de pedido, o status no e-commerce, situação de integração ERP, aprovação individual de cashback, percentual, saldo já creditado, valor elegível e número de compras anteriores concluídas.
+- O operador pode clicar **Aprovar cashback agora**. A aprovação NÃO credita o saldo imediatamente: o gatilho bancário `cashback_order_status_ledger()` gera crédito ao fazer a transição para ENTREGUE ou RETIRADO.
+- Em **Confirmar entrega e finalizar pedido**, o operador escolhe **APROVADO** ou **REJEITADO**, confirma a entrega/retirada efetiva e assinala que **conferiu o pagamento**. A rotina bloqueia conclusão de pedidos cancelados, novos sem aceite ou que não estejam integrados ao ERP.
+- **Entrega** grava `ENTREGUE`; **retirada presencial** grava `RETIRADO`, tanto em `storefront_orders.status/payload` quanto em `erp_records(pedidos).payload.status/statusEcommerce`, sob uma única transação, com bloqueio e vínculo comprovado por `ecommercePedidoId`.
+- **Crédito aprovado:** 3% (ou percentual gravado na política do pedido) sobre subtotal elegível, excluindo frete conforme política e descontando cashback já usado. O banco garante `idempotency_key='CASHBACK:CREDIT:ORDER:<id>'` para impedir duplicidade.
+- **Segunda compra:** a Central exige pelo menos uma compra anterior concluída e identificada pelo mesmo WhatsApp. Pedidos anteriores a 03/10/2026, explicitamente marcados como teste e de primeira compra não são elegíveis. Não tenta contornar esta regra.
+- **Pedido já entregue com crédito pendente:** o botão **Liberar cashback** está disponível apenas após verificação de elegibilidade e inexistência do crédito. A liberação cria transação CREDIT/AVAILABLE com chave de idempotência idêntica à do gatilho, sem creditar novamente se já existir.
+- **Auditoria:** operações `INSIGHTS_CASHBACK_DECISION`, `INSIGHTS_ORDER_COMPLETED` e `INSIGHTS_CASHBACK_RELEASED` em `sync_events`, com ator, pedido e resultado.
+- **Financeiro:** confirmar pagamento é uma declaração manual do operador. O botão **não** cria automaticamente lançamento de recebimento/baixa nem altera PIX/cartão como comprovados pelo provedor. Confirme a liquidação real antes de marcar.
+- **Permissões:** somente MASTER/ADMINISTRADOR/PLATFORM_OWNER ou escopo administrativo total; sessão assinada do ERP.
+
+Filtros novos: Aguardando entrega/retirada, Cashback a decidir, Cashback liberado e Pedidos concluídos. Cards resumem quantidade aguardando, créditos, valor total liberado e pedidos concluídos.
+
+**Validação:** leitura real do banco no tenant `john-default` e simulação de finalização utilizando banco fictício em memória (nenhum pedido real foi modificado por testes). Confirme uma transação real no aplicativo e a correspondência do lançamento antes de considerar homologação integral. Atualização PWA V9.
