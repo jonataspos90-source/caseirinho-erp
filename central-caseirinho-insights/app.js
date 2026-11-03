@@ -2,7 +2,7 @@
 'use strict';
 const STORE='https://jonataspos90-source.github.io/caseirinho-loja/';
 const DEFAULT_API='https://john-cloud-api-production.up.railway.app';
-const st={api:DEFAULT_API,token:'',summary:null,contacts:[],orders:[],catalog:[],categories:[],drafts:[],requests:[],sales:null,salesLoaded:false,merch:{grades:[],packs:[]},merchTab:'grades',gradeSelected:new Map(),packSelected:new Set(),merchLoaded:false,view:'dashboard',syncing:false,sound:false,known:new Set(),knownReady:false,lastUpdated:null};
+const st={api:DEFAULT_API,token:'',summary:null,contacts:[],orders:[],catalog:[],categories:[],drafts:[],requests:[],sales:null,salesLoaded:false,merch:{grades:[],packs:[]},merchTab:'grades',gradeSelected:new Map(),packSelected:new Set(),merchLoaded:false,fulfillment:new Map(),view:'dashboard',syncing:false,sound:false,known:new Set(),knownReady:false,lastUpdated:null};
 const E=id=>document.getElementById(id);
 const s=x=>String(x==null?'':x), n=x=>Number(x)||0;
 const esc=x=>s(x).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
@@ -262,7 +262,7 @@ function render(){
 async function loadAll(){
  if(st.syncing||!st.token)return;
  st.syncing=true;E('refreshBtn').disabled=true;E('lastSync').textContent='Sincronizando dados do Neon…';
- const paths=['summary','contacts','orders','catalog','requests','product-categories','product-drafts','merchandising'];
+ const paths=['summary','contacts','orders','catalog','requests','product-categories','product-drafts','merchandising','order-fulfillment'];
  const responses=await Promise.allSettled(paths.map(x=>api(x)));
  if(responses.slice(0,5).every(x=>x.status==='rejected'&&x.reason?.httpStatus===401)){
   logout();E('loginNotice').textContent='Sua sessão expirou. Entre novamente com o usuário e senha do ERP.';
@@ -271,7 +271,7 @@ async function loadAll(){
  const errors=[];
  for(let i=0;i<paths.length;i++){
  const x=responses[i],key=paths[i];
- if(x.status==='rejected'){if(!['product-categories','product-drafts','merchandising'].includes(key))errors.push(key+': '+x.reason.message);continue}
+ if(x.status==='rejected'){if(!['product-categories','product-drafts','merchandising','order-fulfillment'].includes(key))errors.push(key+': '+x.reason.message);continue}
  const val=x.value;
  if(key==='summary')st.summary=val;
  if(key==='contacts')st.contacts=val.contacts||[];
@@ -280,6 +280,7 @@ async function loadAll(){
  if(key==='product-categories')st.categories=val.categories||[];
  if(key==='product-drafts')st.drafts=val.drafts||[];
  if(key==='merchandising'){st.merch={grades:val.grades||[],packs:val.packs||[]};st.merchLoaded=true;}
+ if(key==='order-fulfillment')st.fulfillment=new Map((val.orders||[]).map(x=>[s(x.code),x]));
  if(key==='requests')updateRequestData(val);
  }
  st.lastUpdated=new Date();
@@ -526,12 +527,13 @@ function orderDetailsHtml(order){
 }
 function orderButton(order){
  return '<button class="btn small" type="button" data-action="viewOrder" data-order="'+esc(order.code)+'">📦 Ver itens</button> '+
- '<button class="btn small gold" type="button" data-action="pdfOrder" data-order="'+esc(order.code)+'">📄 PDF</button>';
+ '<button class="btn small gold" type="button" data-action="pdfOrder" data-order="'+esc(order.code)+'">📄 PDF</button> '+
+ '<button class="btn small primary" type="button" data-action="fulfillOrder" data-order="'+esc(order.code)+'">✅ Entrega / Cashback</button>';
 }
 function showOrder(code){
  const x=st.orders.find(v=>s(v.code)===s(code))||(window.__customerOrders||[]).find(v=>s(v.code)===s(code));
  if(!x)return toast('Pedido não localizado. Atualize os pedidos.',true);
- modal('🛒 Pedido '+x.code,orderDetailsHtml(x)+'<div class="toolbar"><button class="btn primary" data-action="pdfOrder" data-order="'+esc(x.code)+'">📄 Imprimir / salvar PDF</button></div>');
+ modal('🛒 Pedido '+x.code,orderDetailsHtml(x)+'<div class="toolbar"><button class="btn primary" data-action="pdfOrder" data-order="'+esc(x.code)+'">📄 Imprimir / salvar PDF</button><button class="btn gold" data-action="fulfillOrder" data-order="'+esc(x.code)+'">✅ Entrega / Cashback</button></div>');
 }
 async function showCustomerOrders(phone){
  const c=clientFor(phone);
@@ -915,6 +917,89 @@ function bindMerch(){
   if(type==='disablePack')disableMerch('packs',id);
  });
 }
+
+/* Entrega e cashback em uma ação confirmada, sem alterar lançamentos financeiros. */
+async function refreshFulfillment(){
+ const data=await api('order-fulfillment');
+ st.fulfillment=new Map((data.orders||[]).map(x=>[s(x.code),x]));
+ if(st.view==='orders')renderOrders();
+ return st.fulfillment;
+}
+function fulfillStatus(code){
+ return st.fulfillment?.get(s(code))||null;
+}
+function orderLookup(code){
+ return st.orders.find(x=>s(x.code)===s(code))||(window.__customerOrders||[]).find(x=>s(x.code)===s(code));
+}
+async function manageOrderFulfillment(code){
+ let x=orderLookup(code);
+ if(!x)return toast('Pedido não encontrado na Central. Atualize primeiro.',true);
+ if(!fulfillStatus(code)){
+  try{await refreshFulfillment();}catch(error){return toast('Não foi possível carregar cashback: '+error.message,true);}
+ }
+ const f=fulfillStatus(code);
+ if(!f)return modal('Entrega e cashback · '+code,'<p class="notice error">Não foi possível obter o controle de cashback para este pedido.</p>');
+ const paid=Number(f.credit)>0,complete=f.completed,eligible=f.eligible,imported=f.integration==='IMPORTADO'&&f.erpLinked;
+ const notes=(f.reasons||[]).map(v=>'<li>'+esc(v)+'</li>').join('');
+ const base='<p><b>Pedido:</b> '+esc(code)+'<br><b>Cliente:</b> '+esc(x.name||'Não informado')+
+ '<br><b>Valor do pedido:</b> '+brl(x.total)+'<br><b>Modalidade:</b> '+esc(f.modalidade||x.modality||'—')+
+ '<br><b>Status na loja:</b> '+badge(f.status)+'<br><b>Integração ERP:</b> '+badge(f.integration)+
+ '<br><b>Cashback:</b> '+badge(f.approval)+'<br><b>Compras anteriores concluídas:</b> '+n(f.previousCompleted)+'</p>'+
+ '<div class="cashback-summary"><div><small>Percentual</small><b>'+n(f.percent).toLocaleString('pt-BR')+'%</b></div>'+
+ '<div><small>Crédito previsto</small><b>'+brl(f.estimate)+'</b></div><div><small>Crédito liberado</small><b>'+brl(f.credit)+'</b></div></div>'+
+ (notes?'<div class="notice warn"><b>Atenção aos critérios:</b><ul>'+notes+'</ul></div>':'');
+ if(complete){
+  const content=paid?'<div class="notice success">✅ Pedido concluído e cashback de '+brl(f.credit)+' já disponível ao cliente. Não será creditado novamente.</div>':
+   '<div class="notice">✅ O pedido já consta como <b>'+esc(f.status)+'</b>. '+(eligible?'Há cashback elegível ainda não creditado.':'Nenhum crédito elegível está confirmado para liberação.')+'</div>';
+  modal('✅ Situação do pedido '+code,base+content+
+  (eligible&&!paid?'<button class="btn primary" type="button" data-action="releaseOrderCashback" data-order="'+esc(code)+'">💚 Liberar '+brl(f.estimate)+' de cashback</button>':''));
+  return;
+ }
+ const isPickup=s(f.modalidade).toUpperCase()==='RETIRADA',delivery=isPickup?'RETIRADO':'ENTREGUE';
+ const option=eligible?'<label><input type="radio" name="fulfillmentCashback" value="APROVADO" '+(f.approval==='APROVADO'?'checked':'')+'> 💚 Aprovar e liberar '+brl(f.estimate)+' após '+(isPickup?'retirada':'entrega')+'</label>':'';
+ const checked=eligible?f.approval==='REJEITADO'?'checked':'':'checked';
+ modal('📦 Concluir pedido '+code,base+
+ '<h3>1. Decisão de cashback</h3><div class="fulfillment-options">'+option+
+ '<label><input type="radio" name="fulfillmentCashback" value="REJEITADO" '+checked+'> Não liberar cashback neste pedido</label></div>'+
+ (eligible?'<button class="btn" type="button" data-action="approveOrderCashback" data-order="'+esc(code)+'">💚 Aprovar cashback agora (saldo só após entrega)</button>':'')+
+ '<h3>2. Confirmações obrigatórias</h3><div class="fulfillment-options">'+
+ '<label><input type="checkbox" id="fulfillmentDelivered"> Confirmo que o cliente '+(isPickup?'retirou':'recebeu')+' o pedido.</label>'+
+ '<label><input type="checkbox" id="fulfillmentPayment"> Conferi o recebimento do pagamento (não cria lançamento financeiro).</label></div>'+
+ '<div class="notice">Ao confirmar, o pedido passa para <b>'+delivery+'</b> no app e no ERP. '+(eligible?'Se aprovar o cashback, o crédito será lançado uma única vez.':'A liberação de cashback não está disponível pelos critérios acima.')+'</div>'+
+ '<button class="btn primary" type="button" '+(!imported?'disabled':'')+' data-action="completeOrder" data-order="'+esc(code)+'">✅ Confirmar '+(isPickup?'retirada':'entrega')+' e finalizar pedido</button>'+
+ (!imported?'<p class="notice error">Aguarde o pedido ser importado e vinculado ao ERP para liberar a conclusão.</p>':''));
+}
+async function approveOrderCashback(code){
+ if(!window.confirm('Aprovar o cashback deste pedido? O crédito ficará disponível SOMENTE após a entrega/retirada.'))return;
+ try{
+  const out=await api('orders/'+encodeURIComponent(code)+'/cashback-decision',{method:'POST',body:{decision:'APROVADO'}});
+  toast('✅ Cashback de '+brl(out.estimated)+' aprovado. Falta concluir a entrega.');
+  await refreshFulfillment();manageOrderFulfillment(code);
+ }catch(error){toast('Falha ao aprovar: '+error.message,true);}
+}
+async function confirmOrderComplete(code){
+ const delivered=E('fulfillmentDelivered')?.checked===true,payment=E('fulfillmentPayment')?.checked===true;
+ const decision=document.querySelector('input[name="fulfillmentCashback"]:checked')?.value||'';
+ if(!decision)return toast('Escolha aprovar ou não liberar cashback antes de finalizar.',true);
+ if(!delivered||!payment)return toast('Marque as duas confirmações obrigatórias: entrega e conferência do pagamento.',true);
+ const x=orderLookup(code),rule=fulfillStatus(code);
+ if(!window.confirm('FINALIZAR pedido '+code+' ('+brl(x?.total)+') como '+(s(rule?.modalidade).toUpperCase()==='RETIRADA'?'RETIRADO':'ENTREGUE')+'? Cashback: '+(decision==='APROVADO'?brl(rule?.estimate):'não liberar')+'. Esta ação será gravada no ERP.'))return;
+ try{
+  const out=await api('orders/'+encodeURIComponent(code)+'/complete',{method:'POST',body:{confirmDelivered:true,paymentChecked:true,cashbackDecision:decision}});
+  hideModal();toast('✅ Pedido '+code+' '+out.status+' no ERP e na loja. Cashback liberado: '+brl(out.credited));
+  await loadAll();nav('orders');
+ }catch(error){toast('Não foi possível concluir: '+error.message,true);}
+}
+async function releaseOrderCashback(code){
+ const rule=fulfillStatus(code);
+ if(!rule?.completed||!rule?.eligible)return toast('Este pedido não está apto à liberação manual.',true);
+ if(!window.confirm('LIBERAR '+brl(rule.estimate)+' de cashback para o pedido já '+rule.status+'? O crédito será disponibilizado ao cliente.'))return;
+ try{
+  const out=await api('orders/'+encodeURIComponent(code)+'/release-cashback',{method:'POST',body:{confirmRelease:true}});
+  hideModal();toast('💚 Cashback de '+brl(out.credited)+' liberado para o pedido '+code+'.');
+  await loadAll();nav('orders');
+ }catch(error){toast('Falha ao liberar cashback: '+error.message,true);}
+}
 function bind(){
  setupInstall();
  bindMerch();
@@ -963,6 +1048,10 @@ function bind(){
  const type=b.dataset.action,phone=b.dataset.phone,id=b.dataset.id;
  if(type==='customerOrders')return showCustomerOrders(phone);
  if(type==='viewOrder')return showOrder(b.dataset.order);
+ if(type==='fulfillOrder')return manageOrderFulfillment(b.dataset.order);
+ if(type==='approveOrderCashback')return approveOrderCashback(b.dataset.order);
+ if(type==='releaseOrderCashback')return releaseOrderCashback(b.dataset.order);
+ if(type==='completeOrder')return confirmOrderComplete(b.dataset.order);
  if(type==='pdfOrder')return pdfOrder(b.dataset.order);
  if(type==='editProduct')return editProduct(b.dataset.product);
  if(type==='photosProduct')return editProductPhotos(b.dataset.product);
