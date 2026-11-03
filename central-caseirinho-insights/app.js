@@ -1374,6 +1374,7 @@ function exportCouponPdf(){
 }
 function bindCouponModule(){
  E('refreshCoupons').addEventListener('click',async()=>{await loadCoupons();if(st.couponTab==='report')await loadCouponReport();});
+ E('couponGoReady').addEventListener('click',async()=>{nav('orders');E('orderFilter').value='READY';renderOrders();await refreshFulfillment();renderOrders();});
  E('newCoupon').addEventListener('click',()=>couponEditModal());
  document.querySelectorAll('[data-coupon-tab]').forEach(b=>b.addEventListener('click',()=>couponTab(b.dataset.couponTab)));
  E('runCouponReport').addEventListener('click',loadCouponReport);
