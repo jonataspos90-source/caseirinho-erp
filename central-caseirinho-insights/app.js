@@ -68,7 +68,7 @@ async function loginWithERP(e){
   try{localStorage.setItem(ERP_LAST_USERNAME_KEY,user);}catch(_){}
   E('loginScreen').hidden=true;
   await loadAll();
-  if(new URLSearchParams(location.search).get('view')==='blackfriday')nav('blackfriday');
+  {const requested=new URLSearchParams(location.search).get('view');if(['blackfriday','sazonais'].includes(requested))nav(requested);}
  }catch(error){
   st.token='';st.sessionExpiry=0;
   try{sessionStorage.removeItem(ERP_SESSION_KEY);}catch(_){}
@@ -1799,7 +1799,7 @@ function bind(){
 }
 async function init(){
  tokenSetup();bind();
- if(st.token){await loadAll();if(new URLSearchParams(location.search).get('view')==='blackfriday')nav('blackfriday');}else E('loginScreen').hidden=false;
+ if(st.token){await loadAll();{const requested=new URLSearchParams(location.search).get('view');if(['blackfriday','sazonais'].includes(requested))nav(requested);}}else E('loginScreen').hidden=false;
  setInterval(loadRequests,30000);
  setInterval(loadAll,120000);
  await pollNewOrders();
