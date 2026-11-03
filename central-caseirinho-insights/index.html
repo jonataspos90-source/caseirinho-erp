@@ -2,7 +2,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#183c2e"><meta name="description" content="Central Caseirinho Insights — painel administrativo independente de CRM, acessos, pedidos e cardápio.">
 <title>Central Caseirinho Insights | CRM e Loja</title>
-<link rel="stylesheet" href="./styles.css?v=6">
+<link rel="stylesheet" href="./styles.css?v=7">
 <link rel="manifest" href="./manifest.webmanifest"><link rel="icon" type="image/png" sizes="192x192" href="/caseirinho-loja/icons/icon-192.png"><link rel="apple-touch-icon" href="/caseirinho-loja/icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default">
 </head><body>
 <div class="auth-screen" id="loginScreen">
@@ -28,6 +28,7 @@
  <button type="button" data-view="ranking">🏆 Ranking</button>
  <button type="button" data-view="orders">🛒 Pedidos</button>
  <button type="button" data-view="products">🏷️ Produtos e preços</button>
+ <button type="button" data-view="merch">🎁 Grades e Packs</button>
  <button type="button" data-view="reports">📄 Relatórios / PDF</button>
  <button type="button" data-view="sales">📈 Vendas / Curva ABC</button>
  <button type="button" data-view="menu">🍝 Cardápio</button>
@@ -107,6 +108,22 @@
  </div><div id="salesTable"></div></div>
  <div class="notice"><b>Regras do relatório:</b> considere vendas aceitas, entregues, retiradas ou concluídas. Pedidos novos/pendentes, cancelados/rejeitados e testes identificados são excluídos. A média de 42 dias inclui dias sem venda. O faturamento ABC considera o valor dos itens, sem frete e sem ratear descontos aplicados somente ao pedido. Não duplica vendas importadas no ERP.</div>
 </section>
+<section id="merch" class="section">
+ <div class="section-head"><div><h2>🎁 Grades e Packs Virtuais</h2><p>Organize tamanhos, pesos, sabores e combos promocionais que aparecem no e-commerce.</p></div><button id="refreshMerch" class="btn" type="button">↻ Atualizar</button></div>
+ <div class="notice"><b>Cadastros sincronizados:</b> use produtos já publicados na loja. Cada variação mantém seu código e preço; packs aplicam benefícios na compra, sem criar um produto físico adicional. Nenhuma alteração é feita sem sua confirmação.</div>
+ <div class="merch-tabs"><button type="button" id="merchGradesTab" data-merch-tab="grades" class="btn primary">📐 Grades e variações</button><button type="button" id="merchPacksTab" data-merch-tab="packs" class="btn">🎁 Packs virtuais</button></div>
+ <div id="merchStatus" class="notice" hidden></div>
+ <div id="merchGradeSection">
+  <div class="section-head"><div><h3>📐 Grades da loja</h3><p>Ex.: Lasanha — M 500 g e G 1 kg; Empadas — sabores e recheios.</p></div><button type="button" class="btn primary" id="newGradeButton">➕ Criar grade</button></div>
+  <div class="toolbar"><input id="gradeSearch" type="search" placeholder="Buscar grade por nome..."><select id="gradeStatusFilter"><option value="active">Grades ativas</option><option value="all">Todas as grades</option><option value="inactive">Inativas</option></select></div>
+  <div id="merchGradesList"></div>
+ </div>
+ <div id="merchPackSection" hidden>
+  <div class="section-head"><div><h3>🎁 Packs e ofertas da loja</h3><p>Ex.: Empadas — leve 5, pague 4; combine sabores no mesmo pack.</p></div><button type="button" class="btn primary" id="newPackButton">➕ Criar pack</button></div>
+  <div class="toolbar"><input id="packSearch" type="search" placeholder="Buscar pack por nome..."></div>
+  <div id="merchPacksList"></div>
+ </div>
+</section>
 <section id="requests" class="section"><div class="section-head"><div><h2>🔔 Solicitações de cardápio</h2><p>Quando o cliente pedir pelo botão do app, aparece aqui para responder pelo WhatsApp.</p></div><button class="btn gold" id="enableSound">🔊 Ativar alertas</button></div><div id="requestsTable"></div><div class="notice">Apenas pedidos feitos pelo botão do aplicativo são detectados. Mensagens recebidas diretamente no WhatsApp exigem conexão com a API oficial do WhatsApp Business.</div></section>
  <section id="settings" class="section"><div class="card"><h2>⚙️ Conexão e segurança</h2><p><b>Fonte:</b> Neon, projeto da loja Caseirinho, por meio da API autenticada John ERP Cloud.</p><p><b>Loja:</b> <a href="https://jonataspos90-source.github.io/caseirinho-loja/" target="_blank" rel="noopener">Abrir site oficial</a></p><p><b>API:</b> <span id="apiLabel"></span></p><p><b>Atualização automática:</b> a cada 30 segundos para pedidos de cardápio, a cada 2 minutos para demais painéis.</p><p><b>Privacidade:</b> nenhum WhatsApp é publicado na hospedagem estática, salvo intencionalmente pelo administrador ao abrir a conversa. O token é utilizado apenas para consulta à API.</p><button class="btn" id="clearSession">Encerrar sessão</button><div id="apiState"></div></div></section>
  <p class="footer">Central Caseirinho Insights • Ferramenta administrativa independente. Os indicadores de visita dependem de instrumentação publicada na loja e não podem ser reconstruídos a partir de pings antigos.</p>
@@ -116,9 +133,10 @@
  <button type="button" data-view="contacts">👥<small>Clientes</small></button>
  <button type="button" data-view="orders">🛒<small>Pedidos</small></button>
  <button type="button" data-view="products">🏷️<small>Preços</small></button>
+ <button type="button" data-view="merch">🎁<small>Packs</small></button>
  <button type="button" data-view="sales">📈<small>Vendas</small></button>
  </nav>
 <div id="toast" class="toast" role="status" hidden></div>
 <div id="modal" class="modal-bg" hidden><div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><h2 id="modalTitle">Mensagem para WhatsApp</h2><div id="modalContent"></div><div class="toolbar" style="justify-content:flex-end;margin-top:20px"><button class="btn" id="modalClose">Fechar</button></div></div></div>
-<script src="./app.js?v=6" defer></script>
+<script src="./app.js?v=7" defer></script>
 </body></html>
