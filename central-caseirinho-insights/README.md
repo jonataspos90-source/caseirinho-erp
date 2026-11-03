@@ -92,3 +92,28 @@ A tela de entrada não mostra endereço da API, token, configuração técnica o
 Atualização PWA: arquivo `app.js?v=6`, `styles.css?v=6`, service worker `caseirinho-insights-app-shell-v6`. Se o aplicativo instalado ainda mostrar a tela anterior, abra no navegador externo, recarregue e depois feche/abra a PWA.
 
 A API já suportava autenticação por login/senha; esta atualização afeta principalmente a interface do aplicativo, sem alterar senhas ou registros de usuários existentes.
+
+## 🎁 Grades e Packs Virtuais — V8 (02/11/2026)
+
+Abra **🎁 Grades e Packs** no menu da Central ou toque em **Packs** na barra inferior do celular. Esta área consulta os cadastros existentes do ERP e não cria duplicatas ao editar.
+
+### Grades
+
+- Clique **➕ Criar grade** ou **Editar grade**.
+- Defina nome (ex.: Lasanha Molho Branco), tipo (Tamanho, Peso, Sabor, Recheio, Apresentação), título e descrição.
+- Marque de **2 a 24 produtos já publicados no e-commerce**, cada qual com seu próprio código. Preencha o rótulo comercial (ex.: M / 500 g) e o preço de cada variante.
+- Defina o **produto de capa**; a imagem de capa será a imagem deste produto.
+- Confirme **Salvar e publicar grade**. Atualiza transacionalmente: `erp_records.ecommerceGrades`, `erp_records.produtos.ecommerce`, `erp_root_objects.config.ecommerce.grades`, `storefront_config.grades` e `storefront_catalog`.
+- Uma variação não pode ficar vinculada a duas grades ativas. A opção Desativar desvincula a grade, preserva os produtos individuais e audita a ação.
+
+### Packs virtuais
+
+- Clique **➕ Criar pack** ou **Editar pack**.
+- Escolha **Leve X, pague Y** (ex.: 5 e 4) ou **Compre X e leve item beneficiado por valor especial**.
+- Selecione produtos participantes (um pack pode reunir sabores distintos). X deve ser maior que Y. Packs incompatíveis no mesmo produto são bloqueados.
+- Confirme para registrar a mesma regra `ecommerce.packVirtual` no ERP e `packVirtual` no catálogo do e-commerce, auditada em `sync_events`.
+- Desativar pack restaura a venda individual, sem excluir o histórico dos produtos.
+
+**Importante:** o cadastro da Central vincula SKUs existentes; para criar novos SKUs/tamanhos antes, utilize o módulo **Produtos e preços → Novo produto**. O desconto do pack é calculado pelo motor promocional já existente no e-commerce, e não pela Central. A Central não cria vendas de teste nem altera ofertas sem confirmação.
+
+A leitura foi validada no Neon, que apresentou 29 grades e dois packs ativos. Gravações foram testadas somente com mocks, sem mudar os produtos reais. Atualização da PWA: arquivos de versão 8.
