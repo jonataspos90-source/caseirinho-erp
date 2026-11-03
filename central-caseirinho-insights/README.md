@@ -77,3 +77,18 @@ Menu do aplicativo: **📈 Vendas / Curva ABC** (atalho inferior **📈 Vendas**
 **Importante:** valores dos itens não incluem frete e não rateiam descontos/cashback aplicados somente no total do pedido. São registros operacionais de pedidos aceitos/atendidos — não prova de recebimento de pagamento nem declaração de faturamento fiscal. Para fechamento contábil reconciliar pagamentos, devoluções e notas.
 
 API: `GET /api/v1/admin/store/insights/product-sales-abc?from=YYYY-MM-DD&to=YYYY-MM-DD`, exigindo autenticação administrativa. V5 atualiza o cache PWA automaticamente.
+
+## 🔐 Login simplificado com usuário e senha do ERP — V6
+
+A tela de entrada não mostra endereço da API, token, configuração técnica ou botão de sessão legada.
+
+1. Informe **o mesmo usuário (login) e a mesma senha cadastrados no ERP Caseirinho**.
+2. A Central envia as credenciais por HTTPS ao endpoint existente `POST /api/v1/public/store/caseirinho/erp-login`.
+3. O ERP autentica e devolve uma **sessão assinada com validade de 8 horas**, sujeita aos perfis MASTER/ADMINISTRADOR/GERENTE/PLATFORM_OWNER e à checagem `adminAuth` em cada consulta.
+4. O aplicativo **não armazena a senha**. Guarda temporariamente apenas a sessão assinada em `sessionStorage`; ao expirar, solicita novo login.
+5. O campo usuário pode ser lembrado para conveniência. O botão **Sair** descarta a sessão local.
+6. Tokens antigos salvos para a Central não são mais importados. A API permanece fixa e não aparece na tela de login.
+
+Atualização PWA: arquivo `app.js?v=6`, `styles.css?v=6`, service worker `caseirinho-insights-app-shell-v6`. Se o aplicativo instalado ainda mostrar a tela anterior, abra no navegador externo, recarregue e depois feche/abra a PWA.
+
+A API já suportava autenticação por login/senha; esta atualização afeta principalmente a interface do aplicativo, sem alterar senhas ou registros de usuários existentes.
