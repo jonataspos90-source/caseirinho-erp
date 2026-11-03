@@ -1690,10 +1690,12 @@ async function saveSeasonalCampaign(){
 async function seasonConfirmPayment(id,stage){
  const o=(st.seasonOrders?.orders||[]).find(x=>x.id===id);if(!o)return;
  const isBalance=stage==='BALANCE',amount=isBalance?o.seasonal.balanceDue:o.seasonal.depositDue;
+ const reference=window.prompt('Informe a referência do pagamento de '+brl(amount)+' do pedido '+o.code+' (ID do Pix ou identificação do recebimento):');
+ if(!reference||reference.trim().length<3)return seasonAlert('Informe uma referência válida para registrar o recebimento.',true);
  const accepted=window.confirm((isBalance?'Confirmo que a encomenda foi entregue/retirada E recebi o saldo de ':'Confirmo que recebi efetivamente o sinal de ')+brl(amount)+' do pedido '+o.code+'? Não confirme somente pelo comprovante enviado pelo cliente.');
  if(!accepted)return;
  try{
-  await api('seasonal-orders/'+encodeURIComponent(id)+'/confirm-payment',{method:'POST',body:{stage,paymentVerified:true,delivered:isBalance}});
+  await api('seasonal-orders/'+encodeURIComponent(id)+'/confirm-payment',{method:'POST',body:{stage,paymentVerified:true,delivered:isBalance,reference:reference.trim().slice(0,120)}});
   seasonAlert('✅ Recebimento '+(isBalance?'do saldo':'do sinal')+' registrado para '+o.code+'.');
   await seasonLoadOrders();
  }catch(err){seasonAlert('Não foi possível confirmar: '+err.message,true);}
