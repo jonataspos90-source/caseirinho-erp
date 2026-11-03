@@ -60,3 +60,20 @@ Em um produto publicado, toque **📷 Alterar fotos** para substituir a galeria.
 **Atenção:** promoções e packs do produto continuam sendo administrados separadamente; alterar preço comum não muda automaticamente preço promocional. Preço de venda no e-commerce usa `ecommerce.precoEcommerce`. O número do código é gerado automaticamente e pode ser consultado no ERP.
 
 **Melhorias futuras sugeridas:** gestão de grade P/M/G e sabores com preços independentes, ficha técnica e margem, estoque x encomenda, lotes/validade, combos/cupons, histórico de mudanças, aprovação de publicação e importação em lote.
+
+## 📈 Relatório de vendas dos produtos — Curva ABC V5
+
+Menu do aplicativo: **📈 Vendas / Curva ABC** (atalho inferior **📈 Vendas** no celular).
+
+- Filtro **De / Até** (até 730 dias) e atalhos de 7, 30, 42, 90 dias ou mês atual; datas em **America/Sao_Paulo**.
+- Apenas **storefront_orders** da loja Caseirinho com status ACEITO, ENTREGUE, RETIRADO, CONCLUIDO. Pendentes, abertos, cancelados, rejeitados e pedidos identificados como testes são excluídos. **Não** soma novamente pedidos importados no ERP.
+- Indicadores: quantidade de pedidos considerados, produtos com saída, unidades vendidas, receita dos itens e pedidos excluídos.
+- **Top 10 por quantidade** e **Top 10 por receita dos itens**, separados.
+- **Curva ABC por produto e categoria**, por receita dos itens no período: A até 80% da receita acumulada, B até 95%, C restante. O item que cruza o limite pertence à faixa que ele iniciou, evitando dividir uma linha.
+- **Média móvel de 42 dias:** janela independente entre a data Até menos 41 dias e a data Até. Dias sem venda entram no denominador: média de unidades/dia = total de unidades na janela / 42; média semanal = unidades / 6. Também traz valor vendido no período de 42 dias.
+- Tabela de produtos com curva, categoria, quantidade, receita, participação, acumulado ABC, média 42 dias, filtro por texto/categoria/curva.
+- Exportação **CSV** compatível com Excel e **PDF** (imprimir/salvar pelo celular), incluindo análise de categorias.
+
+**Importante:** valores dos itens não incluem frete e não rateiam descontos/cashback aplicados somente no total do pedido. São registros operacionais de pedidos aceitos/atendidos — não prova de recebimento de pagamento nem declaração de faturamento fiscal. Para fechamento contábil reconciliar pagamentos, devoluções e notas.
+
+API: `GET /api/v1/admin/store/insights/product-sales-abc?from=YYYY-MM-DD&to=YYYY-MM-DD`, exigindo autenticação administrativa. V5 atualiza o cache PWA automaticamente.
