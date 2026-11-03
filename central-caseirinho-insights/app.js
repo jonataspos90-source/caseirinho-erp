@@ -2,7 +2,7 @@
 'use strict';
 const STORE='https://jonataspos90-source.github.io/caseirinho-loja/';
 const DEFAULT_API='https://john-cloud-api-production.up.railway.app';
-const st={api:DEFAULT_API,token:'',summary:null,contacts:[],orders:[],catalog:[],categories:[],drafts:[],requests:[],view:'dashboard',syncing:false,sound:false,known:new Set(),knownReady:false,lastUpdated:null};
+const st={api:DEFAULT_API,token:'',summary:null,contacts:[],orders:[],catalog:[],categories:[],drafts:[],requests:[],sales:null,salesLoaded:false,view:'dashboard',syncing:false,sound:false,known:new Set(),knownReady:false,lastUpdated:null};
 const E=id=>document.getElementById(id);
 const s=x=>String(x==null?'':x), n=x=>Number(x)||0;
 const esc=x=>s(x).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
@@ -80,10 +80,11 @@ function nav(tab){
  st.view=tab;
  document.querySelectorAll('.section').forEach(x=>x.classList.toggle('active',x.id===tab));
  document.querySelectorAll('[data-view]').forEach(x=>x.classList.toggle('active',x.dataset.view===tab));
- const labels={dashboard:'Visão geral',contacts:'CRM e contatos',ranking:'Ranking de acessos',orders:'Pedidos',menu:'Cardápio escrito',products:'Produtos e preços',reports:'Relatórios e PDF',requests:'Solicitações de cardápio',settings:'Configurações'};
+ const labels={dashboard:'Visão geral',contacts:'CRM e contatos',ranking:'Ranking de acessos',orders:'Pedidos',menu:'Cardápio escrito',products:'Produtos e preços',reports:'Relatórios e PDF',sales:'Vendas e Curva ABC',requests:'Solicitações de cardápio',settings:'Configurações'};
  E('pageTitle').textContent=labels[tab]||'Central de Insights';
  window.scrollTo({top:0,behavior:'smooth'});
  render();
+ if(tab==='sales'&&!st.salesLoaded)loadSales();
 }
 function badge(x){const v=s(x).toUpperCase();return '<span class="badge '+(v.includes('PENDENTE')?'warn':v.includes('IMPORTANDO')?'light':v.includes('NOVO')?'light':v.includes('IMPORTADO')||v.includes('CONCLU')||v.includes('APROV')?'good':'')+'">'+esc(x||'—')+'</span>';}
 function cellEmpty(title){return '<div class="empty">'+esc(title)+'</div>';}
@@ -217,6 +218,7 @@ function render(){
  if(st.view==='orders')renderOrders();
  if(st.view==='menu')renderMenu();
  if(st.view==='products')renderProducts();
+ if(st.view==='sales')renderSales();
  if(st.view==='requests')renderRequests();
  E('apiLabel').textContent=st.api;
  E('apiState').innerHTML='<p class="notice success">Última consulta: '+dt(st.lastUpdated)+'. Dados recebidos exclusivamente da API autenticada.</p>';
@@ -529,10 +531,140 @@ function pdfReport(type){
  printDocument('Relatório de Produtos e Preços',table(['Categoria','Produto','Preço','Mínimo','Máximo'],rows));
  }
 }
+
+function saoPauloToday(){
+ const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
+ const date=Object.fromEntries(parts.map(x=>[x.type,x.value]));
+ return date.year+'-'+date.month+'-'+date.day;
+}
+function shiftDateISO(iso,days){
+ const d=new Date(iso+'T12:00:00.000Z');d.setUTCDate(d.getUTCDate()+days);return d.toISOString().slice(0,10);
+}
+function initSalesDates(){
+ if(E('salesDateFrom')?.value&&E('salesDateTo')?.value)return;
+ const today=saoPauloToday();E('salesDateTo').value=today;E('salesDateFrom').value=shiftDateISO(today,-41);
+}
+function selectSalesDays(days){
+ initSalesDates();
+ const today=saoPauloToday();
+ E('salesDateTo').value=today;
+ E('salesDateFrom').value=days==='month'?today.slice(0,8)+'01':shiftDateISO(today,-(Number(days)-1));
+ loadSales();
+}
+async function loadSales(){
+ if(!st.token)return;
+ initSalesDates();
+ const from=E('salesDateFrom').value,to=E('salesDateTo').value;
+ if(!from||!to||from>to){E('salesError').hidden=false;E('salesError').textContent='Informe o período correto. A data De não pode ser maior que Até.';return;}
+ E('salesError').hidden=true;E('salesRefresh').disabled=true;E('salesRefresh').textContent='Consultando...';
+ try{
+  const report=await api('product-sales-abc?from='+encodeURIComponent(from)+'&to='+encodeURIComponent(to));
+  st.sales=report;st.salesLoaded=true;
+  E('salesError').hidden=true;
+  renderSales();
+ }catch(err){
+  E('salesError').hidden=false;E('salesError').textContent='Não foi possível consultar o relatório: '+err.message;
+ }finally{E('salesRefresh').disabled=false;E('salesRefresh').textContent='🔎 Consultar';}
+}
+function qtyBR(v){return Number(v||0).toLocaleString('pt-BR',{maximumFractionDigits:3});}
+function pctBR(v){return Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:2})+'%';}
+function displayISODate(iso){
+ if(!iso)return '—';
+ const parts=iso.split('-');
+ return parts.length===3?parts[2]+'/'+parts[1]+'/'+parts[0]:iso;
+}
+function salesBar(width,kind){
+ const value=Math.max(0,Math.min(100,Number(width)||0));
+ return '<div class="sales-track"><div class="sales-fill '+s(kind||'')+'" style="width:'+value+'%"></div></div>';
+}
+function salesTopList(list,type){
+ const max=Math.max(...(list||[]).map(x=>type==='qty'?x.quantity:x.revenue),1);
+ return list.length?list.map((p,i)=>'<div class="sales-top-row"><div class="sales-top-title"><span><b>'+(i+1)+'. '+esc(p.name)+'</b><small>'+esc(p.category)+' · '+esc(p.code||'sem código')+'</small></span><strong>'+(type==='qty'?qtyBR(p.quantity)+' un':brl(p.revenue))+'</strong></div>'+salesBar((type==='qty'?p.quantity:p.revenue)/max*100)+'</div>').join(''):cellEmpty('Sem vendas confirmadas no período.');
+}
+function abcBadge(abc){return '<span class="abc-badge abc-'+esc(abc)+'">'+esc(abc)+'</span>';}
+function salesFilterProducts(){
+ const report=st.sales||{},q=s(E('salesSearch')?.value).trim().toLocaleLowerCase('pt-BR'),a=E('salesABCFilter').value,cat=E('salesCategoryFilter').value;
+ return (report.products||[]).filter(x=>(a==='all'||x.abc===a)&&(cat==='all'||x.category===cat)&&(s(x.name)+' '+s(x.code)+' '+s(x.category)).toLocaleLowerCase('pt-BR').includes(q));
+}
+function renderSalesDetails(){
+ if(!st.sales)return;
+ const filtered=salesFilterProducts();
+ const rows=filtered.map(x=>'<tr><td>'+abcBadge(x.abc)+'</td>'+
+ '<td><b>'+esc(x.name)+'</b><br><small class="muted">'+esc(x.code||'')+' · '+esc(x.category)+'</small></td>'+
+ '<td>'+qtyBR(x.quantity)+'</td><td><b>'+brl(x.revenue)+'</b></td>'+
+ '<td>'+pctBR(x.sharePct)+'</td><td>'+pctBR(x.cumulativePct)+'</td>'+
+ '<td><b>'+qtyBR(x.dailyAverageQty42d)+'</b>/dia<br><small>'+qtyBR(x.weeklyAverageQty42d)+'/semana</small></td>'+
+ '<td>'+qtyBR(x.quantity42d)+'</td></tr>');
+ if(window.matchMedia('(max-width:790px)').matches){
+  E('salesTable').innerHTML=filtered.length?'<div class="mobile-list">'+filtered.map((x,i)=>
+   '<article class="mobile-record"><div class="mobile-record-head"><div><b>'+esc(x.name)+'</b><br><small class="muted">'+esc(x.category)+'</small></div>'+abcBadge(x.abc)+'</div>'+
+   '<div class="sales-mobile-grid"><span>Quantidade vendida<b>'+qtyBR(x.quantity)+'</b></span><span>Faturamento<b>'+brl(x.revenue)+'</b></span>'+
+   '<span>Participação<b>'+pctBR(x.sharePct)+'</b></span><span>Acumulado ABC<b>'+pctBR(x.cumulativePct)+'</b></span>'+
+   '<span>Média em 42 dias<b>'+qtyBR(x.dailyAverageQty42d)+'/dia</b></span><span>Por semana (42d)<b>'+qtyBR(x.weeklyAverageQty42d)+'</b></span></div>'+
+   '<div class="muted" style="font-size:11px;margin-top:8px">Vendido em 42 dias: '+qtyBR(x.quantity42d)+' · '+brl(x.revenue42d)+'</div></article>'
+  ).join('')+'</div>':cellEmpty('Não há produtos para estes filtros.');
+ }else{
+  E('salesTable').innerHTML=table(['ABC','Produto / categoria','Qtd.','Receita itens','Participação','Acum. ABC','Média 42d','Qtd. 42d'],rows);
+ }
+}
+function renderSales(){
+ const d=st.sales;
+ if(!d)return;
+ const total=d.totals||{},win=d.window42||{},p=d.period||{};
+ E('salesNote').className='notice success';
+ E('salesNote').innerHTML='<b>📅 Relatório: '+displayISODate(p.from)+' até '+displayISODate(p.to)+'</b> ('+p.days+' dias corridos).'+
+ '<br><b>📊 Média móvel:</b> '+displayISODate(win.from)+' a '+displayISODate(win.to)+' (42 dias corridos).'+
+ '<br><small>Fonte: pedidos confirmados do e-commerce. Não duplica ERP. Atualizado em '+dt(d.generatedAt)+'.</small>';
+ E('salesKpis').innerHTML=[
+  statsCard('💰','Receita de itens',brl(total.itemRevenue),'Sem frete ou rateio de cupons do pedido'),
+  statsCard('📦','Unidades vendidas',qtyBR(total.quantity),'Período selecionado'),
+  statsCard('🛒','Pedidos considerados',total.orders,'Total de pedidos: '+brl(total.ordersTotal)),
+  statsCard('🍝','Produtos com saída',total.products,'SKUs / produtos diferentes'),
+  statsCard('⏳','Pedidos pendentes excluídos',total.pendingExcluded,'Apenas pedidos confirmados entram'),
+  statsCard('❌','Cancelados / rejeitados',total.canceledExcluded,'Não contados como venda'),
+  statsCard('🧪','Testes identificados',total.testRecords,'Removidos quando reconhecíveis'),
+  statsCard('📊','Período de média',42+' dias','Até '+displayISODate(win.to))
+ ].join('');
+ E('salesTopRevenue').innerHTML=salesTopList(d.topRevenue||[],'revenue');
+ E('salesTopQuantity').innerHTML=salesTopList(d.topQuantity||[],'qty');
+ const maxABC=Math.max(1,...(d.abcSummary||[]).map(x=>x.revenue));
+ E('salesAbcSummary').innerHTML=(d.abcSummary||[]).map(x=>'<div class="sales-abc-row">'+abcBadge(x.abc)+
+ '<div style="flex:1"><div class="sales-top-title"><b>'+x.products+' produtos</b><strong>'+brl(x.revenue)+'</strong></div>'+
+ salesBar(x.revenue/maxABC*100,'abc-'+x.abc)+'</div></div>').join('');
+ const maxCat=Math.max(1,...(d.categories||[]).map(x=>x.revenue));
+ E('salesCategories').innerHTML=(d.categories||[]).map(x=>'<div class="sales-top-row"><div class="sales-top-title"><b>'+esc(x.name)+' <small>('+x.products+')</small></b><strong>'+brl(x.revenue)+'</strong></div>'+salesBar(x.revenue/maxCat*100)+'</div>').join('')||cellEmpty('Sem categorias vendidas.');
+ const filter=E('salesCategoryFilter'),selected=filter.value;
+ filter.innerHTML='<option value="all">Todas as categorias</option>'+(d.categories||[]).map(x=>'<option value="'+esc(x.name)+'">'+esc(x.name)+'</option>').join('');
+ if((d.categories||[]).some(x=>x.name===selected))filter.value=selected;
+ else filter.value='all';
+ renderSalesDetails();
+}
+function salesCSV(){
+ if(!st.sales)return toast('Consulte o relatório antes de exportar.',true);
+ const p=st.sales.period,header=['Classe ABC','Código','Produto','Categoria','Unidade','Quantidade período','Faturamento de itens (R$)','% participação','% acumulado','Pedidos','Última venda','Quantidade nos 42 dias','Receita nos 42 dias','Média diária 42 dias','Média semanal 42 dias'];
+ const data=[header,...salesFilterProducts().map(x=>[x.abc,x.code,x.name,x.category,x.unit,x.quantity,x.revenue,x.sharePct,x.cumulativePct,x.orders,dt(x.lastSale),x.quantity42d,x.revenue42d,x.dailyAverageQty42d,x.weeklyAverageQty42d])];
+ const csv='\ufeff'+data.map(row=>row.map(v=>'"'+s(v).replace(/"/g,'""')+'"').join(';')).join('\r\n');
+ const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+ const a=document.createElement('a');a.href=url;a.download='caseirinho-vendas-curva-abc-'+p.from+'-a-'+p.to+'.csv';a.click();URL.revokeObjectURL(url);
+}
+function salesPDF(){
+ if(!st.sales)return toast('Consulte o relatório antes de gerar o PDF.',true);
+ const d=st.sales,t=d.totals,p=d.period,w=d.window42;
+ const head='<p><b>Período selecionado:</b> '+displayISODate(p.from)+' a '+displayISODate(p.to)+' ('+p.days+' dias)'+
+ '<br><b>Média de 42 dias:</b> '+displayISODate(w.from)+' a '+displayISODate(w.to)+'</p>'+
+ '<p><b>Pedidos:</b> '+t.orders+' · <b>Produtos:</b> '+t.products+' · <b>Unidades:</b> '+qtyBR(t.quantity)+
+ ' · <b>Receita dos itens:</b> '+brl(t.itemRevenue)+'</p>';
+ const abc=table(['ABC','Produtos','Unidades','Receita'],(d.abcSummary||[]).map(x=>'<tr><td>'+esc(x.abc)+'</td><td>'+x.products+'</td><td>'+qtyBR(x.quantity)+'</td><td>'+brl(x.revenue)+'</td></tr>'));
+ const rows=salesFilterProducts().map(x=>'<tr><td>'+esc(x.abc)+'</td><td>'+esc(x.code)+'</td><td>'+esc(x.name)+'</td><td>'+esc(x.category)+'</td><td>'+qtyBR(x.quantity)+'</td><td>'+brl(x.revenue)+'</td><td>'+pctBR(x.sharePct)+'</td><td>'+pctBR(x.cumulativePct)+'</td><td>'+qtyBR(x.dailyAverageQty42d)+'</td></tr>');
+ const body=head+'<h3>Resumo Curva ABC</h3>'+abc+'<h3>Vendas detalhadas por produto</h3>'+
+ table(['ABC','Código','Produto','Categoria','Qtd.','Receita','%','Acumulado','Média/dia 42d'],rows)+
+ '<p><small>Fonte: e-commerce Caseirinho, pedidos ACEITO/ENTREGUE/RETIRADO/CONCLUIDO. Excluídos pendentes, cancelados, rejeitados e testes identificados. Frete/descontos de pedido não rateados. A média inclui dias sem vendas.</small></p>';
+ printDocument('Vendas por Produto • Curva ABC',body);
+}
 function bind(){
  setupInstall();
  document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>nav(b.dataset.view)));
- E('refreshBtn').addEventListener('click',loadAll);
+ E('refreshBtn').addEventListener('click',async()=>{await loadAll();if(st.view==='sales')await loadSales();});
  E('logoutBtn').addEventListener('click',logout);
  E('clearSession').addEventListener('click',logout);
  E('contactSearch').addEventListener('input',renderContacts);
@@ -543,6 +675,15 @@ function bind(){
  E('csvContacts').addEventListener('click',csv);
  E('productSearch').addEventListener('input',renderProducts);
  E('productCategory').addEventListener('change',renderProducts);
+ initSalesDates();
+ E('salesRefresh').addEventListener('click',loadSales);
+ E('salesSearch').addEventListener('input',renderSalesDetails);
+ E('salesABCFilter').addEventListener('change',renderSalesDetails);
+ E('salesCategoryFilter').addEventListener('change',renderSalesDetails);
+ E('salesCsv').addEventListener('click',salesCSV);
+ E('salesPdf').addEventListener('click',salesPDF);
+ document.querySelectorAll('[data-sales-range]').forEach(x=>x.addEventListener('click',()=>selectSalesDays(x.dataset.salesRange)));
+
  E('productsRefresh').addEventListener('click',loadAll);
  E('createProduct').addEventListener('click',openCreateProduct);
  document.addEventListener('change',event=>{if(event.target?.id==='newProductPhotos')previewFiles(event.target.files,'newProductPhotoPreview');if(event.target?.id==='replacePhotos')previewFiles(event.target.files,'replacePhotoPreview');});
