@@ -45,6 +45,13 @@ function enhance(){
   campaignLink.title='Gerenciar campanha Black Friday sincronizada ao ERP e ao e-commerce.';
   campaignLink.style.cssText='background:#131313;color:white;text-decoration:none;border-radius:9px;padding:10px 14px;display:inline-flex;align-items:center;min-height:42px';
   wrap.appendChild(campaignLink);
+  const seasonalLink=document.createElement('a');
+  seasonalLink.href='./central-caseirinho-insights/?view=sazonais&v=17';
+  seasonalLink.target='_blank';seasonalLink.rel='noopener noreferrer';seasonalLink.className='btn primary';
+  seasonalLink.textContent='🎄 Encomendas Sazonais · Datas e sinal 50%';
+  seasonalLink.title='Criar datas sazonais, quantidades mínimas, limite de valor e acompanhar sinal/saldo.';
+  seasonalLink.style.cssText='background:#184f35;color:white;text-decoration:none;border-radius:9px;padding:10px 14px;display:inline-flex;align-items:center;min-height:42px';
+  wrap.appendChild(seasonalLink);
   const note=document.createElement('div');note.id='produtoListaMensagem';note.setAttribute('role','status');note.style='padding:12px 16px;color:#475569';note.textContent='Edite o nome na lista e use Salvar e publicar. Produtos desabilitados para o E-commerce continuam fora do app.';tb.closest('.panel').appendChild(note);
  }
  const filter=E('produtoFiltroTipo'),selected=filter.value||'',available=[...new Set(products().flatMap(types))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
