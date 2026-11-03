@@ -38,6 +38,13 @@ function enhance(){
   const wrap=document.createElement('label');wrap.textContent='Tipo de produto ';wrap.style='display:flex;align-items:center;gap:8px;flex-wrap:wrap';
   const select=document.createElement('select');select.id='produtoFiltroTipo';select.style='min-width:180px;max-width:260px';select.setAttribute('aria-label','Filtrar por tipo de produto');wrap.appendChild(select);search.parentElement.insertBefore(wrap,search);
   select.addEventListener('change',()=>window.renderProdutos());
+  const campaignLink=document.createElement('a');
+  campaignLink.id='johnBlackFridayCampaignLink';campaignLink.href='./central-caseirinho-insights/?view=blackfriday&v=15';
+  campaignLink.target='_blank';campaignLink.rel='noopener noreferrer';campaignLink.className='btn primary';
+  campaignLink.textContent='🖤 Black Friday · Preços e vigência';
+  campaignLink.title='Gerenciar campanha Black Friday sincronizada ao ERP e ao e-commerce.';
+  campaignLink.style.cssText='background:#131313;color:white;text-decoration:none;border-radius:9px;padding:10px 14px;display:inline-flex;align-items:center;min-height:42px';
+  wrap.appendChild(campaignLink);
   const note=document.createElement('div');note.id='produtoListaMensagem';note.setAttribute('role','status');note.style='padding:12px 16px;color:#475569';note.textContent='Edite o nome na lista e use Salvar e publicar. Produtos desabilitados para o E-commerce continuam fora do app.';tb.closest('.panel').appendChild(note);
  }
  const filter=E('produtoFiltroTipo'),selected=filter.value||'',available=[...new Set(products().flatMap(types))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
