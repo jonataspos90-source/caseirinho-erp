@@ -280,7 +280,7 @@ async function loadAll(){
  E('sideSync').textContent=errors.length?'Verificar integração':'✓ Sincronizado';
  E('globalNotice').className='notice'+(errors.length?' error':'');
  E('globalNotice').textContent=errors.length?'Alguns dados não puderam ser consultados: '+errors.join(' | '):'Dados consultados por API autenticada. Os pings não representam visitas; instalações só são confirmadas por appinstalled e só há ranking com eventos reais.';
- if(errors.length&&errors.length===5){E('loginNotice').textContent='Falha de autenticação ou rota indisponível: '+errors[0]+'. Confira a sessão do ERP e a publicação da API.';E('loginScreen').hidden=false;}
+ if(errors.length>=5){E('loginNotice').textContent='Não foi possível consultar os dados. Se sua sessão expirou, entre com usuário e senha do ERP. Detalhes: '+errors[0];E('loginScreen').hidden=false;}
  else E('loginScreen').hidden=true;
  st.syncing=false;E('refreshBtn').disabled=false;render();
 }
@@ -737,12 +737,7 @@ function bind(){
  try{if('Notification'in window&&Notification.permission==='default')await Notification.requestPermission()}catch(_){}
  toast('Alertas sonoros ativados enquanto este aplicativo estiver aberto.');
  });
- E('loginForm').addEventListener('submit',async e=>{
- e.preventDefault();st.api=s(E('apiUrl').value).replace(/\/+$/,'');st.token=s(E('accessToken').value).trim()||getSaved().token;
- if(!st.token){E('loginNotice').textContent='Informe seu token administrativo ou abra o ERP autenticado.';return;}
- saveSession();await loadAll();
- });
- E('reuseSession').addEventListener('click',async()=>{const c=getSaved();if(!c.token){E('loginNotice').textContent='Não encontrei sessão do ERP neste navegador. Entre no ERP antes ou informe o token.';return;}st.api=c.api;st.token=c.token;E('apiUrl').value=c.api;saveSession();await loadAll();});
+ E('loginForm').addEventListener('submit',loginWithERP);
  document.addEventListener('click',e=>{
  const b=e.target.closest('[data-action]');if(!b)return;
  const type=b.dataset.action,phone=b.dataset.phone,id=b.dataset.id;
@@ -764,7 +759,7 @@ function bind(){
 }
 async function init(){
  tokenSetup();bind();
- if(st.token){saveSession();await loadAll();}
+ if(st.token){await loadAll();}else E('loginScreen').hidden=false;
  setInterval(loadRequests,30000);
  setInterval(loadAll,120000);
 }
