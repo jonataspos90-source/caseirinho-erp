@@ -2,7 +2,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#183c2e"><meta name="description" content="Central Caseirinho Insights — painel administrativo independente de CRM, acessos, pedidos e cardápio.">
 <title>Central Caseirinho Insights | CRM e Loja</title>
-<link rel="stylesheet" href="./styles.css?v=8">
+<link rel="stylesheet" href="./styles.css?v=9">
 <link rel="manifest" href="./manifest.webmanifest"><link rel="icon" type="image/png" sizes="192x192" href="/caseirinho-loja/icons/icon-192.png"><link rel="apple-touch-icon" href="/caseirinho-loja/icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default">
 </head><body>
 <div class="auth-screen" id="loginScreen">
@@ -53,7 +53,7 @@
   <div class="notice">O aceite da política de privacidade não autoriza campanhas. Use mensagens promocionais somente com consentimento próprio. O botão WhatsApp abre a conversa para sua revisão; não dispara mensagens sozinho.</div>
  </section>
  <section id="ranking" class="section"><div class="section-head"><div><h2>🏆 Mais acessados</h2><p>Ranking dos últimos 7 dias, usando apenas visitas associadas a clientes identificados.</p></div></div><div id="rankingTable"></div></section>
- <section id="orders" class="section"><div class="section-head"><div><h2>🛒 Pedidos da loja</h2><p>Histórico recente de pedidos feitos no aplicativo e situação da integração com o ERP.</p></div></div><div class="toolbar"><input type="search" id="orderSearch" placeholder="Buscar pedido, nome ou telefone..."><select id="orderFilter"><option value="all">Todos</option><option value="PENDENTE">Integração pendente</option><option value="IMPORTANDO">Importando</option></select></div><div id="ordersTable"></div></section>
+ <section id="orders" class="section"><div class="section-head"><div><h2>🛒 Pedidos da loja</h2><p>Histórico recente de pedidos feitos no aplicativo e situação da integração com o ERP.</p></div></div><div class="toolbar"><input type="search" id="orderSearch" placeholder="Buscar pedido, nome ou telefone..."><select id="orderFilter"><option value="all">Todos</option><option value="PENDENTE">Integração pendente</option><option value="IMPORTANDO">Importando</option><option value="READY">📦 Aguardando entrega / retirada</option><option value="CASHBACK_PENDING">💚 Cashback a decidir</option><option value="CASHBACK_GRANTED">✅ Cashback liberado</option><option value="COMPLETED">✅ Pedidos concluídos</option></select><button id="refreshFulfillment" type="button" class="btn">↻ Atualizar entregas</button></div><div class="grid stats" id="orderFulfillmentKpis"></div><div class="notice">Para finalizar um pedido, toque em <b>✅ Entrega / Cashback</b>. Selecione aprovar ou não liberar o cashback, confirme a entrega e a conferência do pagamento. O status será atualizado no e-commerce e no ERP; a ação não cria recebimento financeiro.</div><div id="ordersTable"></div></section>
  <section id="menu" class="section"><div class="section-head"><div><h2>🍝 Cardápio escrito</h2><p>Preços publicados no Neon. Selecione uma categoria ou envie o resumo com o link do aplicativo.</p></div></div>
   <div class="toolbar"><select class="menu-select" id="menuCategory"><option value="all">Todas as categorias</option></select><button class="btn" id="copyMenu">📋 Copiar cardápio</button><button class="btn whatsapp" id="menuShare">💬 Preparar envio</button></div>
   <div id="priceWarnings"></div><div class="menu-grid"><article class="card"><h2>Produtos e valores</h2><div id="menuItems"></div></article><article class="card"><h2>Mensagem pronta</h2><div id="menuText" class="menu-list"></div><p><small>Ao escolher uma categoria, o texto é atualizado. Para cardápios longos, a mensagem é resumida e inclui o endereço da loja.</small></p></article></div>
@@ -138,5 +138,5 @@
  </nav>
 <div id="toast" class="toast" role="status" hidden></div>
 <div id="modal" class="modal-bg" hidden><div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><h2 id="modalTitle">Mensagem para WhatsApp</h2><div id="modalContent"></div><div class="toolbar" style="justify-content:flex-end;margin-top:20px"><button class="btn" id="modalClose">Fechar</button></div></div></div>
-<script src="./app.js?v=8" defer></script>
+<script src="./app.js?v=9" defer></script>
 </body></html>
