@@ -356,9 +356,27 @@ async function loadAll(){
  E('sideSync').textContent=errors.length?'Verificar integração':'✓ Sincronizado';
  E('globalNotice').className='notice'+(errors.length?' error':'');
  E('globalNotice').textContent=errors.length?'Alguns dados não puderam ser consultados: '+errors.join(' | '):'Dados consultados por API autenticada. Os pings não representam visitas; instalações só são confirmadas por appinstalled e só há ranking com eventos reais.';
- if(errors.length>=5){E('loginNotice').textContent='Não foi possível consultar os dados. Se sua sessão expirou, entre com usuário e senha do ERP. Detalhes: '+errors[0];E('loginScreen').hidden=false;}
- else E('loginScreen').hidden=true;
+ // Erros de rede e dados parciais não exigem login; apenas 401 confirmado faz logout.
+ if(errors.length>=5)E('globalNotice').textContent='⚠️ A conexão com o servidor falhou. Sua sessão foi mantida. Atualize novamente: '+errors[0];
+ E('loginScreen').hidden=true;
  st.syncing=false;E('refreshBtn').disabled=false;render();
+}
+async function refreshOrdersAfterRejection(event){
+ // A API já confirmou a recusa: não reenviar o POST nem recarregar a página.
+ const code=s(event?.detail?.code).trim();
+ if(!code||!st.token)return;
+ try{
+  const results=await Promise.allSettled([api('orders'),api('order-fulfillment')]);
+  if(results[0].status!=='fulfilled')throw results[0].reason;
+  st.orders=results[0].value.orders||[];
+  if(results[1].status==='fulfilled')st.fulfillment=new Map((results[1].value.orders||[]).map(x=>[s(x.code),x]));
+  else st.fulfillment.delete(code);
+  st.lastUpdated=new Date();
+  if(st.view==='orders')renderOrders();else nav('orders');
+  toast('✅ Pedido #'+code+' recusado. A Central continua conectada.');
+ }catch(error){
+  toast('Pedido #'+code+' recusado no servidor, mas a lista não atualizou. Toque em Atualizar.',true);
+ }
 }
 function updateRequestData(d){
  const rows=d.requests||[];
@@ -2050,6 +2068,7 @@ function bindSeasonAdmin(){
 }
 function bind(){
  setupInstall();
+ window.addEventListener('caseirinho:order-rejected',refreshOrdersAfterRejection);
  bindSeasonAdmin();
  bindBlackFriday();
  bindCouponModule();
