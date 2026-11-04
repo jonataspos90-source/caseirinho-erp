@@ -6,7 +6,7 @@ const sw=fs.readFileSync('central-caseirinho-insights/sw.js','utf8');
 test('PWA mantém app.js v30 e carrega patch seguro com cache v31',()=>{
  assert.match(html,/app\.js\?v=30/);
  assert.match(html,/cashback-pending-erp\.js\?v=1/);
- assert.match(sw,/caseirinho-insights-app-shell-v31/);
+ assert.match(sw,/caseirinho-insights-app-shell-v32/);
  assert.match(sw,/cashback-pending-erp\.js\?v=1/);
  assert.doesNotThrow(()=>new vm.Script(source));
 });
