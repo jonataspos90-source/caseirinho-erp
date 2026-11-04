@@ -245,3 +245,13 @@
 #seasonOrderList .record-actions .btn{min-height:43px}
 @media(max-width:750px){.season-admin-product{grid-template-columns:minmax(0,1fr) minmax(0,.65fr)}.season-admin-choice{grid-column:1/-1}#sazonais .form-grid{gap:9px}}
 @media(max-width:410px){#sazonais .form-grid{grid-template-columns:1fr}#sazonais .form-grid>label.full{grid-column:1}.season-admin-product{grid-template-columns:1fr 1fr}.season-admin-choice{grid-column:1/-1}}
+
+
+/* V20: preço e estados comerciais controlados no ERP */
+.product-lifecycle-controls{margin:16px 0;padding:15px;background:#f5f8f2;border:1px solid #cfddd0;border-radius:12px}
+.product-lifecycle-controls select{display:block;width:100%;margin:5px 0 14px;padding:12px 10px;border-radius:9px;border:1px solid #cad4c6;font-size:14px;color:#234c35;background:#fff}
+.product-lifecycle-controls .notice{font-size:12px;line-height:1.5;margin:9px 0 0}
+#productStatus{min-width:195px}
+#productsList .product-card .badge.good{background:#e5f5e9;color:#14502e}
+#productsList .product-card .badge.warn{white-space:normal;line-height:1.4}
+@media(max-width:560px){#productStatus{min-width:0;width:100%}.product-lifecycle-controls{padding:11px}}
