@@ -68,7 +68,7 @@ async function loginWithERP(e){
   try{localStorage.setItem(ERP_LAST_USERNAME_KEY,user);}catch(_){}
   E('loginScreen').hidden=true;
   await loadAll();
-  {const params=new URLSearchParams(location.search),requested=params.get('view');if(['blackfriday','sazonais','products','operations','financeiro'].includes(requested))nav(requested);if(requested==='products'&&params.get('product')){const id=params.get('product');if(st.catalog.some(x=>s(x.id)===s(id)))editProduct(id);}}
+  {const params=new URLSearchParams(location.search),requested=params.get('view');if(['orders','blackfriday','sazonais','products','operations','financeiro'].includes(requested))nav(requested);if(requested==='products'&&params.get('product')){const id=params.get('product');if(st.catalog.some(x=>s(x.id)===s(id)))editProduct(id);}}
  }catch(error){
   st.token='';st.sessionExpiry=0;
   try{sessionStorage.removeItem(ERP_SESSION_KEY);}catch(_){}
@@ -1182,18 +1182,22 @@ async function approveOrderCashback(code){
   await refreshFulfillment();manageOrderFulfillment(code);
  }catch(error){toast('Falha ao aprovar: '+error.message,true);}
 }
+const completionPending=new Set();
 async function confirmOrderComplete(code){
+ if(completionPending.has(code))return;
  const delivered=E('fulfillmentDelivered')?.checked===true,payment=E('fulfillmentPayment')?.checked===true;
  const decision=document.querySelector('input[name="fulfillmentCashback"]:checked')?.value||'';
  if(!decision)return toast('Escolha aprovar ou não liberar cashback antes de finalizar.',true);
  if(!delivered||!payment)return toast('Marque as duas confirmações obrigatórias: entrega e conferência do pagamento.',true);
  const x=orderLookup(code),rule=fulfillStatus(code);
  if(!window.confirm('FINALIZAR pedido '+code+' ('+brl(x?.total)+') como '+(s(rule?.modalidade).toUpperCase()==='RETIRADA'?'RETIRADO':'ENTREGUE')+'? Cashback: '+(decision==='APROVADO'?brl(rule?.estimate):'não liberar')+'. A venda será reconhecida no DRE; se a integração ERP estiver pendente, será conciliada depois.'))return;
+ completionPending.add(code);
  try{
   const out=await api('orders/'+encodeURIComponent(code)+'/complete',{method:'POST',body:{confirmDelivered:true,paymentChecked:true,cashbackDecision:decision}});
   hideModal();toast('✅ Pedido '+code+' '+out.status+' na loja. Venda no DRE: '+brl(out.receitaProdutos)+'. '+(out.erpSynced?'ERP atualizado.':'Integração ERP pendente.')+' Cashback: '+brl(out.credited));
   await loadAll();nav('orders');
  }catch(error){toast('Não foi possível concluir: '+error.message,true);}
+ finally{completionPending.delete(code);}
 }
 async function releaseOrderCashback(code){
  const rule=fulfillStatus(code);
@@ -1848,6 +1852,7 @@ function bind(){
  E('contactFilter').addEventListener('change',renderContacts);
  E('orderSearch').addEventListener('input',renderOrders);
  E('orderFilter').addEventListener('change',renderOrders);
+ E('orderQuickNewFilter').addEventListener('click',()=>{E('orderFilter').value='NEW';nav('orders');renderOrders();});
  E('refreshFulfillment').addEventListener('click',refreshFulfillment);
  E('menuCategory').addEventListener('change',renderMenu);
  E('csvContacts').addEventListener('click',csv);
