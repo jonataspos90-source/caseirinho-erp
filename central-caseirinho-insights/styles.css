@@ -255,3 +255,30 @@
 #productsList .product-card .badge.good{background:#e5f5e9;color:#14502e}
 #productsList .product-card .badge.warn{white-space:normal;line-height:1.4}
 @media(max-width:560px){#productStatus{min-width:0;width:100%}.product-lifecycle-controls{padding:11px}}
+
+
+/* Financeiro/DRE: campos simples, responsivos e impressão limpa */
+#finance .fin-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:13px;margin:14px 0}
+#finance .fin-fields label,#finance .toolbar label{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;color:#264936}
+#finance .fin-fields input,#finance .fin-fields select,#finance .fin-fields textarea,#finance .toolbar input{width:100%;min-width:0;box-sizing:border-box;padding:11px;border:1px solid #cdd9ce;border-radius:10px;background:#fff;color:#173e30;font:inherit}
+#finance textarea{width:100%;min-height:58px;border-radius:10px;border:1px solid #cdd9ce;padding:11px;box-sizing:border-box;font:inherit}
+#finance .fin-panel[hidden],#finance #finFormPanel[hidden],#finance label[hidden]{display:none!important}
+#finance .fin-emphasis{background:#eaf2e8;font-weight:800}
+#finance .table td{vertical-align:middle}
+#finance .table td button{margin:2px}
+#finance .fin-fields input:focus,#finance .fin-fields select:focus{outline:2px solid #3e6d49;outline-offset:1px}
+#finance .stat .n{overflow-wrap:anywhere}
+@media(max-width:690px){#finance .fin-fields{grid-template-columns:1fr 1fr}#finance .toolbar{gap:9px}#finance .toolbar label{flex:1 1 130px}#finance .table-wrap{overflow-x:auto}}
+@media(max-width:430px){#finance .fin-fields{grid-template-columns:1fr}#finance .toolbar label{flex:1 1 100%}}
+@media print{
+ body{background:white!important;color:#111!important}
+ .side,.topbar,.footer,.mobile-bottom-nav,.new-order-alert,#globalNotice,#newOrderBanner,.auth-screen{display:none!important}
+ .layout,.app,main.app{display:block!important;padding:0!important;margin:0!important;max-width:none!important;width:100%!important}
+ .section:not(#finance){display:none!important}
+ #finance{display:block!important}
+ #finance .section-head button,#finance .toolbar,#finance #finFormPanel,#finance .notice,#finKpis{display:none!important}
+ #finance .fin-panel[hidden]{display:none!important}
+ #finance .fin-panel:not([hidden]){display:block!important;box-shadow:none!important;border:0!important}
+ #finance th,#finance td{font-size:10px!important;break-inside:avoid}
+ #finance table{width:100%!important}
+}
