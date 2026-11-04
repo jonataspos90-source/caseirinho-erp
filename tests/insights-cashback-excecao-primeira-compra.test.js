@@ -14,8 +14,8 @@ test('aprovação excepcional exige razão e vai para endpoint dedicado à decis
  assert.match(s,/cashback-decision/);
  assert.match(s,/Crédito somente após entrega/);
 });
-test('PWA v29 carrega a nova interface',()=>{
- assert.match(read('index.html'),/app.js\?v=29/);
+test('PWA v30 carrega a nova interface',()=>{
+ assert.match(read('index.html'),/app.js\?v=30/);
  assert.match(read('sw.js'),/caseirinho-insights-app-shell-v30/);
  assert.doesNotThrow(()=>new vm.Script(s));
 });
