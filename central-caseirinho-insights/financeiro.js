@@ -70,7 +70,7 @@ function render(){
  const x=d.dre||{},tot=d.totals||{};
  el('finKpis').innerHTML=[
   card('🛒 Pedidos no período',tot.includedOrders||0,'Aceitos e concluídos, sem testes'),
-  card('✅ Vendas concluídas',brl(x.realizedSales),'Receita reconhecida no DRE no mês'),
+  card('✅ Vendas concluídas',brl(x.realizedSales),'Loja: '+brl(x.realizedStore)+' • ERP: '+brl(x.realizedErp)),
   card('⏳ Vendas ainda aceitas',brl(x.provisionalSales),'Previsão, não é resultado realizado'),
   card('💵 Vendas manuais',brl(x.manualSales),'Lançamentos fora do aplicativo'),
   card('📉 Total das despesas',brl(n(x.costProduction)+n(x.costResale)+n(x.taxes)+n(x.fixed)+n(x.variable)),'Sem investimento em ativos'),
@@ -83,8 +83,8 @@ function render(){
 }
 function renderDaily(){
  const d=state.data||{},days=d.days||[];
- const rows=days.map(x=>'<tr><td>'+esc(x.date.split('-').reverse().join('/'))+'</td><td>'+n(x.orders)+'</td><td>'+brl(x.confirmed)+'</td><td>'+brl(x.completed)+'</td><td>'+brl(x.provisional)+'</td><td>'+brl(x.discount)+'</td><td>'+brl(x.freight)+'</td></tr>');
- el('finDailyTable').innerHTML=table(['Data do pedido','Pedidos','Vendas confirmadas','Concluídas','Ainda aceitas','Descontos','Frete separado'],rows);
+ const rows=days.map(x=>'<tr><td>'+esc(x.date.split('-').reverse().join('/'))+'</td><td>'+n(x.orders)+'</td><td>'+brl(x.confirmed)+'</td><td>'+brl(x.storeSales)+'</td><td>'+brl(x.erpSales)+'</td><td>'+brl(x.completed)+'</td><td>'+brl(x.provisional)+'</td><td>'+brl(x.discount)+'</td><td>'+brl(x.freight)+'</td></tr>');
+ el('finDailyTable').innerHTML=table(['Data do pedido','Pedidos','Vendas confirmadas','Loja','ERP direto','Concluídas','Ainda aceitas','Descontos','Frete separado'],rows);
 }
 function dreRow(label,value,strong=false){
  return '<tr'+(strong?' class="fin-emphasis"':'')+'><td>'+esc(label)+'</td><td style="text-align:right">'+brl(value)+'</td></tr>';
@@ -92,7 +92,8 @@ function dreRow(label,value,strong=false){
 function renderDre(){
  const x=state.data.dre||{};
  const rows=[
-  dreRow('(+) Vendas concluídas do aplicativo',x.realizedSales),
+  dreRow('(+) Vendas concluídas da loja',x.realizedStore),
+  dreRow('(+) Vendas concluídas diretamente no ERP',x.realizedErp),
   dreRow('(+) Vendas lançadas manualmente',x.manualSales),
   dreRow('(=) Receita de vendas',x.revenue,true),
   dreRow('(-) Custo dos ingredientes/produção',-n(x.costProduction)),
@@ -110,7 +111,7 @@ function renderDre(){
   dreRow('ⓘ Investimentos/ativos adquiridos (fora das despesas)',x.assetsAcquired)
  ];
  // Margem percentual é apresentada separadamente para não aplicar formatação de moeda.
- rows[12]='<tr><td>Margem sobre receita (%)</td><td style="text-align:right">'+esc(n(x.marginPct).toFixed(2).replace('.',','))+'%</td></tr>';
+ rows[13]='<tr><td>Margem sobre receita (%)</td><td style="text-align:right">'+esc(n(x.marginPct).toFixed(2).replace('.',','))+'%</td></tr>';
  el('finDreTable').innerHTML=table(['Demonstração do mês '+x.month,'Valor'],rows);
  const h=state.data.history||[];
  el('finHistory').innerHTML=table(['Mês','Receita concluída + venda manual','Resultado DRE','Vendas aceitas (previsão)'],
@@ -201,11 +202,11 @@ function exportCsv(){
  const data=state.data;if(!data){show('Consulte os dados antes de exportar.',true);return;}
  const month=el('finMonth').value;
  if(state.tab==='daily')return asCSV([
- ['Data','Pedidos','Total confirmado','Concluído','Em aberto','Descontos','Frete'],
- ...(data.days||[]).map(x=>[x.date,x.orders,x.confirmed,x.completed,x.provisional,x.discount,x.freight])
+ ['Data','Pedidos','Total confirmado','Vendas da loja','Vendas diretas ERP','Concluído','Em aberto','Descontos','Frete'],
+ ...(data.days||[]).map(x=>[x.date,x.orders,x.confirmed,x.storeSales,x.erpSales,x.completed,x.provisional,x.discount,x.freight])
  ],'caseirinho-vendas-diarias-'+month+'.csv');
  if(state.tab==='dre'){const x=data.dre;return asCSV([
- ['Indicador','Valor'],['Vendas concluídas',x.realizedSales],['Vendas manuais',x.manualSales],['Receita',x.revenue],
+ ['Indicador','Valor'],['Vendas concluídas da loja',x.realizedStore],['Vendas diretas do ERP',x.realizedErp],['Vendas manuais',x.manualSales],['Receita',x.revenue],
  ['Custo produção',x.costProduction],['Custo revenda',x.costResale],['Tributos',x.taxes],['Despesas fixas',x.fixed],
  ['Despesas variáveis',x.variable],['Depreciação estimada',x.depreciation],['Outras receitas',x.otherIncome],
  ['Resultado',x.operating],['Vendas aceitas ainda não concluídas',x.provisionalSales],['Investimento em ativos',x.assetsAcquired]
