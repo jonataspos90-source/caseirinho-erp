@@ -27,6 +27,7 @@
  <button type="button" data-view="contacts">👥 CRM e contatos</button>
  <button type="button" data-view="ranking">🏆 Ranking</button>
  <button type="button" data-view="orders">🛒 Pedidos</button>
+ <button type="button" data-view="operations">🩺 Central Operacional</button>
  <button type="button" data-view="products">🏷️ Produtos e preços</button>
  <button type="button" data-view="blackfriday">🖤 Black Friday</button>
  <button type="button" data-view="sazonais">🎄 Encomendas Sazonais</button>
@@ -60,7 +61,20 @@
  </section>
  <section id="ranking" class="section"><div class="section-head"><div><h2>🏆 Mais acessados</h2><p>Ranking dos últimos 7 dias, usando apenas visitas associadas a clientes identificados.</p></div></div><div id="rankingTable"></div></section>
  <section id="orders" class="section"><div class="section-head"><div><h2>🛒 Pedidos da loja</h2><button class="btn small" type="button" id="orderAlertToggle">🔔 Ativar alerta sonoro</button><p>Histórico recente de pedidos feitos no aplicativo e situação da integração com o ERP.</p></div></div><div class="toolbar"><input type="search" id="orderSearch" placeholder="Buscar pedido, nome ou telefone..."><select id="orderFilter"><option value="all">Todos</option><option value="PENDENTE">Integração pendente</option><option value="IMPORTANDO">Importando</option><option value="READY">📦 Aguardando entrega / retirada</option><option value="CASHBACK_PENDING">💚 Cashback a decidir</option><option value="CASHBACK_GRANTED">✅ Cashback liberado</option><option value="COMPLETED">✅ Pedidos concluídos</option></select><button id="refreshFulfillment" type="button" class="btn">↻ Atualizar entregas</button></div><div class="grid stats" id="orderFulfillmentKpis"></div><div class="notice">Para finalizar um pedido, toque em <b>✅ Entrega / Cashback</b>. Selecione aprovar ou não liberar o cashback, confirme a entrega e a conferência do pagamento. O status será atualizado no e-commerce e no ERP; a ação não cria recebimento financeiro.</div><div id="ordersTable"></div></section>
- <section id="menu" class="section"><div class="section-head"><div><h2>🍝 Cardápio escrito</h2><p>Preços publicados no Neon. Selecione uma categoria ou envie o resumo com o link do aplicativo.</p></div></div>
+ <section id="operations" class="section">
+ <div class="section-head"><div><h2>🩺 Central Operacional</h2>
+ <p>Auditoria de pedidos pendentes, sincronização do catálogo e notificações. Dados diretos do ERP e da API, sem alterar pedidos.</p></div>
+ <button id="opsRefresh" type="button" class="btn primary">↻ Auditar agora</button></div>
+ <div id="opsFeedback" class="notice">Abra esta tela para consultar os indicadores.</div>
+ <div class="grid stats" id="opsStats"></div>
+ <article class="card"><h2>📦 Pedidos que merecem conferência</h2>
+ <p>São registros com integração pendente ou em andamento. Confira se foram testes, pagamentos pendentes ou vendas reais antes de agir.</p>
+ <div id="opsOrderList"></div></article>
+ <article class="card" style="margin-top:15px"><h2>🛍️ Publicação e notificações</h2>
+ <div id="opsCatalogAlerts"></div>
+ <p class="notice">A auditoria não altera preços, não confirma pagamentos e não reprocessa pedidos. Para corrigir, use os módulos responsáveis.</p>
+ </article></section>
+<section id="menu" class="section"><div class="section-head"><div><h2>🍝 Cardápio escrito</h2><p>Preços publicados no Neon. Selecione uma categoria ou envie o resumo com o link do aplicativo.</p></div></div>
   <div class="toolbar"><select class="menu-select" id="menuCategory"><option value="all">Todas as categorias</option></select><button class="btn" id="copyMenu">📋 Copiar cardápio</button><button class="btn whatsapp" id="menuShare">💬 Preparar envio</button></div>
   <div id="priceWarnings"></div><div class="menu-grid"><article class="card"><h2>Produtos e valores</h2><div id="menuItems"></div></article><article class="card"><h2>Mensagem pronta</h2><div id="menuText" class="menu-list"></div><p><small>Ao escolher uma categoria, o texto é atualizado. Para cardápios longos, a mensagem é resumida e inclui o endereço da loja.</small></p></article></div>
  </section>
@@ -227,6 +241,7 @@
  <button type="button" data-view="dashboard">📊<small>Início</small></button>
  <button type="button" data-view="contacts">👥<small>Clientes</small></button>
  <button type="button" data-view="orders">🛒<small>Pedidos</small></button>
+ <button type="button" data-view="operations">🩺<small>Auditoria</small></button>
  <button type="button" data-view="products">🏷️<small>Preços</small></button>
  <button type="button" data-view="blackfriday">🖤<small>Black Friday</small></button>
  <button type="button" data-view="sazonais">🎄<small>Encomendas</small></button>
@@ -238,5 +253,5 @@
  </nav>
 <div id="toast" class="toast" role="status" hidden></div>
 <div id="modal" class="modal-bg" hidden><div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><h2 id="modalTitle">Mensagem para WhatsApp</h2><div id="modalContent"></div><div class="toolbar" style="justify-content:flex-end;margin-top:20px"><button class="btn" id="modalClose">Fechar</button></div></div></div>
-<script src="./app.js?v=20" defer></script>
+<script src="./app.js?v=21" defer></script>
 </body></html>
