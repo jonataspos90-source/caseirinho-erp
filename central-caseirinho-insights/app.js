@@ -661,6 +661,9 @@ function isMercadoPagoOrder(order){
  return /MERCADO\s*PAGO|MERCADOPAGO/i.test(s(order?.payment))||!!order?.paymentStatus;
 }
 function paymentBadge(order){
+ if(order?.manualPayment?.status==='CONFIRMADO')
+  return '<span class="badge good">✅ RECEBIDO MANUAL '+brl(order.manualPayment.valor)+'</span><br><small>'+esc(order.manualPayment.nome||order.payment)+' • confirmado por '+esc(order.manualPayment.conferidoPor||'admin')+'</small>'+
+   (order.paymentStatus?'<br><small>MP original: '+esc(order.paymentStatus)+' (não é confirmação MP)</small>':'');
  if(!isMercadoPagoOrder(order))return '<small>💵 '+esc(order?.payment||'Forma de pagamento não informada')+' • conferência manual</small>';
  const status=s(order.paymentStatus).toUpperCase(),label=order.verifiedPaymentMethod||'Mercado Pago (método a conferir)';
  if(status==='APROVADO')return '<span class="badge good">✅ PAGO MP '+brl(order.providerPaidAmount)+'</span><br><small>'+esc(label)+'</small>';
@@ -686,13 +689,69 @@ async function verifyOrderPayment(code){
  }catch(err){toast('Conferência Mercado Pago não concluída: '+s(err.message)+'. Não marque como pago sem confirmação.',true);}
  finally{paymentChecks.delete(code);buttons.forEach(b=>{b.disabled=false;b.textContent='🔄 Conferir MP';});}
 }
+
+const manualPaymentPending=new Set();
+const manualPaymentMethods=[
+ ['PIX_MANUAL','Pix recebido diretamente na conta'],
+ ['DINHEIRO','Dinheiro entregue'],
+ ['CREDITO_PRESENCIAL','Cartão de crédito na maquininha'],
+ ['DEBITO_PRESENCIAL','Cartão de débito na maquininha'],
+ ['TRANSFERENCIA','Transferência bancária confirmada']
+];
+function changePaymentMethod(code){
+ const o=orderLookup(code),f=fulfillStatus(code);
+ if(!o)return toast('Pedido não encontrado. Atualize os dados.',true);
+ if(f?.completed||['ENTREGUE','RETIRADO','FINALIZADO','CONCLUIDO','CANCELADO','REJEITADO'].includes(s(o.status).toUpperCase()))
+  return toast('Não é permitido mudar pagamentos de pedidos encerrados nesta tela.',true);
+ if(o.manualPayment?.status==='CONFIRMADO')return toast('Este pedido já tem recebimento manual confirmado. Não registre em duplicidade.',true);
+ if(s(o.paymentStatus).toUpperCase()==='APROVADO')return toast('O Mercado Pago já confirmou esse pagamento. Não registre outra quitação.',true);
+ const methods=manualPaymentMethods.map(([key,label])=>'<option value="'+key+'">'+esc(label)+'</option>').join('');
+ modal('💳 Alterar pagamento · pedido #'+code,
+ '<p><b>'+esc(o.name||'Cliente')+'</b> • Total do pedido: <b>'+brl(o.total)+'</b></p>'+
+ '<div class="notice warn"><b>Atenção:</b> a tentativa original do Mercado Pago permanecerá como <b>'+esc(o.paymentStatus||'sem confirmação')+'</b>. Confirme aqui somente se o valor foi realmente recebido por outro meio. Esta operação não marca o Mercado Pago como pago.</div>'+
+ '<div class="form-grid"><label>Nova forma de pagamento<select id="manualPaymentMethod" required>'+methods+'</select></label>'+
+ '<label>Valor recebido integralmente (R$)<input id="manualPaymentAmount" inputmode="decimal" type="number" step="0.01" min="0.01" value="'+Number(o.total).toFixed(2)+'" required></label>'+
+ '<label>Identificação do comprovante (opcional)<input id="manualPaymentReference" maxlength="120" placeholder="ID Pix, comprovante ou recibo"></label>'+
+ '<label class="wide">Motivo da alteração (obrigatório)<textarea id="manualPaymentReason" rows="3" maxlength="400" minlength="12" placeholder="Ex.: Cliente transferiu via Pix direto para a conta do Caseirinho"></textarea></label></div>'+
+ '<label class="quick-check"><input type="checkbox" id="manualPaymentReceived"> ✅ Confirmei o recebimento real de '+brl(o.total)+' na conta, maquininha ou caixa</label>'+
+ '<p class="notice">Salvar registra quem recebeu, quando, quanto e como. <b>Não conclui a entrega nem gera outra receita.</b> Depois, clique em <b>Aceitar pedido</b> para prosseguir.</p>'+
+ '<div id="manualPaymentAlert" class="notice error" hidden role="alert"></div>'+
+ '<button type="button" class="btn primary" id="manualPaymentSubmit" data-action="saveManualPayment" data-order="'+esc(code)+'">✅ Confirmar recebimento e alterar pagamento</button>');
+}
+async function saveManualPayment(code){
+ if(manualPaymentPending.has(code))return;
+ const o=orderLookup(code);
+ if(!o)return toast('Atualize a lista para confirmar o pagamento.',true);
+ const method=E('manualPaymentMethod')?.value, amount=n(E('manualPaymentAmount')?.value),
+  justification=s(E('manualPaymentReason')?.value).trim(),reference=s(E('manualPaymentReference')?.value).trim(),
+  confirmed=E('manualPaymentReceived')?.checked===true;
+ const notice=msg=>{const x=E('manualPaymentAlert');if(x){x.textContent=msg;x.hidden=false;}toast(msg,true);};
+ if(!confirmed)return notice('Confirme que o dinheiro entrou na conta, maquininha ou caixa.');
+ if(Math.round(amount*100)!==Math.round(n(o.total)*100)||amount<=0)return notice('O valor recebido deve ser igual ao total do pedido. Pagamentos parciais precisam de conciliação específica.');
+ if(justification.length<12||justification.length>400)return notice('Informe o motivo da alteração com 12 a 400 caracteres.');
+ if(!window.confirm('CONFIRMAR RECEBIMENTO REAL de '+brl(amount)+' por '+s(E('manualPaymentMethod')?.selectedOptions?.[0]?.text||method)+' no pedido #'+code+'? Esta operação ficará auditada.'))return;
+ manualPaymentPending.add(code);
+ const button=E('manualPaymentSubmit');if(button){button.disabled=true;button.textContent='⏳ Registrando recebimento...';}
+ try{
+  const out=await api('orders/'+encodeURIComponent(code)+'/manual-payment',{method:'POST',body:{method,amount,justification,reference,confirmReceived:true}});
+  hideModal();
+  try{await loadAll();nav('orders');}catch(error){toast('✅ Recebimento registrado, mas a lista não atualizou. Clique em Atualizar.',true);return;}
+  toast('✅ '+brl(out.amount)+' recebido por '+out.nome+'. '+(out.requiresAcceptance?'Agora clique em Aceitar pedido.':'Pagamento atualizado no pedido e ERP.'));
+ }catch(error){
+  if(error.networkError){try{await loadAll();const check=orderLookup(code);if(check?.manualPayment?.status==='CONFIRMADO'){
+   hideModal();return toast('✅ Recebimento manual registrado; estado confirmado após reconexão.');
+  }}catch(_){}}
+  notice('Recebimento não confirmado: '+error.message+'. Confira antes de repetir.');
+ }finally{manualPaymentPending.delete(code);if(button){button.disabled=false;button.textContent='✅ Confirmar recebimento e alterar pagamento';}}
+}
 function orderButton(order){
  const rule=fulfillStatus(order.code);
  const status=s(rule?.status||order.status).toUpperCase();
  const code=esc(order.code);
  const first='<button class="btn small" type="button" data-action="viewOrder" data-order="'+code+'">📦 Ver itens</button> '+
  '<button class="btn small gold" type="button" data-action="pdfOrder" data-order="'+code+'">📄 PDF</button> '+
- (isMercadoPagoOrder(order)?'<button class="btn small" type="button" data-action="verifyOrderPayment" data-order="'+code+'">🔄 Conferir MP</button> ':'');
+ (isMercadoPagoOrder(order)?'<button class="btn small" type="button" data-action="verifyOrderPayment" data-order="'+code+'">🔄 Conferir MP</button> ':'')+
+ (!order.manualPayment&&order.paymentStatus!=='APROVADO'?'<button class="btn small" type="button" data-action="changePaymentMethod" data-order="'+code+'">💳 Alterar pagamento</button> ':'');
  if(rule?.completed||['ENTREGUE','RETIRADO','CONCLUIDO','FINALIZADO'].includes(status))return first+'<span class="badge good">✅ Concluído</span>';
  if(['NOVO','PENDENTE','AGUARDANDO_ANALISE','AGUARDANDO_COTACAO_FRETE'].includes(status))
   return first+'<button class="btn small primary" type="button" data-action="quickAcceptOrder" data-order="'+code+'">✅ Aceitar pedido</button>';
@@ -2048,6 +2107,8 @@ function bind(){
  if(type==='customerOrders')return showCustomerOrders(phone);
  if(type==='viewOrder')return showOrder(b.dataset.order);
  if(type==='quickAcceptOrder')return quickAcceptOrder(b.dataset.order);
+ if(type==='changePaymentMethod')return changePaymentMethod(b.dataset.order);
+ if(type==='saveManualPayment')return saveManualPayment(b.dataset.order);
  if(type==='verifyOrderPayment')return verifyOrderPayment(b.dataset.order);
  if(type==='quickFinishOrder')return quickFinishOrder(b.dataset.order);
  if(type==='quickCashbackOrder')return quickCashbackOrder(b.dataset.order);
