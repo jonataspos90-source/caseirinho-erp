@@ -2,7 +2,7 @@
 'use strict';
 const STORE='https://jonataspos90-source.github.io/caseirinho-loja/';
 const DEFAULT_API='https://john-cloud-api-production.up.railway.app';
-const st={api:DEFAULT_API,token:'',summary:null,contacts:[],orders:[],catalog:[],categories:[],drafts:[],requests:[],sales:null,salesLoaded:false,merch:{grades:[],packs:[]},merchTab:'grades',gradeSelected:new Map(),packSelected:new Set(),merchLoaded:false,fulfillment:new Map(),fichasData:null,cashbacksData:null,couponsData:null,couponReport:null,couponTab:'config',bfData:null,bfSelected:new Map(),seasonData:null,seasonOrders:null,seasonProductRules:new Map(),seasonAdminTab:'campaigns',orderAlertSeen:null,orderAlertEnabled:false,view:'dashboard',syncing:false,sound:false,known:new Set(),knownReady:false,lastUpdated:null};
+const st={api:DEFAULT_API,token:'',summary:null,contacts:[],orders:[],catalog:[],categories:[],drafts:[],requests:[],opsData:null,sales:null,salesLoaded:false,merch:{grades:[],packs:[]},merchTab:'grades',gradeSelected:new Map(),packSelected:new Set(),merchLoaded:false,fulfillment:new Map(),fichasData:null,cashbacksData:null,couponsData:null,couponReport:null,couponTab:'config',bfData:null,bfSelected:new Map(),seasonData:null,seasonOrders:null,seasonProductRules:new Map(),seasonAdminTab:'campaigns',orderAlertSeen:null,orderAlertEnabled:false,view:'dashboard',syncing:false,sound:false,known:new Set(),knownReady:false,lastUpdated:null};
 const E=id=>document.getElementById(id);
 const s=x=>String(x==null?'':x), n=x=>Number(x)||0;
 const esc=x=>s(x).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
@@ -68,7 +68,7 @@ async function loginWithERP(e){
   try{localStorage.setItem(ERP_LAST_USERNAME_KEY,user);}catch(_){}
   E('loginScreen').hidden=true;
   await loadAll();
-  {const params=new URLSearchParams(location.search),requested=params.get('view');if(['blackfriday','sazonais','products'].includes(requested))nav(requested);if(requested==='products'&&params.get('product')){const id=params.get('product');if(st.catalog.some(x=>s(x.id)===s(id)))editProduct(id);}}
+  {const params=new URLSearchParams(location.search),requested=params.get('view');if(['blackfriday','sazonais','products','operations'].includes(requested))nav(requested);if(requested==='products'&&params.get('product')){const id=params.get('product');if(st.catalog.some(x=>s(x.id)===s(id)))editProduct(id);}}
  }catch(error){
   st.token='';st.sessionExpiry=0;
   try{sessionStorage.removeItem(ERP_SESSION_KEY);}catch(_){}
@@ -124,7 +124,7 @@ function nav(tab){
  st.view=tab;
  document.querySelectorAll('.section').forEach(x=>x.classList.toggle('active',x.id===tab));
  document.querySelectorAll('[data-view]').forEach(x=>x.classList.toggle('active',x.dataset.view===tab));
- const labels={dashboard:'Visão geral',contacts:'CRM e contatos',ranking:'Ranking de acessos',orders:'Pedidos',menu:'Cardápio escrito',products:'Produtos e preços',blackfriday:'Black Friday',sazonais:'Encomendas Sazonais',reports:'Relatórios e PDF',sales:'Vendas e Curva ABC',merch:'Grades e Packs',fichas:'Fichas Técnicas',cashbacks:'Cashback Clientes',coupons:'Cupons e Utilizações',requests:'Solicitações de cardápio',settings:'Configurações'};
+ const labels={dashboard:'Visão geral',contacts:'CRM e contatos',ranking:'Ranking de acessos',orders:'Pedidos',operations:'Central Operacional',menu:'Cardápio escrito',products:'Produtos e preços',blackfriday:'Black Friday',sazonais:'Encomendas Sazonais',reports:'Relatórios e PDF',sales:'Vendas e Curva ABC',merch:'Grades e Packs',fichas:'Fichas Técnicas',cashbacks:'Cashback Clientes',coupons:'Cupons e Utilizações',requests:'Solicitações de cardápio',settings:'Configurações'};
  E('pageTitle').textContent=labels[tab]||'Central de Insights';
  window.scrollTo({top:0,behavior:'smooth'});
  render();
@@ -135,6 +135,7 @@ function nav(tab){
  if(tab==='coupons'&&!st.couponsData)loadCoupons();
  if(tab==='blackfriday'&&!st.bfData)loadBlackFriday();
  if(tab==='sazonais'&&!st.seasonData)loadSeasonAdmin();
+ if(tab==='operations')loadOpsAudit();
 }
 function badge(x){const v=s(x).toUpperCase();return '<span class="badge '+(v.includes('PENDENTE')?'warn':v.includes('IMPORTANDO')?'light':v.includes('NOVO')?'light':v.includes('IMPORTADO')||v.includes('CONCLU')||v.includes('APROV')?'good':'')+'">'+esc(x||'—')+'</span>';}
 function cellEmpty(title){return '<div class="empty">'+esc(title)+'</div>';}
@@ -273,12 +274,45 @@ function renderRequests(){
  const count=st.requests.filter(x=>!x.handled).length;
  E('requestCount').hidden=!count;E('requestCount').textContent=count;
 }
+
+async function loadOpsAudit(){
+ if(!st.token)return;
+ const info=E('opsFeedback'),button=E('opsRefresh');button.disabled=true;info.textContent='Consultando API…';
+ try{
+  st.opsData=await api('operations-audit');renderOpsAudit();
+  info.className='notice success';info.textContent='Atualizado em '+dt(st.opsData.generatedAt)+'. Pedidos marcados como teste são desconsiderados.';
+ }catch(err){info.className='notice error';info.textContent='Falha ao carregar auditoria: '+s(err.message);}
+ finally{button.disabled=false;}
+}
+function renderOpsAudit(){
+ const d=st.opsData;if(!d)return;
+ const o=d.orders||{},c=d.catalog||{},a=d.alerts||{};
+ E('opsStats').innerHTML=[
+  statsCard('🛒','Pedidos reais',n(o.total),'Sem pedidos de teste'),
+  statsCard('⏳','Integração pendente',n(o.pending),'Aguardando conferência'),
+  statsCard('🕒','Pendentes +10 min',n(o.pending_older),'Não indica venda perdida'),
+  statsCard('🔁','Importando',n(o.importing),'Antigos: '+n(o.importing_older)),
+  statsCard('🍝','Itens do catálogo',n(c.total),'Não publicados: '+n(c.unpublished)),
+  statsCard('🚫','Indisponíveis',n(c.unavailable),'Inativos: '+n(c.inactive)),
+  statsCard('🔔','Avisos pendentes',n(a.pending),'Múltiplas tentativas: '+n(a.retried)),
+  statsCard('📱','Inscritos em push',n(a.pushDevices),'Dependente da configuração de envio')
+ ].join('');
+ const rows=(d.pendingOrders||[]).filter(x=>x.risk!=='IGNORE').map(x=>
+  '<tr><td>'+esc(x.code)+'</td><td>'+badge(x.status)+'</td><td>'+badge(x.integrationStatus)+'</td><td>'+esc(dt(x.createdAt))+'</td><td>'+esc(x.ageMinutes)+' min</td><td>'+esc(x.risk==='CONFERIR_IMPORTACAO'?'Conferir importação':x.risk==='CONFERIR_PEDIDO'?'Conferir pedido':'Recente')+'</td></tr>');
+ E('opsOrderList').innerHTML=table(['Pedido','Situação','Integração','Data','Idade','Diagnóstico'],rows);
+ E('opsCatalogAlerts').innerHTML='<div class="grid stats">'+[
+  statsCard('🔗','Itens sem ERP',n(c.withoutErpRecord),'Conferir cadastro'),
+  statsCard('🕒','Última alteração',dt(c.lastChangedAt),'Catálogo publicado'),
+  statsCard('📨','Fila de notificações',n(a.pending),'Não aciona mensagens manualmente')
+ ].join('')+'</div>';
+}
 function render(){
  if(!st.token)return;
  if(st.view==='dashboard')renderOverview();
  if(st.view==='contacts')renderContacts();
  if(st.view==='ranking')renderRanking();
  if(st.view==='orders')renderOrders();
+ if(st.view==='operations')renderOpsAudit();
  if(st.view==='menu')renderMenu();
  if(st.view==='products')renderProducts();
  if(st.view==='sales')renderSales();
@@ -1738,8 +1772,9 @@ function bind(){
  bindCouponModule();
  bindMoreFeatures();
  bindMerch();
+ E('opsRefresh')?.addEventListener('click',loadOpsAudit);
  document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>nav(b.dataset.view)));
- E('refreshBtn').addEventListener('click',async()=>{await loadAll();if(st.view==='sales')await loadSales();});
+ E('refreshBtn').addEventListener('click',async()=>{await loadAll();if(st.view==='sales')await loadSales();if(st.view==='operations')await loadOpsAudit();});
  document.addEventListener('click',e=>{if(e.target?.id==='verifyProductTerms')verifyProductTerms();});
  E('logoutBtn').addEventListener('click',logout);
  E('clearSession').addEventListener('click',logout);
@@ -1807,7 +1842,7 @@ function bind(){
 }
 async function init(){
  tokenSetup();bind();
- if(st.token){await loadAll();{const params=new URLSearchParams(location.search),requested=params.get('view');if(['blackfriday','sazonais','products'].includes(requested))nav(requested);if(requested==='products'&&params.get('product')){const id=params.get('product');if(st.catalog.some(x=>s(x.id)===s(id)))editProduct(id);}}}else E('loginScreen').hidden=false;
+ if(st.token){await loadAll();{const params=new URLSearchParams(location.search),requested=params.get('view');if(['blackfriday','sazonais','products','operations'].includes(requested))nav(requested);if(requested==='products'&&params.get('product')){const id=params.get('product');if(st.catalog.some(x=>s(x.id)===s(id)))editProduct(id);}}}else E('loginScreen').hidden=false;
  setInterval(loadRequests,30000);
  setInterval(loadAll,120000);
  await pollNewOrders();
