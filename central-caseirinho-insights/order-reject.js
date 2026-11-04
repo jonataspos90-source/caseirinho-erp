@@ -50,8 +50,9 @@
    const res=await fetch(API+'/orders/'+encodeURIComponent(code)+'/reject',{method:'POST',headers:{'Authorization':'Bearer '+auth,'Content-Type':'application/json','Cache-Control':'no-store'},body:JSON.stringify({reason,confirmReject:true}),cache:'no-store',credentials:'omit'});
    const data=await res.json().catch(()=>({}));
    if(!res.ok||!data.ok)throw Error(data.error||'Servidor não confirmou a recusa.');
-   $('#opsRejectFeedback').textContent='✅ Pedido recusado e excluído do DRE. Atualizando lista...';
-   window.location.reload();
+   // Atualizar somente os dados dos pedidos, preservando a sessão no celular.
+   dialog.close();
+   window.dispatchEvent(new CustomEvent('caseirinho:order-rejected',{detail:{code}}));
   }catch(e){$('#opsRejectFeedback').textContent='Não foi possível recusar: '+e.message;}
   finally{b.disabled=false;b.textContent='🚫 Confirmar recusa';}
  });
