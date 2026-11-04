@@ -42,7 +42,7 @@ test('atualização do PWA carrega nova regra e script válido',()=>{
  const html=get('index.html'),sw=get('sw.js');
  const version=html.match(/app\.js\?v=(\d+)/)?.[1];
  assert.ok(Number(version)>=26);
- assert.ok(sw.includes('caseirinho-insights-app-shell-v31'));
+ assert.ok(sw.includes('caseirinho-insights-app-shell-v32'));
  assert.ok(sw.includes('app.js?v='+version));
  assert.doesNotThrow(()=>new vm.Script(get('app.js')));
 });
