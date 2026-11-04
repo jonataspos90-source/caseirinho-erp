@@ -24,6 +24,6 @@ test('PWA força novo JS e invalida cache antigo',()=>{
  const html=p('index.html'),sw=p('sw.js');
  const version=html.match(/app\.js\?v=(\d+)/)?.[1];
  assert.ok(Number(version)>=24);
- assert.ok(sw.includes('caseirinho-insights-app-shell-v31'));
+ assert.ok(sw.includes('caseirinho-insights-app-shell-v32'));
  assert.ok(sw.includes('app.js?v='+version));
 });
