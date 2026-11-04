@@ -68,7 +68,7 @@ async function loginWithERP(e){
   try{localStorage.setItem(ERP_LAST_USERNAME_KEY,user);}catch(_){}
   E('loginScreen').hidden=true;
   await loadAll();
-  {const params=new URLSearchParams(location.search),requested=params.get('view');if(['blackfriday','sazonais','products','operations','financeiro'].includes(requested))nav(requested);if(requested==='products'&&params.get('product')){const id=params.get('product');if(st.catalog.some(x=>s(x.id)===s(id)))editProduct(id);}}
+  {const params=new URLSearchParams(location.search),requested=params.get('view');if(['orders','blackfriday','sazonais','products','operations','financeiro'].includes(requested))nav(requested);if(requested==='products'&&params.get('product')){const id=params.get('product');if(st.catalog.some(x=>s(x.id)===s(id)))editProduct(id);}}
  }catch(error){
   st.token='';st.sessionExpiry=0;
   try{sessionStorage.removeItem(ERP_SESSION_KEY);}catch(_){}
@@ -219,7 +219,7 @@ function renderOrderFulfillmentKpis(){
 function renderOrders(){
  renderOrderFulfillmentKpis();
  const q=s(E('orderSearch').value).toLowerCase().trim(),f=E('orderFilter').value;
- const rows=st.orders.filter(x=>{const v=st.fulfillment.get(s(x.code));const match=(s(x.code)+' '+s(x.name)+' '+s(x.phone)+' '+(x.items||[]).map(i=>i.name).join(' ')).toLowerCase().includes(q);const status=s(v?.status||x.status).toUpperCase();const integrated=v?.integration==='IMPORTADO'&&v?.erpLinked;const filter=f==='all'||x.integration_status===f||f==='READY'&&integrated&&!v?.completed&&['ACEITO','ABERTO','PRONTO'].includes(status)||f==='CASHBACK_PENDING'&&integrated&&!v?.completed&&v?.approval==='PENDENTE'||f==='CASHBACK_GRANTED'&&n(v?.credit)>0||f==='COMPLETED'&&v?.completed;return match&&filter;});
+ const rows=st.orders.filter(x=>{const v=st.fulfillment.get(s(x.code));const match=(s(x.code)+' '+s(x.name)+' '+s(x.phone)+' '+(x.items||[]).map(i=>i.name).join(' ')).toLowerCase().includes(q);const status=s(v?.status||x.status).toUpperCase();const integrated=v?.integration==='IMPORTADO'&&v?.erpLinked;const filter=f==='all'||x.integration_status===f||f==='NEW'&&['NOVO','PENDENTE','AGUARDANDO_ANALISE','AGUARDANDO_COTACAO_FRETE'].includes(status)||f==='READY'&&!v?.completed&&['ACEITO','ABERTO','PRONTO'].includes(status)||f==='CASHBACK_PENDING'&&!v?.completed&&v?.approval==='PENDENTE'||f==='CASHBACK_GRANTED'&&n(v?.credit)>0||f==='COMPLETED'&&v?.completed;return match&&filter;});
  if(window.matchMedia('(max-width:790px)').matches){
   E('ordersTable').innerHTML=rows.length?'<div class="mobile-list">'+rows.map(x=>'<article class="mobile-record"><div class="mobile-record-head"><strong>Pedido #'+esc(x.code)+'</strong>'+badge(x.status)+'</div><p><b>'+esc(x.name||'Cliente')+'</b> · '+dt(x.created_at)+'</p><p><b>'+brl(x.total)+'</b> · '+(x.items||[]).length+' item(ns)</p><p>'+badge(x.integration_status)+'</p><div class="record-actions">'+orderButton(x)+'</div></article>').join('')+'</div>':cellEmpty('Nenhum pedido encontrado.');
  }else{
@@ -658,9 +658,17 @@ function orderDetailsHtml(order){
  '<br><b>Total do pedido:</b> '+brl(order.total)+'</p>';
 }
 function orderButton(order){
- return '<button class="btn small" type="button" data-action="viewOrder" data-order="'+esc(order.code)+'">📦 Ver itens</button> '+
- '<button class="btn small gold" type="button" data-action="pdfOrder" data-order="'+esc(order.code)+'">📄 PDF</button> '+
- '<button class="btn small primary" type="button" data-action="fulfillOrder" data-order="'+esc(order.code)+'">✅ Entrega / Cashback</button>';
+ const rule=fulfillStatus(order.code);
+ const status=s(rule?.status||order.status).toUpperCase();
+ const code=esc(order.code);
+ const first='<button class="btn small" type="button" data-action="viewOrder" data-order="'+code+'">📦 Ver itens</button> '+
+ '<button class="btn small gold" type="button" data-action="pdfOrder" data-order="'+code+'">📄 PDF</button> ';
+ if(rule?.completed||['ENTREGUE','RETIRADO','CONCLUIDO','FINALIZADO'].includes(status))return first+'<span class="badge good">✅ Concluído</span>';
+ if(['NOVO','PENDENTE','AGUARDANDO_ANALISE','AGUARDANDO_COTACAO_FRETE'].includes(status))
+  return first+'<button class="btn small primary" type="button" data-action="quickAcceptOrder" data-order="'+code+'">✅ Aceitar pedido</button>';
+ if(['ACEITO','ABERTO','PRONTO'].includes(status))
+  return first+'<button class="btn small primary" type="button" data-action="quickFinishOrder" data-order="'+code+'">✅ Finalizar pedido</button>';
+ return first+'<span class="badge warn">'+esc(status||'Conferir')+'</span>';
 }
 function showOrder(code){
  const x=st.orders.find(v=>s(v.code)===s(code))||(window.__customerOrders||[]).find(v=>s(v.code)===s(code));
@@ -1071,6 +1079,63 @@ function fulfillStatus(code){
 function orderLookup(code){
  return st.orders.find(x=>s(x.code)===s(code))||(window.__customerOrders||[]).find(x=>s(x.code)===s(code));
 }
+// Aprovação pela própria lista: novo -> aceitar; aceito -> concluir com conferência curta.
+const quickAcceptPending=new Set();
+async function quickAcceptOrder(code){
+ if(quickAcceptPending.has(code))return;
+ const order=orderLookup(code);
+ if(!order)return toast('Pedido não localizado. Atualize a lista.',true);
+ const current=s(fulfillStatus(code)?.status||order.status).toUpperCase();
+ if(!['NOVO','PENDENTE','AGUARDANDO_ANALISE','AGUARDANDO_COTACAO_FRETE'].includes(current))
+  return toast('Este pedido não está aguardando aceite. Atualize a lista.',true);
+ const detail=(order.items||[]).slice(0,7).map(x=>n(x.quantity)+'× '+s(x.name)).join(', ');
+ if(!window.confirm('ACEITAR pedido #'+code+' de '+s(order.name||'Cliente')+' por '+brl(order.total)+'?\n\n'+detail+'\n\nO aceite não marca a entrega nem reconhece pagamento.'))return;
+ quickAcceptPending.add(code);
+ const buttons=[...document.querySelectorAll('[data-action="quickAcceptOrder"]')].filter(b=>b.dataset.order===code);
+ buttons.forEach(b=>{b.disabled=true;b.textContent='⏳ Aceitando...';});
+ try{
+  const out=await api('orders/'+encodeURIComponent(code)+'/accept',{method:'POST',body:{}});
+  toast('✅ Pedido #'+code+' aceito.'+(out.erpSyncPending?' Integração ERP em andamento.':' ERP vinculado.')+(out.freightPending?' Confira o frete.':''));
+  await loadAll();nav('orders');
+ }catch(error){
+  if(error.networkError){
+   try{await loadAll();const found=orderLookup(code);if(['ACEITO','ABERTO','PRONTO'].includes(s(found?.status).toUpperCase()))return toast('✅ Pedido aceito. Estado confirmado na atualização.');}catch(_){}
+  }
+  toast('Aceite não confirmado: '+error.message,true);
+ }finally{quickAcceptPending.delete(code);buttons.forEach(b=>{b.disabled=false;b.textContent='✅ Aceitar pedido';});}
+}
+function quickFinishOrder(code){
+ const order=orderLookup(code),f=fulfillStatus(code);
+ if(!order)return toast('Pedido não encontrado. Atualize os dados.',true);
+ if(!f)return manageOrderFulfillment(code);
+ if(f.completed)return toast('Este pedido já foi concluído.',true);
+ if(!['ACEITO','ABERTO','PRONTO'].includes(s(f.status).toUpperCase()))
+  return toast('O pedido ainda não foi aceito. Clique em Aceitar pedido primeiro.',true);
+ const pickup=s(f.modalidade||order.modality).toUpperCase()==='RETIRADA';
+ const decision=f.eligible?'<label class="quick-check"><input type="checkbox" id="quickCashback"> 💚 Liberar '+brl(f.estimate)+' de cashback (opcional, após a conclusão)</label>':'';
+ const details=(order.items||[]).map(x=>'<li>'+esc(n(x.quantity)+'× '+s(x.name))+'</li>').join('');
+ modal('✅ Finalizar pedido #'+code,
+ '<p><b>'+esc(order.name||'Cliente')+'</b> • '+brl(order.total)+' • '+(pickup?'Retirada':'Entrega')+'</p>'+
+ '<details><summary>Ver itens do pedido</summary><ul>'+details+'</ul></details>'+
+ '<p class="notice">Confirme abaixo somente depois que o pedido tiver sido '+(pickup?'retirado':'entregue')+' e o pagamento estiver conferido. A receita entrará nas vendas e no DRE sem lançamento manual.</p>'+
+ '<div class="fulfillment-options quick-finalize">'+
+ '<label class="quick-check"><input type="checkbox" id="fulfillmentDelivered"> ✅ '+(pickup?'Cliente retirou o pedido':'Cliente recebeu o pedido')+'</label>'+
+ '<label class="quick-check"><input type="checkbox" id="fulfillmentPayment"> ✅ Pagamento recebido e conferido</label>'+
+ decision+'</div>'+
+ (!f.erpLinked||f.integration!=='IMPORTADO'?'<p class="notice warn">Integração ERP pendente. Isso não impede a conclusão; a conciliação ocorre depois.</p>':'')+
+ '<button class="btn primary" type="button" data-action="quickConfirmOrder" data-order="'+esc(code)+'">✅ Confirmar '+(pickup?'retirada':'entrega')+' e registrar venda</button>');
+}
+function quickConfirmOrder(code){
+ const paid=E('fulfillmentPayment')?.checked===true,received=E('fulfillmentDelivered')?.checked===true;
+ if(!paid||!received)return toast('Confirme a entrega/retirada e o recebimento do pagamento.',true);
+ // Reaproveita a mesma finalização segura, incluindo conferência do pagamento pelo servidor.
+ const decision=E('quickCashback')?.checked?'APROVADO':'REJEITADO';
+ const form=E('modalContent');
+ if(!form)return;
+ const old=form.querySelector('input[name="fulfillmentCashback"]');if(old)old.remove();
+ const input=document.createElement('input');input.type='radio';input.name='fulfillmentCashback';input.value=decision;input.checked=true;input.hidden=true;form.appendChild(input);
+ return confirmOrderComplete(code);
+}
 async function manageOrderFulfillment(code){
  let x=orderLookup(code);
  if(!x)return toast('Pedido não encontrado na Central. Atualize primeiro.',true);
@@ -1117,18 +1182,22 @@ async function approveOrderCashback(code){
   await refreshFulfillment();manageOrderFulfillment(code);
  }catch(error){toast('Falha ao aprovar: '+error.message,true);}
 }
+const completionPending=new Set();
 async function confirmOrderComplete(code){
+ if(completionPending.has(code))return;
  const delivered=E('fulfillmentDelivered')?.checked===true,payment=E('fulfillmentPayment')?.checked===true;
  const decision=document.querySelector('input[name="fulfillmentCashback"]:checked')?.value||'';
  if(!decision)return toast('Escolha aprovar ou não liberar cashback antes de finalizar.',true);
  if(!delivered||!payment)return toast('Marque as duas confirmações obrigatórias: entrega e conferência do pagamento.',true);
  const x=orderLookup(code),rule=fulfillStatus(code);
  if(!window.confirm('FINALIZAR pedido '+code+' ('+brl(x?.total)+') como '+(s(rule?.modalidade).toUpperCase()==='RETIRADA'?'RETIRADO':'ENTREGUE')+'? Cashback: '+(decision==='APROVADO'?brl(rule?.estimate):'não liberar')+'. A venda será reconhecida no DRE; se a integração ERP estiver pendente, será conciliada depois.'))return;
+ completionPending.add(code);
  try{
   const out=await api('orders/'+encodeURIComponent(code)+'/complete',{method:'POST',body:{confirmDelivered:true,paymentChecked:true,cashbackDecision:decision}});
   hideModal();toast('✅ Pedido '+code+' '+out.status+' na loja. Venda no DRE: '+brl(out.receitaProdutos)+'. '+(out.erpSynced?'ERP atualizado.':'Integração ERP pendente.')+' Cashback: '+brl(out.credited));
   await loadAll();nav('orders');
  }catch(error){toast('Não foi possível concluir: '+error.message,true);}
+ finally{completionPending.delete(code);}
 }
 async function releaseOrderCashback(code){
  const rule=fulfillStatus(code);
@@ -1783,6 +1852,7 @@ function bind(){
  E('contactFilter').addEventListener('change',renderContacts);
  E('orderSearch').addEventListener('input',renderOrders);
  E('orderFilter').addEventListener('change',renderOrders);
+ E('orderQuickNewFilter').addEventListener('click',()=>{E('orderFilter').value='NEW';nav('orders');renderOrders();});
  E('refreshFulfillment').addEventListener('click',refreshFulfillment);
  E('menuCategory').addEventListener('change',renderMenu);
  E('csvContacts').addEventListener('click',csv);
@@ -1823,6 +1893,9 @@ function bind(){
  const type=b.dataset.action,phone=b.dataset.phone,id=b.dataset.id;
  if(type==='customerOrders')return showCustomerOrders(phone);
  if(type==='viewOrder')return showOrder(b.dataset.order);
+ if(type==='quickAcceptOrder')return quickAcceptOrder(b.dataset.order);
+ if(type==='quickFinishOrder')return quickFinishOrder(b.dataset.order);
+ if(type==='quickConfirmOrder')return quickConfirmOrder(b.dataset.order);
  if(type==='fulfillOrder')return manageOrderFulfillment(b.dataset.order);
  if(type==='approveOrderCashback')return approveOrderCashback(b.dataset.order);
  if(type==='releaseOrderCashback')return releaseOrderCashback(b.dataset.order);

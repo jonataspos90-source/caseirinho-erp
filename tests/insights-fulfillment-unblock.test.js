@@ -21,7 +21,9 @@ test('status e receita do DRE são apresentados após conclusão',()=>{
  assert.match(s,/out\.erpSynced/);
 });
 test('PWA força novo JS e invalida cache antigo',()=>{
- assert.match(p('index.html'),/app\.js\?v=24/);
- assert.match(p('sw.js'),/caseirinho-insights-app-shell-v24/);
- assert.match(p('sw.js'),/app\.js\?v=24/);
+ const html=p('index.html'),sw=p('sw.js');
+ const version=html.match(/app\.js\?v=(\d+)/)?.[1];
+ assert.ok(Number(version)>=24);
+ assert.ok(sw.includes('caseirinho-insights-app-shell-v'+version));
+ assert.ok(sw.includes('app.js?v='+version));
 });
