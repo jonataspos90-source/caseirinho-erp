@@ -31,7 +31,7 @@ test('não concede saldo ao registrar decisão nem finaliza automaticamente',()=
 });
 test('finalização rápida pede escolha de cashback e confirmação de entrega e recebimento',()=>{
  const js=get('app.js');
- assert.match(js,/Cashback \(decisão obrigatória\)/);
+ assert.match(js,/1️⃣ Escolha o cashback/);
  assert.match(js,/quickCashbackDecision/);
  assert.match(js,/fulfillmentDelivered/);
  assert.match(js,/fulfillmentPayment/);

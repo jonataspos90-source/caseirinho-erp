@@ -255,3 +255,14 @@
 #productsList .product-card .badge.good{background:#e5f5e9;color:#14502e}
 #productsList .product-card .badge.warn{white-space:normal;line-height:1.4}
 @media(max-width:560px){#productStatus{min-width:0;width:100%}.product-lifecycle-controls{padding:11px}}
+
+
+/* Confirmação de entrega: distinguir abertura do formulário de finalização efetiva. */
+.modal .quick-finish-step{border:1px solid #d8e4da;border-radius:14px;padding:14px;margin:14px 0;background:#fafcf9}
+.modal .quick-finish-step h3{color:#164c32;margin:0 0 10px}
+.modal .quick-finish-step .notice{margin:8px 0}
+.modal #quickFinishSubmit{display:flex;width:100%;min-height:55px;text-align:center;font-size:15px;font-weight:850;white-space:normal;background:#0b5232;color:#fff;box-shadow:0 7px 20px #12482b33;margin:12px 0;position:sticky;bottom:0;z-index:2}
+.modal #quickFinishSubmit:focus-visible{outline:3px solid #d1a337;outline-offset:3px}
+.modal #quickFinishSubmit:disabled{background:#5c7469}
+.modal #quickFinishAlert:not([hidden]){border-width:2px;font-weight:750}
+@media(max-width:580px){.modal{padding:18px}.modal .quick-finish-step{padding:10px}.modal #quickFinishSubmit{font-size:14px}}
