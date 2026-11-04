@@ -38,6 +38,6 @@ test('versão publicada está atualizada no HTML e service worker',()=>{
  const version=html.match(/app\.js\?v=(\d+)/)?.[1];
  assert.ok(Number(version)>=25);
  assert.ok(sw.includes('app.js?v='+version));
- assert.ok(sw.includes('caseirinho-insights-app-shell-v31'));
+ assert.ok(sw.includes('caseirinho-insights-app-shell-v32'));
 });
 test('código JavaScript do painel é válido',()=>new vm.Script(read('app.js')));
