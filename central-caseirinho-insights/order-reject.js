@@ -6,8 +6,13 @@
  const $=s=>document.querySelector(s);
  const token=()=>{try{const a=JSON.parse(sessionStorage.getItem(KEY)||'{}');return Number(a.expiresAt)>Date.now()?a.token||'':'';}catch{return '';}};
  const dialog=document.createElement('dialog');dialog.id='opsRejectDialog';dialog.className='caseirinho-ops-dialog';
- dialog.innerHTML='<form method="dialog"><h2>🚫 Recusar pedido</h2><p id="opsRejectCode"></p><p><strong>A recusa remove o pedido dos resultados de vendas e do DRE. Não cancela recebimentos nem estorna dinheiro.</strong></p><label>Motivo da recusa<textarea id="opsRejectReason" rows="3" minlength="8" maxlength="400" required placeholder="Ex.: Cliente cancelou antes da entrega"></textarea></label><label class="ops-reject-confirm"><input type="checkbox" id="opsRejectConfirmed"> Confirmo que o pedido não foi entregue e que não há pagamento recebido a estornar.</label><p id="opsRejectFeedback" role="alert"></p><div class="ops-reject-actions"><button value="cancel" type="submit">Voltar</button><button id="opsRejectSave" type="button">🚫 Confirmar recusa</button></div></form>';
+ dialog.innerHTML='<form method="dialog"><h2>🚫 Recusar pedido</h2><p id="opsRejectCode"></p><p><strong>A recusa remove o pedido dos resultados de vendas e do DRE. Não cancela recebimentos nem estorna dinheiro.</strong></p><label>Motivo da recusa<textarea id="opsRejectReason" rows="3" minlength="5" maxlength="400" required placeholder="Ex.: Teste ou Cliente cancelou antes da entrega"></textarea><small>Digite no mínimo 8 caracteres ou apenas “Teste” para uma operação de teste.</small></label><label class="ops-reject-confirm"><input type="checkbox" id="opsRejectConfirmed"> Confirmo que o pedido não foi entregue e que não há pagamento recebido a estornar.</label><p id="opsRejectFeedback" role="alert"></p><div class="ops-reject-actions"><button value="cancel" type="submit">Voltar</button><button id="opsRejectSave" type="button">🚫 Confirmar recusa</button></div></form>';
  document.body.appendChild(dialog);
+ // Aceitar "Teste" sem reduzir o nível de detalhe gravado pela API (mínimo 8 caracteres).
+ const normalizeReason=value=>{
+  const reason=String(value||'').trim();
+  return /^testes?$/i.test(reason)?'Pedido de teste - operação de teste, sem venda comercial.':reason;
+ };
  const codeOf=btn=>btn?.dataset?.order||'';
  const canReject=(status)=>/^(NOVO|PENDENTE|ACEITO|ABERTO|PRONTO|AGUARDANDO)/i.test(status||'');
  function buttons(){
@@ -35,8 +40,9 @@
   dialog.showModal();
  });
  $('#opsRejectSave').addEventListener('click',async()=>{
-  const code=dialog.dataset.code,reason=$('#opsRejectReason').value.trim(),confirmed=$('#opsRejectConfirmed').checked;
-  if(reason.length<8||!confirmed){$('#opsRejectFeedback').textContent='Preencha o motivo e confirme as condições da recusa.';return;}
+  const code=dialog.dataset.code,reason=normalizeReason($('#opsRejectReason').value),confirmed=$('#opsRejectConfirmed').checked;
+  if(reason.length<8||reason.length>400){$('#opsRejectFeedback').textContent='Informe um motivo de 8 a 400 caracteres ou digite “Teste”.';return;}
+  if(!confirmed){$('#opsRejectFeedback').textContent='Marque a confirmação sobre entrega e pagamento para prosseguir.';return;}
   if(!window.confirm('CONFIRMAR RECUSA DEFINITIVA do pedido '+code+'? Ele não entrará no DRE.'))return;
   const b=$('#opsRejectSave');b.disabled=true;b.textContent='⏳ Salvando recusa...';
   try{
