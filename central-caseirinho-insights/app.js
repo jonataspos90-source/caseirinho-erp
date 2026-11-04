@@ -206,11 +206,11 @@ function renderRanking(){
 }
 function renderOrderFulfillmentKpis(){
  const items=[...st.fulfillment.values()];
- const ready=items.filter(x=>!x.completed&&x.integration==='IMPORTADO'&&x.erpLinked&&['ACEITO','ABERTO','PRONTO'].includes(x.status));
+ const ready=items.filter(x=>!x.completed&&['ACEITO','ABERTO','PRONTO'].includes(x.status));
  const granted=items.filter(x=>Number(x.credit)>0);
  const complete=items.filter(x=>x.completed);
  E('orderFulfillmentKpis').innerHTML=[
-  statsCard('📦','Aguardando conclusão',ready.length,'Pedidos integrados e não entregues'),
+  statsCard('📦','Aguardando conclusão',ready.length,'Aceitos, inclusive os que aguardam integração ERP'),
   statsCard('💚','Cashback a decidir',ready.filter(x=>x.approval==='PENDENTE'&&x.eligible).length,'Apenas pedidos elegíveis'),
   statsCard('✅','Créditos liberados',granted.length,brl(granted.reduce((sum,x)=>sum+Number(x.credit||0),0))+' em cashback'),
   statsCard('🎉','Entregues / retirados',complete.length,'Pedidos com situação finalizada')
@@ -1082,7 +1082,7 @@ async function manageOrderFulfillment(code){
  const paid=Number(f.credit)>0,complete=f.completed,eligible=f.eligible,imported=f.integration==='IMPORTADO'&&f.erpLinked;
  const notes=(f.reasons||[]).map(v=>'<li>'+esc(v)+'</li>').join('');
  const base='<p><b>Pedido:</b> '+esc(code)+'<br><b>Cliente:</b> '+esc(x.name||'Não informado')+
- '<br><b>Valor do pedido:</b> '+brl(x.total)+'<br><b>Modalidade:</b> '+esc(f.modalidade||x.modality||'—')+
+ '<br><b>Total do pedido:</b> '+brl(x.total)+'<br><b>Receita de produtos (DRE):</b> '+brl(f.receitaProdutos)+'<br><b>Modalidade:</b> '+esc(f.modalidade||x.modality||'—')+
  '<br><b>Status na loja:</b> '+badge(f.status)+'<br><b>Integração ERP:</b> '+badge(f.integration)+
  '<br><b>Cashback:</b> '+badge(f.approval)+'<br><b>Compras anteriores concluídas:</b> '+n(f.previousCompleted)+'</p>'+
  '<div class="cashback-summary"><div><small>Percentual</small><b>'+n(f.percent).toLocaleString('pt-BR')+'%</b></div>'+
@@ -1105,9 +1105,9 @@ async function manageOrderFulfillment(code){
  '<h3>2. Confirmações obrigatórias</h3><div class="fulfillment-options">'+
  '<label><input type="checkbox" id="fulfillmentDelivered"> Confirmo que o cliente '+(isPickup?'retirou':'recebeu')+' o pedido.</label>'+
  '<label><input type="checkbox" id="fulfillmentPayment"> Conferi o recebimento do pagamento (não cria lançamento financeiro).</label></div>'+
- '<div class="notice">Ao confirmar, o pedido passa para <b>'+delivery+'</b> no app e no ERP. '+(eligible?'Se aprovar o cashback, o crédito será lançado uma única vez.':'A liberação de cashback não está disponível pelos critérios acima.')+'</div>'+
- '<button class="btn primary" type="button" '+(!imported?'disabled':'')+' data-action="completeOrder" data-order="'+esc(code)+'">✅ Confirmar '+(isPickup?'retirada':'entrega')+' e finalizar pedido</button>'+
- (!imported?'<p class="notice error">Aguarde o pedido ser importado e vinculado ao ERP para liberar a conclusão.</p>':''));
+ '<div class="notice">Ao confirmar, o pedido passa para <b>'+delivery+'</b> na loja e sua receita de produtos passa a entrar nas vendas concluídas e no DRE. '+(imported?'A situação será atualizada também no ERP.':'A integração ERP ficará sinalizada como pendente, sem bloquear a retirada ou entrega.')+' '+(eligible?'Se aprovar o cashback, o crédito será lançado uma única vez.':'O cashback não está elegível nesta confirmação.')+'</div>'+
+ '<button class="btn primary" type="button" data-action="completeOrder" data-order="'+esc(code)+'">✅ Confirmar '+(isPickup?'retirada':'entrega')+' e finalizar pedido</button>'+
+ (!imported?'<p class="notice warn">ℹ️ Ainda sem integração ERP: a venda poderá ser concluída e entrará no DRE. O vínculo com ERP será conciliado separadamente; não lance a receita manualmente.</p>':''));
 }
 async function approveOrderCashback(code){
  if(!window.confirm('Aprovar o cashback deste pedido? O crédito ficará disponível SOMENTE após a entrega/retirada.'))return;
@@ -1123,10 +1123,10 @@ async function confirmOrderComplete(code){
  if(!decision)return toast('Escolha aprovar ou não liberar cashback antes de finalizar.',true);
  if(!delivered||!payment)return toast('Marque as duas confirmações obrigatórias: entrega e conferência do pagamento.',true);
  const x=orderLookup(code),rule=fulfillStatus(code);
- if(!window.confirm('FINALIZAR pedido '+code+' ('+brl(x?.total)+') como '+(s(rule?.modalidade).toUpperCase()==='RETIRADA'?'RETIRADO':'ENTREGUE')+'? Cashback: '+(decision==='APROVADO'?brl(rule?.estimate):'não liberar')+'. Esta ação será gravada no ERP.'))return;
+ if(!window.confirm('FINALIZAR pedido '+code+' ('+brl(x?.total)+') como '+(s(rule?.modalidade).toUpperCase()==='RETIRADA'?'RETIRADO':'ENTREGUE')+'? Cashback: '+(decision==='APROVADO'?brl(rule?.estimate):'não liberar')+'. A venda será reconhecida no DRE; se a integração ERP estiver pendente, será conciliada depois.'))return;
  try{
   const out=await api('orders/'+encodeURIComponent(code)+'/complete',{method:'POST',body:{confirmDelivered:true,paymentChecked:true,cashbackDecision:decision}});
-  hideModal();toast('✅ Pedido '+code+' '+out.status+' no ERP e na loja. Cashback liberado: '+brl(out.credited));
+  hideModal();toast('✅ Pedido '+code+' '+out.status+' na loja. Venda no DRE: '+brl(out.receitaProdutos)+'. '+(out.erpSynced?'ERP atualizado.':'Integração ERP pendente.')+' Cashback: '+brl(out.credited));
   await loadAll();nav('orders');
  }catch(error){toast('Não foi possível concluir: '+error.message,true);}
 }
