@@ -221,9 +221,9 @@ function renderOrders(){
  const q=s(E('orderSearch').value).toLowerCase().trim(),f=E('orderFilter').value;
  const rows=st.orders.filter(x=>{const v=st.fulfillment.get(s(x.code));const match=(s(x.code)+' '+s(x.name)+' '+s(x.phone)+' '+(x.items||[]).map(i=>i.name).join(' ')).toLowerCase().includes(q);const status=s(v?.status||x.status).toUpperCase();const integrated=v?.integration==='IMPORTADO'&&v?.erpLinked;const filter=f==='all'||x.integration_status===f||f==='NEW'&&['NOVO','PENDENTE','AGUARDANDO_ANALISE','AGUARDANDO_COTACAO_FRETE'].includes(status)||f==='READY'&&!v?.completed&&['ACEITO','ABERTO','PRONTO'].includes(status)||f==='CASHBACK_PENDING'&&!v?.completed&&v?.approval==='PENDENTE'||f==='CASHBACK_GRANTED'&&n(v?.credit)>0||f==='COMPLETED'&&v?.completed;return match&&filter;});
  if(window.matchMedia('(max-width:790px)').matches){
-  E('ordersTable').innerHTML=rows.length?'<div class="mobile-list">'+rows.map(x=>'<article class="mobile-record"><div class="mobile-record-head"><strong>Pedido #'+esc(x.code)+'</strong>'+badge(x.status)+'</div><p><b>'+esc(x.name||'Cliente')+'</b> · '+dt(x.created_at)+'</p><p><b>'+brl(x.total)+'</b> · '+(x.items||[]).length+' item(ns)</p><p>'+badge(x.integration_status)+'</p><div class="record-actions">'+orderButton(x)+'</div></article>').join('')+'</div>':cellEmpty('Nenhum pedido encontrado.');
+  E('ordersTable').innerHTML=rows.length?'<div class="mobile-list">'+rows.map(x=>'<article class="mobile-record"><div class="mobile-record-head"><strong>Pedido #'+esc(x.code)+'</strong>'+badge(x.status)+'</div><p><b>'+esc(x.name||'Cliente')+'</b> · '+dt(x.created_at)+'</p><p><b>'+brl(x.total)+'</b> · '+(x.items||[]).length+' item(ns)</p><p>'+badge(x.integration_status)+'</p><p>'+paymentBadge(x)+'</p><div class="record-actions">'+orderButton(x)+'</div></article>').join('')+'</div>':cellEmpty('Nenhum pedido encontrado.');
  }else{
-  E('ordersTable').innerHTML=table(['Data','Pedido','Cliente','Itens pedidos','Total','Status / ERP','Ações'],rows.map(x=>'<tr><td>'+dt(x.created_at)+'</td><td><b>'+esc(x.code)+'</b></td><td>'+esc(x.name||'—')+'<br><small>'+esc(tel(x.phone))+'</small></td><td>'+esc((x.items||[]).map(i=>n(i.quantity)+'× '+i.name).join(', '))+'</td><td><b>'+brl(x.total)+'</b></td><td>'+badge(x.status)+'<br>'+badge(x.integration_status)+'</td><td class="actions-cell">'+orderButton(x)+'</td></tr>'));
+  E('ordersTable').innerHTML=table(['Data','Pedido','Cliente','Itens pedidos','Total','Status / ERP','Pagamento','Ações'],rows.map(x=>'<tr><td>'+dt(x.created_at)+'</td><td><b>'+esc(x.code)+'</b></td><td>'+esc(x.name||'—')+'<br><small>'+esc(tel(x.phone))+'</small></td><td>'+esc((x.items||[]).map(i=>n(i.quantity)+'× '+i.name).join(', '))+'</td><td><b>'+brl(x.total)+'</b></td><td>'+badge(x.status)+'<br>'+badge(x.integration_status)+'</td><td>'+paymentBadge(x)+'</td><td class="actions-cell">'+orderButton(x)+'</td></tr>'));
  }
 }
 const expected=new Map([['Panqueca Palmito',13.99],['Molho 250 gr - Sugo',12.99],['Molho 500 gr - Sugo',15.99],['Molho 1 Kg - Sugo',24.99],['Macarrão Talharim com Massa Caseira G (900 gr) - Molho Branco',31.99]]);
@@ -657,12 +657,42 @@ function orderDetailsHtml(order){
  '<br><b>Desconto promocional informado:</b> '+brl(order.discount)+
  '<br><b>Total do pedido:</b> '+brl(order.total)+'</p>';
 }
+function isMercadoPagoOrder(order){
+ return /MERCADO\s*PAGO|MERCADOPAGO/i.test(s(order?.payment))||!!order?.paymentStatus;
+}
+function paymentBadge(order){
+ if(!isMercadoPagoOrder(order))return '<small>💵 '+esc(order?.payment||'Forma de pagamento não informada')+' • conferência manual</small>';
+ const status=s(order.paymentStatus).toUpperCase(),label=order.verifiedPaymentMethod||'Mercado Pago (método a conferir)';
+ if(status==='APROVADO')return '<span class="badge good">✅ PAGO MP '+brl(order.providerPaidAmount)+'</span><br><small>'+esc(label)+'</small>';
+ if(status==='ESTORNADO')return '<span class="badge warn">⚠️ ESTORNADO</span>';
+ if(status==='REJEITADO'||status==='RECUSADO'||status==='CANCELADO')return '<span class="badge warn">⛔ '+esc(status)+'</span>';
+ return '<span class="badge warn">⏳ MP: '+esc(status||'SEM CONFIRMAÇÃO')+'</span><br><small>Não aceitar como pago sem conciliar</small>';
+}
+const paymentChecks=new Set();
+async function verifyOrderPayment(code){
+ if(paymentChecks.has(code))return;
+ const o=orderLookup(code);
+ if(!o)return toast('Atualize a lista para encontrar o pedido.',true);
+ if(!isMercadoPagoOrder(o))return toast('Este pedido não possui pagamento online do Mercado Pago. Confira o recebimento manualmente.',true);
+ paymentChecks.add(code);
+ const buttons=[...document.querySelectorAll('[data-action="verifyOrderPayment"]')].filter(b=>b.dataset.order===code);
+ buttons.forEach(b=>{b.disabled=true;b.textContent='⏳ Conferindo MP...';});
+ try{
+  const out=await api('orders/'+encodeURIComponent(code)+'/verify-payment',{method:'POST',body:{}});
+  await loadAll();nav('orders');
+  if(out.statusPagamento==='APROVADO')
+   toast('✅ Mercado Pago confirmou '+brl(out.valorPago)+' do pedido #'+code+'. '+(out.metodoConfirmado!=='A CONFIRMAR'?out.metodoConfirmado+'. ':'')+(out.erpSynced?'ERP conciliado.':'Integração ERP ainda pendente.'));
+  else toast('Pagamento '+s(out.statusPagamento)+' no Mercado Pago para pedido #'+code+'. Não foi registrado como recebido.',true);
+ }catch(err){toast('Conferência Mercado Pago não concluída: '+s(err.message)+'. Não marque como pago sem confirmação.',true);}
+ finally{paymentChecks.delete(code);buttons.forEach(b=>{b.disabled=false;b.textContent='🔄 Conferir MP';});}
+}
 function orderButton(order){
  const rule=fulfillStatus(order.code);
  const status=s(rule?.status||order.status).toUpperCase();
  const code=esc(order.code);
  const first='<button class="btn small" type="button" data-action="viewOrder" data-order="'+code+'">📦 Ver itens</button> '+
- '<button class="btn small gold" type="button" data-action="pdfOrder" data-order="'+code+'">📄 PDF</button> ';
+ '<button class="btn small gold" type="button" data-action="pdfOrder" data-order="'+code+'">📄 PDF</button> '+
+ (isMercadoPagoOrder(order)?'<button class="btn small" type="button" data-action="verifyOrderPayment" data-order="'+code+'">🔄 Conferir MP</button> ':'');
  if(rule?.completed||['ENTREGUE','RETIRADO','CONCLUIDO','FINALIZADO'].includes(status))return first+'<span class="badge good">✅ Concluído</span>';
  if(['NOVO','PENDENTE','AGUARDANDO_ANALISE','AGUARDANDO_COTACAO_FRETE'].includes(status))
   return first+'<button class="btn small primary" type="button" data-action="quickAcceptOrder" data-order="'+code+'">✅ Aceitar pedido</button>';
@@ -1958,6 +1988,7 @@ function bind(){
  if(type==='customerOrders')return showCustomerOrders(phone);
  if(type==='viewOrder')return showOrder(b.dataset.order);
  if(type==='quickAcceptOrder')return quickAcceptOrder(b.dataset.order);
+ if(type==='verifyOrderPayment')return verifyOrderPayment(b.dataset.order);
  if(type==='quickFinishOrder')return quickFinishOrder(b.dataset.order);
  if(type==='quickCashbackOrder')return quickCashbackOrder(b.dataset.order);
  if(type==='quickSaveCashback')return quickSaveCashback(b.dataset.order);

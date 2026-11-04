@@ -39,8 +39,10 @@ test('finalização rápida pede escolha de cashback e confirmação de entrega 
  assert.match(js,/return confirmOrderComplete\(code\)/);
 });
 test('atualização do PWA carrega nova regra e script válido',()=>{
- assert.match(get('index.html'),/app\.js\?v=26/);
- assert.match(get('sw.js'),/caseirinho-insights-app-shell-v26/);
- assert.match(get('sw.js'),/app\.js\?v=26/);
+ const html=get('index.html'),sw=get('sw.js');
+ const version=html.match(/app\.js\?v=(\d+)/)?.[1];
+ assert.ok(Number(version)>=26);
+ assert.ok(sw.includes('caseirinho-insights-app-shell-v'+version));
+ assert.ok(sw.includes('app.js?v='+version));
  assert.doesNotThrow(()=>new vm.Script(get('app.js')));
 });
