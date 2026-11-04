@@ -666,8 +666,12 @@ function orderButton(order){
  if(rule?.completed||['ENTREGUE','RETIRADO','CONCLUIDO','FINALIZADO'].includes(status))return first+'<span class="badge good">✅ Concluído</span>';
  if(['NOVO','PENDENTE','AGUARDANDO_ANALISE','AGUARDANDO_COTACAO_FRETE'].includes(status))
   return first+'<button class="btn small primary" type="button" data-action="quickAcceptOrder" data-order="'+code+'">✅ Aceitar pedido</button>';
- if(['ACEITO','ABERTO','PRONTO'].includes(status))
-  return first+'<button class="btn small primary" type="button" data-action="quickFinishOrder" data-order="'+code+'">✅ Finalizar pedido</button>';
+ if(['ACEITO','ABERTO','PRONTO'].includes(status)){
+  const approved=rule?.approval==='APROVADO',rejected=rule?.approval==='REJEITADO';
+  const label=approved?'💚 Cashback aprovado':rejected?'🚫 Cashback não liberado':'💚 Decidir cashback';
+  return first+'<button class="btn small primary" type="button" data-action="quickFinishOrder" data-order="'+code+'">✅ Finalizar pedido</button> '+
+   '<button class="btn small" type="button" data-action="quickCashbackOrder" data-order="'+code+'">'+label+'</button>';
+ }
  return first+'<span class="badge warn">'+esc(status||'Conferir')+'</span>';
 }
 function showOrder(code){
@@ -1104,6 +1108,60 @@ async function quickAcceptOrder(code){
   toast('Aceite não confirmado: '+error.message,true);
  }finally{quickAcceptPending.delete(code);buttons.forEach(b=>{b.disabled=false;b.textContent='✅ Aceitar pedido';});}
 }
+const quickCashbackPending=new Set();
+async function quickCashbackOrder(code){
+ let f=fulfillStatus(code);
+ const x=orderLookup(code);
+ if(!x)return toast('Pedido não encontrado. Atualize os dados.',true);
+ if(!f){
+  try{await refreshFulfillment();f=fulfillStatus(code);}catch(error){return toast('Não foi possível consultar cashback: '+error.message,true);}
+ }
+ if(!f)return toast('Não foi possível consultar o cashback deste pedido.',true);
+ if(f.completed)return manageOrderFulfillment(code);
+ if(!['ACEITO','ABERTO','PRONTO'].includes(s(f.status).toUpperCase()))
+  return toast('Aceite primeiro o pedido antes de decidir o cashback.',true);
+ const canApprove=f.canApprove===true||f.eligible===true;
+ const approval=f.approval||'PENDENTE',sum=canApprove?'<div class="notice success">💚 Valor estimado: <b>'+brl(f.estimate)+'</b>. Se aprovado, o saldo será liberado somente após a entrega ou retirada.</div>':
+ '<div class="notice warn">Cashback não elegível neste pedido: '+esc((f.reasons||[]).filter(t=>!s(t).includes('recusado explicitamente')).join(' ')||'Consulte as regras do programa.')+'</div>';
+ const option=canApprove?'<label><input type="radio" name="quickCashbackDecision" value="APROVADO" '+(approval==='APROVADO'?'checked':'')+'> 💚 Aprovar cashback de '+brl(f.estimate)+'</label>':'';
+ modal('💚 Decidir cashback · pedido #'+code,
+ '<p><b>'+esc(x.name||'Cliente')+'</b> • Pedido '+brl(x.total)+'</p>'+
+ '<p><b>Decisão atual:</b> '+badge(approval)+'</p>'+sum+
+ '<div class="fulfillment-options">'+option+
+ '<label><input type="radio" name="quickCashbackDecision" value="REJEITADO" '+(approval==='REJEITADO'?'checked':'')+'> 🚫 Não liberar cashback neste pedido</label></div>'+
+ '<p class="notice">Salvar esta decisão <b>não</b> marca o pedido como entregue ou pago. A decisão poderá ser alterada até a conclusão, respeitando as regras do programa.</p>'+
+ '<button class="btn primary" type="button" data-action="quickSaveCashback" data-order="'+esc(code)+'">💾 Salvar decisão de cashback</button>');
+}
+async function quickSaveCashback(code){
+ if(quickCashbackPending.has(code))return;
+ const decision=document.querySelector('input[name="quickCashbackDecision"]:checked')?.value;
+ if(!['APROVADO','REJEITADO'].includes(decision))return toast('Escolha Aprovar cashback ou Não liberar.',true);
+ const f=fulfillStatus(code),x=orderLookup(code);
+ if(!f||!x)return toast('Atualize o pedido e tente novamente.',true);
+ if(decision==='APROVADO'&&f.canApprove!==true&&f.eligible!==true)
+  return toast('Cashback não elegível para aprovação. Consulte os critérios.',true);
+ const value=decision==='APROVADO'?'APROVAR '+brl(f.estimate)+' de cashback (disponível somente depois da entrega)':'NÃO LIBERAR cashback';
+ if(!window.confirm(value+' no pedido #'+code+' de '+s(x.name||'Cliente')+'?'))return;
+ quickCashbackPending.add(code);
+ const buttons=[...document.querySelectorAll('[data-action="quickSaveCashback"]')].filter(b=>b.dataset.order===code);
+ buttons.forEach(b=>{b.disabled=true;b.textContent='⏳ Salvando decisão...';});
+ try{
+  const result=await api('orders/'+encodeURIComponent(code)+'/cashback-decision',{method:'POST',body:{decision}});
+  hideModal();
+  await loadAll();nav('orders');
+  toast(result.decision==='APROVADO'?'💚 Cashback aprovado para o pedido #'+code+'. Crédito somente após entrega.':'🚫 Pedido #'+code+': cashback não liberado.');
+ }catch(error){
+  if(error.networkError){
+   try{await refreshFulfillment();const refreshed=fulfillStatus(code);if(refreshed?.approval===decision){
+    hideModal();return toast('✅ Decisão registrada e confirmada na consulta do pedido.');
+   }}catch(_){}
+  }
+  toast('Não foi possível confirmar a decisão: '+error.message,true);
+ }finally{
+  quickCashbackPending.delete(code);
+  buttons.forEach(b=>{b.disabled=false;b.textContent='💾 Salvar decisão de cashback';});
+ }
+}
 function quickFinishOrder(code){
  const order=orderLookup(code),f=fulfillStatus(code);
  if(!order)return toast('Pedido não encontrado. Atualize os dados.',true);
@@ -1112,24 +1170,30 @@ function quickFinishOrder(code){
  if(!['ACEITO','ABERTO','PRONTO'].includes(s(f.status).toUpperCase()))
   return toast('O pedido ainda não foi aceito. Clique em Aceitar pedido primeiro.',true);
  const pickup=s(f.modalidade||order.modality).toUpperCase()==='RETIRADA';
- const decision=f.eligible?'<label class="quick-check"><input type="checkbox" id="quickCashback"> 💚 Liberar '+brl(f.estimate)+' de cashback (opcional, após a conclusão)</label>':'';
+ const canApprove=f.canApprove===true||f.eligible===true,approval=f.approval||'PENDENTE';
+ const decision='<h3>1. Cashback (decisão obrigatória)</h3><div class="fulfillment-options quick-finalize">'+
+ (canApprove?'<label><input type="radio" name="quickCashbackDecision" value="APROVADO" '+(approval==='APROVADO'?'checked':'')+'> 💚 Aprovar '+brl(f.estimate)+' de cashback</label>':'')+
+ '<label><input type="radio" name="quickCashbackDecision" value="REJEITADO" '+(approval==='REJEITADO'?'checked':'')+'> 🚫 Não liberar cashback</label></div>'+
+ (!canApprove?'<p class="notice warn">O pedido não atende aos critérios do cashback: '+esc((f.reasons||[]).filter(t=>!s(t).includes('recusado explicitamente')).join(' ')||'Verifique elegibilidade.')+'</p>':'');
  const details=(order.items||[]).map(x=>'<li>'+esc(n(x.quantity)+'× '+s(x.name))+'</li>').join('');
  modal('✅ Finalizar pedido #'+code,
  '<p><b>'+esc(order.name||'Cliente')+'</b> • '+brl(order.total)+' • '+(pickup?'Retirada':'Entrega')+'</p>'+
  '<details><summary>Ver itens do pedido</summary><ul>'+details+'</ul></details>'+
+ decision+
+ '<h3>2. Confirmar entrega e pagamento</h3>'+
  '<p class="notice">Confirme abaixo somente depois que o pedido tiver sido '+(pickup?'retirado':'entregue')+' e o pagamento estiver conferido. A receita entrará nas vendas e no DRE sem lançamento manual.</p>'+
  '<div class="fulfillment-options quick-finalize">'+
  '<label class="quick-check"><input type="checkbox" id="fulfillmentDelivered"> ✅ '+(pickup?'Cliente retirou o pedido':'Cliente recebeu o pedido')+'</label>'+
- '<label class="quick-check"><input type="checkbox" id="fulfillmentPayment"> ✅ Pagamento recebido e conferido</label>'+
- decision+'</div>'+
+ '<label class="quick-check"><input type="checkbox" id="fulfillmentPayment"> ✅ Pagamento recebido e conferido</label></div>'+
  (!f.erpLinked||f.integration!=='IMPORTADO'?'<p class="notice warn">Integração ERP pendente. Isso não impede a conclusão; a conciliação ocorre depois.</p>':'')+
  '<button class="btn primary" type="button" data-action="quickConfirmOrder" data-order="'+esc(code)+'">✅ Confirmar '+(pickup?'retirada':'entrega')+' e registrar venda</button>');
 }
 function quickConfirmOrder(code){
  const paid=E('fulfillmentPayment')?.checked===true,received=E('fulfillmentDelivered')?.checked===true;
  if(!paid||!received)return toast('Confirme a entrega/retirada e o recebimento do pagamento.',true);
- // Reaproveita a mesma finalização segura, incluindo conferência do pagamento pelo servidor.
- const decision=E('quickCashback')?.checked?'APROVADO':'REJEITADO';
+ const decision=document.querySelector('input[name="quickCashbackDecision"]:checked')?.value;
+ if(!['APROVADO','REJEITADO'].includes(decision))return toast('Escolha Aprovar cashback ou Não liberar antes de finalizar.',true);
+ // Reaproveita a mesma finalização segura, incluindo conferência de pagamento pelo servidor.
  const form=E('modalContent');
  if(!form)return;
  const old=form.querySelector('input[name="fulfillmentCashback"]');if(old)old.remove();
@@ -1895,6 +1959,8 @@ function bind(){
  if(type==='viewOrder')return showOrder(b.dataset.order);
  if(type==='quickAcceptOrder')return quickAcceptOrder(b.dataset.order);
  if(type==='quickFinishOrder')return quickFinishOrder(b.dataset.order);
+ if(type==='quickCashbackOrder')return quickCashbackOrder(b.dataset.order);
+ if(type==='quickSaveCashback')return quickSaveCashback(b.dataset.order);
  if(type==='quickConfirmOrder')return quickConfirmOrder(b.dataset.order);
  if(type==='fulfillOrder')return manageOrderFulfillment(b.dataset.order);
  if(type==='approveOrderCashback')return approveOrderCashback(b.dataset.order);

@@ -34,8 +34,10 @@ test('código do pedido, nome e total exigem confirmação antes do aceite',()=>
  assert.ok(s.includes("api('orders/'+encodeURIComponent(code)+'/accept'"));
 });
 test('versão publicada está atualizada no HTML e service worker',()=>{
- assert.match(read('index.html'),/app\.js\?v=25/);
- assert.match(read('sw.js'),/app\.js\?v=25/);
- assert.match(read('sw.js'),/caseirinho-insights-app-shell-v25/);
+ const html=read('index.html'),sw=read('sw.js');
+ const version=html.match(/app\.js\?v=(\d+)/)?.[1];
+ assert.ok(Number(version)>=25);
+ assert.ok(sw.includes('app.js?v='+version));
+ assert.ok(sw.includes('caseirinho-insights-app-shell-v'+version));
 });
 test('código JavaScript do painel é válido',()=>new vm.Script(read('app.js')));
