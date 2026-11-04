@@ -28,7 +28,7 @@ test('formulário de aceite preservado e cliente com Pix manual não depende da 
 });
 test('PWA versão nova evita cache antigo e JavaScript válido',()=>{
  assert.match(read('index.html'),/app\.js\?v=30/);
- assert.match(read('sw.js'),/caseirinho-insights-app-shell-v31/);
+ assert.match(read('sw.js'),/caseirinho-insights-app-shell-v32/);
  assert.match(read('sw.js'),/app\.js\?v=30/);
  assert.doesNotThrow(()=>new vm.Script(read('app.js')));
 });

@@ -36,7 +36,7 @@ test('alteração manual não finaliza, não gera cashback e informa aceite post
 test('o novo PWA de pedidos versão 30 tem JS e CSS atuais',()=>{
  assert.match(read('index.html'),/app\.js\?v=30/);
  assert.match(read('index.html'),/styles\.css\?v=30/);
- assert.match(read('sw.js'),/caseirinho-insights-app-shell-v31/);
+ assert.match(read('sw.js'),/caseirinho-insights-app-shell-v32/);
  assert.match(read('sw.js'),/app\.js\?v=30/);
  assert.match(read('sw.js'),/styles\.css\?v=30/);
  assert.doesNotThrow(()=>new vm.Script(js));
