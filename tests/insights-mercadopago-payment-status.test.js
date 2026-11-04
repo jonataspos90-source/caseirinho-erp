@@ -27,8 +27,8 @@ test('formulário de aceite preservado e cliente com Pix manual não depende da 
  assert.match(s,/Aceite não confirmado/); // erro real da API é apresentado no painel
 });
 test('PWA versão nova evita cache antigo e JavaScript válido',()=>{
- assert.match(read('index.html'),/app\.js\?v=27/);
- assert.match(read('sw.js'),/caseirinho-insights-app-shell-v27/);
- assert.match(read('sw.js'),/app\.js\?v=27/);
+ assert.match(read('index.html'),/app\.js\?v=28/);
+ assert.match(read('sw.js'),/caseirinho-insights-app-shell-v28/);
+ assert.match(read('sw.js'),/app\.js\?v=28/);
  assert.doesNotThrow(()=>new vm.Script(read('app.js')));
 });
