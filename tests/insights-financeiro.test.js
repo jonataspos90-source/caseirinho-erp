@@ -27,9 +27,11 @@ test('Financeiro exige token do ERP e usa API autenticada',()=>{
 });
 test('PWA versionado inclui os novos arquivos, sem guardar dados de vendas em cache',()=>{
  const sw=file('sw.js'),html=file('index.html');
- assert.match(sw,/caseirinho-insights-app-shell-v23/);
+ const v=html.match(/app\.js\?v=(\d+)/)?.[1];
+ assert.ok(Number(v)>=23,'aplicativo deve carregar versão financeira ou posterior');
+ assert.match(sw,new RegExp('caseirinho-insights-app-shell-v'+v));
  assert.match(sw,/financeiro\.js\?v=1/);
  assert.match(sw,/financeiro\.css\?v=1/);
- assert.match(html,/app\.js\?v=23/);
+ assert.match(sw,new RegExp('app\\.js\\?v='+v));
  assert.match(sw,/if\(url\.origin!==self\.location\.origin/);
 });
