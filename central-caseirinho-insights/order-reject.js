@@ -16,7 +16,7 @@
   for(const anchor of hosts){
    const code=codeOf(anchor),container=anchor.parentElement;
    if(!code||!container||container.querySelector('[data-ops-reject]'))continue;
-   const row=anchor.closest('tr,.mobile-record'),badge=(row?.querySelectorAll('td')[5]?.textContent||row?.textContent||'').toUpperCase();
+   const row=anchor.closest('tr,.mobile-record'),badge=(row?.matches('tr')?row.querySelectorAll('td')[5]?.textContent:row?.querySelector('.mobile-record-head .badge')?.textContent||'').toUpperCase();
    if(!canReject(badge)||/CONCLUIDO|RETIRADO|ENTREGUE|REJEITADO/.test(badge))continue;
    const b=document.createElement('button');b.type='button';b.className='btn small ops-reject-button';b.dataset.opsReject=code;b.textContent='🚫 Recusar';
    b.title='Recusar este pedido e impedir a entrada no DRE';container.appendChild(b);
