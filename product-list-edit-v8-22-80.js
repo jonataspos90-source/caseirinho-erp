@@ -52,6 +52,13 @@ function enhance(){
   seasonalLink.title='Criar datas sazonais, quantidades mínimas, limite de valor e acompanhar sinal/saldo.';
   seasonalLink.style.cssText='background:#184f35;color:white;text-decoration:none;border-radius:9px;padding:10px 14px;display:inline-flex;align-items:center;min-height:42px';
   wrap.appendChild(seasonalLink);
+  const lifecycleLink=document.createElement('a');
+  lifecycleLink.href='./central-caseirinho-insights/?view=products&v=20';
+  lifecycleLink.target='_blank';lifecycleLink.rel='noopener noreferrer';lifecycleLink.className='btn primary';
+  lifecycleLink.textContent='🏷️ Preço · Ativar/Inativar · Disponibilidade';
+  lifecycleLink.title='Preço e estados de produto gravados no ERP com publicação imediata na loja.';
+  lifecycleLink.style.cssText='background:#73501a;color:white;text-decoration:none;border-radius:9px;padding:10px 14px;display:inline-flex;align-items:center;min-height:42px';
+  wrap.appendChild(lifecycleLink);
   const note=document.createElement('div');note.id='produtoListaMensagem';note.setAttribute('role','status');note.style='padding:12px 16px;color:#475569';note.textContent='Edite o nome na lista e use Salvar e publicar. Produtos desabilitados para o E-commerce continuam fora do app.';tb.closest('.panel').appendChild(note);
  }
  const filter=E('produtoFiltroTipo'),selected=filter.value||'',available=[...new Set(products().flatMap(types))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
@@ -64,6 +71,11 @@ function enhance(){
   const button=document.createElement('button');button.type='button';button.className='btn primary';button.textContent='Salvar e publicar';button.style='margin-top:6px';button.disabled=busy;
   button.addEventListener('click',async()=>{button.disabled=true;input.disabled=true;try{await rename(p.id,input.value)}catch(err){if(!err.reported)message(err.message)}finally{button.disabled=false;input.disabled=false}});
   cell.appendChild(input);cell.appendChild(button);
+  const link=document.createElement('a');link.className='btn';link.href='./central-caseirinho-insights/?view=products&product='+encodeURIComponent(p.id)+'&v=20';
+  link.target='_blank';link.rel='noopener noreferrer';link.textContent='🏷️ Preço / Situação';
+  link.title='Abrir este produto no cadastro autoritativo do ERP e da loja';
+  link.style.cssText='display:inline-flex;align-items:center;min-height:36px;margin:6px 0 0 8px;border-radius:8px;padding:7px 11px;text-decoration:none;background:#eee9d4;color:#254833;font-weight:800;';
+  cell.appendChild(link);
  });
  if(!count&&all.length){const row=tb.insertRow(),cell=row.insertCell();cell.colSpan=14;cell.className='empty';cell.textContent='Nenhum produto encontrado para os filtros selecionados.'}
 }
