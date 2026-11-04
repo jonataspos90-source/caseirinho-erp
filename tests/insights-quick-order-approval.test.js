@@ -31,7 +31,7 @@ test('código do pedido, nome e total exigem confirmação antes do aceite',()=>
  const s=read('app.js');
  assert.match(s,/window\.confirm\('ACEITAR pedido #'/);
  assert.match(s,/status==='NOVO'|\['NOVO','PENDENTE'/);
- assert.match(s,/orders\/\'+encodeURIComponent\(code\)\+'\/accept'/);
+ assert.ok(s.includes("api('orders/'+encodeURIComponent(code)+'/accept'"));
 });
 test('versão publicada está atualizada no HTML e service worker',()=>{
  assert.match(read('index.html'),/app\.js\?v=25/);
