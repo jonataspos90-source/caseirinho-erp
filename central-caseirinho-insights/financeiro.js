@@ -96,7 +96,7 @@ function render(){
  const data=state.data;if(!data)return;
  const d=data.summary||{},days=data.days||[],entries=data.entries||[];
  el('finKpis').innerHTML=[
-  kpi('✅','Vendas realizadas',money(d.confirmedCents),number(d.orders)+' pedido(s) concluído(s)'),
+  kpi('✅','Vendas realizadas (App + ERP)',money(d.confirmedCents),number(d.orders)+' pedido(s) concluído(s)'),
   kpi('💵','Receita total',money(d.revenueCents),'Inclui vendas fora do app lançadas'),
   kpi('🕓','Pedidos em andamento',money(d.pendingCents),'Fora do DRE até a conclusão'),
   kpi('🥟','Custos + revenda',money(d.costCents),'Compras lançadas neste mês'),
@@ -121,9 +121,10 @@ function render(){
  el('finDre').innerHTML='<div class="fin-dre">'+dreRows.map(([name,value,highlight])=>
   '<div class="fin-dre-row'+(highlight?' fin-dre-total':'')+'"><span>'+esc(name)+'</span><strong>'+money(value)+'</strong></div>').join('')+'</div>'+
   '<p class="notice">Resultado sem depreciação e sem tributos não lançados. Valores por competência; contas pendentes também afetam o resultado. Vendas em andamento não compõem receita realizada.</p>';
- el('finDaily').innerHTML=table(['Data','Pedidos concluídos','Receita concluída','Venda fora app','Total realizado','Pedidos em andamento','Valor em andamento'],
-  days.map(x=>row([esc(datestr(x.day)),esc(x.completedCount),money(x.completedCents),money(x.manualCents),
-   '<b>'+money(number(x.completedCents)+number(x.manualCents))+'</b>',esc(x.pendingCount),money(x.pendingCents)])));
+ el('finDaily').innerHTML=table(['Data','Pedidos concluídos','App','Pedidos ERP próprios','Receita total pedidos','Venda avulsa','Total realizado','Em andamento'],
+  days.map(x=>row([esc(datestr(x.day)),esc(x.completedCount),money(x.appCents),money(x.erpCents),
+   money(x.completedCents),money(x.manualCents),'<b>'+money(number(x.completedCents)+number(x.manualCents))+'</b>',
+   esc(x.pendingCount)+' pedidos · '+money(x.pendingCents)])));
  const q=el('finSearch').value.toLowerCase().trim(),f=el('finFilter').value;
  const list=entries.filter(x=>(f==='ALL'||x.kind===f)&&(!q||(x.description+' '+(x.supplier||'')).toLowerCase().includes(q)));
  el('finEntries').innerHTML=entryTable(list);
