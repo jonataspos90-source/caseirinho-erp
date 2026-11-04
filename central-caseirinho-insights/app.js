@@ -233,7 +233,7 @@ function warnings(){
  for(const [key,values] of grouped)if(values.size>1)w.push(key.split('|')[1]+': registros com preços diferentes');
  return w;
 }
-function menuSelection(){const cat=E('menuCategory').value;return st.catalog.filter(x=>cat==='all'||x.category===cat).filter(x=>!/alco[oó]lic/i.test(x.category)||/n[aã]o\s+alco[oó]lic/i.test(x.category));}
+function menuSelection(){const cat=E('menuCategory').value;return st.catalog.filter(x=>x.active!==false&&x.published!==false).filter(x=>cat==='all'||x.category===cat).filter(x=>!/alco[oó]lic/i.test(x.category)||/n[aã]o\s+alco[oó]lic/i.test(x.category));}
 function menuMessage(items,client){
  const group=new Map();items.forEach(p=>{if(!group.has(p.category))group.set(p.category,[]);group.get(p.category).push(p);});
  const lines=['🍝 *CARDÁPIO CASEIRINHO MASSAS ARTESANAIS*','💚 Sabor caseiro em cada momento!'];
@@ -259,7 +259,7 @@ function menuParts(client){
 }
 function renderMenu(){
  const sel=E('menuCategory'),prev=sel.value;
- const categories=[...new Set(st.catalog.map(x=>x.category))].filter(Boolean).sort((a,b)=>a.localeCompare(b,'pt-BR'));
+ const categories=[...new Set(st.catalog.filter(x=>x.active!==false&&x.published!==false).map(x=>x.category))].filter(Boolean).sort((a,b)=>a.localeCompare(b,'pt-BR'));
  sel.innerHTML='<option value="all">Todas as categorias</option>'+categories.map(x=>'<option value="'+esc(x)+'">'+esc(x)+'</option>').join('');
  if(categories.includes(prev))sel.value=prev;else sel.value='all';
  const items=menuSelection(),warningList=warnings();
