@@ -658,7 +658,7 @@ function orderDetailsHtml(order){
  '<br><b>Total do pedido:</b> '+brl(order.total)+'</p>';
 }
 function isMercadoPagoOrder(order){
- return /MERCADO\\s*PAGO|MERCADOPAGO/i.test(s(order?.payment))||!!order?.paymentStatus;
+ return /MERCADO\s*PAGO|MERCADOPAGO/i.test(s(order?.payment))||!!order?.paymentStatus;
 }
 function paymentBadge(order){
  if(!isMercadoPagoOrder(order))return '<small>💵 '+esc(order?.payment||'Forma de pagamento não informada')+' • conferência manual</small>';
