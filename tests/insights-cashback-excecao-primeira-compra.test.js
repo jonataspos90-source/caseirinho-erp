@@ -16,6 +16,6 @@ test('aprovação excepcional exige razão e vai para endpoint dedicado à decis
 });
 test('PWA v29 carrega a nova interface',()=>{
  assert.match(read('index.html'),/app.js\?v=29/);
- assert.match(read('sw.js'),/caseirinho-insights-app-shell-v29/);
+ assert.match(read('sw.js'),/caseirinho-insights-app-shell-v30/);
  assert.doesNotThrow(()=>new vm.Script(s));
 });
