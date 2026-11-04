@@ -1336,7 +1336,7 @@ async function confirmOrderComplete(code){
   '<div class="notice success"><b>✅ Confirmação salva.</b> O pedido passou para <b>'+esc(finalStatus)+'</b> na loja. '+(out.erpSynced?'ERP atualizado.':'Aguardando conciliação com o ERP.')+'</div>'+
   '<p><b>Receita de produtos no DRE:</b> '+brl(out.receitaProdutos)+
   '<br><b>Cashback liberado:</b> '+brl(out.credited)+'</p>'+
-  '<button class="btn primary" type="button" id="quickFinishClose" onclick="document.getElementById(\'modalClose\').click()">✅ Voltar para pedidos</button>');
+  '<button class="btn primary" type="button" id="quickFinishClose" data-action="closeModal">✅ Voltar para pedidos</button>');
  try{await loadAll();nav('orders');}
  catch(error){toast('✅ Pedido finalizado, mas a lista não atualizou. Clique em Atualizar para ver o novo status.',true);}
 }
@@ -2040,6 +2040,7 @@ function bind(){
  if(type==='quickCashbackOrder')return quickCashbackOrder(b.dataset.order);
  if(type==='quickSaveCashback')return quickSaveCashback(b.dataset.order);
  if(type==='quickConfirmOrder')return quickConfirmOrder(b.dataset.order);
+ if(type==='closeModal')return hideModal();
  if(type==='fulfillOrder')return manageOrderFulfillment(b.dataset.order);
  if(type==='approveOrderCashback')return approveOrderCashback(b.dataset.order);
  if(type==='releaseOrderCashback')return releaseOrderCashback(b.dataset.order);
