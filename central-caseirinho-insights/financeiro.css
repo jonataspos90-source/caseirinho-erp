@@ -1,0 +1,36 @@
+/* Financeiro Caseirinho: aparência integrada à Central de Insights */
+.fin-toolbar{margin-bottom:14px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.fin-toolbar label{font-weight:700;color:#244633;display:flex;align-items:center;gap:8px}
+.fin-toolbar input{border:1px solid #d6dfd4;border-radius:10px;padding:10px;color:#244633}
+.fin-panel{margin-top:16px}
+.fin-panel[hidden]{display:none!important}
+.fin-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;margin-top:15px}
+.fin-form label{display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:700;color:#244633}
+.fin-form input:not([type=checkbox]),.fin-form select,.fin-form textarea{padding:11px 12px;min-width:0;width:100%;border:1px solid #d6dfd4;border-radius:10px;background:#fff;color:#183c2e}
+.fin-form .fin-wide{grid-column:1/-1}
+.fin-form label.fin-check{display:flex;flex-direction:row;align-items:center}
+.fin-form label.fin-check input{width:auto}
+.fin-dre{padding:8px 0}
+.fin-dre-row{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:11px 8px;border-bottom:1px solid #e9ebe4}
+.fin-dre-row span{font-size:14px}.fin-dre-row strong{white-space:nowrap;font-variant-numeric:tabular-nums;color:#1c4431}
+.fin-dre-total{font-weight:800;background:#eef5ec;border-radius:8px;margin:5px 0}
+.fin-dre-total strong{font-size:18px}
+#finEntries .btn,#finFixed .btn,#finAssets .btn{margin:3px}
+#finDrePanel .notice{line-height:1.6;margin-top:10px}
+#finMessage{margin:12px 0}
+@media(max-width:760px){
+ .fin-form{grid-template-columns:1fr}
+ .fin-toolbar{display:block}
+ .fin-toolbar label{margin-bottom:12px}
+ .fin-dre-row{gap:7px}
+ .fin-dre-row span{font-size:12px}
+ .fin-dre-row strong{font-size:12px}
+}
+@media print{
+ body *{visibility:hidden!important}
+ #financeiro,#financeiro *{visibility:visible!important}
+ #financeiro{position:absolute;top:0;left:0;width:100%;display:block!important}
+ #financeiro .fin-toolbar,#financeiro .section-head button,#financeiro .btn,#finEntriesPanel,#finFixedPanel,#finAssetsPanel{display:none!important}
+ #financeiro #finDrePanel,#financeiro #finDailyPanel{display:block!important}
+ #financeiro .card{box-shadow:none;border:1px solid #ddd}
+}
