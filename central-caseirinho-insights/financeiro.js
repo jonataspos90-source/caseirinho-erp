@@ -63,7 +63,7 @@ function resetForm(kind='CUSTO_PRODUCAO',category){
  state.editing=null;el('finEntryForm').reset();el('finKind').value=kind;
  populateCategories(category);
  el('finDate').value=state.month?state.month+'-01':nowBR();
- el('finStatus').value='PAGO';el('finPaidAt').value=nowBR();
+ el('finStatus').value='PAGO';el('finPaidAt').disabled=false;el('finPaidAt').value=nowBR();
  el('finSave').textContent='💾 Salvar lançamento';
 }
 function preset(cat){
@@ -184,12 +184,29 @@ function csvCell(x){
 }
 function downloadCsv(){
  const data=state.data;if(!data)return message('Atualize o Financeiro primeiro.',true);
- const lines=[['Tipo','Data','Categoria','Descrição','Fornecedor','Valor R$','Status','Vencimento','Pagamento','Observações'],
-  ...(data.entries||[]).map(x=>[TYPES[x.kind],x.competenceDate,CATS[x.kind]?.[x.category]||x.category,x.description,x.supplier,
-   (x.amountCents/100).toFixed(2).replace('.',','),x.status,x.dueDate,x.paidAt,x.notes])];
+ const toReais=v=>(Number(v||0)/100).toFixed(2).replace('.',',');
+ let lines;
+ if(state.tab==='daily'){
+  lines=[['Data','Concluídos','Vendas App R$','Vendas ERP R$','Total pedidos R$','Receita avulsa R$','Realizado R$','Em andamento','A realizar R$'],
+   ...(data.days||[]).map(x=>[x.day,x.completedCount,toReais(x.appCents),toReais(x.erpCents),toReais(x.completedCents),toReais(x.manualCents),
+    toReais(Number(x.completedCents)+Number(x.manualCents)),x.pendingCount,toReais(x.pendingCents)])];
+ }else if(state.tab==='dre'){
+  const d=data.summary||{};
+  lines=[['Conta DRE','Valor R$'],['Receita pedidos concluídos',toReais(d.confirmedCents)],
+   ['Vendas fora do app',toReais(d.manualRevenueCents)],['Receita gerencial',toReais(d.revenueCents)],
+   ['Custos de produção',toReais(d.productionCents)],['Compras revenda',toReais(d.resaleCents)],
+   ['Resultado bruto',toReais(d.grossCents)],['Despesas fixas',toReais(d.fixedCents)],
+   ['Despesas variáveis',toReais(d.variableCents)],['Tributos lançados',toReais(d.taxesCents)],
+   ['Resultado gerencial',toReais(d.netCents)],['Ativos fora do DRE',toReais(d.assetsCents)]];
+ }else{
+  const filtered=(data.entries||[]).filter(x=>state.tab==='fixed'?x.kind==='DESPESA_FIXA':state.tab==='assets'?x.kind==='ATIVO':true);
+  lines=[['Tipo','Data','Categoria','Descrição','Fornecedor','Valor R$','Status','Vencimento','Pagamento','Observações'],
+   ...filtered.map(x=>[TYPES[x.kind],x.competenceDate,CATS[x.kind]?.[x.category]||x.category,x.description,x.supplier,
+    toReais(x.amountCents),x.status,x.dueDate,x.paidAt,x.notes])];
+ }
  const csv='\ufeff'+lines.map(row=>row.map(csvCell).join(';')).join('\r\n');
  const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));const link=document.createElement('a');
- link.href=url;link.download='caseirinho-financeiro-'+state.month+'.csv';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),4000);
+ link.href=url;link.download='caseirinho-'+state.tab+'-'+state.month+'.csv';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),4000);
 }
 function bind(){
  if(!el('finMonth'))return;
