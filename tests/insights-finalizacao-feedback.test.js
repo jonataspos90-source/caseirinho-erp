@@ -56,7 +56,7 @@ test('o cache do PWA carrega o script e CSS corretos',()=>{
  const html=read('index.html'),sw=read('sw.js');
  assert.match(html,/app\.js\?v=30/);
  assert.match(html,/styles\.css\?v=30/);
- assert.match(sw,/caseirinho-insights-app-shell-v30/);
+ assert.match(sw,/caseirinho-insights-app-shell-v31/);
  assert.match(sw,/app\.js\?v=30/);
  assert.match(sw,/styles\.css\?v=30/);
  assert.doesNotThrow(()=>new vm.Script(js));
