@@ -10,12 +10,12 @@ test('Central Financeira tem vendas diárias, DRE, lançamentos e ativos',()=>{
 });
 test('formulário não exige produto cadastrado nem controla estoque',()=>{
  const js=read('financeiro.js');
- assert.match(js,/type:'RESALE_COST'/);
+ assert.match(read('index.html'),/value="RESALE_COST"/);
  assert.match(js,/RE[S]?ALE_COST/);
  assert.doesNotMatch(js,/estoque\/baixa|stock-decrement/i);
  assert.match(js,/method:'PUT'/);
  assert.match(js,/method:'DELETE'/);
- assert.match(js,/recordVersion:/);
+ assert.match(js,/body\.recordVersion/);
 });
 test('autenticação existente é usada no financeiro e há proteção contra CSV fórmula',()=>{
  const js=read('financeiro.js');
