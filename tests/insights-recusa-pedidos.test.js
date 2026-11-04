@@ -4,10 +4,10 @@ const read=x=>fs.readFileSync('central-caseirinho-insights/'+x,'utf8');
 test('recusa aparece na página Pedidos e carrega após o app.js',()=>{
  const html=read('index.html'),sw=read('sw.js');
  assert.match(html,/app\.js\?v=30/);
- assert.match(html,/order-reject\.js\?v=1/);
+ assert.match(html,/order-reject\.js\?v=2/);
  assert.ok(html.indexOf('app.js?v=30')<html.indexOf('order-reject.js?v=2'));
  assert.match(sw,/caseirinho-insights-app-shell-v32/);
- assert.match(sw,/order-reject\.js\?v=1/);
+ assert.match(sw,/order-reject\.js\?v=2/);
  assert.doesNotThrow(()=>new vm.Script(read('order-reject.js')));
 });
 test('recusa exige motivo e confirmação antes de chamar a API',()=>{
