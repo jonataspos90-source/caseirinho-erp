@@ -24,7 +24,7 @@ test('formulário de aceite preservado e cliente com Pix manual não depende da 
  assert.match(s,/function isMercadoPagoOrder\(order\)/);
  assert.match(s,/conferência manual/);
  assert.match(s,/quickAcceptOrder\(code\)/);
- assert.match(s,/Pagamento online ainda não foi aprovado/); // rejected via API on accept
+ assert.match(s,/Aceite não confirmado/); // erro real da API é apresentado no painel
 });
 test('PWA versão nova evita cache antigo e JavaScript válido',()=>{
  assert.match(read('index.html'),/app\.js\?v=27/);
