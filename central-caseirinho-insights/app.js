@@ -375,19 +375,21 @@ function csv(){
 }
 
 function renderProducts(){
- const q=s(E('productSearch')?.value).toLowerCase().trim(),select=E('productCategory'),prev=select.value;
+ const q=s(E('productSearch')?.value).toLowerCase().trim(),select=E('productCategory'),prev=select.value,filter=E('productStatus')?.value||'all';
  const cats=[...new Set(st.catalog.map(x=>x.category))].sort((a,b)=>s(a).localeCompare(s(b),'pt-BR'));
  select.innerHTML='<option value="all">Todas as categorias</option>'+cats.map(x=>'<option value="'+esc(x)+'">'+esc(x)+'</option>').join('');
  if(cats.includes(prev))select.value=prev;else select.value='all';
- const selected=st.catalog.filter(x=>(select.value==='all'||x.category===select.value)&&(s(x.name)+' '+s(x.category)+' '+s(x.variation)).toLowerCase().includes(q));
- E('productsCount').textContent=selected.length+' publicados';
+ const selected=st.catalog.filter(x=>(select.value==='all'||x.category===select.value)&&
+  (filter==='all'||filter==='inactive'&&x.active===false||filter==='unavailable'&&x.active!==false&&x.availableForSale===false||filter==='active'&&x.active!==false&&x.availableForSale!==false)&&
+  (s(x.name)+' '+s(x.category)+' '+s(x.variation)).toLowerCase().includes(q));
+ E('productsCount').textContent=selected.length+' produto(s) · '+st.catalog.filter(x=>x.active===false).length+' inativos · '+st.catalog.filter(x=>x.active!==false&&x.availableForSale===false).length+' indisponíveis';
  renderDrafts();
  if(!selected.length){E('productsList').innerHTML=cellEmpty('Não há produtos com esses critérios.');return;}
  E('productsList').innerHTML='<div class="product-card-grid">'+selected.map(x=>
- '<article class="product-card"><div><div class="product-photo">'+(x.image?'<img src="'+esc(x.image)+'" alt="Foto de '+esc(x.name)+'" loading="lazy">':'<span>📷 Sem foto</span>')+'</div><span class="badge light">'+esc(x.category)+'</span> '+(x.promotionActive?'<span class="badge warn">Promoção ativa</span>':'')+
+ '<article class="product-card"><div><div class="product-photo">'+(x.image?'<img src="'+esc(x.image)+'" alt="Foto de '+esc(x.name)+'" loading="lazy">':'<span>📷 Sem foto</span>')+'</div><span class="badge light">'+esc(x.category)+'</span> '+(x.active===false?'<span class="badge warn">⛔ INATIVO — oculto na loja</span>':x.availableForSale===false?'<span class="badge warn">🚫 INDISPONÍVEL — visível, sem compra</span>':'<span class="badge good">✅ À venda</span>')+' '+(x.promotionActive?'<span class="badge warn">Promoção ativa</span>':'')+
  '<h3>'+esc(x.name)+'</h3><small class="muted">'+esc(x.variation||x.availability||'')+'</small></div>'+
  '<div class="price-row"><b>'+brl(x.price)+'</b><span>Mínimo: '+n(x.minimum)+' · Máximo: '+(n(x.maximum)||'Sem limite')+'</span></div>'+
- '<button class="btn primary" type="button" data-action="editProduct" data-product="'+esc(x.id)+'">✏️ Preço / mínimo</button><button class="btn gold" type="button" data-action="photosProduct" data-product="'+esc(x.id)+'">📷 Alterar fotos</button></article>'
+ '<button class="btn primary" type="button" data-action="editProduct" data-product="'+esc(x.id)+'">✏️ Preço / Situação</button><button class="btn gold" type="button" data-action="photosProduct" data-product="'+esc(x.id)+'">📷 Alterar fotos</button></article>'
  ).join('')+'</div>';
 }
 
@@ -523,16 +525,21 @@ function editProduct(id){
  '<input id="editMinimum" type="number" min="0.01" max="99999" step="0.01" inputmode="decimal" required value="'+n(x.minimum||1)+'">'+
  '<label class="form-label" for="editMaximum">📦 Quantidade máxima (0 = sem limite)</label>'+
  '<input id="editMaximum" type="number" min="0" max="99999" step="0.01" inputmode="decimal" required value="'+n(x.maximum)+'">'+
+ '<div class="product-lifecycle-controls"><label class="form-label" for="editActive">🏷️ Situação do produto no ERP</label>'+
+ '<select id="editActive"><option value="true" '+(x.active!==false?'selected':'')+'>✅ ATIVO — aparece na loja</option><option value="false" '+(x.active===false?'selected':'')+'>⛔ INATIVO — não aparece na loja</option></select>'+
+ '<label class="form-label" for="editAvailable">🛍️ Disponibilidade de venda</label>'+
+ '<select id="editAvailable"><option value="true" '+(x.availableForSale!==false?'selected':'')+'>✅ DISPONÍVEL — permite compra</option><option value="false" '+(x.availableForSale===false?'selected':'')+'>🚫 INDISPONÍVEL — tarja na loja, bloqueia compra</option></select>'+
+ '<p class="notice">As opções são independentes: inativar oculta o produto; indisponível mantém visível, mas impede adicionar ao carrinho. O ERP é a fonte oficial.</p></div>'+
  (x.promotionActive?'<div class="notice">⚠️ Há promoção ativa neste produto. O preço promocional deve ser conferido separadamente no ERP.</div>':'')+
  '<p class="muted">Alteração registrada com data e usuário. Se outro operador modificar o produto, a gravação será recusada para evitar conflito.</p>'+
  '<div id="productSaveStatus" class="notice" role="status" hidden></div>'+
  '<div class="toolbar"><button class="btn primary" type="submit">✅ Salvar no ERP e na loja</button><button class="btn" type="button" id="verifyProductTerms">🔎 Conferir preço publicado</button></div></form>';
  modal('✏️ Editar produto',html);
 }
-function productTermsMatch(product,price,minimum,maximum){
+function productTermsMatch(product,price,minimum,maximum,active,availableForSale){
  if(!product)return false;
  return [n(product.price),n(product.minimum),n(product.maximum)].every((v,i)=>
-  Math.abs(v-[price,minimum,maximum][i])<0.0001);
+  Math.abs(v-[price,minimum,maximum][i])<0.0001)&&product.active===active&&product.availableForSale===availableForSale;
 }
 async function getVerifiedProduct(id){
  // Always consult the server, never trust a local product card or cached GET for save verification.
@@ -542,15 +549,15 @@ async function getVerifiedProduct(id){
 async function verifyProductTerms(){
  const form=E('productEditForm');if(!form)return;
  const id=form.dataset.product,button=E('verifyProductTerms'),status=E('productSaveStatus');
- const expected={price:Number(E('editPrice').value),minimum:Number(E('editMinimum').value),maximum:Number(E('editMaximum').value)};
+ const expected={price:Number(E('editPrice').value),minimum:Number(E('editMinimum').value),maximum:Number(E('editMaximum').value),active:E('editActive').value==='true',availableForSale:E('editAvailable').value==='true'};
  const original=button.textContent;button.disabled=true;button.textContent='Conferindo...';
  try{
   const published=await getVerifiedProduct(id);
   if(!published)throw Error('Produto não localizado na loja. Atualize o cadastro.');
   status.hidden=false;
-  if(productTermsMatch(published,expected.price,expected.minimum,expected.maximum)){
+  if(productTermsMatch(published,expected.price,expected.minimum,expected.maximum,expected.active,expected.availableForSale)){
    status.className='notice success';
-   status.textContent='✅ CONFIRMADO no e-commerce: '+brl(published.price)+' · mínimo '+published.minimum+' · máximo '+published.maximum+'.';
+   status.textContent='✅ CONFIRMADO no ERP/e-commerce: '+brl(published.price)+' · '+(published.active?'ATIVO':'INATIVO')+' · '+(published.availableForSale?'DISPONÍVEL':'INDISPONÍVEL')+'.';
    st.catalog=st.catalog.map(x=>x.id===id?{...x,...published}:x);
   }else{
    status.className='notice warn';
@@ -566,25 +573,25 @@ async function saveProduct(e){
  const form=e.target,productId=form?.dataset.product;
  const x=st.catalog.find(v=>v.id===productId);
  if(!x)return toast('Produto desatualizado. Atualize antes de salvar.',true);
- const price=Number(E('editPrice').value),minimum=Number(E('editMinimum').value),maximum=Number(E('editMaximum').value);
+ const price=Number(E('editPrice').value),minimum=Number(E('editMinimum').value),maximum=Number(E('editMaximum').value),active=E('editActive').value==='true',availableForSale=E('editAvailable').value==='true';
  if(!Number.isFinite(price)||price<=0||!Number.isFinite(minimum)||minimum<=0||!Number.isFinite(maximum)||maximum<0||(maximum>0&&maximum<minimum)){
   toast('Preencha valores válidos. Máximo deve ser zero ou maior que o mínimo.',true);return;
  }
- if(!window.confirm('Confirmar alteração em '+x.name+'? Preço: '+brl(price)+' | Mínimo: '+minimum+' | Máximo: '+(maximum||'sem limite')+'. A alteração será publicada no catálogo.'))return;
+ if(!window.confirm('Confirmar alteração de '+x.name+'? Preço '+brl(price)+' · '+(active?'ATIVO':'INATIVO (oculto)')+' · '+(availableForSale?'DISPONÍVEL':'INDISPONÍVEL (bloqueia compra)')+'. Isso será gravado no ERP e replicado para a loja.'))return;
  const button=form.querySelector('[type=submit]'),message=E('productSaveStatus');
  const feedback=(text,cls='warn')=>{if(message){message.hidden=false;message.className='notice '+cls;message.textContent=text;}};
  const original=button.textContent;
  button.disabled=true;button.textContent='Verificando gravação…';
  feedback('Enviando alteração para o ERP e o e-commerce…');
  let reply=null,networkError=null;
- try{reply=await api('catalog/'+encodeURIComponent(productId)+'/terms',{method:'PATCH',body:{price,minimum,maximum,expectedUpdatedAt:x.updatedAt}});}
+ try{reply=await api('catalog/'+encodeURIComponent(productId)+'/terms',{method:'PATCH',body:{price,minimum,maximum,active,availableForSale,expectedUpdatedAt:x.updatedAt}});}
  catch(err){if(!err.networkError){feedback('Alteração não salva: '+err.message,'error');toast('Não foi possível salvar: '+err.message,true);button.disabled=false;button.textContent=original;return;}networkError=err;}
  let verified=null,verificationError=null;
  try{verified=await getVerifiedProduct(productId);}catch(err){verificationError=err;}
  // A lost response may follow a committed write; verifying avoids accidental double saves.
- if(verified&&productTermsMatch(verified,price,minimum,maximum)){
+ if(verified&&productTermsMatch(verified,price,minimum,maximum,active,availableForSale)){
   st.catalog=st.catalog.map(p=>p.id===productId?{...p,...verified}:p);
-  hideModal();toast('✅ Preço e quantidades confirmados na loja e no ERP!');
+  hideModal();toast('✅ Preço, atividade e disponibilidade confirmados no ERP e na loja!');
   if(reply?.warning)toast(reply.warning,true);
   // Saving succeeded: a later refresh failure must not be presented as a failed save.
   try{await loadAll();}catch(_){}nav('products');return;
@@ -1745,6 +1752,7 @@ function bind(){
  E('csvContacts').addEventListener('click',csv);
  E('productSearch').addEventListener('input',renderProducts);
  E('productCategory').addEventListener('change',renderProducts);
+ E('productStatus').addEventListener('change',renderProducts);
  initSalesDates();
  E('salesRefresh').addEventListener('click',loadSales);
  E('salesSearch').addEventListener('input',renderSalesDetails);
