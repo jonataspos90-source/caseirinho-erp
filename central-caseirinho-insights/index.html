@@ -28,6 +28,7 @@
  <button type="button" data-view="ranking">🏆 Ranking</button>
  <button type="button" data-view="orders">🛒 Pedidos</button>
  <button type="button" data-view="operations">🩺 Central Operacional</button>
+ <button type="button" data-view="finance">💰 Financeiro e DRE</button>
  <button type="button" data-view="products">🏷️ Produtos e preços</button>
  <button type="button" data-view="blackfriday">🖤 Black Friday</button>
  <button type="button" data-view="sazonais">🎄 Encomendas Sazonais</button>
@@ -74,6 +75,80 @@
  <div id="opsCatalogAlerts"></div>
  <p class="notice">A auditoria não altera preços, não confirma pagamentos e não reprocessa pedidos. Para corrigir, use os módulos responsáveis.</p>
  </article></section>
+<section id="finance" class="section">
+ <div class="section-head"><div><h2>💰 Controle Financeiro & DRE</h2>
+ <p>Vendas por dia, despesas, produção e revenda sem estoque, contas fixas, ativos e resultado mensal.</p></div>
+ <button class="btn primary" type="button" id="finRefresh">↻ Atualizar</button></div>
+ <div class="notice">📌 O DRE é <b>gerencial e por competência</b>. Vendas entregues/retiradas entram no resultado realizado. Pedidos apenas aceitos aparecem como <b>previsão</b>. Compras para revenda são registradas como custo integral no mês, sem controlar estoque. Ativos são demonstrados separadamente, com depreciação estimada.</div>
+ <div class="toolbar">
+  <label>Competência <input type="month" id="finMonth" aria-label="Mês do DRE"></label>
+  <label>Vendas de <input type="date" id="finFrom" aria-label="Início do período de vendas"></label>
+  <label>até <input type="date" id="finTo" aria-label="Fim do período de vendas"></label>
+  <button class="btn" type="button" id="finConsult">🔎 Consultar</button>
+  <button class="btn" type="button" id="finCsv">⬇ CSV</button>
+  <button class="btn" type="button" id="finPrint">📄 Imprimir / PDF</button>
+ </div>
+ <div id="finNotice" class="notice" role="status">Selecione o mês e consulte os dados.</div>
+ <div class="grid stats" id="finKpis"></div>
+ <div class="toolbar" style="margin:14px 0" role="tablist" aria-label="Submódulos financeiros">
+  <button type="button" class="btn primary" data-fin-tab="daily">📅 Vendas por dia</button>
+  <button type="button" class="btn" data-fin-tab="dre">📊 DRE mensal</button>
+  <button type="button" class="btn" data-fin-tab="entries">✍️ Lançamentos</button>
+  <button type="button" class="btn" data-fin-tab="assets">🏭 Ativos</button>
+ </div>
+ <div id="finDaily" class="card fin-panel"><h3>📅 Relatório diário de vendas</h3>
+  <p><small>Data de realização do pedido. Vendas concluídas e aceitas são mostradas separadamente; valores sem frete.</small></p>
+  <div id="finDailyTable"></div></div>
+ <div id="finDre" class="card fin-panel" hidden><h3>📊 Demonstrativo de Resultados (DRE)</h3>
+  <div id="finDreTable"></div>
+  <h3 style="margin-top:20px">📈 Últimos 12 meses</h3><div id="finHistory"></div>
+  <div class="notice">O resultado não equivale ao saldo do banco. Tributos, custos e despesas precisam ser lançados; vendas não concluídas são apenas previsão. Não substitui a contabilidade oficial.</div></div>
+ <div id="finEntries" class="fin-panel" hidden>
+  <div class="section-head"><div><h3>✍️ Despesas, compras e receitas fora do aplicativo</h3>
+   <p>Cadastro simplificado, sem ficha de estoque. Faça um lançamento para cada despesa ou compra.</p></div>
+   <button type="button" class="btn primary" id="finNew">➕ Novo lançamento</button></div>
+  <div class="toolbar"><input type="search" id="finSearch" placeholder="Buscar descrição, categoria ou fornecedor" aria-label="Buscar lançamento">
+   <select id="finKindFilter" aria-label="Filtrar tipos"><option value="ALL">Todos os tipos</option>
+    <option value="PRODUCTION_COST">Ingredientes e produção</option><option value="RESALE_COST">Compra para revenda</option>
+    <option value="FIXED">Contas fixas</option><option value="VARIABLE">Despesas variáveis</option>
+    <option value="TAX">Impostos</option><option value="SALE_MANUAL">Venda fora do aplicativo</option><option value="OTHER_INCOME">Outras receitas</option></select></div>
+  <div id="finEntriesTable"></div>
+ </div>
+ <div id="finAssets" class="fin-panel card" hidden><div class="section-head"><div><h3>🏭 Controle de ativos</h3>
+  <p>Equipamentos, móveis, veículos e bens. Compra do ativo não é custo de revenda; a depreciação mensal aparece no DRE.</p></div>
+  <button class="btn primary" type="button" id="finNewAsset">➕ Cadastrar ativo</button></div>
+  <div id="finAssetsTable"></div></div>
+ <div id="finFormPanel" class="card" hidden style="margin-top:14px"><h3 id="finFormTitle">➕ Novo lançamento</h3>
+  <form id="finForm">
+   <div class="fin-fields">
+    <label>Tipo do lançamento<select id="finType" required>
+     <option value="PRODUCTION_COST">🥚 Ingredientes / custo de produção</option>
+     <option value="RESALE_COST">📦 Produtos comprados para revenda (sem estoque)</option>
+     <option value="FIXED">🏠 Despesa fixa: aluguel, água, luz, internet</option>
+     <option value="VARIABLE">🚗 Despesa variável: frete, taxas, publicidade</option>
+     <option value="TAX">🧾 Tributos / impostos</option>
+     <option value="ASSET">🏭 Ativo: freezer, forno, equipamentos</option>
+     <option value="SALE_MANUAL">💵 Venda fora do aplicativo (não duplicar pedido da loja)</option>
+     <option value="OTHER_INCOME">➕ Outras receitas</option>
+    </select></label>
+    <label>Descrição<input id="finDescription" maxlength="160" required placeholder="Ex.: Aluguel da cozinha"></label>
+    <label>Categoria<input id="finCategory" maxlength="70" list="finCategories" placeholder="Ex.: Aluguel"></label>
+    <datalist id="finCategories"><option value="Aluguel"><option value="Água"><option value="Energia elétrica"><option value="Internet"><option value="Gás"><option value="Telefone"><option value="Ingredientes"><option value="Embalagens"><option value="Produtos para revenda"><option value="Transporte / entregas"><option value="Publicidade"><option value="Taxas de cartão"><option value="Impostos"><option value="Equipamentos"><option value="Móveis e utensílios"></datalist>
+    <label>Valor (R$)<input id="finAmount" type="number" min="0.01" max="1000000000" step="0.01" inputmode="decimal" required></label>
+    <label>Data da operação<input id="finDate" type="date" required></label>
+    <label>Competência do DRE<input id="finCompetency" type="month" required></label>
+    <label>Situação<select id="finStatus"><option value="PAGO">✅ Pago / recebido</option><option value="PENDENTE">⏳ Pendente</option></select></label>
+    <label>Vencimento<input id="finDueDate" type="date"></label>
+    <label>Pagamento efetivo<input id="finPaidDate" type="date"></label>
+    <label>Fornecedor / responsável<input id="finSupplier" maxlength="120" placeholder="Opcional"></label>
+    <label id="finLifeLabel" hidden>Vida útil estimada do ativo (meses)<input id="finLife" type="number" min="1" max="360" value="60"></label>
+    <label id="finRepeatLabel">Repetir nos próximos meses<select id="finRepeat"><option value="1">Somente este lançamento</option><option value="3">3 meses</option><option value="6">6 meses</option><option value="12">12 meses</option></select></label>
+   </div>
+   <label>Observações<textarea id="finNotes" rows="2" maxlength="500" placeholder="Ex.: NF, comprovante, detalhes do gasto"></textarea></label>
+   <div class="toolbar" style="margin-top:12px"><button class="btn primary" type="submit" id="finSave">💾 Salvar lançamento</button><button class="btn" type="button" id="finCancel">Cancelar</button></div>
+  </form>
+ </div>
+</section>
 <section id="menu" class="section"><div class="section-head"><div><h2>🍝 Cardápio escrito</h2><p>Preços publicados no Neon. Selecione uma categoria ou envie o resumo com o link do aplicativo.</p></div></div>
   <div class="toolbar"><select class="menu-select" id="menuCategory"><option value="all">Todas as categorias</option></select><button class="btn" id="copyMenu">📋 Copiar cardápio</button><button class="btn whatsapp" id="menuShare">💬 Preparar envio</button></div>
   <div id="priceWarnings"></div><div class="menu-grid"><article class="card"><h2>Produtos e valores</h2><div id="menuItems"></div></article><article class="card"><h2>Mensagem pronta</h2><div id="menuText" class="menu-list"></div><p><small>Ao escolher uma categoria, o texto é atualizado. Para cardápios longos, a mensagem é resumida e inclui o endereço da loja.</small></p></article></div>
@@ -242,6 +317,7 @@
  <button type="button" data-view="contacts">👥<small>Clientes</small></button>
  <button type="button" data-view="orders">🛒<small>Pedidos</small></button>
  <button type="button" data-view="operations">🩺<small>Auditoria</small></button>
+ <button type="button" data-view="finance">💰<small>DRE</small></button>
  <button type="button" data-view="products">🏷️<small>Preços</small></button>
  <button type="button" data-view="blackfriday">🖤<small>Black Friday</small></button>
  <button type="button" data-view="sazonais">🎄<small>Encomendas</small></button>
@@ -255,4 +331,5 @@
 <div id="modal" class="modal-bg" hidden><div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><h2 id="modalTitle">Mensagem para WhatsApp</h2><div id="modalContent"></div><div class="toolbar" style="justify-content:flex-end;margin-top:20px"><button class="btn" id="modalClose">Fechar</button></div></div></div>
 <script src="./app.js?v=21" defer></script>
 <script src="./operations-recovery.js?v=1" defer></script>
+<script src="./financeiro.js?v=1" defer></script>
 </body></html>
