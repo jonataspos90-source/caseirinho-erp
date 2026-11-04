@@ -266,3 +266,7 @@
 .modal #quickFinishSubmit:disabled{background:#5c7469}
 .modal #quickFinishAlert:not([hidden]){border-width:2px;font-weight:750}
 @media(max-width:580px){.modal{padding:18px}.modal .quick-finish-step{padding:10px}.modal #quickFinishSubmit{font-size:14px}}
+
+.quick-cashback-exception{display:grid;gap:8px;padding:14px;margin:14px 0;border:2px solid #b89348;border-radius:14px;background:#fff8e9}
+.quick-cashback-exception textarea{width:100%;padding:10px;min-height:70px;max-height:190px;resize:vertical;border:1px solid #d5c18b;border-radius:9px;font:inherit}
+.quick-cashback-exception small{font-size:12px;color:#795212;line-height:1.5}

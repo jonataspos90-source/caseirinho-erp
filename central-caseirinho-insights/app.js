@@ -211,7 +211,7 @@ function renderOrderFulfillmentKpis(){
  const complete=items.filter(x=>x.completed);
  E('orderFulfillmentKpis').innerHTML=[
   statsCard('📦','Aguardando conclusão',ready.length,'Aceitos, inclusive os que aguardam integração ERP'),
-  statsCard('💚','Cashback a decidir',ready.filter(x=>x.approval==='PENDENTE'&&x.eligible).length,'Apenas pedidos elegíveis'),
+  statsCard('💚','Cashback a decidir',ready.filter(x=>x.approval==='PENDENTE'&&(x.eligible||x.canOverrideFirstPurchase)).length,'Elegíveis e exceções disponíveis ao administrador'),
   statsCard('✅','Créditos liberados',granted.length,brl(granted.reduce((sum,x)=>sum+Number(x.credit||0),0))+' em cashback'),
   statsCard('🎉','Entregues / retirados',complete.length,'Pedidos com situação finalizada')
  ].join('');
@@ -698,7 +698,7 @@ function orderButton(order){
   return first+'<button class="btn small primary" type="button" data-action="quickAcceptOrder" data-order="'+code+'">✅ Aceitar pedido</button>';
  if(['ACEITO','ABERTO','PRONTO'].includes(status)){
   const approved=rule?.approval==='APROVADO',rejected=rule?.approval==='REJEITADO';
-  const label=approved?'💚 Cashback aprovado':rejected?'🚫 Cashback não liberado':'💚 Decidir cashback';
+  const label=approved?(rule?.manualFirstPurchaseApproved?'💚 Exceção aprovada':'💚 Cashback aprovado'):rejected?'🚫 Cashback não liberado':'💚 Decidir cashback';
   return first+'<button class="btn small primary" type="button" data-action="quickFinishOrder" data-order="'+code+'" title="Abrir conferência de entrega e pagamento">📦 Finalizar (confirmar)</button> '+
    '<button class="btn small" type="button" data-action="quickCashbackOrder" data-order="'+code+'">'+label+'</button>';
  }
@@ -1151,15 +1151,24 @@ async function quickCashbackOrder(code){
  if(!['ACEITO','ABERTO','PRONTO'].includes(s(f.status).toUpperCase()))
   return toast('Aceite primeiro o pedido antes de decidir o cashback.',true);
  const canApprove=f.canApprove===true||f.eligible===true;
- const approval=f.approval||'PENDENTE',sum=canApprove?'<div class="notice success">💚 Valor estimado: <b>'+brl(f.estimate)+'</b>. Se aprovado, o saldo será liberado somente após a entrega ou retirada.</div>':
- '<div class="notice warn">Cashback não elegível neste pedido: '+esc((f.reasons||[]).filter(t=>!s(t).includes('recusado explicitamente')).join(' ')||'Consulte as regras do programa.')+'</div>';
- const option=canApprove?'<label><input type="radio" name="quickCashbackDecision" value="APROVADO" '+(approval==='APROVADO'?'checked':'')+'> 💚 Aprovar cashback de '+brl(f.estimate)+'</label>':'';
+ const canOverride=f.canOverrideFirstPurchase===true;
+ const approval=f.approval||'PENDENTE';
+ const sum=canApprove?'<div class="notice success">💚 Valor estimado: <b>'+brl(f.estimate)+'</b>. O saldo será liberado somente após a entrega ou retirada.</div>':
+  canOverride?'<div class="notice warn"><b>Exceção administrativa disponível.</b> Este cliente ainda não tem compra anterior concluída. A regra automática dos 3% continua valendo a partir da segunda compra; você pode autorizar <b>somente este pedido</b>, mediante justificativa.</div>':
+  '<div class="notice warn">Cashback não elegível neste pedido: '+esc((f.reasons||[]).filter(t=>!s(t).includes('recusado explicitamente')).join(' ')||'Consulte as regras do programa.')+'</div>';
+ const option=canApprove?'<label><input type="radio" name="quickCashbackDecision" value="APROVADO" '+(approval==='APROVADO'?'checked':'')+'> 💚 Aprovar cashback de '+brl(f.estimate)+(f.manualFirstPurchaseApproved?' (exceção já autorizada)':'')+'</label>':
+  canOverride?'<label><input type="radio" name="quickCashbackDecision" value="APROVADO"> 💚 Aprovar '+brl(f.estimate)+' como EXCEÇÃO de primeira compra</label>':'';
+ const exceptionForm=canOverride?'<div class="quick-cashback-exception"><label for="quickOverrideReason"><b>Justificativa obrigatória da exceção</b></label>'+
+  '<textarea id="quickOverrideReason" maxlength="400" minlength="12" rows="3" placeholder="Ex.: Bonificação de fidelização autorizada para este pedido"></textarea>'+
+  '<small>Esta autorização vale apenas para o pedido #'+esc(code)+'. Não cria cashback para outras primeiras compras.</small></div>':'';
+ const details=f.manualFirstPurchaseApproved?'<p class="notice success">✅ Cashback aprovado por exceção administrativa. '+(f.manualOverrideReason?'Justificativa: '+esc(f.manualOverrideReason):'')+'</p>':'';
  modal('💚 Decidir cashback · pedido #'+code,
  '<p><b>'+esc(x.name||'Cliente')+'</b> • Pedido '+brl(x.total)+'</p>'+
- '<p><b>Decisão atual:</b> '+badge(approval)+'</p>'+sum+
+ '<p><b>Decisão atual:</b> '+badge(approval)+'</p>'+details+sum+
  '<div class="fulfillment-options">'+option+
  '<label><input type="radio" name="quickCashbackDecision" value="REJEITADO" '+(approval==='REJEITADO'?'checked':'')+'> 🚫 Não liberar cashback neste pedido</label></div>'+
- '<p class="notice">Salvar esta decisão <b>não</b> marca o pedido como entregue ou pago. A decisão poderá ser alterada até a conclusão, respeitando as regras do programa.</p>'+
+ exceptionForm+
+ '<p class="notice">Salvar esta decisão <b>não</b> marca o pedido como entregue ou pago. Se aprovado, o crédito ficará disponível somente após a conclusão.</p>'+
  '<button class="btn primary" type="button" data-action="quickSaveCashback" data-order="'+esc(code)+'">💾 Salvar decisão de cashback</button>');
 }
 async function quickSaveCashback(code){
@@ -1168,18 +1177,22 @@ async function quickSaveCashback(code){
  if(!['APROVADO','REJEITADO'].includes(decision))return toast('Escolha Aprovar cashback ou Não liberar.',true);
  const f=fulfillStatus(code),x=orderLookup(code);
  if(!f||!x)return toast('Atualize o pedido e tente novamente.',true);
- if(decision==='APROVADO'&&f.canApprove!==true&&f.eligible!==true)
-  return toast('Cashback não elegível para aprovação. Consulte os critérios.',true);
- const value=decision==='APROVADO'?'APROVAR '+brl(f.estimate)+' de cashback (disponível somente depois da entrega)':'NÃO LIBERAR cashback';
+ const requestedOverride=decision==='APROVADO'&&f.canOverrideFirstPurchase===true&&f.canApprove!==true&&f.eligible!==true;
+ const overrideReason=requestedOverride?s(E('quickOverrideReason')?.value).trim():'';
+ if(decision==='APROVADO'&&!requestedOverride&&f.canApprove!==true&&f.eligible!==true)
+  return toast('Cashback não elegível. A exceção é permitida somente para a primeira compra.',true);
+ if(requestedOverride&&(overrideReason.length<12||overrideReason.length>400))
+  return toast('Informe uma justificativa entre 12 e 400 caracteres para aprovar a exceção.',true);
+ const value=decision==='APROVADO'?(requestedOverride?'APROVAR COMO EXCEÇÃO ADMINISTRATIVA ':'APROVAR ')+brl(f.estimate)+' de cashback (disponível somente depois da entrega)':'NÃO LIBERAR cashback';
  if(!window.confirm(value+' no pedido #'+code+' de '+s(x.name||'Cliente')+'?'))return;
  quickCashbackPending.add(code);
  const buttons=[...document.querySelectorAll('[data-action="quickSaveCashback"]')].filter(b=>b.dataset.order===code);
  buttons.forEach(b=>{b.disabled=true;b.textContent='⏳ Salvando decisão...';});
  try{
-  const result=await api('orders/'+encodeURIComponent(code)+'/cashback-decision',{method:'POST',body:{decision}});
+  const result=await api('orders/'+encodeURIComponent(code)+'/cashback-decision',{method:'POST',body:{decision,overrideFirstPurchase:requestedOverride,overrideReason:requestedOverride?overrideReason:undefined}});
   hideModal();
   await loadAll();nav('orders');
-  toast(result.decision==='APROVADO'?'💚 Cashback aprovado para o pedido #'+code+'. Crédito somente após entrega.':'🚫 Pedido #'+code+': cashback não liberado.');
+  toast(result.decision==='APROVADO'?(result.manualFirstPurchaseApproved?'💚 Exceção de primeira compra aprovada para o pedido #'+code+'. Crédito somente após entrega.':'💚 Cashback aprovado para o pedido #'+code+'. Crédito somente após entrega.'):'🚫 Pedido #'+code+': cashback não liberado.');
  }catch(error){
   if(error.networkError){
    try{await refreshFulfillment();const refreshed=fulfillStatus(code);if(refreshed?.approval===decision){
@@ -1214,7 +1227,7 @@ function quickFinishOrder(code){
  '<div class="fulfillment-options quick-finalize">'+
  (canApprove?'<label><input type="radio" name="quickCashbackDecision" value="APROVADO" '+(approval==='APROVADO'?'checked':'')+'> 💚 Aprovar '+brl(f.estimate)+' de cashback</label>':'')+
  '<label><input type="radio" name="quickCashbackDecision" value="REJEITADO" '+(approval==='REJEITADO'||!canApprove?'checked':'')+'> 🚫 Não liberar cashback</label></div>'+
- (!canApprove?'<p class="notice warn">Cashback não elegível: '+esc((f.reasons||[]).filter(t=>!s(t).includes('recusado explicitamente')).join(' ')||'Critérios do programa não atendidos.')+'</p>':'')+
+ (!canApprove?'<p class="notice warn">Cashback não elegível: '+esc((f.reasons||[]).filter(t=>!s(t).includes('recusado explicitamente')).join(' ')||'Critérios do programa não atendidos.')+(f.canOverrideFirstPurchase?' <b>Você pode aprovar como exceção antes de finalizar, usando o botão Decidir cashback na lista de pedidos.</b>':'')+'</p>':'')+
  '</div>';
  const details=(order.items||[]).map(x=>'<li>'+esc(n(x.quantity)+'× '+s(x.name))+'</li>').join('');
  modal('📦 Finalização do pedido #'+code,
