@@ -1133,7 +1133,7 @@ function quickConfirmOrder(code){
  const form=E('modalContent');
  if(!form)return;
  const old=form.querySelector('input[name="fulfillmentCashback"]');if(old)old.remove();
- const input=document.createElement('input');input.type='hidden';input.name='fulfillmentCashback';input.value=decision;form.appendChild(input);
+ const input=document.createElement('input');input.type='radio';input.name='fulfillmentCashback';input.value=decision;input.checked=true;input.hidden=true;form.appendChild(input);
  return confirmOrderComplete(code);
 }
 async function manageOrderFulfillment(code){
