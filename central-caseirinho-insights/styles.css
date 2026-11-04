@@ -277,3 +277,23 @@
 #manualPaymentSubmit:disabled{opacity:.6}
 #manualPaymentReason{width:100%;min-height:90px;border-radius:10px;padding:10px;font:inherit;border:1px solid #b4c7b8}
 #manualPaymentReceived{width:20px;height:20px;vertical-align:middle;accent-color:#0b5232}
+
+
+/* V33 — Modal de recusa administrativa legível no celular. */
+
+.caseirinho-ops-dialog{box-sizing:border-box;width:min(520px,calc(100% - 24px));max-width:100%;max-height:min(85dvh,760px);overflow-y:auto;margin:auto;padding:24px;border:0;border-radius:18px;background:#fffdf8;color:#193d2b;box-shadow:0 25px 70px #061b1355}
+.caseirinho-ops-dialog::backdrop{background:#10251ac9}
+.caseirinho-ops-dialog form{display:grid;gap:14px;margin:0}
+.caseirinho-ops-dialog h2{margin:0;font-size:23px;line-height:1.3}
+.caseirinho-ops-dialog p{margin:0;font-size:14px;line-height:1.5}
+.caseirinho-ops-dialog label{display:grid;gap:7px;font-size:14px;font-weight:700}
+.caseirinho-ops-dialog label small{font-size:12px;line-height:1.5;font-weight:400;color:#617365}
+.caseirinho-ops-dialog textarea{box-sizing:border-box;width:100%;min-height:94px;min-width:0;max-width:100%;font:inherit;font-size:16px;line-height:1.4;padding:11px;border:1px solid #b7cbb9;border-radius:10px;background:white;color:#193d2b}
+.caseirinho-ops-dialog .ops-reject-confirm{display:flex;gap:10px;align-items:flex-start;line-height:1.45;font-weight:500}
+.caseirinho-ops-dialog .ops-reject-confirm input{width:20px;min-width:20px;height:20px;margin:1px 0 0;accent-color:#1b6f45}
+.caseirinho-ops-dialog #opsRejectFeedback{min-height:20px;color:#9b331b;font-weight:700}
+.caseirinho-ops-dialog .ops-reject-actions{display:flex;flex-wrap:wrap;gap:9px;justify-content:flex-end}
+.caseirinho-ops-dialog .ops-reject-actions button{border-radius:11px;padding:12px 14px;font-size:14px;min-height:44px;cursor:pointer;border:1px solid #b9c7bc;background:#f1f4ef;color:#234533}
+.caseirinho-ops-dialog #opsRejectSave{background:#a32a3a;border-color:#a32a3a;color:#fff;font-weight:750}
+.caseirinho-ops-dialog #opsRejectSave:disabled{opacity:.55;cursor:wait}
+@media(max-width:460px){.caseirinho-ops-dialog{padding:18px 15px;max-height:86dvh}.caseirinho-ops-dialog h2{font-size:21px}.caseirinho-ops-dialog .ops-reject-actions{display:grid;grid-template-columns:1fr 1.5fr}}
