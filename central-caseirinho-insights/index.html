@@ -2,7 +2,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#183c2e"><meta name="description" content="Central Caseirinho Insights — painel administrativo independente de CRM, acessos, pedidos e cardápio.">
 <title>Central Caseirinho Insights | CRM e Loja</title>
-<link rel="stylesheet" href="./styles.css?v=20">
+<link rel="stylesheet" href="./styles.css?v=20"><link rel="stylesheet" href="./financeiro.css?v=1">
 <link rel="manifest" href="./manifest.webmanifest"><link rel="icon" type="image/png" sizes="192x192" href="/caseirinho-loja/icons/icon-192.png"><link rel="apple-touch-icon" href="/caseirinho-loja/icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default">
 </head><body>
 <div class="auth-screen" id="loginScreen">
@@ -37,6 +37,7 @@
  <button type="button" data-view="merch">🎁 Grades e Packs</button>
  <button type="button" data-view="reports">📄 Relatórios / PDF</button>
  <button type="button" data-view="sales">📈 Vendas / Curva ABC</button>
+ <button type="button" data-view="financeiro">💰 Financeiro / DRE</button>
  <button type="button" data-view="menu">🍝 Cardápio</button>
  <button type="button" data-view="requests">🔔 Solicitações <span id="requestCount" class="num" hidden>0</span></button>
  <button type="button" data-view="settings">⚙️ Configurações</button>
@@ -127,6 +128,45 @@
   <select id="salesCategoryFilter"><option value="all">Todas as categorias</option></select>
  </div><div id="salesTable"></div></div>
  <div class="notice"><b>Regras do relatório:</b> considere vendas aceitas, entregues, retiradas ou concluídas. Pedidos novos/pendentes, cancelados/rejeitados e testes identificados são excluídos. A média de 42 dias inclui dias sem venda. O faturamento ABC considera o valor dos itens, sem frete e sem ratear descontos aplicados somente ao pedido. Não duplica vendas importadas no ERP.</div>
+</section>
+
+<section id="financeiro" class="section">
+ <div class="section-head"><div><h2>💰 Financeiro Caseirinho</h2><p>Vendas diárias, despesas, compras para revenda sem estoque, contas fixas, ativos e DRE mensal.</p></div><button class="btn primary" type="button" id="finRefresh">↻ Atualizar financeiro</button></div>
+ <div class="card fin-toolbar">
+  <label>📆 Competência (mês) <input id="finMonth" type="month" aria-label="Competência financeira"></label>
+  <div class="toolbar"><button class="btn small" type="button" data-fin-tab="dre">📊 DRE</button><button class="btn small" type="button" data-fin-tab="daily">📅 Vendas por dia</button><button class="btn small" type="button" data-fin-tab="entries">🧾 Gastos / Revenda</button><button class="btn small" type="button" data-fin-tab="fixed">🏠 Contas fixas</button><button class="btn small" type="button" data-fin-tab="assets">🧰 Ativos</button></div>
+  <div class="toolbar"><button id="finCsv" class="btn small" type="button">⬇ CSV do mês</button><button id="finPrint" class="btn small gold" type="button">🖨️ Imprimir / Salvar PDF</button></div>
+ </div>
+ <div id="finMessage" class="notice">Acesse o Financeiro para consultar as vendas e o DRE.</div>
+ <div id="finKpis" class="grid stats"></div>
+ <div id="finDrePanel" class="fin-panel">
+  <article class="card"><h2>📊 DRE Gerencial — mês selecionado</h2><div id="finDre"></div></article>
+  <div class="notice">Regime simplificado por competência: vendas do app somente quando ENTREGUES/RETIRADAS, agrupadas pela data do pedido; receitas avulsas somadas separadamente. Compras para revenda entram como custo integral no mês, sem baixa de estoque. Ativos não entram como despesa do DRE. Este relatório não substitui a contabilidade e não calcula automaticamente impostos ou depreciação.</div>
+ </div>
+ <div id="finDailyPanel" class="fin-panel" hidden><article class="card"><h2>📅 Vendas por dia</h2><p>Concluídas: receita considerada no DRE. Em andamento: pedidos aceitos ainda sem entrega, fora do resultado realizado.</p><div id="finDaily"></div></article></div>
+ <div id="finEntriesPanel" class="fin-panel" hidden>
+  <article class="card"><h2>🧾 Lançamento financeiro simples</h2>
+   <div class="toolbar"><button class="btn small" type="button" data-fin-kind="CUSTO_PRODUCAO">🥟 Custo produção</button><button class="btn small" type="button" data-fin-kind="COMPRA_REVENDA">📦 Compra revenda</button><button class="btn small" type="button" data-fin-kind="DESPESA_VARIAVEL">🛵 Despesa variável</button><button class="btn small" type="button" data-fin-kind="RECEITA_AVULSA">💵 Venda fora do app</button></div>
+   <p class="notice">Compras para revenda são lançadas apenas como valor gasto; não criam produto nem movimentam estoque. Vendas realizadas na loja não devem ser lançadas novamente como receita avulsa.</p>
+   <form id="finEntryForm" class="fin-form">
+    <label>Tipo <select id="finKind" required></select></label>
+    <label>Categoria <select id="finCategory" required></select></label>
+    <label class="fin-wide">Descrição <input id="finDescription" type="text" maxlength="180" placeholder="Ex.: 100 salgados comprados para revender" required></label>
+    <label>Valor (R$) <input id="finAmount" type="number" min="0.01" max="10000000" step="0.01" placeholder="0,00" required></label>
+    <label>Competência <input id="finDate" type="date" required></label>
+    <label>Vencimento (opcional) <input id="finDue" type="date"></label>
+    <label>Situação <select id="finStatus"><option value="PAGO">Pago / recebido</option><option value="PENDENTE">Pendente</option></select></label>
+    <label>Data paga/recebida <input id="finPaidAt" type="date"></label>
+    <label class="fin-wide">Fornecedor / identificação <input id="finSupplier" type="text" maxlength="140" placeholder="Fornecedor ou cliente (opcional)"></label>
+    <label class="fin-wide">Observações <textarea id="finNotes" rows="2" maxlength="500"></textarea></label>
+    <label class="fin-wide fin-check"><input type="checkbox" id="finRepeat"> Conta fixa — permitir copiar lançamento para o mês seguinte</label>
+    <div class="toolbar fin-wide"><button id="finSave" class="btn primary" type="submit">💾 Salvar lançamento</button><button id="finCancel" class="btn" type="button">Cancelar edição</button></div>
+   </form>
+  </article>
+  <article class="card"><h2>📋 Lançamentos do mês</h2><div class="toolbar"><input id="finSearch" type="search" placeholder="Pesquisar descrição ou fornecedor"><select id="finFilter"><option value="ALL">Todos</option><option value="CUSTO_PRODUCAO">Custos produção</option><option value="COMPRA_REVENDA">Compras revenda</option><option value="DESPESA_FIXA">Contas fixas</option><option value="DESPESA_VARIAVEL">Despesas variáveis</option><option value="TRIBUTO">Impostos</option><option value="RECEITA_AVULSA">Vendas fora app</option><option value="ATIVO">Ativos</option></select></div><div id="finEntries"></div></article>
+ </div>
+ <div id="finFixedPanel" class="fin-panel" hidden><article class="card"><h2>🏠 Aluguel, água, luz e internet</h2><p>Use os atalhos para preencher o formulário de lançamento. Marque «repetir mensalmente» e use «Copiar próximo mês» para gerar a próxima conta sem duplicar.</p><div class="toolbar"><button class="btn" type="button" data-fin-preset="ALUGUEL">🏠 Aluguel</button><button class="btn" type="button" data-fin-preset="AGUA">💧 Água</button><button class="btn" type="button" data-fin-preset="LUZ">💡 Luz</button><button class="btn" type="button" data-fin-preset="INTERNET">🌐 Internet</button><button class="btn" type="button" data-fin-preset="TELEFONE">📞 Telefone</button></div><div id="finFixed"></div></article></div>
+ <div id="finAssetsPanel" class="fin-panel" hidden><article class="card"><h2>🧰 Ativos e investimentos</h2><p>Registre freezer, fogão, máquinas, móveis e outros equipamentos. O valor aparece como investimento, separado dos gastos do DRE. Não há controle de estoque nem depreciação automática.</p><button class="btn primary" type="button" data-fin-kind="ATIVO">＋ Lançar ativo</button><div id="finAssets"></div></article></div>
 </section>
 <section id="fichas" class="section">
  <div class="section-head"><div><h2>📋 Fichas Técnicas do ERP</h2><p>Consulte, cadastre ou altere fichas diretamente no mesmo cadastro usado pelo ERP Caseirinho.</p></div><div class="actions"><button class="btn primary" id="newFicha">➕ Nova ficha</button><button class="btn" id="refreshFichas">↻ Atualizar</button></div></div>
@@ -250,9 +290,11 @@
  <button type="button" data-view="coupons">🎟️<small>Cupons</small></button>
  <button type="button" data-view="merch">🎁<small>Packs</small></button>
  <button type="button" data-view="sales">📈<small>Vendas</small></button>
+ <button type="button" data-view="financeiro">💰<small>Financeiro</small></button>
  </nav>
 <div id="toast" class="toast" role="status" hidden></div>
 <div id="modal" class="modal-bg" hidden><div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><h2 id="modalTitle">Mensagem para WhatsApp</h2><div id="modalContent"></div><div class="toolbar" style="justify-content:flex-end;margin-top:20px"><button class="btn" id="modalClose">Fechar</button></div></div></div>
 <script src="./app.js?v=21" defer></script>
 <script src="./operations-recovery.js?v=1" defer></script>
+<script src="./financeiro.js?v=1" defer></script>
 </body></html>
