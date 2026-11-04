@@ -3,14 +3,22 @@ const test=require('node:test'),assert=require('node:assert/strict'),fs=require(
 const read=x=>fs.readFileSync('central-caseirinho-insights/'+x,'utf8');
 test('recusa aparece na página Pedidos e carrega após o app.js',()=>{
  const html=read('index.html'),sw=read('sw.js');
- assert.match(html,/app\.js\?v=30/);
- assert.match(html,/order-reject\.js\?v=3/);
- assert.ok(html.indexOf('app.js?v=30')<html.indexOf('order-reject.js?v=3'));
- assert.match(sw,/caseirinho-insights-app-shell-v33/);
- assert.match(sw,/order-reject\.js\?v=3/);
+ assert.match(html,/app\.js\?v=31/);
+ assert.match(html,/order-reject\.js\?v=4/);
+ assert.ok(html.indexOf('app.js?v=31')<html.indexOf('order-reject.js?v=4'));
+ assert.match(sw,/caseirinho-insights-app-shell-v34/);
+ assert.match(sw,/order-reject\.js\?v=4/);
  assert.ok(html.includes('styles.css?v=31'));
  assert.ok(sw.includes('styles.css?v=31'));
  assert.doesNotThrow(()=>new vm.Script(read('order-reject.js')));
+ const app=read('app.js'),reject=read('order-reject.js');
+ assert.match(reject,/caseirinho:order-rejected/);
+ assert.doesNotMatch(reject,/location\.reload\(/);
+ assert.match(reject,/dialog\.close\(\)/);
+ assert.match(app,/addEventListener\('caseirinho:order-rejected',refreshOrdersAfterRejection\)/);
+ assert.match(app,/async function refreshOrdersAfterRejection/);
+ assert.match(app,/api\('orders'\)/);
+ assert.match(app,/E\('loginScreen'\)\.hidden=true/);
 });
 test('recusa exige motivo e confirmação antes de chamar a API',()=>{
  const s=read('order-reject.js');
