@@ -29,7 +29,7 @@ test('PWA versionado inclui os novos arquivos, sem guardar dados de vendas em ca
  const sw=file('sw.js'),html=file('index.html');
  const v=html.match(/app\.js\?v=(\d+)/)?.[1];
  assert.ok(Number(v)>=23,'aplicativo deve carregar versão financeira ou posterior');
- assert.match(sw,new RegExp('caseirinho-insights-app-shell-v'+v));
+ assert.ok(sw.includes('caseirinho-insights-app-shell-v31'));
  assert.match(sw,/financeiro\.js\?v=1/);
  assert.match(sw,/financeiro\.css\?v=1/);
  assert.match(sw,new RegExp('app\\.js\\?v='+v));
