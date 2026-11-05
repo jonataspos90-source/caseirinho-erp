@@ -1569,8 +1569,8 @@ async function cashbackAccount(id){
  if(!x)return toast('Cliente não encontrado.',true);
  modal('👤 Conta do cliente · '+s(x.name),'<p>Consultando histórico de compras...</p>');
  try{
-  const result=await api('customer-orders?phone='+encodeURIComponent(digits(x.phone)));
-  const orders=(result.orders||[]).slice().sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
+  const result=await api('orders');
+  const orders=(result.orders||[]).filter(o=>digits(o.phone||o.customer_phone||o.customer?.phone||o.payload?.customer?.phone)===digits(x.phone)&&digits(x.phone).length>=10).slice().sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
   window.__customerOrders=orders;
   const last=orders.find(o=>!['CANCELADO','CANCELLED','RECUSADO','REJECTED'].includes(s(o.status).toUpperCase()));
   const days=last?Math.max(0,Math.floor((Date.now()-new Date(last.created_at).getTime())/86400000)):null;
