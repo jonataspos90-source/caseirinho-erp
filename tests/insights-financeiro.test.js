@@ -44,6 +44,6 @@ test('vendas por data da compra permite dia único ou intervalo sem mudar DRE e 
  assert.ok(js.includes('state.dailyRange={from,to}'));
  assert.ok(js.includes('currentDailyDays().map'));
  assert.ok(js.includes("state.tab==='daily'&&state.dailyRange"));
- assert.ok(html.includes('Data da compra'));
+ assert.ok(html.includes('data da compra'));
  assert.ok(html.includes('finDailyInfo'));
 });
