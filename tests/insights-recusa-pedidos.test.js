@@ -3,10 +3,10 @@ const test=require('node:test'),assert=require('node:assert/strict'),fs=require(
 const read=x=>fs.readFileSync('central-caseirinho-insights/'+x,'utf8');
 test('recusa aparece na página Pedidos e carrega após o app.js',()=>{
  const html=read('index.html'),sw=read('sw.js');
- assert.match(html,/app\.js\?v=31/);
+ assert.match(html,/app\.js\?v=36/);
  assert.match(html,/order-reject\.js\?v=4/);
- assert.ok(html.indexOf('app.js?v=31')<html.indexOf('order-reject.js?v=4'));
- assert.match(sw,/caseirinho-insights-app-shell-v34/);
+ assert.ok(html.indexOf('app.js?v=36')<html.indexOf('order-reject.js?v=4'));
+ assert.match(sw,/caseirinho-insights-app-shell-v38/);
  assert.match(sw,/order-reject\.js\?v=4/);
  assert.ok(html.includes('styles.css?v=31'));
  assert.ok(sw.includes('styles.css?v=31'));
