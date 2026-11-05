@@ -2,7 +2,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#183c2e"><meta name="description" content="Central Caseirinho Insights — painel administrativo independente de CRM, acessos, pedidos e cardápio.">
 <title>Central Caseirinho Insights | CRM e Loja</title>
-<link rel="stylesheet" href="./styles.css?v=31"><link rel="stylesheet" href="./financeiro.css?v=1">
+<link rel="stylesheet" href="./styles.css?v=31"><link rel="stylesheet" href="./financeiro.css?v=2">
 <link rel="manifest" href="./manifest.webmanifest?v=2"><link rel="icon" type="image/png" sizes="192x192" href="/caseirinho-loja/icons/icon-192.png"><link rel="apple-touch-icon" href="/caseirinho-loja/icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default">
 </head><body>
 <div class="auth-screen" id="loginScreen">
@@ -143,7 +143,20 @@
   <article class="card"><h2>📊 DRE Gerencial — mês selecionado</h2><div id="finDre"></div></article>
   <div class="notice">Regime simplificado por competência: vendas do app somente quando ENTREGUES/RETIRADAS, agrupadas pela data do pedido; receitas avulsas somadas separadamente. Compras para revenda entram como custo integral no mês, sem baixa de estoque. Ativos não entram como despesa do DRE. Este relatório não substitui a contabilidade e não calcula automaticamente impostos ou depreciação.</div>
  </div>
- <div id="finDailyPanel" class="fin-panel" hidden><article class="card"><h2>📅 Vendas por dia</h2><p>Concluídas: receita considerada no DRE. Em andamento: pedidos aceitos ainda sem entrega, fora do resultado realizado.</p><div id="finDaily"></div></article></div>
+ <div id="finDailyPanel" class="fin-panel" hidden><article class="card">
+ <h2>📅 Vendas por dia</h2>
+ <p>Vendas pela <strong>data da compra</strong>, não da entrega. Somente pedidos concluídos compõem a receita; os pedidos em andamento aparecem separadamente.</p>
+ <div class="fin-date-filter" role="group" aria-label="Filtro por data da compra">
+  <label>📅 De <input id="finDailyFrom" type="date" aria-label="Data inicial da compra"></label>
+  <label>📅 Até <input id="finDailyTo" type="date" aria-label="Data final da compra"></label>
+  <button class="btn primary" type="button" id="finDailyApply">🔎 Consultar período</button>
+  <button class="btn" type="button" id="finDailyToday">Hoje</button>
+  <button class="btn" type="button" id="finDailyReset">↩ Mês completo</button>
+ </div>
+ <p class="subtitle">Preencha somente uma das datas para consultar um único dia. É possível consultar um intervalo de até 366 dias, mesmo entre meses diferentes, sem mudar a competência do DRE.</p>
+ <div id="finDailyInfo" class="notice" role="status"></div>
+ <div id="finDaily"></div>
+ </article></div>
  <div id="finEntriesPanel" class="fin-panel" hidden>
   <article class="card"><h2>🧾 Lançamento financeiro simples</h2>
    <div class="toolbar"><button class="btn small" type="button" data-fin-kind="CUSTO_PRODUCAO">🥟 Custo produção</button><button class="btn small" type="button" data-fin-kind="COMPRA_REVENDA">📦 Compra revenda</button><button class="btn small" type="button" data-fin-kind="DESPESA_VARIAVEL">🛵 Despesa variável</button><button class="btn small" type="button" data-fin-kind="RECEITA_AVULSA">💵 Venda fora do app</button></div>
@@ -298,5 +311,5 @@
 <script src="./cashback-pending-erp.js?v=1" defer></script>
 <script src="./order-reject.js?v=4" defer></script>
 <script src="./operations-recovery.js?v=1" defer></script>
-<script src="./financeiro.js?v=1" defer></script>
+<script src="./financeiro.js?v=2" defer></script>
 </body></html>
