@@ -1,5 +1,5 @@
 {
-  "id": "/caseirinho-erp/central-caseirinho-insights/",
+  "id": "/caseirinho-erp/central-caseirinho-insights/central-caseirinho-app-v2",
   "name": "Central Caseirinho",
   "short_name": "Central Caseirinho",
   "description": "Painel independente de clientes, insights, pedidos e cardápio do Caseirinho Massas Artesanais",
@@ -8,8 +8,7 @@
   "scope": "/caseirinho-erp/central-caseirinho-insights/",
   "display": "standalone",
   "display_override": [
-    "standalone",
-    "minimal-ui"
+    "standalone"
   ],
   "orientation": "any",
   "background_color": "#f7f5ef",
