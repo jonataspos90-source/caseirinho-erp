@@ -16,7 +16,7 @@ const el=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"']/g
 const money=c=>(Number(c||0)/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const datestr=x=>x?String(x).slice(0,10).split('-').reverse().join('/'):'—';
 const nowBR=()=>{const x=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()),p=Object.fromEntries(x.map(i=>[i.type,i.value]));return p.year+'-'+p.month+'-'+p.day;};
-const state={data:null,month:'',tab:'dre',editing:null,loading:false};
+const state={data:null,month:'',tab:'dre',editing:null,loading:false,dailyRange:null,dailyData:null,dailyLoading:false};
 function session(){
  try{const x=JSON.parse(sessionStorage.getItem(KEY)||'{}');return x.token&&Number(x.expiresAt)>Date.now()+10000?x.token:'';}catch(_){return ''}
 }
@@ -39,6 +39,30 @@ function table(headers,rows){
  return'<div class="table-wrap"><table class="table"><thead><tr>'+headers.map(x=>'<th>'+esc(x)+'</th>').join('')+'</tr></thead><tbody>'+rows.join('')+'</tbody></table></div>';
 }
 function kpi(icon,label,amount,desc){return'<div class="stat"><span class="icon">'+icon+'</span><strong>'+esc(label)+'</strong><div class="n">'+esc(amount)+'</div><small>'+esc(desc||'')+'</small></div>';}
+function currentDailyDays(){return state.dailyData?.days||state.data?.days||[];}
+function dailyPath(from,to){return '/daily?from='+encodeURIComponent(from)+'&to='+encodeURIComponent(to);}
+function clearDailyFilter(){
+ state.dailyData=null;state.dailyRange=null;el('finDailyFrom').value='';el('finDailyTo').value='';render();
+}
+async function applyDailyFilter(){
+ if(state.dailyLoading)return;
+ const a=el('finDailyFrom').value,b=el('finDailyTo').value;
+ if(!a&&!b){clearDailyFilter();return;}
+ // Apenas uma data preenchida significa apenas aquele dia.
+ const from=a||b,to=b||a;
+ if(from>to){message('A data inicial deve ser anterior ou igual à data final.',true);return;}
+ const difference=(Date.parse(to+'T12:00:00Z')-Date.parse(from+'T12:00:00Z'))/86400000;
+ if(!Number.isFinite(difference)||difference>366){message('O filtro permite até 366 dias.',true);return;}
+ state.dailyLoading=true;el('finDailyApply').disabled=true;
+ try{
+  const data=await api(dailyPath(from,to));
+  state.dailyRange={from,to};state.dailyData=data;
+  el('finDailyFrom').value=from;el('finDailyTo').value=to;
+  render();
+  message('✅ Período consultado: '+datestr(from)+(from===to?'':' a '+datestr(to))+'. O DRE mensal continua na competência selecionada.');
+ }catch(error){message('Falha ao consultar período: '+error.message,true);}
+ finally{state.dailyLoading=false;el('finDailyApply').disabled=false;}
+}
 function setTab(tab){
  state.tab=tab;
  const all=['dre','daily','entries','fixed','assets'];
@@ -87,6 +111,10 @@ async function load(){
  try{
   state.month=el('finMonth').value||nowBR().slice(0,7);el('finMonth').value=state.month;
   state.data=await api('/overview?month='+encodeURIComponent(state.month));
+  if(state.dailyRange){
+   try{state.dailyData=await api(dailyPath(state.dailyRange.from,state.dailyRange.to));}
+   catch(error){state.dailyData=null;message('DRE atualizado; período não carregou: '+error.message,true);}
+  }
   render();
   message('Financeiro sincronizado com o ERP • competência '+state.month+' • '+new Date().toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo'}));
  }catch(e){message('Não foi possível consultar o financeiro: '+e.message,true);}
@@ -94,7 +122,7 @@ async function load(){
 }
 function render(){
  const data=state.data;if(!data)return;
- const d=data.summary||{},days=data.days||[],entries=data.entries||[];
+ const d=data.summary||{},days=currentDailyDays(),entries=data.entries||[];
  el('finKpis').innerHTML=[
   kpi('✅','Vendas realizadas (App + ERP)',money(d.confirmedCents),number(d.orders)+' pedido(s) concluído(s)'),
   kpi('💵','Receita total',money(d.revenueCents),'Inclui vendas fora do app lançadas'),
@@ -120,8 +148,12 @@ function render(){
  ];
  el('finDre').innerHTML='<div class="fin-dre">'+dreRows.map(([name,value,highlight])=>
   '<div class="fin-dre-row'+(highlight?' fin-dre-total':'')+'"><span>'+esc(name)+'</span><strong>'+money(value)+'</strong></div>').join('')+'</div>'+
-  '<p class="notice">Resultado sem depreciação e sem tributos não lançados. Valores por competência; contas pendentes também afetam o resultado. Vendas em andamento não compõem receita realizada.</p>';
- el('finDaily').innerHTML=table(['Data','Pedidos concluídos','App','Pedidos ERP próprios','Receita total pedidos','Venda avulsa','Total realizado','Em andamento'],
+  '<p class="notice">Resultado sem depreciação e sem tributos não lançados. Valores por competência; contas pendentes também afetam o resultado. Vendas em andamento não compõem receita realizada. Vendas concluídas são agrupadas pela data da compra, mesmo quando entregues depois.</p>';
+ const total=days.reduce((a,x)=>({count:a.count+number(x.completedCount),completed:a.completed+number(x.completedCents),
+  manual:a.manual+number(x.manualCents),pending:a.pending+number(x.pendingCents)}),{count:0,completed:0,manual:0,pending:0});
+ const range=state.dailyRange?datestr(state.dailyRange.from)+(state.dailyRange.from===state.dailyRange.to?'':' até '+datestr(state.dailyRange.to)):'mês '+state.month;
+ el('finDailyInfo').textContent='Período: '+range+' • '+total.count+' pedidos concluídos • Receita: '+money(total.completed+total.manual)+' • Em andamento: '+money(total.pending)+' (fora do DRE).';
+ el('finDaily').innerHTML=table(['Data da compra','Pedidos concluídos','App','Pedidos ERP próprios','Receita total pedidos','Venda avulsa','Total realizado','Em andamento'],
   days.map(x=>row([esc(datestr(x.day)),esc(x.completedCount),money(x.appCents),money(x.erpCents),
    money(x.completedCents),money(x.manualCents),'<b>'+money(number(x.completedCents)+number(x.manualCents))+'</b>',
    esc(x.pendingCount)+' pedidos · '+money(x.pendingCents)])));
@@ -187,8 +219,8 @@ function downloadCsv(){
  const toReais=v=>(Number(v||0)/100).toFixed(2).replace('.',',');
  let lines;
  if(state.tab==='daily'){
-  lines=[['Data','Concluídos','Vendas App R$','Vendas ERP R$','Total pedidos R$','Receita avulsa R$','Realizado R$','Em andamento','A realizar R$'],
-   ...(data.days||[]).map(x=>[x.day,x.completedCount,toReais(x.appCents),toReais(x.erpCents),toReais(x.completedCents),toReais(x.manualCents),
+  lines=[['Data da compra','Concluídos','Vendas App R$','Vendas ERP R$','Total pedidos R$','Receita avulsa R$','Realizado R$','Em andamento','A realizar R$'],
+   ...currentDailyDays().map(x=>[x.day,x.completedCount,toReais(x.appCents),toReais(x.erpCents),toReais(x.completedCents),toReais(x.manualCents),
     toReais(Number(x.completedCents)+Number(x.manualCents)),x.pendingCount,toReais(x.pendingCents)])];
  }else if(state.tab==='dre'){
   const d=data.summary||{};
@@ -206,13 +238,16 @@ function downloadCsv(){
  }
  const csv='\ufeff'+lines.map(row=>row.map(csvCell).join(';')).join('\r\n');
  const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));const link=document.createElement('a');
- link.href=url;link.download='caseirinho-'+state.tab+'-'+state.month+'.csv';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),4000);
+ link.href=url;link.download='caseirinho-'+state.tab+'-'+(state.tab==='daily'&&state.dailyRange?state.dailyRange.from+'-ate-'+state.dailyRange.to:state.month)+'.csv';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),4000);
 }
 function bind(){
  if(!el('finMonth'))return;
  state.month=nowBR().slice(0,7);el('finMonth').value=state.month;
  populateTypes();resetForm();setTab('dre');
- el('finMonth').addEventListener('change',()=>{state.month=el('finMonth').value;resetForm();load();});
+ el('finMonth').addEventListener('change',()=>{state.month=el('finMonth').value;clearDailyFilter();resetForm();load();});
+ el('finDailyApply').addEventListener('click',applyDailyFilter);
+ el('finDailyReset').addEventListener('click',()=>{clearDailyFilter();message('Exibindo vendas do mês '+state.month+'.');});
+ el('finDailyToday').addEventListener('click',()=>{el('finDailyFrom').value=nowBR();el('finDailyTo').value=nowBR();applyDailyFilter();});
  el('finRefresh').addEventListener('click',load);
  el('finEntryForm').addEventListener('submit',save);
  el('finKind').addEventListener('change',()=>populateCategories());
