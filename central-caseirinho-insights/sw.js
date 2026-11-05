@@ -1,6 +1,6 @@
 /* Central Caseirinho Insights — cache SOMENTE de arquivos públicos; nenhuma informação de clientes */
-const CACHE='caseirinho-insights-app-shell-v35';
-const SHELL=['./','./index.html','./styles.css?v=31','./app.js?v=35','./cashback-pending-erp.js?v=1','./order-reject.js?v=4','./financeiro.js?v=1','./financeiro.css?v=1','./operations-recovery.js?v=1','./manifest.webmanifest','./icon.svg'];
+const CACHE='caseirinho-insights-app-shell-v36';
+const SHELL=['./','./index.html','./styles.css?v=31','./app.js?v=36','./cashback-pending-erp.js?v=1','./order-reject.js?v=4','./financeiro.js?v=1','./financeiro.css?v=1','./operations-recovery.js?v=1','./manifest.webmanifest','./icon.svg'];
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting()));
 });
@@ -21,5 +21,5 @@ self.addEventListener('fetch',event=>{
     event.respondWith(fetch(req,{cache:'no-store'}).catch(()=>caches.match('./index.html')));
     return;
   }
-  event.respondWith(caches.match(req).then(cached=>cached||fetch(req)));
+  event.respondWith(fetch(req,{cache:'no-store'}).then(response=>{if(response.ok && /\.(?:js|css)$/.test(url.pathname)){const copy=response.clone();caches.open(CACHE).then(cache=>cache.put(req,copy)).catch(()=>{});}return response;}).catch(()=>caches.match(req)));
 });
