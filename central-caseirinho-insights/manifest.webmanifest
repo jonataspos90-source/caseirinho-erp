@@ -1,11 +1,11 @@
 {
-  "id": "/caseirinho-erp/central-caseirinho-insights/central-caseirinho-app-v2",
+  "id": "/central-caseirinho",
   "name": "Central Caseirinho",
   "short_name": "Central Caseirinho",
   "description": "Painel independente de clientes, insights, pedidos e cardápio do Caseirinho Massas Artesanais",
   "lang": "pt-BR",
-  "start_url": "/caseirinho-erp/central-caseirinho-insights/",
-  "scope": "/caseirinho-erp/central-caseirinho-insights/",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "display_override": [
     "standalone"
@@ -19,25 +19,7 @@
   ],
   "icons": [
     {
-      "src": "/caseirinho-loja/icons/icon-192.png?v=clean-20261004",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/caseirinho-loja/icons/icon-512.png?v=clean-20261004",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/caseirinho-loja/icons/icon-maskable-512.png?v=clean-20261004",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
-    },
-    {
-      "src": "./icon.svg",
+      "src": "/icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
