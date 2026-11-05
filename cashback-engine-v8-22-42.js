@@ -67,7 +67,7 @@ function filtersHtml(){return `<div class="ce-panel"><h3>Clientes e saldos</h3><
 <label class="cb42-check"><input id="cb42Inactive" type="checkbox"> Sem uso há mais de 30 dias</label>
 <button id="cb42Filter" class="ce-btn ce-primary">Buscar</button>
 </div></div>`}
-function customersHtml(rows=[]){return `<div class="ce-panel ce-scroll"><table class="ce-table"><thead><tr><th>Cliente</th><th>CPF/CNPJ</th><th>WhatsApp</th><th>Saldo</th><th>Reservado</th><th>Disponível</th><th>Último uso</th><th>Ação</th></tr></thead><tbody>${rows.map(x=>`<tr><td><b>${esc(x.name||'Cliente')}</b><br><small>${esc(x.customerId||x.id)}</small></td><td>${esc(x.document||'—')}</td><td>${esc(x.phone||'—')}</td><td>${money(x.balance)}</td><td>${money(x.reserved)}</td><td><b>${money(x.available)}</b></td><td>${dateTime(x.lastUseAt)}</td><td><button class="ce-btn ce-soft" data-cb42-extract="${esc(x.id)}">Extrato</button></td></tr>`).join('')||'<tr><td colspan="8">Nenhum cliente encontrado com os filtros informados.</td></tr>'}</tbody></table></div>`}
+function customersHtml(rows=[]){return `<div class="ce-panel ce-scroll"><table class="ce-table"><thead><tr><th>Cliente</th><th>CPF/CNPJ</th><th>WhatsApp</th><th>Saldo</th><th>Reservado</th><th>Disponível</th><th>Último uso</th><th>Ação</th></tr></thead><tbody>${rows.map(x=>`<tr><td><b>${esc(x.name||'Cliente')}</b><br><small>${esc(x.customerId||x.id)}</small></td><td>${esc(x.document||'—')}</td><td>${esc(x.phone||'—')}</td><td>${money(x.balance)}</td><td>${money(x.reserved)}</td><td><b>${money(x.available)}</b></td><td>${dateTime(x.lastUseAt)}</td><td><button class="ce-btn ce-soft" data-cb42-extract="${esc(x.id)}">Extrato</button> <button class="ce-btn ce-soft" data-cb42-account="${esc(x.id)}">Conta do Cliente</button> <button class="ce-btn ce-soft" data-cb42-whatsapp="${esc(x.id)}">WhatsApp</button></td></tr>`).join('')||'<tr><td colspan="8">Nenhum cliente encontrado com os filtros informados.</td></tr>'}</tbody></table></div>`}
 function shell(){const body=E('ce822Body');if(!body)return;body.innerHTML='<div class="ce-panel"><b>Carregando Cashback...</b><div class="ce-note" style="margin-top:8px">Consultando regras, saldos e movimentações diretamente no ERP Cloud.</div></div>'}
 
 async function renderCashback(){
@@ -82,11 +82,17 @@ async function renderCashback(){
   finally{busy=false}
 }
 
+
+function cb42Phone(v){let n=S(v).replace(/\D/g,'');return n.startsWith('55')&&n.length>11?n.slice(2):n}
+function cb42WhatsApp(id){const c=currentCustomers.find(x=>S(x.id)===S(id));if(!c)return;const phone=cb42Phone(c.phone);if(phone.length<10||phone.length>11)return toast('WhatsApp inválido.');const name=S(c.name||'cliente').trim().split(/\s+/)[0];const message=`Olá, ${name}! 💚 Aqui é da Caseirinho Massas Artesanais. Estamos com saudades! Você tem ${money(c.available)} de cashback disponível para utilizar em sua próxima compra. Será um prazer atender você novamente! 🍝`;window.open('https://wa.me/55'+phone+'?text='+encodeURIComponent(message),'_blank','noopener,noreferrer')}
+async function cb42Account(id){const c=currentCustomers.find(x=>S(x.id)===S(id)),d=E('cb42Detail');if(!c||!d)return;d.innerHTML='<div class="ce-panel">Carregando histórico...</div>';try{const r=await api('/api/v1/admin/store/orders?status=TODOS&limit=1000');const orders=A(r.orders).filter(o=>{const cl=o.cliente||o.payload?.cliente||o.customer||{};return cb42Phone(cl.telefone||cl.phone||cl.celular||cl.whatsapp)===cb42Phone(c.phone)&&cb42Phone(c.phone).length>=10}).sort((a,b)=>new Date(b.created_at||b.createdAt||0)-new Date(a.created_at||a.createdAt||0));const latest=orders[0]?.created_at||orders[0]?.createdAt;const days=latest?Math.floor((Date.now()-new Date(latest).getTime())/86400000):null;d.innerHTML=`<div class="ce-panel"><h3>Conta do Cliente · ${esc(c.name)}</h3><p>Cashback: <b>${money(c.available)}</b> · ${esc(c.phone||'')}</p><p>${days===null?'Nenhuma compra identificada nos últimos 1.000 pedidos consultados.':days>=15?'⚠️ Cliente sem compras há '+days+' dias.':'Última compra há '+days+' dias.'}</p><button id="cb42AccountClose" class="ce-btn ce-soft">Fechar</button><div class="ce-scroll"><table class="ce-table"><thead><tr><th>Data</th><th>Pedido</th><th>Valor</th><th>Itens</th></tr></thead><tbody>${orders.map((o,i)=>`<tr><td>${dateTime(o.created_at||o.createdAt)}</td><td>${esc(o.code||o.codigo||o.id)}</td><td>${money(o.total??o.payload?.total)}</td><td><button class="ce-btn ce-soft" data-cb42-items="${i}">Ver itens</button></td></tr>`).join('')||'<tr><td colspan="4">Sem pedidos encontrados.</td></tr>'}</tbody></table></div><div id="cb42ItemList"></div></div>`;E('cb42AccountClose').onclick=()=>d.innerHTML='';d.querySelectorAll('[data-cb42-items]').forEach(b=>b.onclick=()=>{const o=orders[Number(b.dataset.cb42Items)],items=A(o.itens||o.payload?.itens||o.items);E('cb42ItemList').innerHTML='<h4>Itens do pedido</h4>'+ (items.map(i=>`<p>${esc(i.nome||i.descricao||i.name||'Produto')} · ${esc(i.quantidade??i.qty??1)} × ${money(i.preco??i.valorUnitario??i.price)}</p>`).join('')||'<p>Itens não informados na API.</p>')})}catch(e){d.innerHTML='<div class="ce-panel">Falha ao consultar histórico: '+esc(e.message)+'</div>'}}
+function cb42BindActions(){E('ce822Body')?.querySelectorAll('[data-cb42-extract]').forEach(b=>b.onclick=()=>loadExtract(b.dataset.cb42Extract));E('ce822Body')?.querySelectorAll('[data-cb42-account]').forEach(b=>b.onclick=()=>cb42Account(b.dataset.cb42Account));E('ce822Body')?.querySelectorAll('[data-cb42-whatsapp]').forEach(b=>b.onclick=()=>cb42WhatsApp(b.dataset.cb42Whatsapp))}
+
 function bind(){
   E('cb42Save')?.addEventListener('click',saveConfig);
   E('cb42Filter')?.addEventListener('click',loadCustomers);
   E('cb42Search')?.addEventListener('keydown',e=>{if(e.key==='Enter')loadCustomers()});
-  E('ce822Body')?.querySelectorAll('[data-cb42-extract]').forEach(b=>b.onclick=()=>loadExtract(b.dataset.cb42Extract));
+  cb42BindActions();
 }
 async function saveConfig(){
   const btn=E('cb42Save');if(btn){btn.disabled=true;btn.textContent='Salvando...'}
@@ -112,7 +118,7 @@ async function loadCustomers(){
     const q=encodeURIComponent(S(E('cb42Search')?.value).trim()),sort=encodeURIComponent(S(E('cb42Sort')?.value||'balance_desc')),inactive=E('cb42Inactive')?.checked?'&inactiveDays=30':'';
     const r=await api('/api/v1/admin/cashback/customers?sort='+sort+'&q='+q+inactive);currentCustomers=A(r.customers);
     const panels=E('ce822Body')?.querySelectorAll('.ce-panel.ce-scroll');const current=panels?.[0];if(current)current.outerHTML=customersHtml(currentCustomers);
-    E('ce822Body')?.querySelectorAll('[data-cb42-extract]').forEach(b=>b.onclick=()=>loadExtract(b.dataset.cb42Extract));
+    cb42BindActions();
   }catch(e){toast('Falha ao consultar clientes: '+e.message)}
 }
 async function loadExtract(accountId){
