@@ -1,7 +1,7 @@
 {
   "id": "/caseirinho-erp/central-caseirinho-insights/",
-  "name": "Central Caseirinho Insights • CRM e Loja",
-  "short_name": "Caseirinho Insights",
+  "name": "Central Caseirinho",
+  "short_name": "Central Caseirinho",
   "description": "Painel independente de clientes, insights, pedidos e cardápio do Caseirinho Massas Artesanais",
   "lang": "pt-BR",
   "start_url": "/caseirinho-erp/central-caseirinho-insights/",
