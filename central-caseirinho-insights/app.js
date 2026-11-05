@@ -1553,7 +1553,31 @@ function renderCashbacks(){
   '<article class="mobile-record"><div class="mobile-record-head"><b>'+esc(x.name)+'</b><span class="badge good">'+brl(x.available)+' disponível</span></div>'+
   '<p>📱 '+esc(tel(x.phone))+' · '+x.ordersCredited+' pedido(s) com crédito</p>'+
   '<div class="cashback-summary"><div><small>Creditado</small><b>'+brl(x.credited)+'</b></div><div><small>Utilizado</small><b>'+brl(x.used)+'</b></div><div><small>Reservado</small><b>'+brl(x.reserved)+'</b></div></div>'+
-  '<div class="record-actions"><button class="btn small primary" type="button" data-cashback-history="'+esc(x.id)+'">📑 Ver extrato</button></div></article>').join('')+'</div>':cellEmpty('Nenhuma conta de cashback encontrada para estes filtros.');
+  '<div class="record-actions"><button class="btn small primary" type="button" data-cashback-history="'+esc(x.id)+'">📑 Ver extrato</button> <button class="btn small" type="button" data-cashback-account="'+esc(x.id)+'">👤 Conta do cliente</button> <button class="btn small" type="button" data-cashback-whatsapp="'+esc(x.id)+'">💬 WhatsApp</button></div></article>').join('')+'</div>':cellEmpty('Nenhuma conta de cashback encontrada para estes filtros.');
+}
+function cashbackContact(id){
+ const x=(st.cashbacksData?.customers||[]).find(v=>s(v.id)===s(id));
+ if(!x)return toast('Cliente não encontrado.',true);
+ const phone=digits(x.phone||'').replace(/^55(?=\d{10,11}$)/,'');
+ if(!/^\d{10,11}$/.test(phone))return toast('WhatsApp inválido.',true);
+ const first=s(x.name||'cliente').trim().split(/\s+/)[0];
+ const msg='Olá, '+first+'! 💚 Aqui é da Caseirinho Massas Artesanais. Estamos com saudades! Você tem '+brl(x.available)+' de cashback disponível para utilizar na sua próxima compra. Será um prazer atender você novamente! 🍝';
+ window.open('https://wa.me/55'+phone+'?text='+encodeURIComponent(msg),'_blank','noopener,noreferrer');
+}
+async function cashbackAccount(id){
+ const x=(st.cashbacksData?.customers||[]).find(v=>s(v.id)===s(id));
+ if(!x)return toast('Cliente não encontrado.',true);
+ modal('👤 Conta do cliente · '+s(x.name),'<p>Consultando histórico de compras...</p>');
+ try{
+  const result=await api('customer-orders?phone='+encodeURIComponent(digits(x.phone)));
+  const orders=(result.orders||[]).slice().sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
+  window.__customerOrders=orders;
+  const last=orders.find(o=>!['CANCELADO','CANCELLED','RECUSADO','REJECTED'].includes(s(o.status).toUpperCase()));
+  const days=last?Math.max(0,Math.floor((Date.now()-new Date(last.created_at).getTime())/86400000)):null;
+  const status=days===null?'Nenhuma compra localizada no histórico.':days>=15?'⚠️ Sem compras há '+days+' dias.':'Última compra há '+days+' dias.';
+  const rows=orders.map(o=>'<tr><td>'+dt(o.created_at)+'</td><td>'+esc(o.code||o.id)+'</td><td>'+brl(o.total)+'</td><td>'+orderButton(o)+'</td></tr>');
+  modal('👤 Conta do cliente · '+s(x.name),'<p><b>WhatsApp:</b> '+esc(tel(x.phone))+'<br><b>Cashback disponível:</b> '+brl(x.available)+'<br><b>Compras:</b> '+orders.length+'<br><b>'+esc(status)+'</b></p><button class="btn small primary" type="button" data-cashback-whatsapp="'+esc(x.id)+'">💬 Enviar WhatsApp</button>'+table(['Data','Pedido','Valor','Itens / detalhes'],rows));
+ }catch(err){modal('👤 Conta do cliente','<div class="notice error">'+esc(err.message)+'</div>');}
 }
 async function showCashbackHistory(id){
  modal('💚 Extrato do cliente','<p>Consultando movimentações confirmadas...</p>');
@@ -1625,6 +1649,8 @@ function bindMoreFeatures(){
  document.addEventListener('click',e=>{
   const ficha=e.target.closest('[data-ficha-edit]');if(ficha)return openFicha(ficha.dataset.fichaEdit);
   const cashback=e.target.closest('[data-cashback-history]');if(cashback)return showCashbackHistory(cashback.dataset.cashbackHistory);
+  const account=e.target.closest('[data-cashback-account]');if(account)return cashbackAccount(account.dataset.cashbackAccount);
+  const contact=e.target.closest('[data-cashback-whatsapp]');if(contact)return cashbackContact(contact.dataset.cashbackWhatsapp);
  });
  document.addEventListener('submit',e=>{if(e.target?.id==='fichaForm')saveFicha(e);});
  try{st.orderAlertEnabled=localStorage.getItem('caseirinho_insights_alert_enabled_v10')==='true';}catch(_){}
