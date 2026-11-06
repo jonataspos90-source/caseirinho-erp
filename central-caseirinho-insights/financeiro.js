@@ -278,7 +278,7 @@ function bind(){
  el('finEntryForm').addEventListener('submit',save);
  el('finKind').addEventListener('change',()=>populateCategories());
  el('finPayrollSearch').addEventListener('input',render);
- el('finStatus').addEventListener('change',()=>{el('finPaidAt').disabled=el('finStatus').value==='PENDENTE';if(el('finStatus').value==='PENDENTE')el('finPaidAt').value='';});
+ el('finStatus').addEventListener('change',()=>{const pending=el('finStatus').value==='PENDENTE';el('finPaidAt').disabled=pending;if(pending)el('finPaidAt').value='';else if(!el('finPaidAt').value)el('finPaidAt').value=nowBR();});
  el('finCancel').addEventListener('click',()=>resetForm());
  el('finCsv').addEventListener('click',downloadCsv);
  el('finPrint').addEventListener('click',()=>window.print());
