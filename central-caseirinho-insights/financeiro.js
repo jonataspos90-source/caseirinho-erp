@@ -270,6 +270,8 @@ function bind(){
  if(!el('finMonth'))return;
  state.month=nowBR().slice(0,7);el('finMonth').value=state.month;
  populateTypes();resetForm();setTab('dre');
+ const initialTab=new URLSearchParams(window.location.search).get('finTab');
+ if(['payroll','daily','entries','fixed','assets'].includes(initialTab))setTab(initialTab);
  el('finMonth').addEventListener('change',()=>{state.month=el('finMonth').value;clearDailyFilter();resetForm();load();});
  el('finDailyApply').addEventListener('click',applyDailyFilter);
  el('finDailyReset').addEventListener('click',()=>{clearDailyFilter();message('Exibindo vendas do mês '+state.month+'.');});
