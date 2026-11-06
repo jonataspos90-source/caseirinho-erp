@@ -257,14 +257,23 @@ function downloadCsv(){
    ['Despesas variáveis',toReais(d.variableCents)],['Tributos lançados',toReais(d.taxesCents)],
    ['Resultado gerencial',toReais(d.netCents)],['Ativos fora do DRE',toReais(d.assetsCents)]];
  }else{
-  const filtered=(data.entries||[]).filter(x=>state.tab==='fixed'?x.kind==='DESPESA_FIXA'&&x.category!=='SALARIOS':
-   state.tab==='payroll'?x.kind==='PAGAMENTO_FUNCIONARIO'||x.kind==='DESPESA_FIXA'&&x.category==='SALARIOS':
+  const filtered=(data.entries||[]).filter(x=>
+   state.tab==='fixed'?(x.kind==='DESPESA_FIXA'&&x.category!=='SALARIOS'):
+   state.tab==='payroll'?(x.kind==='PAGAMENTO_FUNCIONARIO'||(x.kind==='DESPESA_FIXA'&&x.category==='SALARIOS')):
    state.tab==='assets'?x.kind==='ATIVO':true);
-  lines=[['Tipo','Conta DRE','Competência','Categoria','Funcionário','Descrição','Forma pagamento','Fornecedor','Valor R
+  lines=[['Tipo','Conta DRE','Competência','Categoria','Funcionário','Descrição','Forma pagamento','Fornecedor','Valor R$','Status','Vencimento','Pagamento','Observações'],
+   ...filtered.map(x=>[TYPES[x.kind],
+    (x.kind==='PAGAMENTO_FUNCIONARIO'||x.category==='SALARIOS')?'3.02.01':'',
+    x.competenceDate,CATS[x.kind]?.[x.category]||x.category,x.employeeName||'',x.description,x.paymentMethod||'',x.supplier||'',
+    toReais(x.amountCents),x.status,x.dueDate,x.paidAt,x.notes])];
  }
- const csv='\ufeff'+lines.map(row=>row.map(csvCell).join(';')).join('\r\n');
- const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));const link=document.createElement('a');
- link.href=url;link.download='caseirinho-'+state.tab+'-'+(state.tab==='daily'&&state.dailyRange?state.dailyRange.from+'-ate-'+state.dailyRange.to:state.month)+'.csv';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),4000);
+ const csv='\ufeff'+lines.map(items=>items.map(csvCell).join(';')).join('\r\n');
+ const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+ const link=document.createElement('a');
+ link.href=url;
+ link.download='caseirinho-'+state.tab+'-'+(state.tab==='daily'&&state.dailyRange?state.dailyRange.from+'-ate-'+state.dailyRange.to:state.month)+'.csv';
+ document.body.appendChild(link);link.click();link.remove();
+ setTimeout(()=>URL.revokeObjectURL(url),4000);
 }
 function bind(){
  if(!el('finMonth'))return;
@@ -280,45 +289,12 @@ function bind(){
  el('finEntryForm').addEventListener('submit',save);
  el('finKind').addEventListener('change',()=>populateCategories());
  el('finPayrollSearch').addEventListener('input',render);
- el('finStatus').addEventListener('change',()=>{const pending=el('finStatus').value==='PENDENTE';el('finPaidAt').disabled=pending;if(pending)el('finPaidAt').value='';else if(!el('finPaidAt').value)el('finPaidAt').value=nowBR();});
- el('finCancel').addEventListener('click',()=>resetForm());
- el('finCsv').addEventListener('click',downloadCsv);
- el('finPrint').addEventListener('click',()=>window.print());
- el('finSearch').addEventListener('input',render);el('finFilter').addEventListener('change',render);
- document.addEventListener('click',e=>{
-  const b=e.target.closest('[data-fin-tab],[data-fin-kind],[data-fin-preset],[data-fin-edit],[data-fin-delete],[data-fin-repeat]');
-  if(!b)return;
-  if(b.dataset.finTab)setTab(b.dataset.finTab);
-  if(b.dataset.finKind)startKind(b.dataset.finKind);
-  if(b.dataset.finPreset)preset(b.dataset.finPreset);
-  if(b.dataset.finEdit)edit(b.dataset.finEdit);
-  if(b.dataset.finDelete)erase(b.dataset.finDelete);
-  if(b.dataset.finRepeat)repeat(b.dataset.finRepeat);
+ el('finStatus').addEventListener('change',()=>{
+  const pending=el('finStatus').value==='PENDENTE';
+  el('finPaidAt').disabled=pending;
+  if(pending)el('finPaidAt').value='';
+  else if(!el('finPaidAt').value)el('finPaidAt').value=nowBR();
  });
-}
-window.CaseirinhoFinance={load};
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bind,{once:true});else bind();
-})();,'Status','Vencimento','Pagamento','Observações'],
-   ...filtered.map(x=>[TYPES[x.kind],x.kind==='PAGAMENTO_FUNCIONARIO'||x.category==='SALARIOS'?'3.02.01':'',
-    x.competenceDate,CATS[x.kind]?.[x.category]||x.category,x.employeeName||'',x.description,x.paymentMethod||'',x.supplier,
-    toReais(x.amountCents),x.status,x.dueDate,x.paidAt,x.notes])];
- }
- const csv='\ufeff'+lines.map(row=>row.map(csvCell).join(';')).join('\r\n');
- const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));const link=document.createElement('a');
- link.href=url;link.download='caseirinho-'+state.tab+'-'+(state.tab==='daily'&&state.dailyRange?state.dailyRange.from+'-ate-'+state.dailyRange.to:state.month)+'.csv';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),4000);
-}
-function bind(){
- if(!el('finMonth'))return;
- state.month=nowBR().slice(0,7);el('finMonth').value=state.month;
- populateTypes();resetForm();setTab('dre');
- el('finMonth').addEventListener('change',()=>{state.month=el('finMonth').value;clearDailyFilter();resetForm();load();});
- el('finDailyApply').addEventListener('click',applyDailyFilter);
- el('finDailyReset').addEventListener('click',()=>{clearDailyFilter();message('Exibindo vendas do mês '+state.month+'.');});
- el('finDailyToday').addEventListener('click',()=>{el('finDailyFrom').value=nowBR();el('finDailyTo').value=nowBR();applyDailyFilter();});
- el('finRefresh').addEventListener('click',load);
- el('finEntryForm').addEventListener('submit',save);
- el('finKind').addEventListener('change',()=>populateCategories());
- el('finStatus').addEventListener('change',()=>{el('finPaidAt').disabled=el('finStatus').value==='PENDENTE';if(el('finStatus').value==='PENDENTE')el('finPaidAt').value='';});
  el('finCancel').addEventListener('click',()=>resetForm());
  el('finCsv').addEventListener('click',downloadCsv);
  el('finPrint').addEventListener('click',()=>window.print());
