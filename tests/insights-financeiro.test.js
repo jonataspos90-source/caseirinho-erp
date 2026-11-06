@@ -29,7 +29,7 @@ test('PWA versionado inclui os novos arquivos, sem guardar dados de vendas em ca
  const sw=file('sw.js'),html=file('index.html');
  const v=html.match(/app\.js\?v=(\d+)/)?.[1];
  assert.ok(Number(v)>=23,'aplicativo deve carregar versão financeira ou posterior');
- assert.ok(sw.includes('caseirinho-insights-app-shell-v39'));
+ assert.ok(sw.includes('caseirinho-insights-app-shell-v40'));
  assert.match(sw,/financeiro\.js\?v=3/);
  assert.match(sw,/financeiro\.css\?v=3/);
  assert.match(sw,new RegExp('app\\.js\\?v='+v));
@@ -63,9 +63,9 @@ test('funcionários possuem submódulo e conta contábil própria visível no DR
 });
 test('PWA carrega financeiro de pessoal atualizado e sem cache antigo',()=>{
  const html=file('index.html'),sw=file('sw.js');
- assert.ok(html.includes('financeiro.js?v=3'));
+ assert.ok(html.includes('financeiro.js?v=4'));
  assert.ok(html.includes('financeiro.css?v=3'));
- assert.ok(sw.includes('financeiro.js?v=3'));
+ assert.ok(sw.includes('financeiro.js?v=4'));
  assert.ok(sw.includes('financeiro.css?v=3'));
- assert.ok(sw.includes('caseirinho-insights-app-shell-v39'));
+ assert.ok(sw.includes('caseirinho-insights-app-shell-v40'));
 });
