@@ -48,3 +48,12 @@
  .fin-date-filter #finDailyApply{grid-column:1/-1}
  .fin-date-filter .btn{padding:10px 7px}
 }
+/* Funcionários: conta gerencial e cadastro em telas pequenas. */
+.fin-form label[hidden]{display:none!important}
+#finPayrollKpis{margin:14px 0 18px}
+#finPayrollSearch{box-sizing:border-box;min-width:0;width:min(350px,100%);padding:12px;border:1px solid #d6dfd4;border-radius:10px;background:#fff;color:#183c2e;font-size:16px}
+#finPayroll .table-wrap{max-width:100%;overflow-x:auto}
+#finPayroll .table{min-width:670px}
+#finPayrollPanel .section-head{display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap}
+#finPayrollPanel .section-head .btn{min-height:44px}
+@media(max-width:600px){#finPayrollPanel .section-head .btn{width:100%}#finPayrollKpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
