@@ -1,5 +1,5 @@
 importScripts('./order-alerts-worker.js');
-const CACHE='john-erp-pwa-v8.22.92-product-availability-20261103';
+const CACHE='john-erp-pwa-v8.22.93-payroll-dre-20261106';
 
 const TX='./transaction-persistence-v8-22-13.js';
 const MULTI='./multiempresa-v8-12-0.js';
@@ -58,7 +58,7 @@ const COMMERCE_TAG='<script src="./commerce-engine-v8-22-0.js?v=82244"></'+'scri
 const CASHBACK_TAG='<script src="./cashback-engine-v8-22-42.js?v=82248"></'+'script>';
 const CASHBACK_VISIBILITY_TAG='<script src="./cashback-visibility-hotfix-v8-22-43.js?v=82248"></'+'script>';
 const COMMERCE_ENGAGEMENT_TAG='<script src="./commerce-engagement-erp-v8-22-44.js?v=82244"></'+'script>';
-const MANAGEMENT_TAG='<script src="./management-engine-v8-22-0.js?v=82244"></'+'script>';
+const MANAGEMENT_TAG='<script src="./management-engine-v8-22-0.js?v=82293"></'+'script>';
 const USAGE_TAG='<script src="./erp-usage-v8-20.js?v=82244"></'+'script>';
 const PUBLISH_SAFE_TAG='<script src="./catalog-publish-safe-v8-22-54.js?v=82254"></'+'script>';
 const SYNC_TAG='<script src="./caseirinho-commerce-sync-v8-21.js?v=82283"></'+'script>';
