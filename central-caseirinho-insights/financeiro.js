@@ -2,12 +2,13 @@
 'use strict';
 const API='https://john-cloud-api-production.up.railway.app/api/v1/admin/store/insights/finance';
 const KEY='caseirinho_insights_erp_session_v6';
-const TYPES={CUSTO_PRODUCAO:'Custos de produção',COMPRA_REVENDA:'Compras para revenda',DESPESA_FIXA:'Contas fixas',DESPESA_VARIAVEL:'Despesas variáveis',TRIBUTO:'Impostos e taxas',ATIVO:'Ativos / investimentos',RECEITA_AVULSA:'Venda fora do aplicativo'};
+const TYPES={CUSTO_PRODUCAO:'Custos de produção',COMPRA_REVENDA:'Compras para revenda',DESPESA_FIXA:'Contas fixas',DESPESA_VARIAVEL:'Despesas variáveis',PAGAMENTO_FUNCIONARIO:'Pagamento de funcionários',TRIBUTO:'Impostos e taxas',ATIVO:'Ativos / investimentos',RECEITA_AVULSA:'Venda fora do aplicativo'};
 const CATS={
  CUSTO_PRODUCAO:{INGREDIENTES:'Ingredientes',EMBALAGENS_PRODUCAO:'Embalagens',OUTROS_CUSTOS:'Outros custos'},
  COMPRA_REVENDA:{PRODUTOS_REVENDA:'Mercadorias para revenda',FRETE_COMPRA:'Frete da compra'},
  DESPESA_FIXA:{ALUGUEL:'Aluguel',AGUA:'Água',LUZ:'Luz',INTERNET:'Internet',TELEFONE:'Telefone',SISTEMAS:'Sistemas',SALARIOS:'Salários',OUTRAS_FIXAS:'Outras fixas'},
  DESPESA_VARIAVEL:{FRETE_ENTREGAS:'Fretes/entregas',TAXAS_CARTAO:'Taxas de cartão',MARKETING:'Marketing',MANUTENCAO:'Manutenção',OUTRAS_VARIAVEIS:'Outras despesas'},
+ PAGAMENTO_FUNCIONARIO:{SALARIO:'Salário',COMISSAO:'Comissão',HORAS_EXTRAS:'Horas extras',FERIAS:'Férias',DECIMO_TERCEIRO:'13º salário',BONUS:'Bonificação',ENCARGOS:'Encargos de pessoal',BENEFICIOS:'Benefícios',RESCISAO:'Rescisão',OUTROS_PESSOAL:'Outras despesas com pessoal'},
  TRIBUTO:{IMPOSTOS:'Impostos',TAXAS:'Taxas',OUTROS_TRIBUTOS:'Outros tributos'},
  ATIVO:{EQUIPAMENTOS:'Equipamentos',MAQUINAS:'Máquinas',MOVEIS:'Móveis',REFRIGERACAO:'Refrigeração',VEICULOS:'Veículos',OUTROS_ATIVOS:'Outros ativos'},
  RECEITA_AVULSA:{VENDA_FORA_APP:'Venda fora do aplicativo',OUTRA_RECEITA:'Outra receita'}
@@ -65,7 +66,7 @@ async function applyDailyFilter(){
 }
 function setTab(tab){
  state.tab=tab;
- const all=['dre','daily','entries','fixed','assets'];
+ const all=['dre','daily','entries','fixed','payroll','assets'];
  for(const t of all)el('fin'+t[0].toUpperCase()+t.slice(1)+'Panel').hidden=t!==tab;
  document.querySelectorAll('[data-fin-tab]').forEach(b=>b.classList.toggle('primary',b.dataset.finTab===tab));
  if(tab==='entries')el('finEntryForm').scrollIntoView({block:'nearest',behavior:'smooth'});
@@ -79,7 +80,10 @@ function populateCategories(preferred){
  const kind=el('finKind').value,categories=CATS[kind]||{};
  el('finCategory').innerHTML=Object.entries(categories).map(([k,v])=>'<option value="'+k+'">'+esc(v)+'</option>').join('');
  if(preferred&&categories[preferred])el('finCategory').value=preferred;
- const isFixed=kind==='DESPESA_FIXA';el('finRepeat').closest('label').hidden=!isFixed;
+ const isFixed=kind==='DESPESA_FIXA',isPayroll=kind==='PAGAMENTO_FUNCIONARIO';
+ el('finRepeat').closest('label').hidden=!isFixed;
+ el('finEmployeeField').hidden=!isPayroll;el('finPayMethodField').hidden=!isPayroll;
+ el('finEmployeeName').required=isPayroll;el('finSupplierField').hidden=isPayroll;
  if(!isFixed)el('finRepeat').checked=false;
  if(kind==='RECEITA_AVULSA')message('Receita manual: registre apenas vendas fora do aplicativo, para evitar contagem duplicada.');
 }
@@ -88,12 +92,18 @@ function resetForm(kind='CUSTO_PRODUCAO',category){
  populateCategories(category);
  el('finDate').value=state.month?state.month+'-01':nowBR();
  el('finStatus').value='PAGO';el('finPaidAt').disabled=false;el('finPaidAt').value=nowBR();
+ el('finEmployeeName').value='';el('finPayMethod').value='PIX';
  el('finSave').textContent='💾 Salvar lançamento';
 }
 function preset(cat){
  resetForm('DESPESA_FIXA',cat);el('finDescription').value=CATS.DESPESA_FIXA[cat]+' · '+state.month;el('finRepeat').checked=true;setTab('entries');el('finAmount').focus();
 }
-function startKind(kind){resetForm(kind);setTab('entries');el('finDescription').focus();}
+function startKind(kind){
+ resetForm(kind);
+ if(kind==='PAGAMENTO_FUNCIONARIO'){el('finStatus').value='PENDENTE';el('finPaidAt').value='';el('finPaidAt').disabled=true;}
+ setTab('entries');
+ (kind==='PAGAMENTO_FUNCIONARIO'?el('finEmployeeName'):el('finDescription')).focus();
+}
 function edit(id){
  const x=state.data?.entries?.find(e=>e.id===id);if(!x)return;
  state.editing=x;el('finKind').value=x.kind;populateCategories(x.category);
@@ -101,6 +111,7 @@ function edit(id){
  el('finDate').value=x.competenceDate;el('finDue').value=x.dueDate||'';
  el('finStatus').value=x.status;el('finPaidAt').value=x.paidAt||'';
  el('finSupplier').value=x.supplier||'';el('finNotes').value=x.notes||'';
+ el('finEmployeeName').value=x.employeeName||'';el('finPayMethod').value=x.paymentMethod||'PIX';
  el('finRepeat').checked=x.repeatMonthly===true;el('finSave').textContent='💾 Atualizar lançamento';
  setTab('entries');el('finDescription').focus();
 }
@@ -128,7 +139,8 @@ function render(){
   kpi('💵','Receita total',money(d.revenueCents),'Inclui vendas fora do app lançadas'),
   kpi('🕓','Pedidos em andamento',money(d.pendingCents),'Fora do DRE até a conclusão'),
   kpi('🥟','Custos + revenda',money(d.costCents),'Compras lançadas neste mês'),
-  kpi('🏠','Despesas e tributos',money(number(d.fixedCents)+number(d.variableCents)+number(d.taxesCents)),'Custos fixos, variáveis e impostos'),
+  kpi('🏠','Despesas e tributos',money(number(d.fixedCents)+number(d.variableCents)+number(d.taxesCents)),'Sem despesas com pessoal'),
+  kpi('👥','Pagamento de funcionários',money(d.payrollCents),'Conta gerencial 3.02.01 • competência do mês'),
   kpi('📊','Resultado do mês',money(d.netCents),'Margem: '+(d.marginPercent===null?'—':d.marginPercent+'%')),
   kpi('🧰','Investimento em ativos',money(d.assetsCents),'Não reduz o DRE diretamente'),
   kpi('⏳','Gastos a pagar',money(d.unpaidOperatingCents),'Competência já incluída no DRE')
@@ -141,6 +153,7 @@ function render(){
   ['(-) Compras para revenda (sem estoque)',-number(d.resaleCents)],
   ['(=) RESULTADO BRUTO',d.grossCents,true],
   ['(-) Despesas fixas (aluguel, água, luz, internet etc.)',-number(d.fixedCents)],
+  ['(-) Pagamento de funcionários — conta 3.02.01',-number(d.payrollCents)],
   ['(-) Despesas variáveis',-number(d.variableCents)],
   ['(-) Impostos e taxas lançados',-number(d.taxesCents)],
   ['(=) RESULTADO GERENCIAL DO MÊS',d.netCents,true],
@@ -158,9 +171,19 @@ function render(){
    money(x.completedCents),money(x.manualCents),'<b>'+money(number(x.completedCents)+number(x.manualCents))+'</b>',
    esc(x.pendingCount)+' pedidos · '+money(x.pendingCents)])));
  const q=el('finSearch').value.toLowerCase().trim(),f=el('finFilter').value;
- const list=entries.filter(x=>(f==='ALL'||x.kind===f)&&(!q||(x.description+' '+(x.supplier||'')).toLowerCase().includes(q)));
+ const list=entries.filter(x=>(f==='ALL'||x.kind===f)&&(!q||(x.description+' '+(x.supplier||'')+' '+(x.employeeName||'')).toLowerCase().includes(q)));
  el('finEntries').innerHTML=entryTable(list);
- el('finFixed').innerHTML=entryTable(entries.filter(x=>x.kind==='DESPESA_FIXA'));
+ el('finFixed').innerHTML=entryTable(entries.filter(x=>x.kind==='DESPESA_FIXA'&&x.category!=='SALARIOS'));
+ const personnel=entries.filter(x=>x.kind==='PAGAMENTO_FUNCIONARIO'||x.kind==='DESPESA_FIXA'&&x.category==='SALARIOS');
+ const paid=personnel.filter(x=>x.status==='PAGO').reduce((a,x)=>a+number(x.amountCents),0);
+ const toPay=personnel.filter(x=>x.status==='PENDENTE').reduce((a,x)=>a+number(x.amountCents),0);
+ el('finPayrollKpis').innerHTML=[
+  kpi('👥','Despesas com pessoal',money(d.payrollCents),'Conta gerencial 3.02.01'),
+  kpi('✅','Pago',money(paid),'Já quitado'),
+  kpi('⏳','A pagar',money(toPay),'Já considerado no DRE por competência')
+ ].join('');
+ const employeeFilter=el('finPayrollSearch').value.trim().toLowerCase();
+ el('finPayroll').innerHTML=entryTable(personnel.filter(x=>(x.employeeName||x.description||'').toLowerCase().includes(employeeFilter)));
  el('finAssets').innerHTML=entryTable(entries.filter(x=>x.kind==='ATIVO'));
 }
 function entryTable(entries){
@@ -170,7 +193,7 @@ function entryTable(entries){
   const actions='<button type="button" class="btn small" data-fin-edit="'+esc(x.id)+'">✏️ Editar</button> '+
    (x.repeatMonthly?'<button class="btn small" type="button" data-fin-repeat="'+esc(x.id)+'">➡️ Próx. mês</button> ':'')+
    '<button type="button" class="btn small" data-fin-delete="'+esc(x.id)+'">🗑️</button>';
-  return row([esc(datestr(x.competenceDate)),'<b>'+esc(x.description)+'</b><br><small>'+esc(TYPES[x.kind])+(x.supplier?' · '+esc(x.supplier):'')+'</small>',esc(CATS[x.kind]?.[x.category]||x.category),
+  return row([esc(datestr(x.competenceDate)),'<b>'+esc(x.description)+'</b><br><small>'+esc(TYPES[x.kind])+(x.employeeName?' · Funcionário: '+esc(x.employeeName):x.supplier?' · '+esc(x.supplier):'')+'</small>',esc(CATS[x.kind]?.[x.category]||x.category),
    money(x.amountCents),'<span class="badge '+(late?'warn':pending?'light':'good')+'">'+(late?'VENCIDO':esc(x.status))+'</span><br><small>Vence: '+esc(datestr(x.dueDate))+'</small>',actions]);
  }));
 }
@@ -185,6 +208,8 @@ async function save(event){
    amountCents:Math.round(amount*100),competenceDate:el('finDate').value,
    dueDate:el('finDue').value||null,status:el('finStatus').value,
    paidAt:el('finStatus').value==='PAGO'?(el('finPaidAt').value||el('finDate').value):null,
+   employeeName:el('finKind').value==='PAGAMENTO_FUNCIONARIO'?el('finEmployeeName').value.trim():null,
+   paymentMethod:el('finKind').value==='PAGAMENTO_FUNCIONARIO'?el('finPayMethod').value:null,
    supplier:el('finSupplier').value,notes:el('finNotes').value,repeatMonthly:el('finRepeat').checked
   };
   if(data.kind==='RECEITA_AVULSA'&&!state.editing&&!confirm('Confirma que esta receita NÃO foi registrada no aplicativo? Lançar duas vezes duplicaria o DRE.'))return;
