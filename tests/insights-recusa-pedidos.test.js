@@ -6,7 +6,7 @@ test('recusa aparece na página Pedidos e carrega após o app.js',()=>{
  assert.match(html,/app\.js\?v=36/);
  assert.match(html,/order-reject\.js\?v=4/);
  assert.ok(html.indexOf('app.js?v=36')<html.indexOf('order-reject.js?v=4'));
- assert.match(sw,/caseirinho-insights-app-shell-v39/);
+ assert.match(sw,/caseirinho-insights-app-shell-v40/);
  assert.match(sw,/order-reject\.js\?v=4/);
  assert.ok(html.includes('styles.css?v=31'));
  assert.ok(sw.includes('styles.css?v=31'));
