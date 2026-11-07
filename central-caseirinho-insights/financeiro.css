@@ -57,3 +57,20 @@
 #finPayrollPanel .section-head{display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap}
 #finPayrollPanel .section-head .btn{min-height:44px}
 @media(max-width:600px){#finPayrollPanel .section-head .btn{width:100%}#finPayrollKpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Módulo Despesas com Funcionários — configuração de preço e consumo de produtos. */
+.fin-employee-settings{border:1px solid #d7e5d8;background:#f6fbf5;border-radius:15px;padding:18px;margin:18px 0}
+.fin-employee-settings h3{margin:0 0 12px;color:#16452f}
+.fin-employee-settings label{display:grid;gap:8px;font-weight:700;font-size:14px;margin-bottom:12px}
+.fin-employee-settings select{box-sizing:border-box;max-width:100%;width:100%;min-height:46px;padding:10px;border:1px solid #b7cdbd;border-radius:10px;background:#fff;color:#173c28;font-size:16px}
+.fin-product-entry{box-sizing:border-box;border:1px solid #d7e5d8;border-radius:14px;background:#f8faf7;padding:16px;margin-top:4px}
+.fin-product-entry h3{margin:0 0 12px;font-size:16px;color:#173c28}
+.fin-product-grid{display:grid;grid-template-columns:minmax(0,2fr) minmax(110px,1fr);gap:12px}
+.fin-product-grid label{display:grid;gap:8px;min-width:0;font-size:14px;font-weight:700}
+.fin-product-grid select,.fin-product-grid input{box-sizing:border-box;min-width:0;width:100%;padding:11px;border-radius:10px;border:1px solid #bdcfc1;background:#fff;color:#173c28;font-size:16px}
+.fin-product-entry .notice{margin:12px 0 0;line-height:1.5}
+#finEmployeeExpenseSearch{box-sizing:border-box;width:min(420px,100%);min-width:0;padding:11px;border:1px solid #d7e5d8;border-radius:10px;background:#fff;color:#173c28;font-size:16px}
+#finEmployeeExpensesPanel .table-wrap{max-width:100%;overflow-x:auto}
+#finEmployeeExpensesPanel .table{min-width:690px}
+#finAmount[readonly]{background:#eff4ee;color:#133a28}
+@media(max-width:620px){.fin-product-grid{grid-template-columns:minmax(0,1fr)}.fin-employee-settings{padding:14px}#finEmployeeExpensesPanel .section-head .btn{width:100%}}
