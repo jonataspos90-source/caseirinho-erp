@@ -29,7 +29,7 @@ test('PWA versionado inclui os novos arquivos, sem guardar dados de vendas em ca
  const sw=file('sw.js'),html=file('index.html');
  const v=html.match(/app\.js\?v=(\d+)/)?.[1];
  assert.ok(Number(v)>=23,'aplicativo deve carregar versão financeira ou posterior');
- assert.ok(sw.includes('caseirinho-insights-app-shell-v40'));
+ assert.ok(sw.includes('caseirinho-insights-app-shell-v41'));
  assert.match(sw,/financeiro\.js\?v=3/);
  assert.match(sw,/financeiro\.css\?v=3/);
  assert.match(sw,new RegExp('app\\.js\\?v='+v));
@@ -63,9 +63,33 @@ test('funcionários possuem submódulo e conta contábil própria visível no DR
 });
 test('PWA carrega financeiro de pessoal atualizado e sem cache antigo',()=>{
  const html=file('index.html'),sw=file('sw.js');
- assert.ok(html.includes('financeiro.js?v=4'));
- assert.ok(html.includes('financeiro.css?v=3'));
- assert.ok(sw.includes('financeiro.js?v=4'));
- assert.ok(sw.includes('financeiro.css?v=3'));
- assert.ok(sw.includes('caseirinho-insights-app-shell-v40'));
+ assert.ok(html.includes('financeiro.js?v=5'));
+ assert.ok(html.includes('financeiro.css?v=4'));
+ assert.ok(sw.includes('financeiro.js?v=5'));
+ assert.ok(sw.includes('financeiro.css?v=4'));
+ assert.ok(sw.includes('caseirinho-insights-app-shell-v41'));
+});
+
+test('Despesas de funcionários têm módulo e configurações de custo/preço de venda persistentes',()=>{
+ const html=file('index.html'),js=file('financeiro.js'),sw=file('sw.js');
+ for(const id of ['finEmployeeExpensesPanel','finEmployeePriceBasis','finEmployeePriceSave','finEmployeeExpenseKpis','finEmployeeProduct',
+  'finProductQty','finManualUnitPrice','finEmployeeExpenseSearch','finEmployeeExpenseList'])
+  assert.ok(html.includes('id="'+id+'"'),'Faltou '+id);
+ assert.ok(html.includes('data-fin-tab="employeeExpenses"'));
+ assert.ok(html.includes('data-fin-kind="DESPESA_FUNCIONARIO"'));
+ assert.ok(js.includes("DESPESA_FUNCIONARIO"));
+ assert.ok(js.includes("'PRECO_VENDA'"));
+ assert.ok(js.includes("'/employee-expense/settings'"));
+ assert.ok(js.includes("'/employee-expense/products'"));
+ assert.ok(js.includes("method:'PUT'"));
+ assert.ok(js.includes("employeeExpensesCents"));
+ assert.ok(js.includes("3.02.02"));
+ assert.ok(sw.includes('financeiro.js?v=5'));
+ assert.ok(sw.includes('caseirinho-insights-app-shell-v41'));
+ assert.doesNotThrow(()=>new (require('node:vm').Script)(js));
+});
+test('ERP tem atalho para despesas de funcionários sem duplicar lançamentos',()=>{
+ const erp=fs.readFileSync('management-engine-v8-22-0.js','utf8');
+ assert.ok(erp.includes('finTab=employeeExpenses'));
+ assert.ok(erp.includes('finTab=payroll'));
 });
