@@ -2,13 +2,14 @@
 'use strict';
 const API='https://john-cloud-api-production.up.railway.app/api/v1/admin/store/insights/finance';
 const KEY='caseirinho_insights_erp_session_v6';
-const TYPES={CUSTO_PRODUCAO:'Custos de produção',COMPRA_REVENDA:'Compras para revenda',DESPESA_FIXA:'Contas fixas',DESPESA_VARIAVEL:'Despesas variáveis',PAGAMENTO_FUNCIONARIO:'Pagamento de funcionários',TRIBUTO:'Impostos e taxas',ATIVO:'Ativos / investimentos',RECEITA_AVULSA:'Venda fora do aplicativo'};
+const TYPES={CUSTO_PRODUCAO:'Custos de produção',COMPRA_REVENDA:'Compras para revenda',DESPESA_FIXA:'Contas fixas',DESPESA_VARIAVEL:'Despesas variáveis',PAGAMENTO_FUNCIONARIO:'Pagamento de funcionários',DESPESA_FUNCIONARIO:'Despesas com funcionários',TRIBUTO:'Impostos e taxas',ATIVO:'Ativos / investimentos',RECEITA_AVULSA:'Venda fora do aplicativo'};
 const CATS={
  CUSTO_PRODUCAO:{INGREDIENTES:'Ingredientes',EMBALAGENS_PRODUCAO:'Embalagens',OUTROS_CUSTOS:'Outros custos'},
  COMPRA_REVENDA:{PRODUTOS_REVENDA:'Mercadorias para revenda',FRETE_COMPRA:'Frete da compra'},
  DESPESA_FIXA:{ALUGUEL:'Aluguel',AGUA:'Água',LUZ:'Luz',INTERNET:'Internet',TELEFONE:'Telefone',SISTEMAS:'Sistemas',SALARIOS:'Salários',OUTRAS_FIXAS:'Outras fixas'},
  DESPESA_VARIAVEL:{FRETE_ENTREGAS:'Fretes/entregas',TAXAS_CARTAO:'Taxas de cartão',MARKETING:'Marketing',MANUTENCAO:'Manutenção',OUTRAS_VARIAVEIS:'Outras despesas'},
  PAGAMENTO_FUNCIONARIO:{SALARIO:'Salário',COMISSAO:'Comissão',HORAS_EXTRAS:'Horas extras',FERIAS:'Férias',DECIMO_TERCEIRO:'13º salário',BONUS:'Bonificação',ENCARGOS:'Encargos de pessoal',BENEFICIOS:'Benefícios',RESCISAO:'Rescisão',OUTROS_PESSOAL:'Outras despesas com pessoal'},
+ DESPESA_FUNCIONARIO:{CONSUMO_PRODUTO:'Consumo de produto do ERP',ALIMENTACAO:'Alimentação',UNIFORME:'Uniforme',TRANSPORTE:'Transporte',MATERIAL:'Materiais',OUTRAS_DESPESAS:'Outras despesas do funcionário'},
  TRIBUTO:{IMPOSTOS:'Impostos',TAXAS:'Taxas',OUTROS_TRIBUTOS:'Outros tributos'},
  ATIVO:{EQUIPAMENTOS:'Equipamentos',MAQUINAS:'Máquinas',MOVEIS:'Móveis',REFRIGERACAO:'Refrigeração',VEICULOS:'Veículos',OUTROS_ATIVOS:'Outros ativos'},
  RECEITA_AVULSA:{VENDA_FORA_APP:'Venda fora do aplicativo',OUTRA_RECEITA:'Outra receita'}
@@ -17,7 +18,7 @@ const el=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"']/g
 const money=c=>(Number(c||0)/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const datestr=x=>x?String(x).slice(0,10).split('-').reverse().join('/'):'—';
 const nowBR=()=>{const x=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()),p=Object.fromEntries(x.map(i=>[i.type,i.value]));return p.year+'-'+p.month+'-'+p.day;};
-const state={data:null,month:'',tab:'dre',editing:null,loading:false,dailyRange:null,dailyData:null,dailyLoading:false};
+const state={data:null,month:'',tab:'dre',editing:null,loading:false,dailyRange:null,dailyData:null,dailyLoading:false,employeePriceBasis:'CUSTO',employeeBasisLoaded:false,employeeProducts:[]};
 function session(){
  try{const x=JSON.parse(sessionStorage.getItem(KEY)||'{}');return x.token&&Number(x.expiresAt)>Date.now()+10000?x.token:'';}catch(_){return ''}
 }
@@ -64,9 +65,61 @@ async function applyDailyFilter(){
  }catch(error){message('Falha ao consultar período: '+error.message,true);}
  finally{state.dailyLoading=false;el('finDailyApply').disabled=false;}
 }
+
+function fillEmployeeProducts(preferred){
+ const selected=el('finEmployeeProduct'),value=preferred??selected.value;
+ selected.innerHTML='<option value="">Selecione um produto...</option>'+
+  state.employeeProducts.map(p=>'<option value="'+esc(p.id)+'">'+esc((p.code?p.code+' · ':'')+p.name)+'</option>').join('');
+ if(value&&state.employeeProducts.some(p=>p.id===value))selected.value=value;
+}
+function employeeProductPreview(){
+ const isProduct=el('finKind').value==='DESPESA_FUNCIONARIO'&&el('finCategory').value==='CONSUMO_PRODUTO';
+ el('finProductField').hidden=!isProduct;
+ const amount=el('finAmount');amount.readOnly=isProduct;
+ if(!isProduct){el('finManualUnitField').hidden=true;return;}
+ const product=state.employeeProducts.find(p=>p.id===el('finEmployeeProduct').value);
+ const quantity=Number(el('finProductQty').value);
+ const price=product?Number(state.employeePriceBasis==='CUSTO'?product.costCents:product.saleCents):0;
+ const manual=Number(el('finManualUnitPrice').value);
+ el('finManualUnitField').hidden=!(product&&price<=0);
+ const unitCents=price>0?price:Math.round(manual*100);
+ const total=Number.isFinite(quantity)&&quantity>0&&unitCents>0?Math.round(quantity*unitCents):0;
+ amount.value=total>0?(total/100).toFixed(2):'';
+ const mode=state.employeePriceBasis==='CUSTO'?'custo':'preço de venda';
+ const hint=!state.employeeBasisLoaded?'Carregue a configuração antes de lançar produtos.':
+  !product?'Escolha um produto do cadastro do ERP.':
+  quantity<=0?'Informe a quantidade utilizada.':
+  !price&&!manual?'Sem '+mode+' no cadastro: informe manualmente o valor unitário e confira-o.':
+  'Valorização pelo '+mode+': '+money(total)+(price<=0?' • preço unitário informado manualmente':' • valor do cadastro ERP');
+ el('finEmployeeProductHint').textContent=hint+' Não gera venda nem baixa automática de estoque.';
+}
+async function employeeExtras(){
+ try{
+  const [settings,products]=await Promise.all([api('/employee-expense/settings'),api('/employee-expense/products')]);
+  state.employeePriceBasis=settings.priceBasis||'CUSTO';state.employeeBasisLoaded=true;
+  state.employeeProducts=products.products||[];
+  el('finEmployeePriceBasis').value=state.employeePriceBasis;
+  fillEmployeeProducts();employeeProductPreview();
+ }catch(err){
+  state.employeeBasisLoaded=false;state.employeeProducts=[];fillEmployeeProducts();
+  message('DRE carregado, mas configuração de despesas com funcionários indisponível: '+err.message,true);
+ }
+}
+async function saveEmployeePriceBasis(){
+ const button=el('finEmployeePriceSave'),basis=el('finEmployeePriceBasis').value;
+ button.disabled=true;
+ try{
+  const data=await api('/employee-expense/settings',{method:'PUT',body:{priceBasis:basis}});
+  state.employeePriceBasis=data.priceBasis;state.employeeBasisLoaded=true;employeeProductPreview();
+  message('✅ Configuração salva: '+(basis==='CUSTO'?'custo':'preço de venda')+
+   '. Válida para novos lançamentos e edições, sem recalcular despesas anteriores.');
+ }catch(err){message('Erro ao salvar configuração: '+err.message,true);}
+ finally{button.disabled=false;}
+}
+
 function setTab(tab){
  state.tab=tab;
- const all=['dre','daily','entries','fixed','payroll','assets'];
+ const all=['dre','daily','entries','fixed','payroll','employeeExpenses','assets'];
  for(const t of all)el('fin'+t[0].toUpperCase()+t.slice(1)+'Panel').hidden=t!==tab;
  document.querySelectorAll('[data-fin-tab]').forEach(b=>b.classList.toggle('primary',b.dataset.finTab===tab));
  if(tab==='entries')el('finEntryForm').scrollIntoView({block:'nearest',behavior:'smooth'});
@@ -80,10 +133,11 @@ function populateCategories(preferred){
  const kind=el('finKind').value,categories=CATS[kind]||{};
  el('finCategory').innerHTML=Object.entries(categories).map(([k,v])=>'<option value="'+k+'">'+esc(v)+'</option>').join('');
  if(preferred&&categories[preferred])el('finCategory').value=preferred;
- const isFixed=kind==='DESPESA_FIXA',isPayroll=kind==='PAGAMENTO_FUNCIONARIO';
+ const isFixed=kind==='DESPESA_FIXA',isPayroll=kind==='PAGAMENTO_FUNCIONARIO',isExpense=kind==='DESPESA_FUNCIONARIO';
  el('finRepeat').closest('label').hidden=!isFixed;
- el('finEmployeeField').hidden=!isPayroll;el('finPayMethodField').hidden=!isPayroll;
- el('finEmployeeName').required=isPayroll;el('finSupplierField').hidden=isPayroll;
+ el('finEmployeeField').hidden=!(isPayroll||isExpense);el('finPayMethodField').hidden=!isPayroll;
+ el('finEmployeeName').required=isPayroll||isExpense;el('finSupplierField').hidden=isPayroll||isExpense;
+ employeeProductPreview();
  if(!isFixed)el('finRepeat').checked=false;
  if(kind==='RECEITA_AVULSA')message('Receita manual: registre apenas vendas fora do aplicativo, para evitar contagem duplicada.');
 }
@@ -93,6 +147,7 @@ function resetForm(kind='CUSTO_PRODUCAO',category){
  el('finDate').value=state.month?state.month+'-01':nowBR();
  el('finStatus').value='PAGO';el('finPaidAt').disabled=false;el('finPaidAt').value=nowBR();
  el('finEmployeeName').value='';el('finPayMethod').value='PIX';
+ el('finEmployeeProduct').value='';el('finProductQty').value='1';el('finManualUnitPrice').value='';employeeProductPreview();
  el('finSave').textContent='💾 Salvar lançamento';
 }
 function preset(cat){
@@ -102,7 +157,7 @@ function startKind(kind){
  resetForm(kind);
  if(kind==='PAGAMENTO_FUNCIONARIO'){el('finStatus').value='PENDENTE';el('finPaidAt').value='';el('finPaidAt').disabled=true;}
  setTab('entries');
- (kind==='PAGAMENTO_FUNCIONARIO'?el('finEmployeeName'):el('finDescription')).focus();
+ (kind==='PAGAMENTO_FUNCIONARIO'||kind==='DESPESA_FUNCIONARIO'?el('finEmployeeName'):el('finDescription')).focus();
 }
 function edit(id){
  const x=state.data?.entries?.find(e=>e.id===id);if(!x)return;
@@ -112,6 +167,9 @@ function edit(id){
  el('finStatus').value=x.status;el('finPaidAt').value=x.paidAt||'';
  el('finSupplier').value=x.supplier||'';el('finNotes').value=x.notes||'';
  el('finEmployeeName').value=x.employeeName||'';el('finPayMethod').value=x.paymentMethod||'PIX';
+ fillEmployeeProducts(x.productId||'');el('finProductQty').value=x.quantity||1;
+ el('finManualUnitPrice').value=x.valuationSource==='MANUAL'?((Number(x.unitPriceCents)||0)/100).toFixed(2):'';
+ employeeProductPreview();
  el('finRepeat').checked=x.repeatMonthly===true;el('finSave').textContent='💾 Atualizar lançamento';
  setTab('entries');el('finDescription').focus();
 }
@@ -122,6 +180,7 @@ async function load(){
  try{
   state.month=el('finMonth').value||nowBR().slice(0,7);el('finMonth').value=state.month;
   state.data=await api('/overview?month='+encodeURIComponent(state.month));
+  await employeeExtras();
   if(state.dailyRange){
    try{state.dailyData=await api(dailyPath(state.dailyRange.from,state.dailyRange.to));}
    catch(error){state.dailyData=null;message('DRE atualizado; período não carregou: '+error.message,true);}
