@@ -200,6 +200,7 @@ function render(){
   kpi('🥟','Custos + revenda',money(d.costCents),'Compras lançadas neste mês'),
   kpi('🏠','Despesas e tributos',money(number(d.fixedCents)+number(d.variableCents)+number(d.taxesCents)),'Sem despesas com pessoal'),
   kpi('👥','Pagamento de funcionários',money(d.payrollCents),'Conta gerencial 3.02.01 • competência do mês'),
+  kpi('🧾','Despesas dos funcionários',money(d.employeeExpensesCents),'Conta 3.02.02 • separada de salários'),
   kpi('📊','Resultado do mês',money(d.netCents),'Margem: '+(d.marginPercent===null?'—':d.marginPercent+'%')),
   kpi('🧰','Investimento em ativos',money(d.assetsCents),'Não reduz o DRE diretamente'),
   kpi('⏳','Gastos a pagar',money(d.unpaidOperatingCents),'Competência já incluída no DRE')
@@ -213,6 +214,7 @@ function render(){
   ['(=) RESULTADO BRUTO',d.grossCents,true],
   ['(-) Despesas fixas (aluguel, água, luz, internet etc.)',-number(d.fixedCents)],
   ['(-) Pagamento de funcionários — conta 3.02.01',-number(d.payrollCents)],
+  ['(-) Despesas com funcionários — conta 3.02.02',-number(d.employeeExpensesCents)],
   ['(-) Despesas variáveis',-number(d.variableCents)],
   ['(-) Impostos e taxas lançados',-number(d.taxesCents)],
   ['(=) RESULTADO GERENCIAL DO MÊS',d.netCents,true],
@@ -243,6 +245,16 @@ function render(){
  ].join('');
  const employeeFilter=el('finPayrollSearch').value.trim().toLowerCase();
  el('finPayroll').innerHTML=entryTable(personnel.filter(x=>(x.employeeName||x.description||'').toLowerCase().includes(employeeFilter)));
+ const expenses=entries.filter(x=>x.kind==='DESPESA_FUNCIONARIO');
+ const productsUsed=expenses.filter(x=>x.category==='CONSUMO_PRODUTO');
+ el('finEmployeeExpenseKpis').innerHTML=[
+  kpi('🧾','Despesas funcionários',money(d.employeeExpensesCents),'Conta 3.02.02'),
+  kpi('📦','Produtos utilizados',money(productsUsed.reduce((a,x)=>a+number(x.amountCents),0)),productsUsed.length+' lançamento(s)'),
+  kpi('👥','Lançamentos',String(expenses.length),'Salários ficam na conta 3.02.01')
+ ].join('');
+ const searchExpense=el('finEmployeeExpenseSearch').value.trim().toLowerCase();
+ el('finEmployeeExpenseList').innerHTML=entryTable(expenses.filter(x=>
+  ((x.employeeName||'')+' '+(x.productName||'')+' '+x.description).toLowerCase().includes(searchExpense)));
  el('finAssets').innerHTML=entryTable(entries.filter(x=>x.kind==='ATIVO'));
 }
 function entryTable(entries){
@@ -252,7 +264,7 @@ function entryTable(entries){
   const actions='<button type="button" class="btn small" data-fin-edit="'+esc(x.id)+'">✏️ Editar</button> '+
    (x.repeatMonthly?'<button class="btn small" type="button" data-fin-repeat="'+esc(x.id)+'">➡️ Próx. mês</button> ':'')+
    '<button type="button" class="btn small" data-fin-delete="'+esc(x.id)+'">🗑️</button>';
-  return row([esc(datestr(x.competenceDate)),'<b>'+esc(x.description)+'</b><br><small>'+esc(TYPES[x.kind])+(x.employeeName?' · Funcionário: '+esc(x.employeeName):x.supplier?' · '+esc(x.supplier):'')+'</small>',esc(CATS[x.kind]?.[x.category]||x.category),
+  return row([esc(datestr(x.competenceDate)),'<b>'+esc(x.description)+'</b><br><small>'+esc(TYPES[x.kind])+(x.employeeName?' · Funcionário: '+esc(x.employeeName):x.supplier?' · '+esc(x.supplier):'')+(x.productName?' · '+esc(x.productName)+' × '+esc(x.quantity)+' · '+esc(x.priceBasis==='PRECO_VENDA'?'preço venda':'custo'):'')+'</small>',esc(CATS[x.kind]?.[x.category]||x.category),
    money(x.amountCents),'<span class="badge '+(late?'warn':pending?'light':'good')+'">'+(late?'VENCIDO':esc(x.status))+'</span><br><small>Vence: '+esc(datestr(x.dueDate))+'</small>',actions]);
  }));
 }
