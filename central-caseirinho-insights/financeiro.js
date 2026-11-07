@@ -333,18 +333,20 @@ function downloadCsv(){
    ['Custos de produção',toReais(d.productionCents)],['Compras revenda',toReais(d.resaleCents)],
    ['Resultado bruto',toReais(d.grossCents)],['Despesas fixas',toReais(d.fixedCents)],
    ['Pagamento de funcionários (3.02.01)',toReais(d.payrollCents)],
+   ['Despesas com funcionários (3.02.02)',toReais(d.employeeExpensesCents)],
    ['Despesas variáveis',toReais(d.variableCents)],['Tributos lançados',toReais(d.taxesCents)],
    ['Resultado gerencial',toReais(d.netCents)],['Ativos fora do DRE',toReais(d.assetsCents)]];
  }else{
   const filtered=(data.entries||[]).filter(x=>
    state.tab==='fixed'?(x.kind==='DESPESA_FIXA'&&x.category!=='SALARIOS'):
    state.tab==='payroll'?(x.kind==='PAGAMENTO_FUNCIONARIO'||(x.kind==='DESPESA_FIXA'&&x.category==='SALARIOS')):
+   state.tab==='employeeExpenses'?x.kind==='DESPESA_FUNCIONARIO':
    state.tab==='assets'?x.kind==='ATIVO':true);
-  lines=[['Tipo','Conta DRE','Competência','Categoria','Funcionário','Descrição','Forma pagamento','Fornecedor','Valor R$','Status','Vencimento','Pagamento','Observações'],
+  lines=[['Tipo','Conta DRE','Competência','Categoria','Funcionário','Produto','Quantidade','Base de preço','Descrição','Forma pagamento','Fornecedor','Valor R$','Status','Vencimento','Pagamento','Observações'],
    ...filtered.map(x=>[TYPES[x.kind],
-    (x.kind==='PAGAMENTO_FUNCIONARIO'||x.category==='SALARIOS')?'3.02.01':'',
-    x.competenceDate,CATS[x.kind]?.[x.category]||x.category,x.employeeName||'',x.description,x.paymentMethod||'',x.supplier||'',
-    toReais(x.amountCents),x.status,x.dueDate,x.paidAt,x.notes])];
+    (x.kind==='PAGAMENTO_FUNCIONARIO'||x.category==='SALARIOS')?'3.02.01':x.kind==='DESPESA_FUNCIONARIO'?'3.02.02':'',
+    x.competenceDate,CATS[x.kind]?.[x.category]||x.category,x.employeeName||'',x.productName||'',x.quantity||'',x.priceBasis||'',
+    x.description,x.paymentMethod||'',x.supplier||'',toReais(x.amountCents),x.status,x.dueDate,x.paidAt,x.notes])];
  }
  const csv='\ufeff'+lines.map(items=>items.map(csvCell).join(';')).join('\r\n');
  const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
