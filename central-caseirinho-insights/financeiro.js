@@ -279,10 +279,18 @@ async function save(event){
    amountCents:Math.round(amount*100),competenceDate:el('finDate').value,
    dueDate:el('finDue').value||null,status:el('finStatus').value,
    paidAt:el('finStatus').value==='PAGO'?(el('finPaidAt').value||el('finDate').value):null,
-   employeeName:el('finKind').value==='PAGAMENTO_FUNCIONARIO'?el('finEmployeeName').value.trim():null,
+   employeeName:['PAGAMENTO_FUNCIONARIO','DESPESA_FUNCIONARIO'].includes(el('finKind').value)?el('finEmployeeName').value.trim():null,
+   productId:el('finEmployeeProduct').value,quantity:Number(el('finProductQty').value),
+   manualUnitPriceCents:Math.round(Number(el('finManualUnitPrice').value)*100),
    paymentMethod:el('finKind').value==='PAGAMENTO_FUNCIONARIO'?el('finPayMethod').value:null,
    supplier:el('finSupplier').value,notes:el('finNotes').value,repeatMonthly:el('finRepeat').checked
   };
+  if(data.kind==='DESPESA_FUNCIONARIO'&&data.category==='CONSUMO_PRODUTO'){
+   if(!state.employeeBasisLoaded)throw Error('Configuração custo/preço de venda indisponível.');
+   if(!data.productId)throw Error('Selecione o produto utilizado.');
+   if(!Number.isFinite(data.quantity)||data.quantity<=0)throw Error('Quantidade do produto inválida.');
+   if(!confirm('Confirmar despesa de '+money(data.amountCents)+' pela base '+(state.employeePriceBasis==='CUSTO'?'CUSTO':'PREÇO DE VENDA')+'? Não gera venda nem baixa estoque.'))return;
+  }
   if(data.kind==='RECEITA_AVULSA'&&!state.editing&&!confirm('Confirma que esta receita NÃO foi registrada no aplicativo? Lançar duas vezes duplicaria o DRE.'))return;
   if(state.editing){
    await api('/entries/'+encodeURIComponent(state.editing.id),{method:'PATCH',body:{...data,recordVersion:state.editing.recordVersion}});
@@ -351,7 +359,7 @@ function bind(){
  state.month=nowBR().slice(0,7);el('finMonth').value=state.month;
  populateTypes();resetForm();setTab('dre');
  const initialTab=new URLSearchParams(window.location.search).get('finTab');
- if(['payroll','daily','entries','fixed','assets'].includes(initialTab))setTab(initialTab);
+ if(['payroll','employeeExpenses','daily','entries','fixed','assets'].includes(initialTab))setTab(initialTab);
  el('finMonth').addEventListener('change',()=>{state.month=el('finMonth').value;clearDailyFilter();resetForm();load();});
  el('finDailyApply').addEventListener('click',applyDailyFilter);
  el('finDailyReset').addEventListener('click',()=>{clearDailyFilter();message('Exibindo vendas do mês '+state.month+'.');});
@@ -359,6 +367,12 @@ function bind(){
  el('finRefresh').addEventListener('click',load);
  el('finEntryForm').addEventListener('submit',save);
  el('finKind').addEventListener('change',()=>populateCategories());
+ el('finCategory').addEventListener('change',employeeProductPreview);
+ el('finEmployeeProduct').addEventListener('change',employeeProductPreview);
+ el('finProductQty').addEventListener('input',employeeProductPreview);
+ el('finManualUnitPrice').addEventListener('input',employeeProductPreview);
+ el('finEmployeePriceSave').addEventListener('click',saveEmployeePriceBasis);
+ el('finEmployeeExpenseSearch').addEventListener('input',render);
  el('finPayrollSearch').addEventListener('input',render);
  el('finStatus').addEventListener('change',()=>{
   const pending=el('finStatus').value==='PENDENTE';
