@@ -128,7 +128,7 @@ function nav(tab){
  E('pageTitle').textContent=labels[tab]||'Central de Insights';
  window.scrollTo({top:0,behavior:'smooth'});
  render();
- if(tab==='sales'&&!st.salesLoaded)loadSales();
+ if(tab==='sales'){window.CaseirinhoSalesStockLevels?.render?.();if(!st.salesLoaded)loadSales()}
  if(tab==='merch'&&!st.merchLoaded)loadMerch();
  if(tab==='fichas'&&!st.fichasData)loadFichas();
  if(tab==='cashbacks'&&!st.cashbacksData)loadCashbacks();
@@ -945,6 +945,10 @@ function renderSales(){
  else filter.value='all';
  renderSalesDetails();
  document.dispatchEvent(new CustomEvent('caseirinho:sales-updated'));
+ if(!window.CaseirinhoSalesStockLevels){
+  const panel=E('stockLevelsPanel');
+  if(panel)panel.innerHTML='<div class="notice error"><b>O módulo de estoque não foi carregado nesta versão do aplicativo.</b> <a href="./?view=sales&v=43-stock-visible">Abrir a Central atualizada</a>.</div>';
+ }
 }
 function salesCSV(){
  if(!st.sales)return toast('Consulte o relatório antes de exportar.',true);

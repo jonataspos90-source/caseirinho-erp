@@ -38,7 +38,11 @@ test('Central própria inclui ranking e estoque, sem abrir tela do ERP principal
  assert.match(app,/CaseirinhoInsightsStockBridge/);
  assert.match(app,/caseirinho:sales-updated/);
  assert.match(sw,/sales-stock-levels\.js\?v=/);
- assert.ok(sw.includes('caseirinho-insights-app-shell-v42'));
+ assert.ok(sw.includes('caseirinho-insights-app-shell-v43-sales-stock-visible'));
+ assert.match(html,/id="openSalesStockFromDashboard"/);
+ assert.match(html,/id="salesStockTopLink"/);
+ assert.ok(html.indexOf('id="stockSmartSection"')<html.indexOf('id="salesTopRevenue"'));
+ assert.match(app,/O módulo de estoque não foi carregado/);
 });
 test('Recomendação por 42 dias respeita unidade inteira, decimal e zero vendas',()=>{
  const {mod}=setup(product);
