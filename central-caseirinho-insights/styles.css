@@ -297,3 +297,47 @@
 .caseirinho-ops-dialog #opsRejectSave{background:#a32a3a;border-color:#a32a3a;color:#fff;font-weight:750}
 .caseirinho-ops-dialog #opsRejectSave:disabled{opacity:.55;cursor:wait}
 @media(max-width:460px){.caseirinho-ops-dialog{padding:18px 15px;max-height:86dvh}.caseirinho-ops-dialog h2{font-size:21px}.caseirinho-ops-dialog .ops-reject-actions{display:grid;grid-template-columns:1fr 1.5fr}}
+
+
+/* Vendas & Estoque — Central Caseirinho Insights */
+#stockSmartSection{border:1px solid #bfdfca}
+#stockLevelsPanel{display:grid;gap:14px}
+#stockLevelsPanel .stock-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+#stockLevelsPanel .stock-kpi{background:#f0fbf4;border:1px solid #d5eadc;border-radius:12px;padding:13px}
+#stockLevelsPanel .stock-kpi small{display:block;color:#466b52;font-size:12px}
+#stockLevelsPanel .stock-kpi strong{display:block;color:#153e2b;font-size:22px;line-height:1.25;margin-top:5px;overflow-wrap:anywhere}
+#stockLevelsPanel .stock-settings{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;align-items:end}
+#stockLevelsPanel .stock-settings label{font-size:12px;font-weight:700;color:#375744;display:grid;gap:6px}
+#stockLevelsPanel .stock-settings input{height:40px;min-width:0;padding:8px;box-sizing:border-box;border-radius:8px;border:1px solid #b5cdbf;background:white;color:#152d23}
+#stockLevelsPanel .stock-settings button{min-height:40px}
+#stockLevelsPanel .stock-help{font-size:12px;line-height:1.55}
+#stockLevelsPanel .stock-filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+#stockLevelsPanel .stock-filters input,#stockLevelsPanel .stock-filters select{flex:1 1 175px;min-width:0;max-width:300px;background:white;color:#173b29}
+#stockLevelsPanel .stock-scroll{width:100%;overflow:auto;overscroll-behavior-x:contain}
+#stockLevelsPanel .stock-table{width:100%;border-collapse:collapse;font-size:12px;min-width:940px}
+#stockLevelsPanel .stock-table th{background:#eaf5ee;color:#284d38;text-align:left;font-size:11px}
+#stockLevelsPanel .stock-table th,#stockLevelsPanel .stock-table td{padding:9px;border-bottom:1px solid #e0e9e3;vertical-align:top}
+#stockLevelsPanel .stock-table td:nth-child(2){min-width:200px}
+#stockLevelsPanel .stock-table td b{color:#1f3e2d}
+#stockLevelsPanel .stock-table td small{display:block;color:#67776e;margin:4px 0}
+#stockLevelsPanel .stock-edit{display:flex;gap:6px;flex-wrap:nowrap}
+#stockLevelsPanel .stock-edit label{font-size:10px;color:#42644d;display:grid;gap:3px}
+#stockLevelsPanel .stock-edit input{width:76px;min-width:65px;padding:7px 5px;border:1px solid #a9c7b4;border-radius:7px;background:#fff;color:#15372a;font-size:12px}
+#stockLevelsPanel .stock-chip{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:4px 8px;font-size:10px;font-weight:800;background:#e9edf1;color:#45576a;white-space:nowrap}
+#stockLevelsPanel .stock-danger{background:#fee2e2;color:#a3142e}
+#stockLevelsPanel .stock-warn{background:#fff0cc;color:#856000}
+#stockLevelsPanel .stock-ok{background:#dff9e8;color:#145f32}
+#stockLevelsPanel .stock-footer{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+#stockLevelsPanel button:disabled{opacity:.55;cursor:not-allowed}
+@media(max-width:900px){
+ #stockLevelsPanel .stock-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #stockLevelsPanel .stock-settings{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:540px){
+ #stockLevelsPanel .stock-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #stockLevelsPanel .stock-kpi strong{font-size:18px}
+ #stockLevelsPanel .stock-settings{grid-template-columns:1fr 1fr}
+ #stockLevelsPanel .stock-settings button{grid-column:span 2}
+ #stockLevelsPanel .stock-filters input,#stockLevelsPanel .stock-filters select{flex:1 1 100%;max-width:none}
+ #stockLevelsPanel .stock-scroll{border:1px solid #e0e9e3;border-radius:10px}
+}

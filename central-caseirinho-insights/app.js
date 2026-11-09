@@ -68,7 +68,7 @@ async function loginWithERP(e){
   try{localStorage.setItem(ERP_LAST_USERNAME_KEY,user);}catch(_){}
   E('loginScreen').hidden=true;
   await loadAll();
-  {const params=new URLSearchParams(location.search),requested=params.get('view');if(['orders','blackfriday','sazonais','products','operations','financeiro'].includes(requested))nav(requested);if(requested==='products'&&params.get('product')){const id=params.get('product');if(st.catalog.some(x=>s(x.id)===s(id)))editProduct(id);}}
+  {const params=new URLSearchParams(location.search),requested=params.get('view');if(['orders','blackfriday','sazonais','products','operations','financeiro','sales'].includes(requested))nav(requested);if(requested==='products'&&params.get('product')){const id=params.get('product');if(st.catalog.some(x=>s(x.id)===s(id)))editProduct(id);}}
  }catch(error){
   st.token='';st.sessionExpiry=0;
   try{sessionStorage.removeItem(ERP_SESSION_KEY);}catch(_){}
@@ -124,7 +124,7 @@ function nav(tab){
  st.view=tab;
  document.querySelectorAll('.section').forEach(x=>x.classList.toggle('active',x.id===tab));
  document.querySelectorAll('[data-view]').forEach(x=>x.classList.toggle('active',x.dataset.view===tab));
- const labels={dashboard:'Visão geral',contacts:'CRM e contatos',ranking:'Ranking de acessos',orders:'Pedidos',operations:'Central Operacional',financeiro:'Financeiro e DRE',menu:'Cardápio escrito',products:'Produtos e preços',blackfriday:'Black Friday',sazonais:'Encomendas Sazonais',reports:'Relatórios e PDF',sales:'Vendas e Curva ABC',merch:'Grades e Packs',fichas:'Fichas Técnicas',cashbacks:'Cashback Clientes',coupons:'Cupons e Utilizações',requests:'Solicitações de cardápio',settings:'Configurações'};
+ const labels={dashboard:'Visão geral',contacts:'CRM e contatos',ranking:'Ranking de acessos',orders:'Pedidos',operations:'Central Operacional',financeiro:'Financeiro e DRE',menu:'Cardápio escrito',products:'Produtos e preços',blackfriday:'Black Friday',sazonais:'Encomendas Sazonais',reports:'Relatórios e PDF',sales:'Vendas & Estoque',merch:'Grades e Packs',fichas:'Fichas Técnicas',cashbacks:'Cashback Clientes',coupons:'Cupons e Utilizações',requests:'Solicitações de cardápio',settings:'Configurações'};
  E('pageTitle').textContent=labels[tab]||'Central de Insights';
  window.scrollTo({top:0,behavior:'smooth'});
  render();
@@ -441,7 +441,8 @@ function renderProducts(){
  E('productsList').innerHTML='<div class="product-card-grid">'+selected.map(x=>
  '<article class="product-card"><div><div class="product-photo">'+(x.image?'<img src="'+esc(x.image)+'" alt="Foto de '+esc(x.name)+'" loading="lazy">':'<span>📷 Sem foto</span>')+'</div><span class="badge light">'+esc(x.category)+'</span> '+(x.active===false?'<span class="badge warn">⛔ INATIVO — oculto na loja</span>':x.availableForSale===false?'<span class="badge warn">🚫 INDISPONÍVEL — visível, sem compra</span>':'<span class="badge good">✅ À venda</span>')+' '+(x.promotionActive?'<span class="badge warn">Promoção ativa</span>':'')+
  '<h3>'+esc(x.name)+'</h3><small class="muted">'+esc(x.variation||x.availability||'')+'</small></div>'+
- '<div class="price-row"><b>'+brl(x.price)+'</b><span>Mínimo: '+n(x.minimum)+' · Máximo: '+(n(x.maximum)||'Sem limite')+'</span></div>'+
+ '<div class="price-row"><b>'+brl(x.price)+'</b><span>Pedido mín: '+n(x.minimum)+' · máx: '+(n(x.maximum)||'Sem limite')+'</span></div>'+
+  '<p class="muted" style="margin:5px 0 10px">📦 Estoque ERP — mínimo: <b>'+qtyBR(x.stockMinimum)+'</b> · máximo: <b>'+qtyBR(x.stockMaximum)+'</b></p>'+
  '<button class="btn primary" type="button" data-action="editProduct" data-product="'+esc(x.id)+'">✏️ Preço / Situação</button><button class="btn gold" type="button" data-action="photosProduct" data-product="'+esc(x.id)+'">📷 Alterar fotos</button></article>'
  ).join('')+'</div>';
 }
@@ -578,6 +579,9 @@ function editProduct(id){
  '<input id="editMinimum" type="number" min="0.01" max="99999" step="0.01" inputmode="decimal" required value="'+n(x.minimum||1)+'">'+
  '<label class="form-label" for="editMaximum">📦 Quantidade máxima (0 = sem limite)</label>'+
  '<input id="editMaximum" type="number" min="0" max="99999" step="0.01" inputmode="decimal" required value="'+n(x.maximum)+'">'+
+  '<div class="notice"><b>📦 Estoque do produto no ERP:</b> mínimo <b>'+qtyBR(x.stockMinimum)+'</b> · máximo <b>'+qtyBR(x.stockMaximum)+'</b>.'+
+  '<br><small>Esses valores são diferentes da quantidade mínima/máxima de compra acima. Para alterar a reposição, utilize Vendas & Estoque.</small>'+
+  '<br><button type="button" class="btn small" data-action="goStockSales">📈 Abrir Vendas & Estoque</button></div>'+
  '<div class="product-lifecycle-controls"><label class="form-label" for="editActive">🏷️ Situação do produto no ERP</label>'+
  '<select id="editActive"><option value="true" '+(x.active!==false?'selected':'')+'>✅ ATIVO — aparece na loja</option><option value="false" '+(x.active===false?'selected':'')+'>⛔ INATIVO — não aparece na loja</option></select>'+
  '<label class="form-label" for="editAvailable">🛍️ Disponibilidade de venda</label>'+
@@ -940,6 +944,7 @@ function renderSales(){
  if((d.categories||[]).some(x=>x.name===selected))filter.value=selected;
  else filter.value='all';
  renderSalesDetails();
+ document.dispatchEvent(new CustomEvent('caseirinho:sales-updated'));
 }
 function salesCSV(){
  if(!st.sales)return toast('Consulte o relatório antes de exportar.',true);
@@ -2165,7 +2170,8 @@ function bind(){
  if(type==='releaseOrderCashback')return releaseOrderCashback(b.dataset.order);
  if(type==='completeOrder')return confirmOrderComplete(b.dataset.order);
  if(type==='pdfOrder')return pdfOrder(b.dataset.order);
- if(type==='editProduct')return editProduct(b.dataset.product);
+ if(type==='goStockSales'){hideModal();nav('sales');return;}
+  if(type==='editProduct')return editProduct(b.dataset.product);
  if(type==='photosProduct')return editProductPhotos(b.dataset.product);
  if(type==='publishDraft')return publishDraft(b.dataset.product);
  if(type==='mark')return markHandled(id);
@@ -2180,11 +2186,12 @@ function bind(){
 }
 async function init(){
  tokenSetup();bind();
- if(st.token){await loadAll();{const params=new URLSearchParams(location.search),requested=params.get('view');if(['blackfriday','sazonais','products','operations','financeiro'].includes(requested))nav(requested);if(requested==='products'&&params.get('product')){const id=params.get('product');if(st.catalog.some(x=>s(x.id)===s(id)))editProduct(id);}}}else E('loginScreen').hidden=false;
+ if(st.token){await loadAll();{const params=new URLSearchParams(location.search),requested=params.get('view');if(['blackfriday','sazonais','products','operations','financeiro','sales'].includes(requested))nav(requested);if(requested==='products'&&params.get('product')){const id=params.get('product');if(st.catalog.some(x=>s(x.id)===s(id)))editProduct(id);}}}else E('loginScreen').hidden=false;
  setInterval(loadRequests,30000);
  setInterval(loadAll,120000);
  await pollNewOrders();
  setInterval(pollNewOrders,30000);
 }
+window.CaseirinhoInsightsStockBridge={api,report:()=>st.sales,refresh:loadSales,refreshCatalog:async()=>{const data=await api('catalog');st.catalog=data.items||st.catalog;if(st.view==='products')renderProducts()}};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
