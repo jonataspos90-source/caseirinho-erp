@@ -1,5 +1,5 @@
 importScripts('./order-alerts-worker.js');
-const CACHE='john-erp-pwa-v8.22.94-employee-expenses-20261106';
+const CACHE='john-erp-pwa-v8.22.95-sales-stock-20261109';
 
 const TX='./transaction-persistence-v8-22-13.js';
 const MULTI='./multiempresa-v8-12-0.js';
@@ -15,6 +15,7 @@ const CASHBACK='./cashback-engine-v8-22-42.js';
 const CASHBACK_VISIBILITY='./cashback-visibility-hotfix-v8-22-43.js';
 const COMMERCE_ENGAGEMENT='./commerce-engagement-erp-v8-22-44.js';
 const MANAGEMENT='./management-engine-v8-22-0.js';
+const SALES_STOCK='./sales-stock-intelligence-v8-22-81.js';
 const USAGE='./erp-usage-v8-20.js';
 const PUBLISH_SAFE='./catalog-publish-safe-v8-22-54.js';
 const SYNC='./caseirinho-commerce-sync-v8-21.js';
@@ -58,7 +59,7 @@ const COMMERCE_TAG='<script src="./commerce-engine-v8-22-0.js?v=82244"></'+'scri
 const CASHBACK_TAG='<script src="./cashback-engine-v8-22-42.js?v=82248"></'+'script>';
 const CASHBACK_VISIBILITY_TAG='<script src="./cashback-visibility-hotfix-v8-22-43.js?v=82248"></'+'script>';
 const COMMERCE_ENGAGEMENT_TAG='<script src="./commerce-engagement-erp-v8-22-44.js?v=82244"></'+'script>';
-const MANAGEMENT_TAG='<script src="./management-engine-v8-22-0.js?v=82294"></'+'script>';
+const MANAGEMENT_TAG='<script src="./management-engine-v8-22-0.js?v=82295"></'+'script>';
 const USAGE_TAG='<script src="./erp-usage-v8-20.js?v=82244"></'+'script>';
 const PUBLISH_SAFE_TAG='<script src="./catalog-publish-safe-v8-22-54.js?v=82254"></'+'script>';
 const SYNC_TAG='<script src="./caseirinho-commerce-sync-v8-21.js?v=82283"></'+'script>';
@@ -98,7 +99,7 @@ const MP_PANEL='./caseirinho-mercadopago-v8-22-71.js';
 const MP_PANEL_TAG='<script src="./caseirinho-mercadopago-v8-22-71.js?v=82271"></'+'script>';
 
 const PRODUCT_LIST='./product-list-edit-v8-22-80.js';
-const SHELL=[PRODUCT_LIST,'./order-amounts.js','./order-alerts-worker.js','./order-alerts-v8-22-51.js','./','./index.html','./manifest.webmanifest','./offline.html','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable-512.png','./icons/apple-touch-icon.png',TX,MULTI,STABILITY,PLATFORM,EXPERIENCE,MANUAL_PIX,HYDRATE,NEXTJS,NEXTCSS,COMMERCE,CASHBACK,CASHBACK_VISIBILITY,COMMERCE_ENGAGEMENT,MANAGEMENT,USAGE,PUBLISH_SAFE,SYNC,STRICT_MEDIA,MEDIA_SYNC,LAB,ETIQUETAS,FECHAMENTO,PIX_STAY,UPSELL,PEDIDO_PRINT,PUBLISH_FIX,STORE_SETTINGS,PIX_DOCUMENT,PIX_OFFICIAL,ORDER_REVISION,PREREG,DELIVERY_MOTO,INBOX_FOCUS,INTEGRITY,REAL_RECOVERY,RECOVERY,DEEP,CENTRAL_FIX,USAGE_FIX,RELEASE,MACARRAO_RECOVERY,CATEGORY_GRADE_SYNC,CATEGORY_SAVE,'./ecommerce-submodule-media-v8-22-17.js','./pricing-pack-offers-v8-22-57.js?v=82270',BULK_DESC,ENCOMENDAS,MP_PANEL];
+const SHELL=[PRODUCT_LIST,SALES_STOCK,'./order-amounts.js','./order-alerts-worker.js','./order-alerts-v8-22-51.js','./','./index.html','./manifest.webmanifest','./offline.html','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable-512.png','./icons/apple-touch-icon.png',TX,MULTI,STABILITY,PLATFORM,EXPERIENCE,MANUAL_PIX,HYDRATE,NEXTJS,NEXTCSS,COMMERCE,CASHBACK,CASHBACK_VISIBILITY,COMMERCE_ENGAGEMENT,MANAGEMENT,USAGE,PUBLISH_SAFE,SYNC,STRICT_MEDIA,MEDIA_SYNC,LAB,ETIQUETAS,FECHAMENTO,PIX_STAY,UPSELL,PEDIDO_PRINT,PUBLISH_FIX,STORE_SETTINGS,PIX_DOCUMENT,PIX_OFFICIAL,ORDER_REVISION,PREREG,DELIVERY_MOTO,INBOX_FOCUS,INTEGRITY,REAL_RECOVERY,RECOVERY,DEEP,CENTRAL_FIX,USAGE_FIX,RELEASE,MACARRAO_RECOVERY,CATEGORY_GRADE_SYNC,CATEGORY_SAVE,'./ecommerce-submodule-media-v8-22-17.js','./pricing-pack-offers-v8-22-57.js?v=82270',BULK_DESC,ENCOMENDAS,MP_PANEL];
 
 async function cacheShell(){const c=await caches.open(CACHE);for(const url of SHELL){try{const r=await fetch(url,{cache:'reload'});if(r.ok)await c.put(url,r.clone())}catch(_){}}}
 function injectBefore(html,needle,tag){if(html.includes(needle))return html;const low=html.toLowerCase(),p=low.lastIndexOf('</body>');return p>=0?html.slice(0,p)+tag+html.slice(p):html+tag}
@@ -109,6 +110,7 @@ async function injectScripts(response){
   html=html.replace(/((?:ecommerce-customer-experience-v8-13-0|caseirinho-encomendas-v8-22-70)\.js\?v=)[^"'\s<>]+/g,(_,prefix)=>prefix+'20261028-payment-flow');
   html=html.replace(/(caseirinho-encomendas-v8-22-70\.js\?v=)[^"'\s<>]+/g,(_,prefix)=>prefix+'20261028-order-review');
   html=html.replace(/<script[^>]+ecommerce-order-revision-v8-22-36\.js[^>]*><\/script>/gi,'');
+  html=html.replace(/(management-engine-v8-22-0\.js\?v=)\d+/gi,(_,prefix)=>prefix+'82295');
   html=html.replace(/(ecommerce-order-revision-v8-22-37\.js\?v=)[^\"'\s<>]+/g,(_,prefix)=>prefix+'82287');
   html=html.replace(/(caseirinho-commerce-sync-v8-21\.js\?v=)\d+/gi,(_,prefix)=>prefix+'82283');
   html=html.replace(/(ecommerce-upsell-v8-22-23\.js\?v=)\d+/gi,(_,prefix)=>prefix+'82284');
