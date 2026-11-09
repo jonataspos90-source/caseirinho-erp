@@ -150,6 +150,7 @@ async function apply(ids){
    return !!p&&Math.abs(N(p.stockMinimum)-c.minimum)<0.0001&&Math.abs(N(p.stockMaximum)-c.maximum)<0.0001;
   });
   if(confirmed){
+   try{await bridge().refreshCatalog?.()}catch(error){console.warn('[Central Caseirinho] Cadastro de produtos será atualizado na próxima consulta:',error.message)}
    changes.forEach(c=>{state.selected.delete(c.productId);state.custom.delete(c.productId)});
    state.busy=false;render();setMessage('✅ '+changes.length+' produto(s) atualizado(s) e conferido(s) diretamente no ERP.', 'success');
   }else{
