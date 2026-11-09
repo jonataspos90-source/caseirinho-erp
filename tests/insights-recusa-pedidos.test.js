@@ -3,13 +3,14 @@ const test=require('node:test'),assert=require('node:assert/strict'),fs=require(
 const read=x=>fs.readFileSync('central-caseirinho-insights/'+x,'utf8');
 test('recusa aparece na página Pedidos e carrega após o app.js',()=>{
  const html=read('index.html'),sw=read('sw.js');
- assert.match(html,/app\.js\?v=36/);
+ const appAsset=html.match(/app\.js\?v=[^"']+/)?.[0]||'';
+ const stylesAsset=html.match(/styles\.css\?v=[^"']+/)?.[0]||'';
+ assert.ok(appAsset&&stylesAsset,'Os arquivos versionados da Central devem estar no HTML');
  assert.match(html,/order-reject\.js\?v=4/);
- assert.ok(html.indexOf('app.js?v=36')<html.indexOf('order-reject.js?v=4'));
- assert.match(sw,/caseirinho-insights-app-shell-v41/);
+ assert.ok(html.indexOf(appAsset)<html.indexOf('order-reject.js?v=4'));
+ assert.ok(Number(sw.match(/caseirinho-insights-app-shell-v(\d+)/)?.[1])>=41);
  assert.match(sw,/order-reject\.js\?v=4/);
- assert.ok(html.includes('styles.css?v=31'));
- assert.ok(sw.includes('styles.css?v=31'));
+ assert.ok(sw.includes(stylesAsset)&&sw.includes(appAsset),'O PWA precisa usar as versões efetivas do HTML');
  assert.doesNotThrow(()=>new vm.Script(read('order-reject.js')));
  const app=read('app.js'),reject=read('order-reject.js');
  assert.match(reject,/caseirinho:order-rejected/);
