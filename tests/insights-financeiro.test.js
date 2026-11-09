@@ -29,9 +29,11 @@ test('PWA versionado inclui os novos arquivos, sem guardar dados de vendas em ca
  const sw=file('sw.js'),html=file('index.html');
  const v=html.match(/app\.js\?v=(\d+)/)?.[1];
  assert.ok(Number(v)>=23,'aplicativo deve carregar versão financeira ou posterior');
- assert.ok(sw.includes('caseirinho-insights-app-shell-v41'));
- assert.match(sw,/financeiro\.js\?v=3/);
- assert.match(sw,/financeiro\.css\?v=3/);
+ assert.ok(Number(sw.match(/caseirinho-insights-app-shell-v(\d+)/)?.[1])>=41,'O PWA deve invalidar caches de versões anteriores');
+ const financialScript=html.match(/financeiro\.js\?v=[^"']+/)?.[0];
+ const financialCss=html.match(/financeiro\.css\?v=[^"']+/)?.[0];
+ assert.ok(financialScript&&financialCss,'Financeiro deve estar carregado no HTML');
+ assert.ok(sw.includes(financialScript)&&sw.includes(financialCss),'PWA deve armazenar exatamente as versões usadas no HTML');
  assert.match(sw,new RegExp('app\\.js\\?v='+v));
  assert.match(sw,/if\(url\.origin!==self\.location\.origin/);
 });
@@ -67,7 +69,7 @@ test('PWA carrega financeiro de pessoal atualizado e sem cache antigo',()=>{
  assert.ok(html.includes('financeiro.css?v=4'));
  assert.ok(sw.includes('financeiro.js?v=5'));
  assert.ok(sw.includes('financeiro.css?v=4'));
- assert.ok(sw.includes('caseirinho-insights-app-shell-v41'));
+ assert.ok(Number(sw.match(/caseirinho-insights-app-shell-v(\d+)/)?.[1])>=41,'O PWA deve invalidar caches de versões anteriores');
 });
 
 test('Despesas de funcionários têm módulo e configurações de custo/preço de venda persistentes',()=>{
@@ -85,7 +87,7 @@ test('Despesas de funcionários têm módulo e configurações de custo/preço d
  assert.ok(js.includes("employeeExpensesCents"));
  assert.ok(js.includes("3.02.02"));
  assert.ok(sw.includes('financeiro.js?v=5'));
- assert.ok(sw.includes('caseirinho-insights-app-shell-v41'));
+ assert.ok(Number(sw.match(/caseirinho-insights-app-shell-v(\d+)/)?.[1])>=41,'O PWA deve invalidar caches de versões anteriores');
  assert.doesNotThrow(()=>new (require('node:vm').Script)(js));
 });
 test('ERP tem atalho para despesas de funcionários sem duplicar lançamentos',()=>{
