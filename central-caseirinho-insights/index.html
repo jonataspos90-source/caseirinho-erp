@@ -36,7 +36,7 @@
  <button type="button" data-view="coupons">🎟️ Cupons e Utilizações</button>
  <button type="button" data-view="merch">🎁 Grades e Packs</button>
  <button type="button" data-view="reports">📄 Relatórios / PDF</button>
- <button type="button" data-view="sales">📈 Vendas / Curva ABC</button>
+ <button type="button" data-view="sales">📈 Vendas & Estoque</button>
  <button type="button" data-view="financeiro">💰 Financeiro / DRE</button>
  <button type="button" data-view="menu">🍝 Cardápio</button>
  <button type="button" data-view="requests">🔔 Solicitações <span id="requestCount" class="num" hidden>0</span></button>
@@ -95,7 +95,7 @@
  <div class="notice">No Android, toque em <b>Imprimir</b> e escolha <b>Salvar como PDF</b>. Os PDFs são gerados no seu navegador, sem enviar os dados a outros serviços.</div>
 </section>
 <section id="sales" class="section">
- <div class="section-head"><div><h2>📈 Vendas por Produto e Curva ABC</h2><p>Vendas do aplicativo Caseirinho, ranking Top 10 e média dos últimos 42 dias.</p></div><button id="salesRefresh" class="btn primary" type="button">🔎 Consultar</button></div>
+ <div class="section-head"><div><h2>📈 Vendas, Performance e Estoque</h2><p>Identifique os produtos mais vendidos, confira a Curva ABC e aplique estoque mínimo/máximo sugerido no cadastro principal do ERP.</p></div><button id="salesRefresh" class="btn primary" type="button">🔎 Consultar</button></div>
  <article class="card sales-filter-card">
  <div class="sales-filter-grid">
   <label>📅 De<input id="salesDateFrom" type="date" aria-label="Data inicial"></label>
@@ -120,6 +120,7 @@
   <div id="salesAbcSummary"></div></article>
   <article class="card"><h3>🏷️ Vendas por categoria</h3><div id="salesCategories"></div></article>
  </div>
+ <article class="card" id="stockSmartSection"><div class="section-head"><div><h3>📦 Estoque mínimo e máximo sugerido</h3><p>Com base nas vendas dos últimos 42 dias, com parâmetros configuráveis e aplicação no cadastro do produto.</p></div></div><div id="stockLevelsPanel" aria-live="polite"><p class="notice">Consulte as vendas para calcular a sugestão.</p></div></article>
  <div class="card"><div class="section-head"><div><h3>📋 Análise detalhada por produto</h3><p>Quantidade, faturamento, participação acumulada, curva e média por dia/semana em 42 dias.</p></div>
  <div class="actions"><button id="salesCsv" class="btn" type="button">⬇ CSV</button><button id="salesPdf" class="btn gold" type="button">📄 PDF</button></div></div>
  <div class="toolbar">
@@ -350,7 +351,8 @@
  </nav>
 <div id="toast" class="toast" role="status" hidden></div>
 <div id="modal" class="modal-bg" hidden><div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><h2 id="modalTitle">Mensagem para WhatsApp</h2><div id="modalContent"></div><div class="toolbar" style="justify-content:flex-end;margin-top:20px"><button class="btn" id="modalClose">Fechar</button></div></div></div>
-<script src="./app.js?v=36" defer></script>
+<script src="./app.js?v=37-stock" defer></script>
+<script src="./sales-stock-levels.js?v=1" defer></script>
 <script src="./cashback-pending-erp.js?v=1" defer></script>
 <script src="./order-reject.js?v=4" defer></script>
 <script src="./operations-recovery.js?v=1" defer></script>
