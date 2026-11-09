@@ -60,7 +60,7 @@ function getNumbers(x){
  return c||x.suggestion||null;
 }
 function validNumbers(x,v){
- if(!v||!x.available)return false;
+ if(!v||!x.available||v.minimum===''||v.maximum==='')return false;
  const min=Number(v.minimum),max=Number(v.maximum),s=step(x);
  return Number.isFinite(min)&&Number.isFinite(max)&&min>=0&&max>=min&&max<=999999&&
   Math.abs(Math.round(min*1000)-min*1000)<1e-6&&Math.abs(Math.round(max*1000)-max*1000)<1e-6&&
