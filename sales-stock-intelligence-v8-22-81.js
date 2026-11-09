@@ -23,12 +23,13 @@ function orderIndex(){
 }
 function channelFor(v,o){
  const x=norm(o?.canalVenda||o?.origem||v.canalVenda||v.origem);
- if(x.includes('ECOMMERCE')||x.includes('WEB')||x.includes('PEDIDO_RECONCILIADO'))return 'ECOMMERCE';
+ if(x.includes('ECOMMERCE')||x.includes('WEB'))return 'ECOMMERCE';
+ if(x.includes('PEDIDO_RECONCILIADO'))return 'OUTROS';
  if(x.includes('WHATS'))return 'WHATSAPP';
  if(x.includes('BALCAO')||x.includes('LOJA')||x.includes('PDV'))return 'LOJA';
  return 'OUTROS';
 }
-function salesLines(){
+function salesLines(channelFilter=state.channel){
  const orderById=orderIndex(), seen=new Set(), out=[];
  for(const v of A(dbx().vendas)){
   if(!v||excluded(v))continue;
@@ -40,7 +41,7 @@ function salesLines(){
   const o=orderById.get(S(v.origemPedidoId||v.pedidoId||''))||null;
   if(o&&(excluded(o)||BAD_STATUS.has(norm(o.statusEcommerce))))continue;
   const channel=channelFor(v,o);
-  if(state.channel!=='TODOS'&&state.channel!==channel)continue;
+  if(channelFilter!=='TODOS'&&channelFilter!==channel)continue;
   const productId=S(v.produtoId||v.itemId);
   const quantity=N(v.quantidade);
   if(!productId||quantity<=0)continue;
@@ -64,8 +65,8 @@ function recommendation(rate,p){
  return{min:minimum,max:maximum};
 }
 function compute(){
- const ps=allProducts(), byId=new Map(ps.map(p=>[S(p.id),p])), lines=salesLines(), map=new Map();
- for(const p of ps)map.set(S(p.id),{p,id:S(p.id),quantity:0,revenue:0,cmv:0,costEstimated:false,days:new Set(),transactions:0,firstHalf:0,lastHalf:0});
+ const ps=allProducts(), byId=new Map(ps.map(p=>[S(p.id),p])), lines=salesLines(), demandLines=state.channel==='TODOS'?lines:salesLines('TODOS'), map=new Map();
+ for(const p of ps)map.set(S(p.id),{p,id:S(p.id),quantity:0,revenue:0,cmv:0,costEstimated:false,costMissing:false,days:new Set(),transactions:0,firstHalf:0,lastHalf:0});
  const pivot=new Date(state.start+'T12:00:00');pivot.setDate(pivot.getDate()+Math.floor(daySpan()/2));
  const pivotDate=isoDate(pivot);
  for(const v of lines){
@@ -73,17 +74,19 @@ function compute(){
   if(!p)continue;
   const r=map.get(v.productId);r.quantity+=v.quantity;r.revenue+=v.revenue;
   if(v.hasCost)r.cmv+=v.cmv;
-  else {r.cmv+=cost(p)*v.quantity;r.costEstimated=true}
+  else {const c=cost(p);if(c>0){r.cmv+=c*v.quantity;r.costEstimated=true}else r.costMissing=true}
   r.days.add(v.date);r.transactions++;
   if(v.date<pivotDate)r.firstHalf+=v.quantity;else r.lastHalf+=v.quantity;
  }
+ const demandTotals=new Map(),demandDays=new Map();
+ for(const line of demandLines){demandTotals.set(line.productId,N(demandTotals.get(line.productId))+line.quantity);if(!demandDays.has(line.productId))demandDays.set(line.productId,new Set());demandDays.get(line.productId).add(line.date)}
  const period=daySpan(), values=[...map.values()].map(r=>{
-  const p=r.p,rate=r.quantity/period,proposal=recommendation(rate,p),onHand=stock(p);
+  const p=r.p,rate=N(demandTotals.get(r.id))/period,proposal=recommendation(rate,p),onHand=stock(p);
   return{...r,rate,proposal,stock:onHand,coverage:rate>0?onHand/rate:null,
-   profit:r.revenue-r.cmv,margin:r.revenue>0?(r.revenue-r.cmv)/r.revenue*100:0,
+   profit:r.costMissing?null:r.revenue-r.cmv,margin:r.costMissing?null:r.revenue>0?(r.revenue-r.cmv)/r.revenue*100:0,
    currentMin:N(p.estoqueMinimo??p.minimo),currentMax:N(p.estoqueMaximo??p.maximo),
    active:norm(p.status||'ATIVO')!=='INATIVO',
-   confidence:r.days.size>=3?'Adequada':r.quantity>0?'Amostra pequena':'Sem vendas'};
+   confidence:(demandDays.get(r.id)?.size||0)>=3?'Adequada':N(demandTotals.get(r.id))>0?'Amostra pequena':'Sem vendas'};
  });
  const revenueAll=values.reduce((sum,r)=>sum+r.revenue,0);
  let accumulated=0;
@@ -97,7 +100,7 @@ function compute(){
 function visibleRows(data){
  const q=norm(state.query);
  const list=data.values.filter(r=>!q||[r.p.nome,r.p.codigo,r.p.gtin,r.p.plu].some(v=>norm(v).includes(q)));
- const order={revenue:(a,b)=>b.revenue-a.revenue,quantity:(a,b)=>b.quantity-a.quantity,profit:(a,b)=>b.profit-a.profit,margin:(a,b)=>b.margin-a.margin,coverage:(a,b)=>(a.coverage??1e9)-(b.coverage??1e9)};
+ const order={revenue:(a,b)=>b.revenue-a.revenue,quantity:(a,b)=>b.quantity-a.quantity,profit:(a,b)=>(b.profit??-1e12)-(a.profit??-1e12),margin:(a,b)=>(b.margin??-1e12)-(a.margin??-1e12),coverage:(a,b)=>(a.coverage??1e9)-(b.coverage??1e9)};
  list.sort((order[state.sort]||order.revenue));
  return list;
 }
@@ -115,7 +118,7 @@ function style(){
 }
 function render(){
  style();
- const d=compute(),rows=visibleRows(d),sold=d.values.filter(r=>r.quantity>0),sumQty=d.lines.reduce((s,x)=>s+x.quantity,0),sumCmv=d.values.reduce((s,x)=>s+x.cmv,0);
+ const d=compute(),rows=visibleRows(d),sold=d.values.filter(r=>r.quantity>0),sumQty=d.lines.reduce((s,x)=>s+x.quantity,0),knownRevenue=d.values.filter(x=>!x.costMissing).reduce((s,x)=>s+x.revenue,0),knownCmv=d.values.filter(x=>!x.costMissing).reduce((s,x)=>s+x.cmv,0);
  const top=d.values.slice().sort((a,b)=>b.revenue-a.revenue)[0];
  const below=d.values.filter(r=>r.proposal&&r.stock<r.proposal.min).length;
  const selectedCount=rows.filter(r=>state.selected.has(r.id)&&r.proposal&&r.active).length;
@@ -127,7 +130,7 @@ function render(){
    '<td><b>'+esc(p.nome||'Produto sem nome')+'</b><div class="ss-small">'+esc(p.codigo||r.id)+' · '+esc(p.unidade||'UN')+(r.active?'':' · Inativo')+'</div></td>'+
    '<td><span class="mg-badge '+(r.abc==='A'?'mg-good':r.abc==='B'?'mg-warn':'mg-soft')+'">'+esc(r.abc)+'</span><div class="ss-bars"><i style="width:'+Math.min(100,pct*4)+'%"></i></div><small>'+num(pct,1)+'%</small></td>'+
    '<td><b>'+num(r.quantity,2)+'</b><div class="ss-small">'+num(r.rate,2)+'/dia</div></td>'+
-   '<td><b>'+money(r.revenue)+'</b></td><td>'+money(r.profit)+'<div class="ss-small">'+num(r.margin,1)+'%'+(r.costEstimated?'*':'')+'</div></td>'+
+   '<td><b>'+money(r.revenue)+'</b></td><td>'+(r.profit===null?'Custo não informado':money(r.profit))+'<div class="ss-small">'+(r.margin===null?'—':num(r.margin,1)+'%')+(r.costEstimated?'*':'')+'</div></td>'+
    '<td>'+num(r.stock,2)+'<div class="ss-small">'+(r.coverage===null?'—':num(r.coverage,1)+' dias')+'</div></td>'+
    '<td>'+num(r.currentMin,2)+' / '+num(r.currentMax,2)+'</td>'+
    '<td>'+(canApply?'<input type="number" min="0" step="'+stepOf(p)+'" data-ss-min="'+esc(r.id)+'" value="'+r.proposal.min+'"> / <input type="number" min="0" step="'+stepOf(p)+'" data-ss-max="'+esc(r.id)+'" value="'+r.proposal.max+'">':'—')+
@@ -137,8 +140,8 @@ function render(){
  }).join('');
  const selector=(value,text)=>'<option value="'+esc(value)+'"'+(state.sort===value?' selected':'')+'>'+esc(text)+'</option>';
  return '<div class="mg-panel"><h2>📈 Performance de Vendas & Estoque Inteligente</h2><p class="ss-help">Ranking por produto com base nas vendas registradas no ERP (inclusive vendas reconciliadas do e-commerce). A data considerada é a <b>data da venda/compra</b>, não a entrega. Pedidos em aberto não são considerados vendas. Operações sinalizadas como teste ou canceladas são excluídas.</p>'+
- '<div class="ss-kpis"><div class="ss-kpi"><small>Faturamento dos produtos</small><strong>'+money(d.revenueAll)+'</strong></div><div class="ss-kpi"><small>Quantidade vendida</small><strong>'+num(sumQty,2)+'</strong></div><div class="ss-kpi"><small>Lucro bruto estimado</small><strong>'+money(d.revenueAll-sumCmv)+'</strong></div><div class="ss-kpi"><small>Itens abaixo do mínimo sugerido</small><strong>'+below+'</strong></div></div>'+
- '<div class="ss-small" style="margin:9px 0">Produtos com venda: '+sold.length+' · Líder em faturamento: '+esc(top&&top.revenue>0?top.p.nome:'sem dados')+' · Produtos com custo estimado marcados com *.</div></div>'+
+ '<div class="ss-kpis"><div class="ss-kpi"><small>Faturamento dos produtos</small><strong>'+money(d.revenueAll)+'</strong></div><div class="ss-kpi"><small>Quantidade vendida</small><strong>'+num(sumQty,2)+'</strong></div><div class="ss-kpi"><small>Lucro bruto com custo conhecido/estimado</small><strong>'+money(knownRevenue-knownCmv)+'</strong></div><div class="ss-kpi"><small>Itens abaixo do mínimo sugerido</small><strong>'+below+'</strong></div></div>'+
+ '<div class="ss-small" style="margin:9px 0">Produtos com venda: '+sold.length+' · Líder em faturamento: '+esc(top&&top.revenue>0?top.p.nome:'sem dados')+' · Produtos com custo estimado marcados com *. Produtos sem custo não entram no lucro bruto.</div></div>'+
  '<div class="mg-panel"><h3>Filtros e parâmetros da reposição</h3><div class="ss-filters">'+
  '<div class="ss-field"><label>Data inicial (compra)</label><input id="ssStart" type="date" value="'+esc(state.start)+'"></div>'+
  '<div class="ss-field"><label>Data final (compra)</label><input id="ssEnd" type="date" value="'+esc(state.end)+'"></div>'+
@@ -149,7 +152,7 @@ function render(){
  '<div class="ss-field"><label>Intervalo entre reposições (dias)</label><input id="ssReview" type="number" min="1" max="180" value="'+state.review+'"></div>'+
  '<div class="ss-field"><label>Estoque de segurança (dias)</label><input id="ssSafety" type="number" min="0" max="180" value="'+state.safety+'"></div></div>'+
  '<div class="ss-actions"><button id="ssUpdate" class="mg-btn mg-primary">Atualizar análise</button><button id="ssCsv" class="mg-btn mg-soft">Exportar CSV</button></div>'+
- '<p class="ss-help"><b>Como é calculado:</b> demanda média diária = unidades vendidas ÷ '+d.period+' dias. Mínimo sugerido = média diária × (prazo de reposição + segurança). Máximo sugerido = média diária × (prazo + intervalo + segurança), arredondado à unidade do produto. Curva ABC: A até 80%, B até 95% e C restante do faturamento acumulado. Os parâmetros e o resultado são sugestões; nenhuma alteração é automática.</p></div>'+
+ '<p class="ss-help"><b>Como é calculado:</b> demanda média diária = unidades vendidas ÷ '+d.period+' dias. Mínimo sugerido = média diária × (prazo de reposição + segurança). Máximo sugerido = média diária × (prazo + intervalo + segurança), arredondado à unidade do produto. Curva ABC: A até 80%, B até 95% e C restante do faturamento acumulado. As sugestões de reposição usam as vendas de todos os canais, mesmo quando o ranking está filtrado por canal. Os parâmetros e o resultado são sugestões; nenhuma alteração é automática.</p></div>'+
  '<div class="mg-panel"><h3>Ranking e sugestão de estoque</h3><p class="ss-help">Você pode ajustar os números sugeridos antes de aplicar. Produtos sem vendas no período não recebem sugestão automática. Para itens fabricados sob encomenda ou perecíveis, avalie validade, capacidade de produção e demanda sazonal.</p>'+
  '<div class="ss-scroll"><table class="ss-tbl"><thead><tr><th><input type="checkbox" id="ssSelectAll" aria-label="Selecionar todos com sugestão"></th><th>Produto / Código</th><th>ABC</th><th>Qtd.</th><th>Receita</th><th>Lucro bruto</th><th>Saldo / Cobertura</th><th>Mín/Máx atual</th><th>Mín/Máx sugerido</th><th>Situação</th><th>Ação</th></tr></thead><tbody>'+rowHtml+'</tbody></table></div>'+
  '<div class="ss-actions"><button class="mg-btn mg-primary" id="ssApplySelected"'+(selectedCount&&!state.busy?'':' disabled')+'>Aplicar selecionados ('+selectedCount+')</button> <span class="ss-small">Alterações são gravadas nos campos estoqueMinimo e estoqueMaximo do cadastro do produto.</span></div>'+
@@ -170,7 +173,7 @@ function params(){
 function message(t){const el=$('ssMessage');if(el){el.className='ss-message';el.textContent=t}else if(typeof window.toast==='function')window.toast(t)}
 function exportCSV(){
  const d=compute(),rows=visibleRows(d),header=['codigo','produto','unidade','curva_abc','qtd_vendida','receita','cmv_estimado','lucro_bruto_estimado','margem_pct','media_diaria','estoque_atual','cobertura_dias','minimo_atual','maximo_atual','minimo_sugerido','maximo_sugerido','amostra'];
- const data=[header,...rows.map(r=>[r.p.codigo||'',r.p.nome||'',r.p.unidade||'UN',r.abc,r.quantity,r.revenue,r.cmv,r.profit,r.margin,r.rate,r.stock,r.coverage??'',r.currentMin,r.currentMax,r.proposal?.min??'',r.proposal?.max??'',r.confidence])];
+ const data=[header,...rows.map(r=>[r.p.codigo||'',r.p.nome||'',r.p.unidade||'UN',r.abc,r.quantity,r.revenue,r.cmv,r.profit??'',r.margin??'',r.rate,r.stock,r.coverage??'',r.currentMin,r.currentMax,r.proposal?.min??'',r.proposal?.max??'',r.confidence])];
  const csv='\ufeff'+data.map(row=>row.map(x=>'"'+S(x).replace(/"/g,'""')+'"').join(';')).join('\r\n');
  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');
  a.href=url;a.download='caseirinho_performance_estoque_'+state.start+'_a_'+state.end+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),3000);
