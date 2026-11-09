@@ -2,7 +2,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#183c2e"><meta name="description" content="Central Caseirinho Insights — painel administrativo independente de CRM, acessos, pedidos e cardápio.">
 <title>Central Caseirinho Insights | CRM e Loja</title>
-<link rel="stylesheet" href="./styles.css?v=32-stock"><link rel="stylesheet" href="./financeiro.css?v=4">
+<link rel="stylesheet" href="./styles.css?v=43-stock-visible"><link rel="stylesheet" href="./financeiro.css?v=4">
 <link rel="manifest" href="./manifest.webmanifest?v=2"><link rel="icon" type="image/png" sizes="192x192" href="/caseirinho-loja/icons/icon-192.png"><link rel="apple-touch-icon" href="/caseirinho-loja/icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default">
 </head><body>
 <div class="auth-screen" id="loginScreen">
@@ -46,10 +46,15 @@
 </aside>
 <main class="app">
  <header class="topbar"><div><span class="eyebrow">Painel exclusivo • Caseirinho Massas Artesanais</span><h1 id="pageTitle">Visão geral</h1><p class="subtitle" id="lastSync">Carregando informações...</p></div>
- <div class="actions"><a class="btn" href="https://jonataspos90-source.github.io/caseirinho-loja/" target="_blank" rel="noopener">↗ Abrir loja</a><button class="btn gold" id="installAppMain" type="button">📲 Instalar</button><button class="btn primary" id="refreshBtn" type="button">↻ Atualizar</button><button class="btn" id="logoutBtn" type="button">Sair</button></div></header>
+ <div class="actions"><a class="btn primary" id="salesStockTopLink" href="./?view=sales&v=43-stock-visible">📦 Vendas & Estoque</a><a class="btn" href="https://jonataspos90-source.github.io/caseirinho-loja/" target="_blank" rel="noopener">↗ Abrir loja</a><button class="btn gold" id="installAppMain" type="button">📲 Instalar</button><button class="btn primary" id="refreshBtn" type="button">↻ Atualizar</button><button class="btn" id="logoutBtn" type="button">Sair</button></div></header>
  <div id="newOrderBanner" class="notice new-order-alert" role="alert" hidden><b>🔔 Novo pedido recebido!</b> <span id="newOrderBannerText"></span> <button class="btn small primary" type="button" id="openNewOrders">Ver pedidos</button> <button class="btn small" type="button" id="dismissNewOrders">Dispensar</button></div>
  <div class="notice" id="globalNotice">As visitas são contadas apenas quando houver eventos da nova instrumentação; pings não são visitas. O cadastro não representa necessariamente uma compra.</div>
  <section id="dashboard" class="section active">
+  <article class="card" id="salesStockQuickAccess" style="margin-bottom:14px;border:1px solid #bedac3;background:#f6fcf6">
+   <h2>📈 Relatório de Vendas & Estoque Inteligente</h2>
+   <p>Veja os produtos campeões de vendas, a Curva ABC e as sugestões de estoque mínimo e máximo. Aplique os valores diretamente no cadastro do ERP.</p>
+   <button type="button" class="btn primary" data-view="sales" id="openSalesStockFromDashboard">📦 Abrir Vendas & Estoque</button>
+  </article>
   <div class="grid stats" id="statGrid"><div class="stat">Carregando indicadores…</div></div>
   <div class="grid two"><article class="card"><h2>📈 Movimentação da loja</h2><p>Atividade real dos dispositivos, sem confundir com visitas.</p><div id="trafficPanel"></div><div id="analyticsPanel"></div></article>
   <article class="card"><h2>⚠️ Prioridades</h2><div id="priorityPanel"></div><h3>🔔 Solicitações pendentes</h3><div id="recentRequests"></div></article></div>
@@ -110,6 +115,8 @@
  <div id="salesError" class="notice error" hidden></div>
  <div id="salesNote" class="notice">Escolha as datas e toque em Consultar. A média de 42 dias usa uma janela independente encerrada na data Até.</div>
  <div class="grid stats" id="salesKpis"></div>
+ <div class="notice success" id="salesStockFeatureNotice"><b>✅ Vendas & Estoque — Atualização V43:</b> abaixo estão as sugestões de estoque e os botões para aplicar no cadastro dos produtos.</div>
+ <article class="card" id="stockSmartSection"><div class="section-head"><div><h3>📦 Estoque mínimo e máximo sugerido</h3><p>Com base nas vendas dos últimos 42 dias, com parâmetros configuráveis e aplicação no cadastro do produto.</p></div></div><div id="stockLevelsPanel" aria-live="polite"><p class="notice">Consulte as vendas para calcular a sugestão.</p></div></article>
  <div class="grid two" style="margin-bottom:14px">
   <article class="card"><h3>🏆 Top 10 por faturamento</h3><div id="salesTopRevenue"></div></article>
   <article class="card"><h3>📦 Top 10 por quantidade</h3><div id="salesTopQuantity"></div></article>
@@ -120,7 +127,7 @@
   <div id="salesAbcSummary"></div></article>
   <article class="card"><h3>🏷️ Vendas por categoria</h3><div id="salesCategories"></div></article>
  </div>
- <article class="card" id="stockSmartSection"><div class="section-head"><div><h3>📦 Estoque mínimo e máximo sugerido</h3><p>Com base nas vendas dos últimos 42 dias, com parâmetros configuráveis e aplicação no cadastro do produto.</p></div></div><div id="stockLevelsPanel" aria-live="polite"><p class="notice">Consulte as vendas para calcular a sugestão.</p></div></article>
+ 
  <div class="card"><div class="section-head"><div><h3>📋 Análise detalhada por produto</h3><p>Quantidade, faturamento, participação acumulada, curva e média por dia/semana em 42 dias.</p></div>
  <div class="actions"><button id="salesCsv" class="btn" type="button">⬇ CSV</button><button id="salesPdf" class="btn gold" type="button">📄 PDF</button></div></div>
  <div class="toolbar">
@@ -351,8 +358,8 @@
  </nav>
 <div id="toast" class="toast" role="status" hidden></div>
 <div id="modal" class="modal-bg" hidden><div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><h2 id="modalTitle">Mensagem para WhatsApp</h2><div id="modalContent"></div><div class="toolbar" style="justify-content:flex-end;margin-top:20px"><button class="btn" id="modalClose">Fechar</button></div></div></div>
-<script src="./app.js?v=37-stock" defer></script>
-<script src="./sales-stock-levels.js?v=1" defer></script>
+<script src="./app.js?v=43-stock-visible" defer></script>
+<script src="./sales-stock-levels.js?v=43-stock-visible" defer></script>
 <script src="./cashback-pending-erp.js?v=1" defer></script>
 <script src="./order-reject.js?v=4" defer></script>
 <script src="./operations-recovery.js?v=1" defer></script>
