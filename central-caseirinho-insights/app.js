@@ -470,7 +470,7 @@ function previewFiles(files,target){
  }).join('')+'</div>':'<span class="muted">Nenhuma foto escolhida.</span>';
 }
 function categoryOptions(){
- return (st.categories||[]).map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name)+'</option>').join('');
+ return (st.categories||[]).filter(x=>x.legacy!==true&&x.active!==false).map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name)+'</option>').join('');
 }
 function openCreateProduct(){
  if(!st.categories.length){toast('As categorias não foram carregadas. Atualize a Central e confira seu acesso administrativo.',true);return;}
@@ -577,7 +577,7 @@ function editProduct(id){
  '<form id="productEditForm" data-product="'+esc(x.id)+'"><p><b>'+esc(x.name)+'</b><br><small>'+esc(x.category)+' · '+esc(x.variation||'')+'</small></p>'+
  '<label class="form-label" for="editCategory">🏷️ Categoria do e-commerce</label>'+
   '<select id="editCategory" required>'+
-  (st.categories||[]).map(c=>'<option value="'+esc(c.id)+'" '+(s(c.id)===s(x.categoryId)?'selected':'')+'>'+esc(c.name)+(c.legacy?' (antiga)':'')+'</option>').join('')+
+  (st.categories||[]).concat((st.categories||[]).some(c=>s(c.id)===s(x.categoryId))||!x.categoryId?[]:[{id:x.categoryId,name:x.category||'Categoria atual'}]).map(c=>'<option value="'+esc(c.id)+'" '+(s(c.id)===s(x.categoryId)?'selected':'')+'>'+esc(c.name)+(c.legacy?' (antiga)':'')+'</option>').join('')+
   '</select><p class="muted">Mude a categoria aqui para poder excluir categorias antigas sem perder produtos.</p>'+
   '<label class="form-label" for="editPrice">💰 Preço de venda (R$)</label>'+
  '<input id="editPrice" type="number" min="0.01" max="1000000" step="0.01" inputmode="decimal" required value="'+n(x.price)+'">'+
