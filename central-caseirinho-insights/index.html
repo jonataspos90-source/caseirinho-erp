@@ -2,7 +2,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#183c2e"><meta name="description" content="Central Caseirinho Insights — painel administrativo independente de CRM, acessos, pedidos e cardápio.">
 <title>Central Caseirinho Insights | CRM e Loja</title>
-<link rel="stylesheet" href="./styles.css?v=20261110-descriptions-1"><link rel="stylesheet" href="./financeiro.css?v=4">
+<link rel="stylesheet" href="./styles.css?v=20261110-descriptions-1"><link rel="stylesheet" href="./financeiro.css?v=20261110-platform-1">
 <link rel="manifest" href="./manifest.webmanifest?v=2"><link rel="icon" type="image/png" sizes="192x192" href="/caseirinho-loja/icons/icon-192.png"><link rel="apple-touch-icon" href="/caseirinho-loja/icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default">
 </head><body>
 <div class="auth-screen" id="loginScreen">
@@ -38,7 +38,7 @@
  <button type="button" data-view="reports">📄 Relatórios / PDF</button>
  <button type="button" data-view="sales">📈 Vendas & Estoque</button>
  <button type="button" data-view="receivables">💳 Conta Cliente / Recebimentos</button>
- <button type="button" data-view="financeiro">💰 Financeiro / DRE</button>
+ <button type="button" data-view="financeiro" data-fin-tab="platforms">🍔 iFood / 99Food</button><button type="button" data-view="financeiro">💰 Financeiro / DRE</button>
  <button type="button" data-view="menu">🍝 Cardápio</button>
  <button type="button" data-view="requests">🔔 Solicitações <span id="requestCount" class="num" hidden>0</span></button>
  <button type="button" data-view="settings">⚙️ Configurações</button>
@@ -170,12 +170,54 @@
  <div class="section-head"><div><h2>💰 Financeiro Caseirinho</h2><p>Vendas diárias, despesas, compras para revenda sem estoque, contas fixas, ativos e DRE mensal.</p></div><button class="btn primary" type="button" id="finRefresh">↻ Atualizar financeiro</button></div>
  <div class="card fin-toolbar">
   <label>📆 Competência (mês) <input id="finMonth" type="month" aria-label="Competência financeira"></label>
-  <div class="toolbar"><button class="btn small" type="button" data-fin-tab="dre">📊 DRE</button><button class="btn small" type="button" data-fin-tab="daily">📅 Vendas por dia</button><button class="btn small" type="button" data-fin-tab="entries">🧾 Gastos / Revenda</button><button class="btn small" type="button" data-fin-tab="fixed">🏠 Contas fixas</button><button class="btn small" type="button" data-fin-tab="payroll">👥 Pagamentos</button><button class="btn small" type="button" data-fin-tab="employeeExpenses">🧾 Despesas de funcionários</button><button class="btn small" type="button" data-fin-tab="assets">🧰 Ativos</button></div>
+  <div class="toolbar"><button class="btn small" type="button" data-fin-tab="platforms">🍔 iFood / 99Food</button><button class="btn small" type="button" data-fin-tab="dre">📊 DRE</button><button class="btn small" type="button" data-fin-tab="daily">📅 Vendas por dia</button><button class="btn small" type="button" data-fin-tab="entries">🧾 Gastos / Revenda</button><button class="btn small" type="button" data-fin-tab="fixed">🏠 Contas fixas</button><button class="btn small" type="button" data-fin-tab="payroll">👥 Pagamentos</button><button class="btn small" type="button" data-fin-tab="employeeExpenses">🧾 Despesas de funcionários</button><button class="btn small" type="button" data-fin-tab="assets">🧰 Ativos</button></div>
   <div class="toolbar"><button id="finCsv" class="btn small" type="button">⬇ CSV do mês</button><button id="finPrint" class="btn small gold" type="button">🖨️ Imprimir / Salvar PDF</button></div>
  </div>
  <div id="finMessage" class="notice">Acesse o Financeiro para consultar as vendas e o DRE.</div>
  <div id="finKpis" class="grid stats"></div>
- <div id="finDrePanel" class="fin-panel">
+ 
+<div id="finPlatformsPanel" class="fin-panel" hidden>
+ <article class="card"><div class="section-head"><div><h2>🍔 Vendas de plataformas · iFood / 99Food</h2>
+ <p>Registre o valor total ou detalhe produtos e preços da plataforma. Veja faturamento, taxas, repasse e margem estimada.</p></div>
+ <button type="button" class="btn primary" id="finPlatformRefresh">↻ Atualizar</button></div>
+ <div class="notice" id="finPlatformNotice">Lançamentos externos entram uma única vez na DRE; não repita vendas do aplicativo.</div>
+ <div id="finPlatformTotals" class="grid stats"></div></article>
+ <article class="card"><h3>➕ Registrar receita da plataforma</h3>
+ <form id="finPlatformForm" class="fin-form platform-form">
+  <label>Plataforma<select id="finPlatformName"><option value="IFOOD">iFood</option><option value="99FOOD">99Food</option><option value="OUTRA">Outra</option></select></label>
+  <label id="finPlatformOtherWrap" hidden>Qual plataforma?<input id="finPlatformOtherName" maxlength="60"></label>
+  <label>Tipo de lançamento<select id="finPlatformMode"><option value="TOTAL">Valor total (avulsa)</option><option value="ITEMS">Produtos vendidos</option></select></label>
+  <label>Consolidação<select id="finPlatformFrequency"><option value="DAY">Diária</option><option value="WEEK">Semanal</option><option value="MONTH">Mensal</option></select></label>
+  <label>De<input type="date" id="finPlatformFrom" required></label><label>Até<input type="date" id="finPlatformTo" required></label>
+  <div class="fin-wide platform-fieldset" id="finPlatformTotalFields"><h4>💵 Faturamento consolidado</h4><div class="platform-fields">
+   <label>Valor total vendido (R$)<input type="number" id="finPlatformGross" min="0.01" step="0.01" placeholder="Ex.: 1500,00"></label>
+   <label>Custo total estimado (R$) — opcional<input type="number" id="finPlatformTotalCost" min="0" step="0.01" placeholder="Se desconhecido, deixe vazio"></label></div></div>
+  <div class="fin-wide platform-fieldset" id="finPlatformItemsFields" hidden><h4>🍝 Produtos e preço da plataforma</h4>
+   <p>Selecione o produto do ERP, quantidade e preço cobrado no iFood ou 99Food. Custo sugerido pela ficha técnica.</p>
+   <div id="finPlatformLines"></div><button type="button" class="btn" id="finPlatformAddLine">＋ Adicionar produto</button></div>
+  <label>Comissão da plataforma (%)<input type="number" min="0" max="100" step="0.01" id="finPlatformCommission" value="0"></label>
+  <label>Taxas adicionais cobradas (R$)<input type="number" min="0" step="0.01" id="finPlatformExtraFees" value="0"></label>
+  <label>Descontos pagos pela loja (R$)<input type="number" min="0" step="0.01" id="finPlatformDiscount" value="0"></label>
+  <label>Repasse<select id="finPlatformStatus"><option value="PENDENTE">A receber</option><option value="PAGO">Recebido / conferido</option></select></label>
+  <label id="finPlatformPaidWrap" hidden>Data do recebimento<input type="date" id="finPlatformPaidAt"></label>
+  <label>Referência do extrato (opcional)<input id="finPlatformReference" maxlength="100" placeholder="Ex.: fechamento 001"></label>
+  <label class="fin-wide">Observações<textarea id="finPlatformNotes" rows="2" maxlength="500"></textarea></label>
+  <div class="fin-wide platform-preview" id="finPlatformPreview" aria-live="polite"></div>
+  <p class="fin-wide notice">Receita bruta vai para a DRE. Taxas ficam em despesas variáveis. O custo de ficha serve para <b>estimar a margem</b> e não é descontado novamente na DRE. Repasse previsto não equivale a dinheiro confirmado.</p>
+  <div class="toolbar fin-wide"><button type="submit" id="finPlatformSave" class="btn primary">💾 Salvar receita da plataforma</button>
+  <button type="button" class="btn" id="finPlatformCancel">Limpar</button></div>
+ </form></article>
+ <article class="card"><h3>📊 Vendas e margens — diário, semanal ou mensal</h3>
+ <div class="platform-filters">
+  <label>Visão<select id="finPlatformFilterFrequency"><option value="DAY">Diária</option><option value="WEEK">Semanal</option><option value="MONTH">Mensal</option></select></label>
+  <label>Plataforma<select id="finPlatformFilterName"><option value="ALL">Todas</option><option value="IFOOD">iFood</option><option value="99FOOD">99Food</option><option value="OUTRA">Outras</option></select></label>
+  <label>De<input id="finPlatformFilterFrom" type="date"></label><label>Até<input id="finPlatformFilterTo" type="date"></label>
+  <button type="button" class="btn primary" id="finPlatformFilterApply">🔎 Consultar</button>
+  <button type="button" class="btn" id="finPlatformExport">⬇ CSV</button>
+ </div><div id="finPlatformGroups"></div>
+ <h3>🧾 Lançamentos individuais</h3><div id="finPlatformEntries"></div></article>
+</div>
+<div id="finDrePanel" class="fin-panel">
   <article class="card"><h2>📊 DRE Gerencial — mês selecionado</h2><div id="finDre"></div></article>
   <div class="notice">Regime simplificado por competência: vendas do app somente quando ENTREGUES/RETIRADAS, agrupadas pela data do pedido; pagamentos de funcionários na conta gerencial 3.02.01, sem duplicar salários antigos; receitas avulsas somadas separadamente. Compras para revenda entram como custo integral no mês, sem baixa de estoque. Ativos não entram como despesa do DRE. Este relatório não substitui a contabilidade e não calcula automaticamente impostos ou depreciação.</div>
  </div>
@@ -393,6 +435,7 @@
 <script src="./cashback-pending-erp.js?v=1" defer></script>
 <script src="./order-reject.js?v=4" defer></script>
 <script src="./operations-recovery.js?v=1" defer></script>
-<script src="./financeiro.js?v=5" defer></script>
+<script src="./financeiro.js?v=20261110-platform-1" defer></script>
+<script src="./platform-sales.js?v=20261110-platform-1" defer></script>
 <script src="./conta-cliente-recebimentos.js?v=20261110-1" defer></script>
 </body></html>
