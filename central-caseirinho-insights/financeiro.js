@@ -119,10 +119,11 @@ async function saveEmployeePriceBasis(){
 
 function setTab(tab){
  state.tab=tab;
- const all=['dre','daily','entries','fixed','payroll','employeeExpenses','assets'];
+ const all=['platforms','dre','daily','entries','fixed','payroll','employeeExpenses','assets'];
  for(const t of all)el('fin'+t[0].toUpperCase()+t.slice(1)+'Panel').hidden=t!==tab;
  document.querySelectorAll('[data-fin-tab]').forEach(b=>b.classList.toggle('primary',b.dataset.finTab===tab));
  if(tab==='entries')el('finEntryForm').scrollIntoView({block:'nearest',behavior:'smooth'});
+ if(tab==='platforms')window.CaseirinhoPlatformSales?.load?.();
  render();
 }
 function populateTypes(){
@@ -195,7 +196,7 @@ function render(){
  const d=data.summary||{},days=currentDailyDays(),entries=data.entries||[];
  el('finKpis').innerHTML=[
   kpi('✅','Vendas realizadas (App + ERP)',money(d.confirmedCents),number(d.orders)+' pedido(s) concluído(s)'),
-  kpi('💵','Receita total',money(d.revenueCents),'Inclui vendas fora do app lançadas'),
+  kpi('💵','Receita total',money(d.revenueCents),'Inclui receitas iFood, 99Food e avulsas'),
   kpi('🕓','Pedidos em andamento',money(d.pendingCents),'Fora do DRE até a conclusão'),
   kpi('🥟','Custos + revenda',money(d.costCents),'Compras lançadas neste mês'),
   kpi('🏠','Despesas e tributos',money(number(d.fixedCents)+number(d.variableCents)+number(d.taxesCents)),'Sem despesas com pessoal'),
@@ -215,7 +216,8 @@ function render(){
   ['(-) Despesas fixas (aluguel, água, luz, internet etc.)',-number(d.fixedCents)],
   ['(-) Pagamento de funcionários — conta 3.02.01',-number(d.payrollCents)],
   ['(-) Despesas com funcionários — conta 3.02.02',-number(d.employeeExpensesCents)],
-  ['(-) Despesas variáveis',-number(d.variableCents)],
+  ['(-) Despesas variáveis (inclusive taxas das plataformas)',-number(d.variableCents)],
+  ['(i) Taxas de plataformas já incluídas nas despesas variáveis',number(d.externalPlatformFeesCents)],
   ['(-) Impostos e taxas lançados',-number(d.taxesCents)],
   ['(=) RESULTADO GERENCIAL DO MÊS',d.netCents,true],
   ['(i) Investimentos/ativos (fora do DRE)',d.assetsCents],
@@ -361,7 +363,7 @@ function bind(){
  state.month=nowBR().slice(0,7);el('finMonth').value=state.month;
  populateTypes();resetForm();setTab('dre');
  const initialTab=new URLSearchParams(window.location.search).get('finTab');
- if(['payroll','employeeExpenses','daily','entries','fixed','assets'].includes(initialTab))setTab(initialTab);
+ if(['platforms','payroll','employeeExpenses','daily','entries','fixed','assets'].includes(initialTab))setTab(initialTab);
  el('finMonth').addEventListener('change',()=>{state.month=el('finMonth').value;clearDailyFilter();resetForm();load();});
  el('finDailyApply').addEventListener('click',applyDailyFilter);
  el('finDailyReset').addEventListener('click',()=>{clearDailyFilter();message('Exibindo vendas do mês '+state.month+'.');});
