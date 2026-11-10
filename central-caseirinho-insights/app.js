@@ -1348,7 +1348,8 @@ function quickFinishOrder(code){
  function updatePayment(){
   if(!methodInput)return;
   if(methodInput.value==='CONTA_CLIENTE'&&amountInput){amountInput.value='0.00';}
-  const cents=Math.round((Number(amountInput?.value)||0)*100),total=Math.round(Number(order.total)*100),balance=Math.max(0,total-cents);
+  const cents=confirmedAlready?Math.round(Number(order.total)*100):Math.round((Number(amountInput?.value)||0)*100);
+  const total=Math.round(Number(order.total)*100),balance=Math.max(0,total-cents);
   if(!confirmedAlready&&balance>0){
    const pending=document.querySelector('input[name="quickCashbackDecision"][value="PENDENTE"]');
    if(pending)pending.checked=true;
