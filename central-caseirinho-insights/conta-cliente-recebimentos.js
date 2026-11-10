@@ -13,7 +13,7 @@ function notice(message,bad=false){
  e.textContent=message;e.className='notice '+(bad?'error':'success');
 }
 function pill(status){
- const labels={QUITADO:'✅ Quitado',PARCIAL:'🟡 Parcial',PENDENTE:'⏳ A receber',SEM_VALOR:'Sem valor'};
+ const labels={QUITADO:'✅ Quitado',PARCIAL:'🟡 Parcial',PENDENTE:'⏳ A receber',A_CONCILIAR:'🔎 A conciliar',SEM_VALOR:'Sem valor'};
  return '<span class="badge '+(status==='QUITADO'?'good':status==='PARCIAL'?'warn':'light')+'">'+(labels[status]||esc(status))+'</span>';
 }
 function summarize(){
@@ -24,7 +24,8 @@ function summarize(){
   ['💳','Saldo de clientes',moneyC(d.outstandingCents),'Pedidos concluídos com valor ainda não recebido'],
   ['🧾','Pagamentos parciais',d.partiallyPaid||0,'Pedidos que têm recebimento e ainda devem'],
   ['📦','Pedidos em andamento',d.pendingOrders||0,'Ainda não finalizados'],
-  ['👤','Clientes com saldo',d.customerAccounts||0,'Clientes vinculados a pedido concluído com saldo']
+  ['👤','Clientes com saldo',d.customerAccounts||0,'Clientes vinculados a pedido concluído com saldo'],
+  ['🔎','Vendas antigas a conciliar',d.unreconciledCount||0,'Sem comprovante no sistema; não presumir dívida']
  ].map(([icon,label,value,info])=>'<div class="stat"><span class="icon">'+icon+'</span><strong>'+esc(label)+'</strong><div class="n">'+esc(value)+'</div><small>'+esc(info)+'</small></div>').join('');
 }
 function orderCard(x){
@@ -32,7 +33,7 @@ function orderCard(x){
  const status=x.completed?'Venda concluída':'Pedido em andamento';
  const action=eligible?'<button class="btn small primary" type="button" data-account-pay="'+esc(x.code)+'">💵 Registrar pagamento</button>':'';
  return '<article class="receivable-card"><div class="receivable-top"><div><b>Venda #'+esc(x.code)+'</b> <small>'+esc(formatDate(x.createdAt))+'</small><p><strong>'+esc(x.customerName||'Cliente')+'</strong> · '+esc(x.customerPhone||'')+'</p></div>'+pill(x.paymentStatus)+'</div>'+
-  '<div class="receivable-amounts"><span>Venda<br><b>'+moneyC(x.totalCents)+'</b></span><span>Recebido<br><b>'+moneyC(x.receivedCents)+'</b></span><span>Em aberto<br><b>'+moneyC(x.balanceCents)+'</b></span></div>'+
+  '<div class="receivable-amounts"><span>Venda<br><b>'+moneyC(x.totalCents)+'</b></span><span>Recebido comprovado<br><b>'+moneyC(x.receivedCents)+'</b></span><span>'+(x.reconciled?'A receber':'A conciliar')+'<br><b>'+(x.reconciled?moneyC(x.balanceCents):'—')+'</b></span></div>'+
   '<div class="receivable-bottom"><small>'+esc(status)+' · '+esc(x.paymentMode||'A definir')+(x.onlinePending?' · ⚠️ Confira pagamento online':'')+'</small><div><button class="btn small" type="button" data-account-open="'+esc(x.code)+'">📑 Ver cartões</button> '+action+'</div></div></article>';
 }
 function render(){
@@ -65,7 +66,7 @@ async function detail(code,showForm=false){
     '<p><b>Cliente:</b> '+esc(x.customerName)+'<br><b>Compra:</b> '+esc(formatDate(x.orderDate))+
     '<br><b>Situação:</b> '+esc(x.status)+'<br><b>Produtos:</b> '+moneyC(x.itemRevenueCents)+
     ' · <b>Frete:</b> '+moneyC(x.freightCents)+'<br><b>Total da venda:</b> '+moneyC(x.totalCents)+'</p>'+
-    '<p><b>Recebido:</b> '+moneyC(x.receivedCents)+' · <b>Saldo:</b> '+moneyC(x.balanceCents)+' '+pill(x.paymentStatus)+'</p></article>';
+    '<p><b>Recebido comprovado:</b> '+moneyC(x.receivedCents)+' · <b>'+(x.reconciled?'Saldo':'Diferença a conciliar')+':</b> '+moneyC(x.balanceCents)+' '+pill(x.paymentStatus)+'</p></article>';
   const history=A(x.receipts).map(r=>'<article class="receivable-payment-block"><h4>💰 Cartão de recebimento</h4>'+
     '<p><b>'+moneyC(r.amountCents)+'</b> · '+esc(methods[r.method]||r.method)+'<br>'+
     '<small>'+esc(formatDate(r.occurredAt))+' · '+esc(r.recordedBy||'ERP')+
