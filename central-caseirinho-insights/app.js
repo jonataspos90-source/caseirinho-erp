@@ -1486,8 +1486,11 @@ async function confirmOrderComplete(code){
  modal('✅ PEDIDO #'+code+' FINALIZADO',
   '<div class="notice success"><b>✅ Confirmação salva.</b> O pedido passou para <b>'+esc(finalStatus)+'</b> na loja. '+(out.erpSynced?'ERP atualizado.':'Aguardando conciliação com o ERP.')+'</div>'+
   '<p><b>Receita de produtos no DRE:</b> '+brl(out.receitaProdutos)+
+  (out.receivedCents!=null?'<br><b>Recebido confirmado:</b> '+brl(out.receivedCents/100)+
+   '<br><b>Saldo em Conta Cliente:</b> '+brl((out.balanceCents||0)/100):'')+
   '<br><b>Cashback liberado:</b> '+brl(out.credited)+'</p>'+
-  '<button class="btn primary" type="button" id="quickFinishClose" data-action="closeModal">✅ Voltar para pedidos</button>');
+  '<div class="toolbar"><button class="btn primary" type="button" data-action="goReceivables">💳 Ver cartões da venda e pagamentos</button>'+
+  '<button class="btn" type="button" id="quickFinishClose" data-action="closeModal">✅ Voltar para pedidos</button></div>');
  try{await loadAll();nav('orders');}
  catch(error){toast('✅ Pedido finalizado, mas a lista não atualizou. Clique em Atualizar para ver o novo status.',true);}
 }
