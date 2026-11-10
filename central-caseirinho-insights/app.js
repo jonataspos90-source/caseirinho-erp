@@ -1316,7 +1316,10 @@ function quickFinishOrder(code){
  const mpConfirmed=s(order.paymentStatus).toUpperCase()==='APROVADO'&&
   n(order.providerPaidAmount)+0.001>=n(order.total)&&isMercadoPagoOrder(order);
  const legacyConfirmed=order.manualPayment?.status==='CONFIRMADO';
- const confirmedAlready=mpConfirmed||legacyConfirmed;
+ const previousCents=Math.max(0,Number(order.receivables?.receivedCents)||0);
+ const alreadyDue=Math.max(0,Math.round(Number(order.total)*100)-previousCents);
+ const ledgerSettled=order.receivables?.status==='QUITADO'&&previousCents>0;
+ const confirmedAlready=mpConfirmed||legacyConfirmed||ledgerSettled;
  const cashEligible=f.canApprove===true||f.eligible===true;
  const decision='<div class="quick-finish-step"><h3>1️⃣ Escolha o cashback</h3>'+
   '<p>Para pagamento parcial ou Conta Cliente, o cashback fica pendente até o pedido ser quitado.</p>'+
@@ -1329,7 +1332,7 @@ function quickFinishOrder(code){
  const options=confirmedAlready
   ?'<option value="CONFIRMADO">'+(mpConfirmed?'Mercado Pago — pagamento aprovado':'Pagamento manual já confirmado')+'</option>'
   :'<option value="PIX">Pix</option><option value="CREDITO">Cartão de crédito</option><option value="DEBITO">Cartão de débito</option><option value="CONTA_CLIENTE">Conta Cliente (a prazo)</option><option value="DINHEIRO">Dinheiro</option><option value="TRANSFERENCIA">Transferência</option>';
- const payAmount=confirmedAlready?'0.00':Number(order.total).toFixed(2);
+ const payAmount=confirmedAlready?'0.00':(alreadyDue/100).toFixed(2);
  modal('📦 Finalização do pedido #'+code,
   '<div class="notice warn"><b>⏳ PEDIDO AINDA NÃO FINALIZADO.</b> Confirme a entrega e o pagamento real, ou indique Conta Cliente. A venda e os recebimentos ficarão separados no financeiro.</div>'+
   '<p><b>'+esc(order.name||'Cliente')+'</b> • '+brl(order.total)+' • '+(pickup?'Retirada':'Entrega')+'</p>'+
@@ -1338,7 +1341,7 @@ function quickFinishOrder(code){
   '<div class="quick-finish-step"><h3>2️⃣ Confirme entrega e pagamento</h3>'+
   '<label class="quick-check"><input type="checkbox" id="fulfillmentDelivered"> ✅ Confirmo que o cliente '+(pickup?'retirou':'recebeu')+' o pedido</label>'+
   '<div class="form-grid"><label>Como o cliente pagou?<select id="quickPaymentMethod"'+(confirmedAlready?' disabled':'')+'>'+options+'</select></label>'+
-  '<label>Valor efetivamente recebido agora (R$)<input type="number" id="quickPaymentAmount" min="0" step="0.01" max="'+Number(order.total).toFixed(2)+'" value="'+payAmount+'" '+(confirmedAlready?'disabled':'')+'></label></div>'+
+  '<label>Valor efetivamente recebido agora (R$)<input type="number" id="quickPaymentAmount" min="0" step="0.01" max="'+(alreadyDue/100).toFixed(2)+'" value="'+payAmount+'" '+(confirmedAlready?'disabled':'')+'></label></div>'+
   '<label class="form-label" for="quickPaymentReference">Comprovante / referência (se houver)</label>'+
   '<input id="quickPaymentReference" maxlength="140" placeholder="Pix, NSU do cartão, número do comprovante" '+(confirmedAlready?'disabled':'')+'>'+
   '<div class="fulfillment-options quick-finalize"><label class="quick-check"><input type="checkbox" id="fulfillmentPayment"'+(confirmedAlready?' checked disabled':'')+'> ✅ Confirmo que o valor informado entrou de verdade no caixa, na conta ou na maquininha</label></div>'+
@@ -1354,14 +1357,15 @@ function quickFinishOrder(code){
  function updatePayment(){
   if(!methodInput)return;
   if(methodInput.value==='CONTA_CLIENTE'&&amountInput){amountInput.value='0.00';}
-  const cents=confirmedAlready?Math.round(Number(order.total)*100):Math.round((Number(amountInput?.value)||0)*100);
-  const total=Math.round(Number(order.total)*100),balance=Math.max(0,total-cents);
+  const cents=confirmedAlready?0:Math.round((Number(amountInput?.value)||0)*100);
+  const total=Math.round(Number(order.total)*100),effectivePrior=confirmedAlready?total:previousCents;
+  const balance=Math.max(0,total-effectivePrior-cents);
   if(!confirmedAlready&&balance>0){
    const pending=document.querySelector('input[name="quickCashbackDecision"][value="PENDENTE"]');
    if(pending)pending.checked=true;
   }
   const msg=E('quickPaymentSummary');
-  if(msg)msg.innerHTML='<b>Venda:</b> '+brl(order.total)+' · <b>Recebido agora:</b> '+brl(cents/100)+
+  if(msg)msg.innerHTML='<b>Venda:</b> '+brl(order.total)+(effectivePrior? ' · <b>Já recebido:</b> '+brl(effectivePrior/100):'')+' · <b>Recebido agora:</b> '+brl(cents/100)+
    ' · <b>Conta Cliente (saldo):</b> '+brl(balance/100)+(balance>0?' <strong>— PENDENTE</strong>':' <strong>— QUITADO</strong>');
  }
  methodInput?.addEventListener?.('change',updatePayment);
@@ -1383,7 +1387,7 @@ function quickConfirmOrder(code){
  const decision=document.querySelector('input[name="quickCashbackDecision"]:checked')?.value;
  if(!['APROVADO','REJEITADO','PENDENTE'].includes(decision))
   return showFinishAlert('Escolha a decisão de cashback, inclusive Aguardar quitação.',true);
- if(method!=='CONFIRMADO'&&amount<Math.round(Number(orderLookup(code)?.total||0)*100)&&decision==='APROVADO')
+ if(method!=='CONFIRMADO'&&amount+Math.max(0,Number(orderLookup(code)?.receivables?.receivedCents)||0)<Math.round(Number(orderLookup(code)?.total||0)*100)&&decision==='APROVADO')
   return showFinishAlert('Pagamento parcial: cashback precisa ficar pendente até a quitação.',true);
  if(method==='CONFIRMADO'&&decision==='PENDENTE')return showFinishAlert('Pedido quitado: escolha aprovar ou não liberar cashback.',true);
  const form=E('modalContent');if(!form)return toast('Janela de conclusão indisponível. Atualize a Central.',true);
@@ -1453,7 +1457,8 @@ async function confirmOrderComplete(code){
   if(method==='CONTA_CLIENTE'&&amountCents!==0)return showFinishAlert('Conta Cliente deve iniciar com R$ 0,00; para entrada parcial selecione Pix, Crédito ou Débito.',true);
  }
  const x=orderLookup(code),rule=fulfillStatus(code);
- const remaining=method==='CONFIRMADO'?0:Math.max(0,Math.round(Number(x?.total||0)*100)-amountCents);
+ const alreadyCents=Math.max(0,Number(x?.receivables?.receivedCents)||0);
+ const remaining=method==='CONFIRMADO'?0:Math.max(0,Math.round(Number(x?.total||0)*100)-alreadyCents-amountCents);
  const message='CONFIRMAÇÃO DEFINITIVA: pedido '+code+' ('+brl(x?.total)+') será '+(s(rule?.modalidade).toUpperCase()==='RETIRADA'?'RETIRADO':'ENTREGUE')+
   (method?' · Recebimento agora: '+brl(amountCents/100)+' · Conta Cliente: '+brl(remaining/100):'')+
   ' · Cashback: '+(decision==='APROVADO'?brl(rule?.estimate):decision==='PENDENTE'?'aguardando quitação':'não liberar')+'. Confirmar?';

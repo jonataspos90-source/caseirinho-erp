@@ -1,6 +1,6 @@
 /* Central Caseirinho Insights — cache SOMENTE de arquivos públicos; nenhuma informação de clientes */
-const CACHE='caseirinho-insights-app-shell-v44-accounts-receivable-20261110';
-const SHELL=['./','./index.html','./styles.css?v=20261110-receivables-1','./app.js?v=20261110-receivables-1','./sales-stock-levels.js?v=43-stock-visible','./cashback-pending-erp.js?v=1','./order-reject.js?v=4','./financeiro.js?v=5','./conta-cliente-recebimentos.js?v=20261110-1','./financeiro.css?v=4','./operations-recovery.js?v=1','./manifest.webmanifest?v=2','./icon.svg'];
+const CACHE='caseirinho-insights-app-shell-v45-prepayments-20261110';
+const SHELL=['./','./index.html','./styles.css?v=20261110-receivables-1','./app.js?v=20261110-receivables-2','./sales-stock-levels.js?v=43-stock-visible','./cashback-pending-erp.js?v=1','./order-reject.js?v=4','./financeiro.js?v=5','./conta-cliente-recebimentos.js?v=20261110-1','./financeiro.css?v=4','./operations-recovery.js?v=1','./manifest.webmanifest?v=2','./icon.svg'];
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting()));
 });
