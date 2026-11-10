@@ -34,7 +34,7 @@ function modalForm(category){
   '<form id="categoryManageForm" data-cat-id="'+esc(category?.id||'')+'">'+
   '<label class="form-label" for="catName">Nome da categoria *</label><input id="catName" maxlength="65" required placeholder="Ex.: Lasanhas" value="'+esc(category?.name||'')+'">'+
   '<div class="form-grid"><div><label class="form-label" for="catEmoji">Emoji</label><input id="catEmoji" maxlength="12" placeholder="🍝" value="'+esc(category?.emoji||'🍝')+'"></div>'+
-  '<div><label class="form-label" for="catOrder">Ordem no catálogo</label><input id="catOrder" type="number" min="0" max="9999" step="1" value="'+(edit?Number(category.order||0):Math.max(1,...b.categories().map(x=>Number(x.order||0)+1)))+'"></div></div>'+
+  '<div><label class="form-label" for="catOrder">Ordem no catálogo</label><input id="catOrder" type="number" min="0" max="9999" step="1" value="'+(edit?Number(category.order||0):Math.min(9999,Math.max(1,...b.categories().filter(x=>x.legacy!==true).map(x=>Number(x.order||0)+1))))+'"></div></div>'+
   '<label class="form-label" for="catDescription">Descrição (opcional)</label><textarea id="catDescription" maxlength="240" rows="3" placeholder="Descrição breve para organização">'+esc(category?.description&&category.legacy!==true?category.description:'')+'</textarea>'+
   '<div id="catModalAlert" class="notice" hidden role="status"></div>'+
   '<button type="submit" class="btn primary" id="catSaveBtn">💾 '+(edit?'Salvar alterações':'Criar categoria')+'</button></form>');
