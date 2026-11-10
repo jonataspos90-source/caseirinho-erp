@@ -444,8 +444,11 @@ function renderProducts(){
  '<article class="product-card"><div><div class="product-photo">'+(x.image?'<img src="'+esc(x.image)+'" alt="Foto de '+esc(x.name)+'" loading="lazy">':'<span>📷 Sem foto</span>')+'</div><span class="badge light">'+esc(x.category)+'</span> '+(x.active===false?'<span class="badge warn">⛔ INATIVO — oculto na loja</span>':x.availableForSale===false?'<span class="badge warn">🚫 INDISPONÍVEL — visível, sem compra</span>':'<span class="badge good">✅ À venda</span>')+' '+(x.promotionActive?'<span class="badge warn">Promoção ativa</span>':'')+
  '<h3>'+esc(x.name)+'</h3><small class="muted">'+esc(x.variation||x.availability||'')+'</small></div>'+
  '<div class="price-row"><b>'+brl(x.price)+'</b><span>Pedido mín: '+n(x.minimum)+' · máx: '+(n(x.maximum)||'Sem limite')+'</span></div>'+
-  '<p class="muted" style="margin:5px 0 10px">📦 Estoque ERP — mínimo: <b>'+qtyBR(x.stockMinimum)+'</b> · máximo: <b>'+qtyBR(x.stockMaximum)+'</b></p>'+
- '<button class="btn primary" type="button" data-action="editProduct" data-product="'+esc(x.id)+'">✏️ Preço / Situação</button><button class="btn gold" type="button" data-action="photosProduct" data-product="'+esc(x.id)+'">📷 Alterar fotos</button></article>'
+  '<p class="muted" style="margin:5px 0 7px">📦 Estoque ERP — mínimo: <b>'+qtyBR(x.stockMinimum)+'</b> · máximo: <b>'+qtyBR(x.stockMaximum)+'</b></p>'+
+  '<p class="product-description-preview" title="Descrição comercial da loja">'+(x.description?esc(x.description):'<em>Sem descrição comercial</em>')+'</p>'+
+ '<button class="btn primary" type="button" data-action="editProduct" data-product="'+esc(x.id)+'">✏️ Preço / Situação</button>'+
+  '<button class="btn" type="button" data-action="descriptionProduct" data-product="'+esc(x.id)+'">📝 Descrição</button>'+
+  '<button class="btn gold" type="button" data-action="photosProduct" data-product="'+esc(x.id)+'">📷 Alterar fotos</button></article>'
  ).join('')+'</div>';
 }
 
@@ -598,6 +601,61 @@ function editProduct(id){
  '<div id="productSaveStatus" class="notice" role="status" hidden></div>'+
  '<div class="toolbar"><button class="btn primary" type="submit">✅ Salvar no ERP e na loja</button><button class="btn" type="button" id="verifyProductTerms">🔎 Conferir preço publicado</button></div></form>';
  modal('✏️ Editar produto',html);
+}
+function editProductDescription(id){
+ const p=st.catalog.find(x=>s(x.id)===s(id));
+ if(!p)return toast('Produto não encontrado. Atualize Produtos e preços.',true);
+ modal('📝 Descrição do produto — '+p.name,
+  '<div class="notice">A descrição é exibida na loja quando o cliente abre o produto. Preço, fotos, categoria e estoque não serão alterados.</div>'+
+  '<form id="productDescriptionEditForm" data-product="'+esc(p.id)+'">'+
+  '<p><b>'+esc(p.name)+'</b><br><small>'+esc(p.category)+'</small></p>'+
+  '<label class="form-label" for="productDescriptionText">Descrição apresentada ao cliente</label>'+
+  '<textarea id="productDescriptionText" maxlength="1200" rows="7" placeholder="Ex.: Massa caseira artesanal com recheio cremoso de Catupiry. Peso aproximado, ingredientes e orientações de preparo.">'+esc(p.description||'')+'</textarea>'+
+  '<p class="muted"><span id="productDescriptionLength">'+s((p.description||'').length)+'</span>/1200 caracteres · Escreva ingredientes, recheio, tamanho e diferenciais do produto.</p>'+
+  '<div id="productDescriptionSaveStatus" class="notice" hidden role="status"></div>'+
+  '<div class="toolbar"><button class="btn primary" type="submit">💾 Salvar descrição no ERP e na loja</button>'+
+  '<button class="btn" type="button" data-action="closeModal">Cancelar</button></div></form>');
+ E('productDescriptionText')?.focus?.();
+}
+async function saveProductDescription(event){
+ event.preventDefault();
+ const form=event.target,pid=s(form?.dataset.product);
+ const current=st.catalog.find(x=>s(x.id)===pid);
+ if(!current)return toast('Produto desatualizado. Atualize a lista antes de editar.',true);
+ const value=E('productDescriptionText')?.value;
+ if(typeof value!=='string')return;
+ const description=value.trim().replace(/\r\n/g,'\n'),status=E('productDescriptionSaveStatus'),button=form.querySelector('[type="submit"]');
+ if(description.length>1200)return toast('A descrição deve ter até 1200 caracteres.',true);
+ if(description===s(current.description).trim())return toast('A descrição já está atualizada.');
+ if(!description&&!window.confirm('Remover a descrição comercial deste produto?'))return;
+ if(button.disabled)return;
+ button.disabled=true;button.textContent='Salvando e conferindo...';
+ const feedback=(message,type='warn')=>{if(status){status.hidden=false;status.className='notice '+type;status.textContent=message;}};
+ let wrote=false,reply=null;
+ try{
+  reply=await api('catalog/'+encodeURIComponent(pid)+'/description',
+   {method:'PATCH',body:{description,expectedUpdatedAt:current.updatedAt}});
+  wrote=true;
+ }catch(err){
+  if(!err.networkError){feedback('Descrição não salva: '+err.message,'error');button.disabled=false;button.textContent='💾 Salvar descrição no ERP e na loja';return;}
+  feedback('A conexão caiu durante a gravação. Verificando o catálogo antes de permitir outra tentativa.');
+ }
+ let fresh=null;
+ try{fresh=await getVerifiedProduct(pid)}catch(err){
+  feedback('A alteração pode ter sido recebida, mas não foi possível conferir a publicação: '+err.message+
+    '. Atualize o cadastro antes de tentar novamente.');
+  button.disabled=false;button.textContent='🔎 Conferir e salvar';return;
+ }
+ if(fresh&&s(fresh.description).trim()===description){
+  st.catalog=st.catalog.map(x=>s(x.id)===pid?{...x,...fresh}:x);
+  hideModal();toast('✅ Descrição atualizada e conferida no ERP e na loja!');
+  try{await loadAll()}catch(_){}
+  nav('products');return;
+ }
+ feedback(wrote?
+  'O servidor recebeu a gravação, mas a consulta ainda não confirmou a nova descrição. Atualize os produtos antes de repetir.':
+  'A descrição publicada ainda está diferente. Atualize e confira antes de tentar novamente.','warn');
+ button.disabled=false;button.textContent='💾 Salvar descrição no ERP e na loja';
 }
 function productTermsMatch(product,price,minimum,maximum,active,availableForSale){
  if(!product)return false;
@@ -2210,8 +2268,9 @@ function bind(){
 
  E('productsRefresh').addEventListener('click',loadAll);
  E('createProduct').addEventListener('click',openCreateProduct);
- document.addEventListener('change',event=>{if(event.target?.id==='newProductPhotos')previewFiles(event.target.files,'newProductPhotoPreview');if(event.target?.id==='replacePhotos')previewFiles(event.target.files,'replacePhotoPreview');});
- document.addEventListener('submit',e=>{if(e.target?.id==='productEditForm')return saveProduct(e);if(e.target?.id==='productCreateForm')return saveNewProduct(e);if(e.target?.id==='productPhotoForm')return saveProductPhotos(e);});
+ document.addEventListener('input',event=>{if(event.target?.id==='productDescriptionText'&&E('productDescriptionLength'))E('productDescriptionLength').textContent=String(event.target.value.length);});
+  document.addEventListener('change',event=>{if(event.target?.id==='newProductPhotos')previewFiles(event.target.files,'newProductPhotoPreview');if(event.target?.id==='replacePhotos')previewFiles(event.target.files,'replacePhotoPreview');});
+ document.addEventListener('submit',e=>{if(e.target?.id==='productEditForm')return saveProduct(e);if(e.target?.id==='productDescriptionEditForm')return saveProductDescription(e);if(e.target?.id==='productCreateForm')return saveNewProduct(e);if(e.target?.id==='productPhotoForm')return saveProductPhotos(e);});
  document.querySelectorAll('[data-report]').forEach(b=>b.addEventListener('click',()=>pdfReport(b.dataset.report)));
 
  E('copyMenu').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(E('menuText').textContent);toast('Cardápio copiado!');}catch(_){toast('Copie o texto manualmente.',true);}});
@@ -2249,6 +2308,7 @@ function bind(){
  if(type==='pdfOrder')return pdfOrder(b.dataset.order);
  if(type==='goStockSales'){hideModal();nav('sales');return;}
   if(type==='editProduct')return editProduct(b.dataset.product);
+  if(type==='descriptionProduct')return editProductDescription(b.dataset.product);
  if(type==='photosProduct')return editProductPhotos(b.dataset.product);
  if(type==='publishDraft')return publishDraft(b.dataset.product);
  if(type==='mark')return markHandled(id);
