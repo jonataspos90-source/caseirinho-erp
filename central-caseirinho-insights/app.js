@@ -684,6 +684,12 @@ function isMercadoPagoOrder(order){
  return /MERCADO\s*PAGO|MERCADOPAGO/i.test(s(order?.payment))||!!order?.paymentStatus;
 }
 function paymentBadge(order){
+ const balance=order?.receivables;
+ if(balance&&Number.isFinite(Number(balance.receivedCents))&&Number.isFinite(Number(balance.balanceCents))){
+  const received=Number(balance.receivedCents)/100,due=Number(balance.balanceCents)/100;
+  return '<span class="badge '+(due<=0?'good':'warn')+'">'+(due<=0?'✅ Quitado':'💳 Conta Cliente')+'</span>'+
+    '<br><small>Recebido '+brl(received)+' · A receber '+brl(due)+'</small>';
+ }
  if(order?.manualPayment?.status==='CONFIRMADO')
   return '<span class="badge good">✅ RECEBIDO MANUAL '+brl(order.manualPayment.valor)+'</span><br><small>'+esc(order.manualPayment.nome||order.payment)+' • confirmado por '+esc(order.manualPayment.conferidoPor||'admin')+'</small>'+
    (order.paymentStatus?'<br><small>MP original: '+esc(order.paymentStatus)+' (não é confirmação MP)</small>':'');
