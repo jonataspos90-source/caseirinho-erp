@@ -68,7 +68,7 @@ async function loginWithERP(e){
   try{localStorage.setItem(ERP_LAST_USERNAME_KEY,user);}catch(_){}
   E('loginScreen').hidden=true;
   await loadAll();
-  {const params=new URLSearchParams(location.search),requested=params.get('view');if(['orders','blackfriday','sazonais','products','operations','financeiro','sales'].includes(requested))nav(requested);if(requested==='products'&&params.get('product')){const id=params.get('product');if(st.catalog.some(x=>s(x.id)===s(id)))editProduct(id);}}
+  {const params=new URLSearchParams(location.search),requested=params.get('view');if(['orders','blackfriday','sazonais','products','operations','financeiro','sales','receivables'].includes(requested))nav(requested);if(requested==='products'&&params.get('product')){const id=params.get('product');if(st.catalog.some(x=>s(x.id)===s(id)))editProduct(id);}}
  }catch(error){
   st.token='';st.sessionExpiry=0;
   try{sessionStorage.removeItem(ERP_SESSION_KEY);}catch(_){}
@@ -124,7 +124,7 @@ function nav(tab){
  st.view=tab;
  document.querySelectorAll('.section').forEach(x=>x.classList.toggle('active',x.id===tab));
  document.querySelectorAll('[data-view]').forEach(x=>x.classList.toggle('active',x.dataset.view===tab));
- const labels={dashboard:'Visão geral',contacts:'CRM e contatos',ranking:'Ranking de acessos',orders:'Pedidos',operations:'Central Operacional',financeiro:'Financeiro e DRE',menu:'Cardápio escrito',products:'Produtos e preços',blackfriday:'Black Friday',sazonais:'Encomendas Sazonais',reports:'Relatórios e PDF',sales:'Vendas & Estoque',merch:'Grades e Packs',fichas:'Fichas Técnicas',cashbacks:'Cashback Clientes',coupons:'Cupons e Utilizações',requests:'Solicitações de cardápio',settings:'Configurações'};
+ const labels={dashboard:'Visão geral',contacts:'CRM e contatos',ranking:'Ranking de acessos',orders:'Pedidos',operations:'Central Operacional',financeiro:'Financeiro e DRE',receivables:'Conta Cliente e Recebimentos',menu:'Cardápio escrito',products:'Produtos e preços',blackfriday:'Black Friday',sazonais:'Encomendas Sazonais',reports:'Relatórios e PDF',sales:'Vendas & Estoque',merch:'Grades e Packs',fichas:'Fichas Técnicas',cashbacks:'Cashback Clientes',coupons:'Cupons e Utilizações',requests:'Solicitações de cardápio',settings:'Configurações'};
  E('pageTitle').textContent=labels[tab]||'Central de Insights';
  window.scrollTo({top:0,behavior:'smooth'});
  render();
@@ -136,6 +136,7 @@ function nav(tab){
  if(tab==='blackfriday'&&!st.bfData)loadBlackFriday();
  if(tab==='sazonais'&&!st.seasonData)loadSeasonAdmin();
  if(tab==='financeiro')window.CaseirinhoFinance?.load();
+ if(tab==='receivables')window.CaseirinhoReceivables?.load?.(true);
  if(tab==='operations')loadOpsAudit();
 }
 function badge(x){const v=s(x).toUpperCase();return '<span class="badge '+(v.includes('PENDENTE')?'warn':v.includes('IMPORTANDO')?'light':v.includes('NOVO')?'light':v.includes('IMPORTADO')||v.includes('CONCLU')||v.includes('APROV')?'good':'')+'">'+esc(x||'—')+'</span>';}
@@ -683,6 +684,12 @@ function isMercadoPagoOrder(order){
  return /MERCADO\s*PAGO|MERCADOPAGO/i.test(s(order?.payment))||!!order?.paymentStatus;
 }
 function paymentBadge(order){
+ const balance=order?.receivables;
+ if(balance&&Number.isFinite(Number(balance.receivedCents))&&Number.isFinite(Number(balance.balanceCents))){
+  const received=Number(balance.receivedCents)/100,due=Number(balance.balanceCents)/100;
+  return '<span class="badge '+(due<=0?'good':'warn')+'">'+(due<=0?'✅ Quitado':'💳 Conta Cliente')+'</span>'+
+    '<br><small>Recebido '+brl(received)+' · A receber '+brl(due)+'</small>';
+ }
  if(order?.manualPayment?.status==='CONFIRMADO')
   return '<span class="badge good">✅ RECEBIDO MANUAL '+brl(order.manualPayment.valor)+'</span><br><small>'+esc(order.manualPayment.nome||order.payment)+' • confirmado por '+esc(order.manualPayment.conferidoPor||'admin')+'</small>'+
    (order.paymentStatus?'<br><small>MP original: '+esc(order.paymentStatus)+' (não é confirmação MP)</small>':'');
@@ -774,7 +781,7 @@ function orderButton(order){
  '<button class="btn small gold" type="button" data-action="pdfOrder" data-order="'+code+'">📄 PDF</button> '+
  (isMercadoPagoOrder(order)?'<button class="btn small" type="button" data-action="verifyOrderPayment" data-order="'+code+'">🔄 Conferir MP</button> ':'')+
  (!order.manualPayment&&order.paymentStatus!=='APROVADO'?'<button class="btn small" type="button" data-action="changePaymentMethod" data-order="'+code+'">💳 Alterar pagamento</button> ':'');
- if(rule?.completed||['ENTREGUE','RETIRADO','CONCLUIDO','FINALIZADO'].includes(status))return first+'<span class="badge good">✅ Concluído</span>';
+ if(rule?.completed||['ENTREGUE','RETIRADO','CONCLUIDO','FINALIZADO'].includes(status))return first+'<span class="badge good">✅ Concluído</span> <button class="btn small" type="button" data-action="goReceivables">💳 Conta Cliente</button>';
  if(['NOVO','PENDENTE','AGUARDANDO_ANALISE','AGUARDANDO_COTACAO_FRETE'].includes(status))
   return first+'<button class="btn small primary" type="button" data-action="quickAcceptOrder" data-order="'+code+'">✅ Aceitar pedido</button>';
  if(['ACEITO','ABERTO','PRONTO'].includes(status)){
@@ -1308,48 +1315,80 @@ function quickFinishOrder(code){
  const canApprove=f.canApprove===true||f.eligible===true,approval=f.approval||'PENDENTE';
  const mpConfirmed=s(order.paymentStatus).toUpperCase()==='APROVADO'&&
   n(order.providerPaidAmount)+0.001>=n(order.total)&&isMercadoPagoOrder(order);
+ const legacyConfirmed=order.manualPayment?.status==='CONFIRMADO';
+ const confirmedAlready=mpConfirmed||legacyConfirmed;
+ const cashEligible=f.canApprove===true||f.eligible===true;
  const decision='<div class="quick-finish-step"><h3>1️⃣ Escolha o cashback</h3>'+
- '<p>O crédito só ficará disponível depois que você confirmar a entrega ou retirada.</p>'+
- '<div class="fulfillment-options quick-finalize">'+
- (canApprove?'<label><input type="radio" name="quickCashbackDecision" value="APROVADO" '+(approval==='APROVADO'?'checked':'')+'> 💚 Aprovar '+brl(f.estimate)+' de cashback</label>':'')+
- '<label><input type="radio" name="quickCashbackDecision" value="REJEITADO" '+(approval==='REJEITADO'||!canApprove?'checked':'')+'> 🚫 Não liberar cashback</label></div>'+
- (!canApprove?'<p class="notice warn">Cashback não elegível: '+esc((f.reasons||[]).filter(t=>!s(t).includes('recusado explicitamente')).join(' ')||'Critérios do programa não atendidos.')+(f.canOverrideFirstPurchase?' <b>Você pode aprovar como exceção antes de finalizar, usando o botão Decidir cashback na lista de pedidos.</b>':'')+'</p>':'')+
- '</div>';
+  '<p>Para pagamento parcial ou Conta Cliente, o cashback fica pendente até o pedido ser quitado.</p>'+
+  '<div class="fulfillment-options quick-finalize">'+
+  (cashEligible?'<label><input type="radio" name="quickCashbackDecision" value="APROVADO"> 💚 Aprovar cashback de '+brl(f.estimate)+' (apenas quitado)</label>':'')+
+  '<label><input type="radio" name="quickCashbackDecision" value="PENDENTE"> ⏳ Aguardar quitação para decidir o cashback</label>'+
+  '<label><input type="radio" name="quickCashbackDecision" value="REJEITADO" checked> 🚫 Não liberar cashback</label></div>'+
+  (!cashEligible?'<p class="notice warn">Cashback não elegível agora: '+esc((f.reasons||[]).join(' ')||'Critérios ainda não atendidos.')+'</p>':'')+'</div>';
  const details=(order.items||[]).map(x=>'<li>'+esc(n(x.quantity)+'× '+s(x.name))+'</li>').join('');
+ const options=confirmedAlready
+  ?'<option value="CONFIRMADO">'+(mpConfirmed?'Mercado Pago — pagamento aprovado':'Pagamento manual já confirmado')+'</option>'
+  :'<option value="PIX">Pix</option><option value="CREDITO">Cartão de crédito</option><option value="DEBITO">Cartão de débito</option><option value="CONTA_CLIENTE">Conta Cliente (a prazo)</option><option value="DINHEIRO">Dinheiro</option><option value="TRANSFERENCIA">Transferência</option>';
+ const payAmount=confirmedAlready?'0.00':Number(order.total).toFixed(2);
  modal('📦 Finalização do pedido #'+code,
- '<div class="notice warn"><b>⏳ PEDIDO AINDA NÃO FINALIZADO.</b> Escolha o cashback, confirme as duas informações abaixo e clique no botão verde ao final. Abrir esta janela não altera o pedido.</div>'+
- '<p><b>'+esc(order.name||'Cliente')+'</b> • '+brl(order.total)+' • '+(pickup?'Retirada':'Entrega')+'</p>'+
- '<details><summary>Ver itens do pedido</summary><ul>'+details+'</ul></details>'+
- decision+
- '<div class="quick-finish-step"><h3>2️⃣ Confirme entrega e pagamento</h3>'+
- '<div class="fulfillment-options quick-finalize">'+
- '<label class="quick-check"><input type="checkbox" id="fulfillmentDelivered"> ✅ Confirmo que o cliente '+(pickup?'retirou':'recebeu')+' o pedido</label>'+
- '<label class="quick-check"><input type="checkbox" id="fulfillmentPayment" '+(mpConfirmed?'checked':'')+'> ✅ '+(mpConfirmed?'Pagamento de '+brl(order.providerPaidAmount)+' confirmado pelo Mercado Pago — conferido':'Conferi que o pagamento foi realmente recebido')+'</label></div>'+
- (mpConfirmed?'<p class="notice success">✅ O Mercado Pago já confirmou o valor integral. Ainda é necessário confirmar a entrega ou retirada para registrar a venda no DRE.</p>':
- isMercadoPagoOrder(order)?'<p class="notice warn">⚠️ Pagamento online não confirmado. O sistema não permitirá finalizar como pago até a operadora confirmar.</p>':
- '<p class="notice">Pagamento manual: confira o recebimento na conta ou no caixa antes de marcar.</p>')+
- '</div>'+
- (!f.erpLinked||f.integration!=='IMPORTADO'?'<p class="notice warn">Integração ERP pendente. Isso não impede a conclusão, mas exigirá conciliação.</p>':'')+
- '<div id="quickFinishAlert" class="notice error" hidden role="alert"></div>'+
- '<button id="quickFinishSubmit" class="btn primary" type="button" data-action="quickConfirmOrder" data-order="'+esc(code)+'">✅ CONFIRMAR '+(pickup?'RETIRADA':'ENTREGA')+' E FINALIZAR AGORA</button>'+
- '<p class="muted">Somente após confirmar este botão o pedido mudará para '+(pickup?'RETIRADO':'ENTREGUE')+'.</p>');
+  '<div class="notice warn"><b>⏳ PEDIDO AINDA NÃO FINALIZADO.</b> Confirme a entrega e o pagamento real, ou indique Conta Cliente. A venda e os recebimentos ficarão separados no financeiro.</div>'+
+  '<p><b>'+esc(order.name||'Cliente')+'</b> • '+brl(order.total)+' • '+(pickup?'Retirada':'Entrega')+'</p>'+
+  '<details><summary>Ver itens do pedido</summary><ul>'+details+'</ul></details>'+
+  decision+
+  '<div class="quick-finish-step"><h3>2️⃣ Confirme entrega e pagamento</h3>'+
+  '<label class="quick-check"><input type="checkbox" id="fulfillmentDelivered"> ✅ Confirmo que o cliente '+(pickup?'retirou':'recebeu')+' o pedido</label>'+
+  '<div class="form-grid"><label>Como o cliente pagou?<select id="quickPaymentMethod"'+(confirmedAlready?' disabled':'')+'>'+options+'</select></label>'+
+  '<label>Valor efetivamente recebido agora (R$)<input type="number" id="quickPaymentAmount" min="0" step="0.01" max="'+Number(order.total).toFixed(2)+'" value="'+payAmount+'" '+(confirmedAlready?'disabled':'')+'></label></div>'+
+  '<label class="form-label" for="quickPaymentReference">Comprovante / referência (se houver)</label>'+
+  '<input id="quickPaymentReference" maxlength="140" placeholder="Pix, NSU do cartão, número do comprovante" '+(confirmedAlready?'disabled':'')+'>'+
+  '<div class="fulfillment-options quick-finalize"><label class="quick-check"><input type="checkbox" id="fulfillmentPayment"'+(confirmedAlready?' checked disabled':'')+'> ✅ Confirmo que o valor informado entrou de verdade no caixa, na conta ou na maquininha</label></div>'+
+  '<div id="quickPaymentSummary" class="notice"></div>'+
+  (confirmedAlready?'<div class="notice success">Pagamento já confirmado no pedido. A finalização não criará outra cobrança.</div>':
+   isMercadoPagoOrder(order)?'<div class="notice warn">⚠️ Este pedido possui tentativa Mercado Pago. Se ela ainda estiver pendente, o servidor bloqueará outra baixa até a conciliação.</div>':'')+
+  '<p class="muted"><b>Conta Cliente:</b> informe R$ 0,00 para venda totalmente a prazo. Se o cliente pagar apenas uma parte, informe o valor real recebido; a diferença ficará a receber.</p></div>'+
+  (!f.erpLinked||f.integration!=='IMPORTADO'?'<p class="notice warn">Integração ERP pendente; o recebimento será registrado na Central para conciliação.</p>':'')+
+  '<div id="quickFinishAlert" class="notice error" hidden role="alert"></div>'+
+  '<button id="quickFinishSubmit" class="btn primary" type="button" data-action="quickConfirmOrder" data-order="'+esc(code)+'">✅ CONFIRMAR '+(pickup?'RETIRADA':'ENTREGA')+' E FINALIZAR AGORA</button>'+
+  '<p class="muted">A venda será registrada uma única vez no DRE. Cada pagamento gera seu cartão em Conta Cliente, sem nova receita na DRE.</p>');
+ const methodInput=E('quickPaymentMethod'),amountInput=E('quickPaymentAmount');
+ function updatePayment(){
+  if(!methodInput)return;
+  if(methodInput.value==='CONTA_CLIENTE'&&amountInput){amountInput.value='0.00';}
+  const cents=confirmedAlready?Math.round(Number(order.total)*100):Math.round((Number(amountInput?.value)||0)*100);
+  const total=Math.round(Number(order.total)*100),balance=Math.max(0,total-cents);
+  if(!confirmedAlready&&balance>0){
+   const pending=document.querySelector('input[name="quickCashbackDecision"][value="PENDENTE"]');
+   if(pending)pending.checked=true;
+  }
+  const msg=E('quickPaymentSummary');
+  if(msg)msg.innerHTML='<b>Venda:</b> '+brl(order.total)+' · <b>Recebido agora:</b> '+brl(cents/100)+
+   ' · <b>Conta Cliente (saldo):</b> '+brl(balance/100)+(balance>0?' <strong>— PENDENTE</strong>':' <strong>— QUITADO</strong>');
+ }
+ methodInput?.addEventListener?.('change',updatePayment);
+ amountInput?.addEventListener?.('input',updatePayment);
+ updatePayment();
  const el=E('modal');
  el?.setAttribute('aria-label','Confirmação final obrigatória para pedido '+code);
  E('modalContent')?.scrollTo?.({top:0});
  E('quickFinishSubmit')?.focus?.({preventScroll:true});
 }
 function quickConfirmOrder(code){
- const paid=E('fulfillmentPayment')?.checked===true,received=E('fulfillmentDelivered')?.checked===true;
- if(!paid||!received)return showFinishAlert('Para concluir o pedido, confirme a entrega/retirada E o recebimento do pagamento.');
+ const paid=E('fulfillmentPayment')?.checked===true,delivered=E('fulfillmentDelivered')?.checked===true;
+ const method=E('quickPaymentMethod')?.value||'',amount=Math.round(Number(E('quickPaymentAmount')?.value||0)*100);
+ if(!delivered)return showFinishAlert('Para concluir o pedido, confirme que o cliente recebeu ou retirou o pedido.');
+ if(!Number.isSafeInteger(amount)||amount<0)return showFinishAlert('Informe corretamente o valor recebido.',true);
+ if(amount>0&&!paid)return showFinishAlert('Confirme que o valor recebido realmente entrou no caixa ou na conta.',true);
+ if(amount===0&&!['CONTA_CLIENTE','CONFIRMADO'].includes(method))
+  return showFinishAlert('Sem valor recebido, selecione Conta Cliente. O sistema criará o saldo a receber.',true);
  const decision=document.querySelector('input[name="quickCashbackDecision"]:checked')?.value;
- if(!['APROVADO','REJEITADO'].includes(decision))
-  return showFinishAlert('Escolha Aprovar cashback ou Não liberar antes de finalizar.');
- // Reaproveita a mesma transação segura do servidor; não cria outra venda.
- const form=E('modalContent');
- if(!form)return toast('Não foi possível carregar a confirmação. Atualize a tela.',true);
+ if(!['APROVADO','REJEITADO','PENDENTE'].includes(decision))
+  return showFinishAlert('Escolha a decisão de cashback, inclusive Aguardar quitação.',true);
+ if(method!=='CONFIRMADO'&&amount<Math.round(Number(orderLookup(code)?.total||0)*100)&&decision==='APROVADO')
+  return showFinishAlert('Pagamento parcial: cashback precisa ficar pendente até a quitação.',true);
+ if(method==='CONFIRMADO'&&decision==='PENDENTE')return showFinishAlert('Pedido quitado: escolha aprovar ou não liberar cashback.',true);
+ const form=E('modalContent');if(!form)return toast('Janela de conclusão indisponível. Atualize a Central.',true);
  const old=form.querySelector('input[name="fulfillmentCashback"]');if(old)old.remove();
- const input=document.createElement('input');input.type='radio';input.name='fulfillmentCashback';
- input.value=decision;input.checked=true;input.hidden=true;form.appendChild(input);
+ const input=document.createElement('input');input.type='radio';input.name='fulfillmentCashback';input.value=decision;input.checked=true;input.hidden=true;form.appendChild(input);
  return confirmOrderComplete(code);
 }
 async function manageOrderFulfillment(code){
@@ -1398,21 +1437,39 @@ async function approveOrderCashback(code){
   await refreshFulfillment();manageOrderFulfillment(code);
  }catch(error){toast('Falha ao aprovar: '+error.message,true);}
 }
-const completionPending=new Set();
+const completionPending=new Set(),completionRequestIds=new Map();
 async function confirmOrderComplete(code){
  if(completionPending.has(code))return;
  const delivered=E('fulfillmentDelivered')?.checked===true,payment=E('fulfillmentPayment')?.checked===true;
  const decision=document.querySelector('input[name="fulfillmentCashback"]:checked')?.value||'';
- if(!decision)return showFinishAlert('Escolha aprovar ou não liberar cashback antes de finalizar.',true);
- if(!delivered||!payment)return showFinishAlert('Marque as duas confirmações obrigatórias: entrega e conferência do pagamento.',true);
+ const method=E('quickPaymentMethod')?.value||'';
+ const raw=Number(E('quickPaymentAmount')?.value||0),amountCents=Math.round(raw*100);
+ if(!decision)return showFinishAlert('Escolha a decisão de cashback.',true);
+ if(!delivered||(!method&&!payment))return showFinishAlert('Confirme a entrega e, se houve pagamento, o recebimento real.',true);
+ if(method){
+  if(!Number.isFinite(raw)||!Number.isSafeInteger(amountCents)||amountCents<0)
+   return showFinishAlert('Valor de pagamento inválido.',true);
+  if(amountCents>0&&!payment)return showFinishAlert('Confirme o recebimento do valor informado.',true);
+  if(method==='CONTA_CLIENTE'&&amountCents!==0)return showFinishAlert('Conta Cliente deve iniciar com R$ 0,00; para entrada parcial selecione Pix, Crédito ou Débito.',true);
+ }
  const x=orderLookup(code),rule=fulfillStatus(code);
- if(!window.confirm('CONFIRMAÇÃO DEFINITIVA: pedido '+code+' ('+brl(x?.total)+') ficará como '+(s(rule?.modalidade).toUpperCase()==='RETIRADA'?'RETIRADO':'ENTREGUE')+'. Cashback: '+(decision==='APROVADO'?brl(rule?.estimate):'não liberar')+'. Confirmar?'))return;
+ const remaining=method==='CONFIRMADO'?0:Math.max(0,Math.round(Number(x?.total||0)*100)-amountCents);
+ const message='CONFIRMAÇÃO DEFINITIVA: pedido '+code+' ('+brl(x?.total)+') será '+(s(rule?.modalidade).toUpperCase()==='RETIRADA'?'RETIRADO':'ENTREGUE')+
+  (method?' · Recebimento agora: '+brl(amountCents/100)+' · Conta Cliente: '+brl(remaining/100):'')+
+  ' · Cashback: '+(decision==='APROVADO'?brl(rule?.estimate):decision==='PENDENTE'?'aguardando quitação':'não liberar')+'. Confirmar?';
+ if(!window.confirm(message))return;
  completionPending.add(code);
  const button=E('quickFinishSubmit');
  if(button){button.disabled=true;button.textContent='⏳ Registrando conclusão no sistema...';}
  let out;
  try{
-  out=await api('orders/'+encodeURIComponent(code)+'/complete',{method:'POST',body:{confirmDelivered:true,paymentChecked:true,cashbackDecision:decision}});
+  const received={confirmDelivered:true,paymentChecked:payment,cashbackDecision:decision};
+   if(method){
+    if(!completionRequestIds.has(code))completionRequestIds.set(code,crypto.randomUUID());
+    Object.assign(received,{paymentMethod:method,paymentAmountCents:amountCents,paymentRequestId:completionRequestIds.get(code),
+     paymentReference:s(E('quickPaymentReference')?.value||'').trim()});
+   }
+   out=await api('orders/'+encodeURIComponent(code)+'/complete',{method:'POST',body:received});
   if(!out?.ok||!['RETIRADO','ENTREGUE','CONCLUIDO','FINALIZADO'].includes(s(out.status).toUpperCase()))
    throw Error('O servidor não confirmou a conclusão do pedido. Atualize e confira o status antes de repetir.');
  }catch(error){
@@ -1428,14 +1485,18 @@ async function confirmOrderComplete(code){
   completionPending.delete(code);
   if(button){button.disabled=false;button.textContent='✅ CONFIRMAR E FINALIZAR AGORA';}
  }
+ completionRequestIds.delete(code);
  // A operação já foi confirmada pelo servidor. Falhas ao recarregar a lista não a desfazem.
  const finalStatus=s(out.status).toUpperCase();
  hideModal();
  modal('✅ PEDIDO #'+code+' FINALIZADO',
   '<div class="notice success"><b>✅ Confirmação salva.</b> O pedido passou para <b>'+esc(finalStatus)+'</b> na loja. '+(out.erpSynced?'ERP atualizado.':'Aguardando conciliação com o ERP.')+'</div>'+
   '<p><b>Receita de produtos no DRE:</b> '+brl(out.receitaProdutos)+
+  (out.receivedCents!=null?'<br><b>Recebido confirmado:</b> '+brl(out.receivedCents/100)+
+   '<br><b>Saldo em Conta Cliente:</b> '+brl((out.balanceCents||0)/100):'')+
   '<br><b>Cashback liberado:</b> '+brl(out.credited)+'</p>'+
-  '<button class="btn primary" type="button" id="quickFinishClose" data-action="closeModal">✅ Voltar para pedidos</button>');
+  '<div class="toolbar"><button class="btn primary" type="button" data-action="goReceivables">💳 Ver cartões da venda e pagamentos</button>'+
+  '<button class="btn" type="button" id="quickFinishClose" data-action="closeModal">✅ Voltar para pedidos</button></div>');
  try{await loadAll();nav('orders');}
  catch(error){toast('✅ Pedido finalizado, mas a lista não atualizou. Clique em Atualizar para ver o novo status.',true);}
 }
@@ -2165,6 +2226,7 @@ function bind(){
  if(type==='saveManualPayment')return saveManualPayment(b.dataset.order);
  if(type==='verifyOrderPayment')return verifyOrderPayment(b.dataset.order);
  if(type==='quickFinishOrder')return quickFinishOrder(b.dataset.order);
+ if(type==='goReceivables'){hideModal();nav('receivables');return;}
  if(type==='quickCashbackOrder')return quickCashbackOrder(b.dataset.order);
  if(type==='quickSaveCashback')return quickSaveCashback(b.dataset.order);
  if(type==='quickConfirmOrder')return quickConfirmOrder(b.dataset.order);
@@ -2190,12 +2252,13 @@ function bind(){
 }
 async function init(){
  tokenSetup();bind();
- if(st.token){await loadAll();{const params=new URLSearchParams(location.search),requested=params.get('view');if(['blackfriday','sazonais','products','operations','financeiro','sales'].includes(requested))nav(requested);if(requested==='products'&&params.get('product')){const id=params.get('product');if(st.catalog.some(x=>s(x.id)===s(id)))editProduct(id);}}}else E('loginScreen').hidden=false;
+ if(st.token){await loadAll();{const params=new URLSearchParams(location.search),requested=params.get('view');if(['blackfriday','sazonais','products','operations','financeiro','sales','receivables'].includes(requested))nav(requested);if(requested==='products'&&params.get('product')){const id=params.get('product');if(st.catalog.some(x=>s(x.id)===s(id)))editProduct(id);}}}else E('loginScreen').hidden=false;
  setInterval(loadRequests,30000);
  setInterval(loadAll,120000);
  await pollNewOrders();
  setInterval(pollNewOrders,30000);
 }
+window.CaseirinhoInsightsReceivablesBridge={api,nav,modal,hideModal};
 window.CaseirinhoInsightsStockBridge={api,report:()=>st.sales,refresh:loadSales,refreshCatalog:async()=>{const data=await api('catalog');st.catalog=data.items||st.catalog;if(st.view==='products')renderProducts()}};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();

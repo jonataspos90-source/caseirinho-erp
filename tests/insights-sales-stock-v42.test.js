@@ -38,7 +38,8 @@ test('Central própria inclui ranking e estoque, sem abrir tela do ERP principal
  assert.match(app,/CaseirinhoInsightsStockBridge/);
  assert.match(app,/caseirinho:sales-updated/);
  assert.match(sw,/sales-stock-levels\.js\?v=/);
- assert.ok(sw.includes('caseirinho-insights-app-shell-v43-sales-stock-visible'));
+ assert.ok(sw.includes('caseirinho-insights-app-shell-v44-accounts-receivable-20261110'));
+ assert.match(html,/conta-cliente-recebimentos\.js\?v=/);
  assert.match(html,/id="openSalesStockFromDashboard"/);
  assert.match(html,/id="salesStockTopLink"/);
  assert.ok(html.indexOf('id="stockSmartSection"')<html.indexOf('id="salesTopRevenue"'));

@@ -341,3 +341,25 @@
  #stockLevelsPanel .stock-filters input,#stockLevelsPanel .stock-filters select{flex:1 1 100%;max-width:none}
  #stockLevelsPanel .stock-scroll{border:1px solid #e0e9e3;border-radius:10px}
 }
+
+
+/* Conta Cliente · vendas e recebimentos confirmados separadamente */
+.receivable-list{display:grid;gap:14px;margin-top:14px}
+.receivable-card{background:#fff;border:1px solid #dde9df;border-radius:15px;padding:16px;box-shadow:0 4px 15px #173d3010}
+.receivable-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.receivable-top b{font-size:17px;color:#174d32}
+.receivable-top small{font-size:11px;color:#64776b;display:block;margin-top:4px}
+.receivable-top p{margin:8px 0;font-size:13px}
+.receivable-amounts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:10px 0 14px}
+.receivable-amounts span{background:#f4f9f5;border:1px solid #e0ebdf;border-radius:10px;padding:10px;font-size:12px;color:#526c59}
+.receivable-amounts b{display:block;color:#153e2b;font-size:17px;margin-top:5px}
+.receivable-bottom{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
+.receivable-bottom small{color:#698274}
+.receivable-sale-block,.receivable-payment-block{padding:13px;border:1px solid #d2e8d8;border-left:5px solid #287948;border-radius:12px;background:#f4faf4;margin:12px 0}
+.receivable-payment-block{background:#f4f8ff;border-color:#cddce6;border-left-color:#347da3}
+.receivable-sale-block h3,.receivable-payment-block h4{margin:0 0 10px;color:#204c36}
+.receivable-sale-block p,.receivable-payment-block p{margin:5px 0;line-height:1.6}
+.receivable-pay-form{padding:13px;background:#fff;border:1px solid #e0e9de;border-radius:13px;margin-top:15px}
+.receivable-pay-form .quick-check{display:flex;margin:12px 0}
+#receivables #receivableStats .stat .n{font-size:22px}
+@media(max-width:620px){.receivable-amounts{gap:4px}.receivable-amounts span{padding:8px 5px;font-size:10px}.receivable-amounts b{font-size:13px}.receivable-top b{font-size:15px}}
