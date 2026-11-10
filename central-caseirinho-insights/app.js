@@ -102,23 +102,43 @@ function setupInstall(){
 }
 async function api(path,options){
  if(!st.token)throw Error('É necessário entrar com seu usuário administrativo.');
+ const method=s(options&&options.method||'GET').toUpperCase(),isRead=method==='GET';
  let response;
- const method=options&&options.method||'GET';
- try{
-  response=await fetch(st.api+'/api/v1/admin/store/insights/'+path,{
-   method,cache:'no-store',credentials:'omit',
-   headers:{Authorization:'Bearer '+st.token,'Cache-Control':'no-store','Content-Type':'application/json'},
-   body:options&&options.body?JSON.stringify(options.body):undefined
-  });
- }catch(cause){
-  const err=new Error(navigator.onLine===false
-   ?'O celular está sem conexão. Sua alteração não foi confirmada. Reconecte e confira antes de tentar novamente.'
-   :'Não foi possível conectar ao servidor. O aplicativo verificará se a alteração foi recebida antes de permitir nova tentativa.');
-  err.networkError=true;err.cause=cause;throw err;
+ // Apenas consultas podem ser repetidas; gravações e pagamentos nunca são reenviados.
+ for(let attempt=0;attempt<(isRead?2:1);attempt++){
+  try{
+   response=await fetch(st.api+'/api/v1/admin/store/insights/'+path,{
+    method,cache:'no-store',credentials:'omit',
+    headers:{Authorization:'Bearer '+st.token,'Cache-Control':'no-store','Content-Type':'application/json'},
+    body:options&&options.body?JSON.stringify(options.body):undefined
+   });
+  }catch(cause){
+   if(isRead&&attempt===0&&navigator.onLine!==false){
+    await new Promise(resolve=>setTimeout(resolve,650));continue;
+   }
+   const err=new Error(navigator.onLine===false
+    ?'O dispositivo está sem internet. Reconecte e toque em Atualizar.'
+    :isRead?'Conexão temporariamente indisponível. Toque em Atualizar para consultar novamente.'
+    :'A conexão caiu durante a gravação. Confira os dados antes de tentar novamente.');
+   err.networkError=true;err.cause=cause;throw err;
+  }
+  if(isRead&&attempt===0&&[502,503,504].includes(response.status)){
+   await new Promise(resolve=>setTimeout(resolve,650));continue;
+  }
+  break;
  }
  let data={};try{data=await response.json();}catch(_){}
  if(!response.ok){const err=new Error(s(data.error||('HTTP '+response.status)));err.httpStatus=response.status;throw err;}
  return data;
+}
+// Três consultas em paralelo, em vez de nove competindo na rede móvel.
+async function fetchDashboardGroups(paths){
+ const responses=new Array(paths.length);
+ for(let i=0;i<paths.length;i+=3){
+  const group=await Promise.allSettled(paths.slice(i,i+3).map(path=>api(path)));
+  group.forEach((result,index)=>{responses[i+index]=result;});
+ }
+ return responses;
 }
 function nav(tab){
  st.view=tab;
@@ -326,13 +346,13 @@ function render(){
  if(st.view==='sazonais')renderSeasonAdmin();
  if(st.view==='requests')renderRequests();
  E('apiLabel').textContent=st.api;
- E('apiState').innerHTML='<p class="notice success">Última consulta: '+dt(st.lastUpdated)+'. Dados recebidos exclusivamente da API autenticada.</p>';
+ E('apiState').innerHTML='<p class="notice '+(st.dataStatus==='offline'?'warn':st.dataStatus==='partial'?'warn':'success')+'">'+(st.dataStatus==='offline'?'Sem atualização nesta tentativa; dados anteriores preservados.':st.dataStatus==='partial'?'Consulta parcial — confira os módulos sinalizados.':'Última consulta: '+dt(st.lastUpdated)+'. Dados recebidos da API autenticada.')+'</p>';
 }
 async function loadAll(){
  if(st.syncing||!st.token)return;
  st.syncing=true;E('refreshBtn').disabled=true;E('lastSync').textContent='Sincronizando dados do Neon…';
  const paths=['summary','contacts','orders','catalog','requests','product-categories','product-drafts','merchandising','order-fulfillment'];
- const responses=await Promise.allSettled(paths.map(x=>api(x)));
+ const responses=await fetchDashboardGroups(paths);
  if(responses.slice(0,5).every(x=>x.status==='rejected'&&x.reason?.httpStatus===401)){
   logout();E('loginNotice').textContent='Sua sessão expirou. Entre novamente com o usuário e senha do ERP.';
   st.syncing=false;E('refreshBtn').disabled=false;return;
@@ -352,13 +372,18 @@ async function loadAll(){
  if(key==='order-fulfillment')st.fulfillment=new Map((val.orders||[]).map(x=>[s(x.code),x]));
  if(key==='requests')updateRequestData(val);
  }
- st.lastUpdated=new Date();
- E('lastSync').textContent='Última atualização: '+dt(st.lastUpdated)+' • '+(errors.length?'Dados parciais':'Conectado ao Neon e CRM');
- E('sideSync').textContent=errors.length?'Verificar integração':'✓ Sincronizado';
- E('globalNotice').className='notice'+(errors.length?' error':'');
- E('globalNotice').textContent=errors.length?'Alguns dados não puderam ser consultados: '+errors.join(' | '):'Dados consultados por API autenticada. Os pings não representam visitas; instalações só são confirmadas por appinstalled e só há ranking com eventos reais.';
- // Erros de rede e dados parciais não exigem login; apenas 401 confirmado faz logout.
- if(errors.length>=5)E('globalNotice').textContent='⚠️ A conexão com o servidor falhou. Sua sessão foi mantida. Atualize novamente: '+errors[0];
+ const loaded=responses.filter(x=>x.status==='fulfilled').length;
+ if(loaded)st.lastUpdated=new Date();
+ st.dataStatus=!loaded?'offline':errors.length?'partial':'ok';
+ E('lastSync').textContent=!loaded?
+  'Sem conexão nesta tentativa • '+(st.lastUpdated?'Último dado: '+dt(st.lastUpdated):'aguardando primeira atualização'):
+  'Última atualização: '+dt(st.lastUpdated)+' • '+(errors.length?'Dados parciais':'Conectado ao Neon e CRM');
+ E('sideSync').textContent=!loaded?'⚠ Sem conexão':errors.length?'Verificar integração':'✓ Sincronizado';
+ E('globalNotice').className='notice'+(!loaded||errors.length?' error':'');
+ E('globalNotice').textContent=!loaded?
+  '⚠️ Não foi possível atualizar nesta tentativa. Sua sessão e os dados anteriores foram preservados. Verifique a conexão e toque em Atualizar.':
+  errors.length?'⚠️ Atualização parcial: '+errors.join(' | ')+'. Os módulos que responderam foram atualizados; os demais mantiveram seus dados anteriores.':
+  'Dados consultados por API autenticada. Os pings não representam visitas; instalações só são confirmadas por appinstalled e só há ranking com eventos reais.';
  E('loginScreen').hidden=true;
  st.syncing=false;E('refreshBtn').disabled=false;render();
 }
