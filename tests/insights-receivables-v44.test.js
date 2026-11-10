@@ -8,7 +8,7 @@ test('Central exibe Conta Cliente, cartões separados e usa arquivos PWA atualiz
  assert.match(html,/id="receivableStats"/);
  assert.match(html,/id="receivableOrders"/);
  assert.match(html,/conta-cliente-recebimentos\.js\?v=20261110-1/);
- assert.match(sw,/caseirinho-insights-app-shell-v47-descriptions-20261110/);
+ assert.match(sw,/caseirinho-insights-app-shell-v48-platform-sales-20261110/);
  assert.match(sw,/conta-cliente-recebimentos\.js\?v=20261110-1/);
  assert.match(app,/CaseirinhoInsightsReceivablesBridge/);
  assert.match(mod,/Cartão da venda/);
