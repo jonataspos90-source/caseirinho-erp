@@ -1357,14 +1357,15 @@ function quickFinishOrder(code){
  function updatePayment(){
   if(!methodInput)return;
   if(methodInput.value==='CONTA_CLIENTE'&&amountInput){amountInput.value='0.00';}
-  const cents=confirmedAlready?alreadyDue:Math.round((Number(amountInput?.value)||0)*100);
-  const total=Math.round(Number(order.total)*100),balance=Math.max(0,total-previousCents-cents);
+  const cents=confirmedAlready?0:Math.round((Number(amountInput?.value)||0)*100);
+  const total=Math.round(Number(order.total)*100),effectivePrior=confirmedAlready?total:previousCents;
+  const balance=Math.max(0,total-effectivePrior-cents);
   if(!confirmedAlready&&balance>0){
    const pending=document.querySelector('input[name="quickCashbackDecision"][value="PENDENTE"]');
    if(pending)pending.checked=true;
   }
   const msg=E('quickPaymentSummary');
-  if(msg)msg.innerHTML='<b>Venda:</b> '+brl(order.total)+(previousCents? ' · <b>Já recebido:</b> '+brl(previousCents/100):'')+' · <b>Recebido agora:</b> '+brl(cents/100)+
+  if(msg)msg.innerHTML='<b>Venda:</b> '+brl(order.total)+(effectivePrior? ' · <b>Já recebido:</b> '+brl(effectivePrior/100):'')+' · <b>Recebido agora:</b> '+brl(cents/100)+
    ' · <b>Conta Cliente (saldo):</b> '+brl(balance/100)+(balance>0?' <strong>— PENDENTE</strong>':' <strong>— QUITADO</strong>');
  }
  methodInput?.addEventListener?.('change',updatePayment);
