@@ -1366,17 +1366,22 @@ function quickFinishOrder(code){
  E('quickFinishSubmit')?.focus?.({preventScroll:true});
 }
 function quickConfirmOrder(code){
- const paid=E('fulfillmentPayment')?.checked===true,received=E('fulfillmentDelivered')?.checked===true;
- if(!paid||!received)return showFinishAlert('Para concluir o pedido, confirme a entrega/retirada E o recebimento do pagamento.');
+ const paid=E('fulfillmentPayment')?.checked===true,delivered=E('fulfillmentDelivered')?.checked===true;
+ const method=E('quickPaymentMethod')?.value||'',amount=Math.round(Number(E('quickPaymentAmount')?.value||0)*100);
+ if(!delivered)return showFinishAlert('Confirme que o cliente recebeu ou retirou o pedido.');
+ if(!Number.isSafeInteger(amount)||amount<0)return showFinishAlert('Informe corretamente o valor recebido.',true);
+ if(amount>0&&!paid)return showFinishAlert('Confirme que o valor recebido realmente entrou no caixa ou na conta.',true);
+ if(amount===0&&!['CONTA_CLIENTE','CONFIRMADO'].includes(method))
+  return showFinishAlert('Sem valor recebido, selecione Conta Cliente. O sistema criará o saldo a receber.',true);
  const decision=document.querySelector('input[name="quickCashbackDecision"]:checked')?.value;
- if(!['APROVADO','REJEITADO'].includes(decision))
-  return showFinishAlert('Escolha Aprovar cashback ou Não liberar antes de finalizar.');
- // Reaproveita a mesma transação segura do servidor; não cria outra venda.
- const form=E('modalContent');
- if(!form)return toast('Não foi possível carregar a confirmação. Atualize a tela.',true);
+ if(!['APROVADO','REJEITADO','PENDENTE'].includes(decision))
+  return showFinishAlert('Escolha a decisão de cashback, inclusive Aguardar quitação.',true);
+ if(method!=='CONFIRMADO'&&amount<Math.round(Number(orderLookup(code)?.total||0)*100)&&decision==='APROVADO')
+  return showFinishAlert('Pagamento parcial: cashback precisa ficar pendente até a quitação.',true);
+ if(method==='CONFIRMADO'&&decision==='PENDENTE')return showFinishAlert('Pedido quitado: escolha aprovar ou não liberar cashback.',true);
+ const form=E('modalContent');if(!form)return toast('Janela de conclusão indisponível. Atualize a Central.',true);
  const old=form.querySelector('input[name="fulfillmentCashback"]');if(old)old.remove();
- const input=document.createElement('input');input.type='radio';input.name='fulfillmentCashback';
- input.value=decision;input.checked=true;input.hidden=true;form.appendChild(input);
+ const radio=document.createElement('input');radio.type='radio';radio.name='fulfillmentCashback';radio.value=decision;radio.checked=true;radio.hidden=true;form.appendChild(radio);
  return confirmOrderComplete(code);
 }
 async function manageOrderFulfillment(code){
@@ -1425,21 +1430,39 @@ async function approveOrderCashback(code){
   await refreshFulfillment();manageOrderFulfillment(code);
  }catch(error){toast('Falha ao aprovar: '+error.message,true);}
 }
-const completionPending=new Set();
+const completionPending=new Set(),completionRequestIds=new Map();
 async function confirmOrderComplete(code){
  if(completionPending.has(code))return;
  const delivered=E('fulfillmentDelivered')?.checked===true,payment=E('fulfillmentPayment')?.checked===true;
  const decision=document.querySelector('input[name="fulfillmentCashback"]:checked')?.value||'';
- if(!decision)return showFinishAlert('Escolha aprovar ou não liberar cashback antes de finalizar.',true);
- if(!delivered||!payment)return showFinishAlert('Marque as duas confirmações obrigatórias: entrega e conferência do pagamento.',true);
+ const method=E('quickPaymentMethod')?.value||'';
+ const raw=Number(E('quickPaymentAmount')?.value||0),amountCents=Math.round(raw*100);
+ if(!decision)return showFinishAlert('Escolha a decisão de cashback.',true);
+ if(!delivered||(!method&&!payment))return showFinishAlert('Confirme a entrega e, se houve pagamento, o recebimento real.',true);
+ if(method){
+  if(!Number.isFinite(raw)||!Number.isSafeInteger(amountCents)||amountCents<0)
+   return showFinishAlert('Valor de pagamento inválido.',true);
+  if(amountCents>0&&!payment)return showFinishAlert('Confirme o recebimento do valor informado.',true);
+  if(method==='CONTA_CLIENTE'&&amountCents!==0)return showFinishAlert('Conta Cliente deve iniciar com R$ 0,00; para entrada parcial selecione Pix, Crédito ou Débito.',true);
+ }
  const x=orderLookup(code),rule=fulfillStatus(code);
- if(!window.confirm('CONFIRMAÇÃO DEFINITIVA: pedido '+code+' ('+brl(x?.total)+') ficará como '+(s(rule?.modalidade).toUpperCase()==='RETIRADA'?'RETIRADO':'ENTREGUE')+'. Cashback: '+(decision==='APROVADO'?brl(rule?.estimate):'não liberar')+'. Confirmar?'))return;
+ const remaining=method==='CONFIRMADO'?0:Math.max(0,Math.round(Number(x?.total||0)*100)-amountCents);
+ const message='CONFIRMAÇÃO DEFINITIVA: pedido '+code+' ('+brl(x?.total)+') será '+(s(rule?.modalidade).toUpperCase()==='RETIRADA'?'RETIRADO':'ENTREGUE')+
+  (method?' · Recebimento agora: '+brl(amountCents/100)+' · Conta Cliente: '+brl(remaining/100):'')+
+  ' · Cashback: '+(decision==='APROVADO'?brl(rule?.estimate):decision==='PENDENTE'?'aguardando quitação':'não liberar')+'. Confirmar?';
+ if(!window.confirm(message))return;
  completionPending.add(code);
  const button=E('quickFinishSubmit');
  if(button){button.disabled=true;button.textContent='⏳ Registrando conclusão no sistema...';}
  let out;
  try{
-  out=await api('orders/'+encodeURIComponent(code)+'/complete',{method:'POST',body:{confirmDelivered:true,paymentChecked:true,cashbackDecision:decision}});
+  const received={confirmDelivered:true,paymentChecked:payment,cashbackDecision:decision};
+   if(method){
+    if(!completionRequestIds.has(code))completionRequestIds.set(code,crypto.randomUUID());
+    Object.assign(received,{paymentMethod:method,paymentAmountCents:amountCents,paymentRequestId:completionRequestIds.get(code),
+     paymentReference:s(E('quickPaymentReference')?.value||'').trim()});
+   }
+   out=await api('orders/'+encodeURIComponent(code)+'/complete',{method:'POST',body:received});
   if(!out?.ok||!['RETIRADO','ENTREGUE','CONCLUIDO','FINALIZADO'].includes(s(out.status).toUpperCase()))
    throw Error('O servidor não confirmou a conclusão do pedido. Atualize e confira o status antes de repetir.');
  }catch(error){
@@ -1455,6 +1478,7 @@ async function confirmOrderComplete(code){
   completionPending.delete(code);
   if(button){button.disabled=false;button.textContent='✅ CONFIRMAR E FINALIZAR AGORA';}
  }
+ completionRequestIds.delete(code);
  // A operação já foi confirmada pelo servidor. Falhas ao recarregar a lista não a desfazem.
  const finalStatus=s(out.status).toUpperCase();
  hideModal();
