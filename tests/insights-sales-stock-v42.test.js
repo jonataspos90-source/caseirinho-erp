@@ -38,7 +38,7 @@ test('Central própria inclui ranking e estoque, sem abrir tela do ERP principal
  assert.match(app,/CaseirinhoInsightsStockBridge/);
  assert.match(app,/caseirinho:sales-updated/);
  assert.match(sw,/sales-stock-levels\.js\?v=/);
- assert.ok(sw.includes('caseirinho-insights-app-shell-v47-descriptions-20261110'));
+ assert.ok(sw.includes('caseirinho-insights-app-shell-v48-platform-sales-20261110'));
  assert.match(html,/conta-cliente-recebimentos\.js\?v=/);
  assert.match(html,/id="openSalesStockFromDashboard"/);
  assert.match(html,/id="salesStockTopLink"/);

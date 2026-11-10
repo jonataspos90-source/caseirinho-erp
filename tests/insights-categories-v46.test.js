@@ -27,7 +27,7 @@ test('Ações criam, editam e excluem categorias via API; exclusão bloqueada qu
 test('Serviço e PWA carregam as versões atualizadas sem erros de sintaxe',()=>{
  const html=read('index.html'),sw=read('sw.js');
  assert.match(html,/category-manager\.js\?v=20261110-1/);
- assert.match(sw,/caseirinho-insights-app-shell-v47-descriptions-20261110/);
+ assert.match(sw,/caseirinho-insights-app-shell-v48-platform-sales-20261110/);
  assert.match(sw,/category-manager\.js\?v=20261110-1/);
  for(const file of ['app.js','category-manager.js','sw.js'])assert.doesNotThrow(()=>new vm.Script(read(file)));
 });

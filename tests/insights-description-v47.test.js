@@ -26,7 +26,7 @@ test('A gravação da descrição é isolada e confirma o retorno antes de infor
 });
 test('PWA invalida cache para carregar botão e estilos atualizados',()=>{
  const sw=read('sw.js'),html=read('index.html'),css=read('styles.css');
- assert.match(sw,/caseirinho-insights-app-shell-v47-descriptions-20261110/);
+ assert.match(sw,/caseirinho-insights-app-shell-v48-platform-sales-20261110/);
  assert.match(sw,/app\.js\?v=20261110-descriptions-1/);
  assert.match(html,/styles\.css\?v=20261110-descriptions-1/);
  assert.match(css,/product-description-preview/);

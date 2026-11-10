@@ -119,10 +119,11 @@ async function saveEmployeePriceBasis(){
 
 function setTab(tab){
  state.tab=tab;
- const all=['dre','daily','entries','fixed','payroll','employeeExpenses','assets'];
+ const all=['platforms','dre','daily','entries','fixed','payroll','employeeExpenses','assets'];
  for(const t of all)el('fin'+t[0].toUpperCase()+t.slice(1)+'Panel').hidden=t!==tab;
  document.querySelectorAll('[data-fin-tab]').forEach(b=>b.classList.toggle('primary',b.dataset.finTab===tab));
  if(tab==='entries')el('finEntryForm').scrollIntoView({block:'nearest',behavior:'smooth'});
+ if(tab==='platforms')window.CaseirinhoPlatformSales?.load?.();
  render();
 }
 function populateTypes(){
@@ -161,6 +162,7 @@ function startKind(kind){
 }
 function edit(id){
  const x=state.data?.entries?.find(e=>e.id===id);if(!x)return;
+ if(x.externalSale){setTab('platforms');message('Edite vendas de plataforma na aba iFood / 99Food.');return;}
  state.editing=x;el('finKind').value=x.kind;populateCategories(x.category);
  el('finDescription').value=x.description;el('finAmount').value=(Number(x.amountCents)/100).toFixed(2);
  el('finDate').value=x.competenceDate;el('finDue').value=x.dueDate||'';
@@ -195,7 +197,7 @@ function render(){
  const d=data.summary||{},days=currentDailyDays(),entries=data.entries||[];
  el('finKpis').innerHTML=[
   kpi('✅','Vendas realizadas (App + ERP)',money(d.confirmedCents),number(d.orders)+' pedido(s) concluído(s)'),
-  kpi('💵','Receita total',money(d.revenueCents),'Inclui vendas fora do app lançadas'),
+  kpi('💵','Receita total',money(d.revenueCents),'Inclui receitas iFood, 99Food e avulsas'),
   kpi('🕓','Pedidos em andamento',money(d.pendingCents),'Fora do DRE até a conclusão'),
   kpi('🥟','Custos + revenda',money(d.costCents),'Compras lançadas neste mês'),
   kpi('🏠','Despesas e tributos',money(number(d.fixedCents)+number(d.variableCents)+number(d.taxesCents)),'Sem despesas com pessoal'),
@@ -215,7 +217,8 @@ function render(){
   ['(-) Despesas fixas (aluguel, água, luz, internet etc.)',-number(d.fixedCents)],
   ['(-) Pagamento de funcionários — conta 3.02.01',-number(d.payrollCents)],
   ['(-) Despesas com funcionários — conta 3.02.02',-number(d.employeeExpensesCents)],
-  ['(-) Despesas variáveis',-number(d.variableCents)],
+  ['(-) Despesas variáveis (inclusive taxas das plataformas)',-number(d.variableCents)],
+  ['(i) Taxas de plataformas já incluídas nas despesas variáveis',number(d.externalPlatformFeesCents)],
   ['(-) Impostos e taxas lançados',-number(d.taxesCents)],
   ['(=) RESULTADO GERENCIAL DO MÊS',d.netCents,true],
   ['(i) Investimentos/ativos (fora do DRE)',d.assetsCents],
@@ -261,7 +264,8 @@ function entryTable(entries){
  return table(['Competência','Lançamento','Categoria','Valor','Status / vencimento','Ações'],entries.map(x=>{
   const pending=x.status==='PENDENTE';
   const late=pending&&x.dueDate&&x.dueDate<nowBR();
-  const actions='<button type="button" class="btn small" data-fin-edit="'+esc(x.id)+'">✏️ Editar</button> '+
+  const actions=x.externalSale?'<button type="button" class="btn small" data-fin-tab="platforms">🍔 Abrir em iFood / 99Food</button>':
+   '<button type="button" class="btn small" data-fin-edit="'+esc(x.id)+'">✏️ Editar</button> '+
    (x.repeatMonthly?'<button class="btn small" type="button" data-fin-repeat="'+esc(x.id)+'">➡️ Próx. mês</button> ':'')+
    '<button type="button" class="btn small" data-fin-delete="'+esc(x.id)+'">🗑️</button>';
   return row([esc(datestr(x.competenceDate)),'<b>'+esc(x.description)+'</b><br><small>'+esc(TYPES[x.kind])+(x.employeeName?' · Funcionário: '+esc(x.employeeName):x.supplier?' · '+esc(x.supplier):'')+(x.productName?' · '+esc(x.productName)+' × '+esc(x.quantity)+' · '+esc(x.priceBasis==='PRECO_VENDA'?'preço venda':'custo'):'')+'</small>',esc(CATS[x.kind]?.[x.category]||x.category),
@@ -361,7 +365,7 @@ function bind(){
  state.month=nowBR().slice(0,7);el('finMonth').value=state.month;
  populateTypes();resetForm();setTab('dre');
  const initialTab=new URLSearchParams(window.location.search).get('finTab');
- if(['payroll','employeeExpenses','daily','entries','fixed','assets'].includes(initialTab))setTab(initialTab);
+ if(['platforms','payroll','employeeExpenses','daily','entries','fixed','assets'].includes(initialTab))setTab(initialTab);
  el('finMonth').addEventListener('change',()=>{state.month=el('finMonth').value;clearDailyFilter();resetForm();load();});
  el('finDailyApply').addEventListener('click',applyDailyFilter);
  el('finDailyReset').addEventListener('click',()=>{clearDailyFilter();message('Exibindo vendas do mês '+state.month+'.');});
