@@ -13,7 +13,7 @@ test('O cartão do produto oferece editor direto da descrição comercial',()=>{
  assert.match(app,/getVerifiedProduct\(pid\)/);
  assert.match(app,/data-action="photosProduct"/);
  assert.match(app,/data-action="editProduct"/);
- assert.match(html,/app\.js\?v=20261110-network-recovery-1/);
+ assert.match(html,/app\.js\?v=20261110-cashback-link-repair-1/);
 });
 test('A gravação da descrição é isolada e confirma o retorno antes de informar sucesso',()=>{
  const app=read('app.js');
@@ -26,8 +26,8 @@ test('A gravação da descrição é isolada e confirma o retorno antes de infor
 });
 test('PWA invalida cache para carregar botão e estilos atualizados',()=>{
  const sw=read('sw.js'),html=read('index.html'),css=read('styles.css');
- assert.match(sw,/caseirinho-insights-app-shell-v50-network-recovery-20261110/);
- assert.match(sw,/app\.js\?v=20261110-network-recovery-1/);
+ assert.match(sw,/caseirinho-insights-app-shell-v51-cashback-link-repair-20261110/);
+ assert.match(sw,/app\.js\?v=20261110-cashback-link-repair-1/);
  assert.match(html,/styles\.css\?v=20261110-product-names-2/);
  assert.match(css,/product-description-preview/);
  assert.doesNotThrow(()=>new vm.Script(read('app.js')));
