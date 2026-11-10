@@ -1318,7 +1318,7 @@ function quickFinishOrder(code){
  const legacyConfirmed=order.manualPayment?.status==='CONFIRMADO';
  const confirmedAlready=mpConfirmed||legacyConfirmed;
  const cashEligible=f.canApprove===true||f.eligible===true;
- const decision='<div class="quick-finish-step"><h3>1️⃣ Decida o cashback</h3>'+
+ const decision='<div class="quick-finish-step"><h3>1️⃣ Escolha o cashback</h3>'+
   '<p>Para pagamento parcial ou Conta Cliente, o cashback fica pendente até o pedido ser quitado.</p>'+
   '<div class="fulfillment-options quick-finalize">'+
   (cashEligible?'<label><input type="radio" name="quickCashbackDecision" value="APROVADO"> 💚 Aprovar cashback de '+brl(f.estimate)+' (apenas quitado)</label>':'')+
@@ -1335,7 +1335,7 @@ function quickFinishOrder(code){
   '<p><b>'+esc(order.name||'Cliente')+'</b> • '+brl(order.total)+' • '+(pickup?'Retirada':'Entrega')+'</p>'+
   '<details><summary>Ver itens do pedido</summary><ul>'+details+'</ul></details>'+
   decision+
-  '<div class="quick-finish-step"><h3>2️⃣ Entrega/retirada e forma de pagamento</h3>'+
+  '<div class="quick-finish-step"><h3>2️⃣ Confirme entrega e pagamento</h3>'+
   '<label class="quick-check"><input type="checkbox" id="fulfillmentDelivered"> ✅ Confirmo que o cliente '+(pickup?'retirou':'recebeu')+' o pedido</label>'+
   '<div class="form-grid"><label>Como o cliente pagou?<select id="quickPaymentMethod"'+(confirmedAlready?' disabled':'')+'>'+options+'</select></label>'+
   '<label>Valor efetivamente recebido agora (R$)<input type="number" id="quickPaymentAmount" min="0" step="0.01" max="'+Number(order.total).toFixed(2)+'" value="'+payAmount+'" '+(confirmedAlready?'disabled':'')+'></label></div>'+
@@ -1346,9 +1346,9 @@ function quickFinishOrder(code){
   (confirmedAlready?'<div class="notice success">Pagamento já confirmado no pedido. A finalização não criará outra cobrança.</div>':
    isMercadoPagoOrder(order)?'<div class="notice warn">⚠️ Este pedido possui tentativa Mercado Pago. Se ela ainda estiver pendente, o servidor bloqueará outra baixa até a conciliação.</div>':'')+
   '<p class="muted"><b>Conta Cliente:</b> informe R$ 0,00 para venda totalmente a prazo. Se o cliente pagar apenas uma parte, informe o valor real recebido; a diferença ficará a receber.</p></div>'+
-  (!f.erpLinked||f.integration!=='IMPORTADO'?'<p class="notice warn">Integração do pedido no ERP pendente; o recebimento será registrado na Central para conciliação.</p>':'')+
+  (!f.erpLinked||f.integration!=='IMPORTADO'?'<p class="notice warn">Integração ERP pendente; o recebimento será registrado na Central para conciliação.</p>':'')+
   '<div id="quickFinishAlert" class="notice error" hidden role="alert"></div>'+
-  '<button id="quickFinishSubmit" class="btn primary" type="button" data-action="quickConfirmOrder" data-order="'+esc(code)+'">✅ CONFIRMAR '+(pickup?'RETIRADA':'ENTREGA')+' E FINALIZAR</button>'+
+  '<button id="quickFinishSubmit" class="btn primary" type="button" data-action="quickConfirmOrder" data-order="'+esc(code)+'">✅ CONFIRMAR '+(pickup?'RETIRADA':'ENTREGA')+' E FINALIZAR AGORA</button>'+
   '<p class="muted">A venda será registrada uma única vez no DRE. Cada pagamento gera seu cartão em Conta Cliente, sem nova receita na DRE.</p>');
  const methodInput=E('quickPaymentMethod'),amountInput=E('quickPaymentAmount');
  function updatePayment(){
@@ -1375,7 +1375,7 @@ function quickFinishOrder(code){
 function quickConfirmOrder(code){
  const paid=E('fulfillmentPayment')?.checked===true,delivered=E('fulfillmentDelivered')?.checked===true;
  const method=E('quickPaymentMethod')?.value||'',amount=Math.round(Number(E('quickPaymentAmount')?.value||0)*100);
- if(!delivered)return showFinishAlert('Confirme que o cliente recebeu ou retirou o pedido.');
+ if(!delivered)return showFinishAlert('Para concluir o pedido, confirme que o cliente recebeu ou retirou o pedido.');
  if(!Number.isSafeInteger(amount)||amount<0)return showFinishAlert('Informe corretamente o valor recebido.',true);
  if(amount>0&&!paid)return showFinishAlert('Confirme que o valor recebido realmente entrou no caixa ou na conta.',true);
  if(amount===0&&!['CONTA_CLIENTE','CONFIRMADO'].includes(method))
@@ -1388,7 +1388,7 @@ function quickConfirmOrder(code){
  if(method==='CONFIRMADO'&&decision==='PENDENTE')return showFinishAlert('Pedido quitado: escolha aprovar ou não liberar cashback.',true);
  const form=E('modalContent');if(!form)return toast('Janela de conclusão indisponível. Atualize a Central.',true);
  const old=form.querySelector('input[name="fulfillmentCashback"]');if(old)old.remove();
- const radio=document.createElement('input');radio.type='radio';radio.name='fulfillmentCashback';radio.value=decision;radio.checked=true;radio.hidden=true;form.appendChild(radio);
+ const input=document.createElement('input');input.type='radio';input.name='fulfillmentCashback';input.value=decision;input.checked=true;input.hidden=true;form.appendChild(input);
  return confirmOrderComplete(code);
 }
 async function manageOrderFulfillment(code){
