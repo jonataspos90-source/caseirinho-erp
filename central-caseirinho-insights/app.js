@@ -1364,8 +1364,8 @@ function quickFinishOrder(code){
   if(msg)msg.innerHTML='<b>Venda:</b> '+brl(order.total)+' · <b>Recebido agora:</b> '+brl(cents/100)+
    ' · <b>Conta Cliente (saldo):</b> '+brl(balance/100)+(balance>0?' <strong>— PENDENTE</strong>':' <strong>— QUITADO</strong>');
  }
- methodInput?.addEventListener('change',updatePayment);
- amountInput?.addEventListener('input',updatePayment);
+ methodInput?.addEventListener?.('change',updatePayment);
+ amountInput?.addEventListener?.('input',updatePayment);
  updatePayment();
  const el=E('modal');
  el?.setAttribute('aria-label','Confirmação final obrigatória para pedido '+code);
