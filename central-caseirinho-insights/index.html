@@ -2,7 +2,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#183c2e"><meta name="description" content="Central Caseirinho Insights — painel administrativo independente de CRM, acessos, pedidos e cardápio.">
 <title>Central Caseirinho Insights | CRM e Loja</title>
-<link rel="stylesheet" href="./styles.css?v=20261110-receivables-1"><link rel="stylesheet" href="./financeiro.css?v=4">
+<link rel="stylesheet" href="./styles.css?v=20261110-categories-1"><link rel="stylesheet" href="./financeiro.css?v=4">
 <link rel="manifest" href="./manifest.webmanifest?v=2"><link rel="icon" type="image/png" sizes="192x192" href="/caseirinho-loja/icons/icon-192.png"><link rel="apple-touch-icon" href="/caseirinho-loja/icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default">
 </head><body>
 <div class="auth-screen" id="loginScreen">
@@ -87,6 +87,16 @@
  </section>
  <section id="products" class="section">
  <div class="section-head"><div><h2>🏷️ Produtos e preços</h2><p>Cadastre produtos com preço, foto, descrição e categoria; publique no e-commerce ou salve como rascunho. Edite também preço de venda, quantidades e situação de venda (ativo, inativo ou indisponível).</p></div><div class="actions"><button class="btn primary" type="button" id="createProduct">➕ Novo produto</button><button class="btn" type="button" id="productsRefresh">↻ Atualizar</button></div></div>
+ <article class="card category-manager" id="categoryManagerPanel">
+  <div class="section-head"><div><h3>🏷️ Gerenciar categorias do E-commerce</h3>
+   <p>Crie, edite nomes e emojis ou exclua categorias vazias. As alterações são aplicadas ao cadastro oficial do ERP e à loja.</p></div>
+   <div class="actions"><button class="btn primary" type="button" id="categoryCreate">➕ Nova categoria</button>
+    <button class="btn" type="button" id="categoryRefresh">↻ Atualizar categorias</button></div></div>
+  <div id="categoryManagerMessage" class="notice" hidden role="status"></div>
+  <div class="muted" id="categoryManagerCount">Consultando categorias...</div>
+  <div id="categoryManagerList"><p class="notice">Aguardando categorias do ERP...</p></div>
+  <p class="muted">Para excluir uma categoria que possui produtos, toque em Ver produtos e altere a categoria no cadastro de cada item. A exclusão não remove produtos nem pedidos.</p>
+ </article>
  <div class="notice">Atenção: preço e situação de venda são controlados pelo ERP. Inativo não aparece na loja; indisponível continua visível, com tarja e compra bloqueada. Somente administradores autorizados conseguem salvar. Promoções e packs continuam com suas próprias regras, que devem ser conferidas no ERP.</div>
  <div class="toolbar"><input type="search" id="productSearch" placeholder="🔍 Buscar produto por nome ou categoria..." autocomplete="off"><select id="productCategory"><option value="all">Todas as categorias</option></select><select id="productStatus" aria-label="Filtrar por situação do produto"><option value="all">Todos os estados</option><option value="active">✅ Ativos disponíveis</option><option value="unavailable">🚫 Indisponíveis</option><option value="inactive">⛔ Inativos</option></select><span id="productsCount" class="badge">– produtos</span></div>
  <div id="draftProducts"></div><div id="productsList"></div>
@@ -377,7 +387,8 @@
  </nav>
 <div id="toast" class="toast" role="status" hidden></div>
 <div id="modal" class="modal-bg" hidden><div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><h2 id="modalTitle">Mensagem para WhatsApp</h2><div id="modalContent"></div><div class="toolbar" style="justify-content:flex-end;margin-top:20px"><button class="btn" id="modalClose">Fechar</button></div></div></div>
-<script src="./app.js?v=20261110-receivables-2" defer></script>
+<script src="./app.js?v=20261110-categories-1" defer></script>
+<script src="./category-manager.js?v=20261110-1" defer></script>
 <script src="./sales-stock-levels.js?v=43-stock-visible" defer></script>
 <script src="./cashback-pending-erp.js?v=1" defer></script>
 <script src="./order-reject.js?v=4" defer></script>

@@ -363,3 +363,20 @@
 .receivable-pay-form .quick-check{display:flex;margin:12px 0}
 #receivables #receivableStats .stat .n{font-size:22px}
 @media(max-width:620px){.receivable-amounts{gap:4px}.receivable-amounts span{padding:8px 5px;font-size:10px}.receivable-amounts b{font-size:13px}.receivable-top b{font-size:15px}}
+
+/* Categorias e-commerce: ações móveis e histórico de vínculos */
+.category-manager{margin:0 0 18px;background:#f8fbf7;border:1px solid #d1e5d5}
+.category-manager .section-head{display:flex;justify-content:space-between;gap:12px;align-items:start;flex-wrap:wrap}
+.category-manager .section-head h3{margin:0 0 6px;color:#144b30;font-size:20px}
+.category-manager .section-head p{max-width:680px;margin:0 0 10px;font-size:13px}
+.category-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(225px,1fr));gap:10px;margin:12px 0}
+.category-card{background:#fff;border:1px solid #dbe7dc;border-radius:13px;padding:12px;box-shadow:0 1px 4px #20392c12;min-width:0}
+.category-header{display:flex;align-items:start;gap:9px}
+.category-symbol{font-size:27px;line-height:1;background:#f1f8f2;border-radius:10px;min-width:40px;text-align:center;padding:8px 3px}
+.category-header strong{font-size:15px;color:#184a33;display:block;overflow-wrap:anywhere}
+.category-header small{font-size:11px;color:#647568;display:block;margin:5px 0}
+.category-actions{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}
+.category-actions .btn{padding:8px 10px;font-size:12px}
+.category-actions button:disabled{opacity:.48;cursor:not-allowed}
+.category-actions .danger{color:#8e2332;border-color:#f1c3cb;background:#fff7f8}
+@media(max-width:650px){.category-grid{grid-template-columns:1fr}.category-card{padding:13px}.category-manager .actions{width:100%}.category-manager .actions .btn{flex:1;min-width:130px}.category-actions .btn{flex:1}}
