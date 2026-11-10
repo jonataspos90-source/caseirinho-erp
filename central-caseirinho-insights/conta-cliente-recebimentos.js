@@ -107,6 +107,7 @@ async function pay(code){
   const after=await bridge().api('receivables/'+encodeURIComponent(code));
   if(!A(after.order?.receipts).some(r=>r.id===id))throw Error('O servidor recebeu o lançamento, mas a conferência do recibo falhou. Atualize antes de tentar novamente.');
   st.requestId=null;st.requestAmount=null;st.requestMethod=null;
+  st.busy=false; // Libera a consulta para atualizar cartões e indicadores após a baixa.
   await load(true);await detail(code);
   notice('✅ Recebimento de '+moneyC(amountCents)+' registrado e conferido. Saldo: '+moneyC(response.balanceCents)+'.');
  }catch(e){error('Lançamento não confirmado: '+e.message+'. Consulte os cartões antes de repetir para evitar duplicidade.');}
