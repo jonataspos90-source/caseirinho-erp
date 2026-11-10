@@ -1309,31 +1309,57 @@ function quickFinishOrder(code){
  const canApprove=f.canApprove===true||f.eligible===true,approval=f.approval||'PENDENTE';
  const mpConfirmed=s(order.paymentStatus).toUpperCase()==='APROVADO'&&
   n(order.providerPaidAmount)+0.001>=n(order.total)&&isMercadoPagoOrder(order);
- const decision='<div class="quick-finish-step"><h3>1️⃣ Escolha o cashback</h3>'+
- '<p>O crédito só ficará disponível depois que você confirmar a entrega ou retirada.</p>'+
- '<div class="fulfillment-options quick-finalize">'+
- (canApprove?'<label><input type="radio" name="quickCashbackDecision" value="APROVADO" '+(approval==='APROVADO'?'checked':'')+'> 💚 Aprovar '+brl(f.estimate)+' de cashback</label>':'')+
- '<label><input type="radio" name="quickCashbackDecision" value="REJEITADO" '+(approval==='REJEITADO'||!canApprove?'checked':'')+'> 🚫 Não liberar cashback</label></div>'+
- (!canApprove?'<p class="notice warn">Cashback não elegível: '+esc((f.reasons||[]).filter(t=>!s(t).includes('recusado explicitamente')).join(' ')||'Critérios do programa não atendidos.')+(f.canOverrideFirstPurchase?' <b>Você pode aprovar como exceção antes de finalizar, usando o botão Decidir cashback na lista de pedidos.</b>':'')+'</p>':'')+
- '</div>';
+ const legacyConfirmed=order.manualPayment?.status==='CONFIRMADO';
+ const confirmedAlready=mpConfirmed||legacyConfirmed;
+ const cashEligible=f.canApprove===true||f.eligible===true;
+ const decision='<div class="quick-finish-step"><h3>1️⃣ Decida o cashback</h3>'+
+  '<p>Para pagamento parcial ou Conta Cliente, o cashback fica pendente até o pedido ser quitado.</p>'+
+  '<div class="fulfillment-options quick-finalize">'+
+  (cashEligible?'<label><input type="radio" name="quickCashbackDecision" value="APROVADO"> 💚 Aprovar cashback de '+brl(f.estimate)+' (apenas quitado)</label>':'')+
+  '<label><input type="radio" name="quickCashbackDecision" value="PENDENTE"> ⏳ Aguardar quitação para decidir o cashback</label>'+
+  '<label><input type="radio" name="quickCashbackDecision" value="REJEITADO" checked> 🚫 Não liberar cashback</label></div>'+
+  (!cashEligible?'<p class="notice warn">Cashback não elegível agora: '+esc((f.reasons||[]).join(' ')||'Critérios ainda não atendidos.')+'</p>':'')+'</div>';
  const details=(order.items||[]).map(x=>'<li>'+esc(n(x.quantity)+'× '+s(x.name))+'</li>').join('');
+ const options=confirmedAlready
+  ?'<option value="CONFIRMADO">'+(mpConfirmed?'Mercado Pago — pagamento aprovado':'Pagamento manual já confirmado')+'</option>'
+  :'<option value="PIX">Pix</option><option value="CREDITO">Cartão de crédito</option><option value="DEBITO">Cartão de débito</option><option value="CONTA_CLIENTE">Conta Cliente (a prazo)</option><option value="DINHEIRO">Dinheiro</option><option value="TRANSFERENCIA">Transferência</option>';
+ const payAmount=confirmedAlready?'0.00':Number(order.total).toFixed(2);
  modal('📦 Finalização do pedido #'+code,
- '<div class="notice warn"><b>⏳ PEDIDO AINDA NÃO FINALIZADO.</b> Escolha o cashback, confirme as duas informações abaixo e clique no botão verde ao final. Abrir esta janela não altera o pedido.</div>'+
- '<p><b>'+esc(order.name||'Cliente')+'</b> • '+brl(order.total)+' • '+(pickup?'Retirada':'Entrega')+'</p>'+
- '<details><summary>Ver itens do pedido</summary><ul>'+details+'</ul></details>'+
- decision+
- '<div class="quick-finish-step"><h3>2️⃣ Confirme entrega e pagamento</h3>'+
- '<div class="fulfillment-options quick-finalize">'+
- '<label class="quick-check"><input type="checkbox" id="fulfillmentDelivered"> ✅ Confirmo que o cliente '+(pickup?'retirou':'recebeu')+' o pedido</label>'+
- '<label class="quick-check"><input type="checkbox" id="fulfillmentPayment" '+(mpConfirmed?'checked':'')+'> ✅ '+(mpConfirmed?'Pagamento de '+brl(order.providerPaidAmount)+' confirmado pelo Mercado Pago — conferido':'Conferi que o pagamento foi realmente recebido')+'</label></div>'+
- (mpConfirmed?'<p class="notice success">✅ O Mercado Pago já confirmou o valor integral. Ainda é necessário confirmar a entrega ou retirada para registrar a venda no DRE.</p>':
- isMercadoPagoOrder(order)?'<p class="notice warn">⚠️ Pagamento online não confirmado. O sistema não permitirá finalizar como pago até a operadora confirmar.</p>':
- '<p class="notice">Pagamento manual: confira o recebimento na conta ou no caixa antes de marcar.</p>')+
- '</div>'+
- (!f.erpLinked||f.integration!=='IMPORTADO'?'<p class="notice warn">Integração ERP pendente. Isso não impede a conclusão, mas exigirá conciliação.</p>':'')+
- '<div id="quickFinishAlert" class="notice error" hidden role="alert"></div>'+
- '<button id="quickFinishSubmit" class="btn primary" type="button" data-action="quickConfirmOrder" data-order="'+esc(code)+'">✅ CONFIRMAR '+(pickup?'RETIRADA':'ENTREGA')+' E FINALIZAR AGORA</button>'+
- '<p class="muted">Somente após confirmar este botão o pedido mudará para '+(pickup?'RETIRADO':'ENTREGUE')+'.</p>');
+  '<div class="notice warn"><b>⏳ PEDIDO AINDA NÃO FINALIZADO.</b> Confirme a entrega e o pagamento real, ou indique Conta Cliente. A venda e os recebimentos ficarão separados no financeiro.</div>'+
+  '<p><b>'+esc(order.name||'Cliente')+'</b> • '+brl(order.total)+' • '+(pickup?'Retirada':'Entrega')+'</p>'+
+  '<details><summary>Ver itens do pedido</summary><ul>'+details+'</ul></details>'+
+  decision+
+  '<div class="quick-finish-step"><h3>2️⃣ Entrega/retirada e forma de pagamento</h3>'+
+  '<label class="quick-check"><input type="checkbox" id="fulfillmentDelivered"> ✅ Confirmo que o cliente '+(pickup?'retirou':'recebeu')+' o pedido</label>'+
+  '<div class="form-grid"><label>Como o cliente pagou?<select id="quickPaymentMethod"'+(confirmedAlready?' disabled':'')+'>'+options+'</select></label>'+
+  '<label>Valor efetivamente recebido agora (R$)<input type="number" id="quickPaymentAmount" min="0" step="0.01" max="'+Number(order.total).toFixed(2)+'" value="'+payAmount+'" '+(confirmedAlready?'disabled':'')+'></label></div>'+
+  '<label class="form-label" for="quickPaymentReference">Comprovante / referência (se houver)</label>'+
+  '<input id="quickPaymentReference" maxlength="140" placeholder="Pix, NSU do cartão, número do comprovante" '+(confirmedAlready?'disabled':'')+'>'+
+  '<div class="fulfillment-options quick-finalize"><label class="quick-check"><input type="checkbox" id="fulfillmentPayment"'+(confirmedAlready?' checked disabled':'')+'> ✅ Confirmo que o valor informado entrou de verdade no caixa, na conta ou na maquininha</label></div>'+
+  '<div id="quickPaymentSummary" class="notice"></div>'+
+  (confirmedAlready?'<div class="notice success">Pagamento já confirmado no pedido. A finalização não criará outra cobrança.</div>':
+   isMercadoPagoOrder(order)?'<div class="notice warn">⚠️ Este pedido possui tentativa Mercado Pago. Se ela ainda estiver pendente, o servidor bloqueará outra baixa até a conciliação.</div>':'')+
+  '<p class="muted"><b>Conta Cliente:</b> informe R$ 0,00 para venda totalmente a prazo. Se o cliente pagar apenas uma parte, informe o valor real recebido; a diferença ficará a receber.</p></div>'+
+  (!f.erpLinked||f.integration!=='IMPORTADO'?'<p class="notice warn">Integração do pedido no ERP pendente; o recebimento será registrado na Central para conciliação.</p>':'')+
+  '<div id="quickFinishAlert" class="notice error" hidden role="alert"></div>'+
+  '<button id="quickFinishSubmit" class="btn primary" type="button" data-action="quickConfirmOrder" data-order="'+esc(code)+'">✅ CONFIRMAR '+(pickup?'RETIRADA':'ENTREGA')+' E FINALIZAR</button>'+
+  '<p class="muted">A venda será registrada uma única vez no DRE. Cada pagamento gera seu cartão em Conta Cliente, sem nova receita na DRE.</p>');
+ const methodInput=E('quickPaymentMethod'),amountInput=E('quickPaymentAmount');
+ function updatePayment(){
+  if(!methodInput)return;
+  if(methodInput.value==='CONTA_CLIENTE'&&amountInput){amountInput.value='0.00';}
+  const cents=Math.round((Number(amountInput?.value)||0)*100),total=Math.round(Number(order.total)*100),balance=Math.max(0,total-cents);
+  if(!confirmedAlready&&balance>0){
+   const pending=document.querySelector('input[name="quickCashbackDecision"][value="PENDENTE"]');
+   if(pending)pending.checked=true;
+  }
+  const msg=E('quickPaymentSummary');
+  if(msg)msg.innerHTML='<b>Venda:</b> '+brl(order.total)+' · <b>Recebido agora:</b> '+brl(cents/100)+
+   ' · <b>Conta Cliente (saldo):</b> '+brl(balance/100)+(balance>0?' <strong>— PENDENTE</strong>':' <strong>— QUITADO</strong>');
+ }
+ methodInput?.addEventListener('change',updatePayment);
+ amountInput?.addEventListener('input',updatePayment);
+ updatePayment();
  const el=E('modal');
  el?.setAttribute('aria-label','Confirmação final obrigatória para pedido '+code);
  E('modalContent')?.scrollTo?.({top:0});
