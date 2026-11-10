@@ -429,6 +429,7 @@ function csv(){
 }
 
 function renderProducts(){
+ window.CaseirinhoCategoryManager?.render?.();
  const q=s(E('productSearch')?.value).toLowerCase().trim(),select=E('productCategory'),prev=select.value,filter=E('productStatus')?.value||'all';
  const cats=[...new Set(st.catalog.map(x=>x.category))].sort((a,b)=>s(a).localeCompare(s(b),'pt-BR'));
  select.innerHTML='<option value="all">Todas as categorias</option>'+cats.map(x=>'<option value="'+esc(x)+'">'+esc(x)+'</option>').join('');
@@ -574,7 +575,11 @@ function editProduct(id){
  const x=st.catalog.find(p=>p.id===id);if(!x)return toast('Produto não localizado; atualize o cadastro.',true);
  const html='<div class="notice">Você está alterando o cadastro principal do ERP e o catálogo publicado da loja. Confirme os valores antes de salvar.</div>'+
  '<form id="productEditForm" data-product="'+esc(x.id)+'"><p><b>'+esc(x.name)+'</b><br><small>'+esc(x.category)+' · '+esc(x.variation||'')+'</small></p>'+
- '<label class="form-label" for="editPrice">💰 Preço de venda (R$)</label>'+
+ '<label class="form-label" for="editCategory">🏷️ Categoria do e-commerce</label>'+
+  '<select id="editCategory" required>'+
+  (st.categories||[]).map(c=>'<option value="'+esc(c.id)+'" '+(s(c.id)===s(x.categoryId)?'selected':'')+'>'+esc(c.name)+(c.legacy?' (antiga)':'')+'</option>').join('')+
+  '</select><p class="muted">Mude a categoria aqui para poder excluir categorias antigas sem perder produtos.</p>'+
+  '<label class="form-label" for="editPrice">💰 Preço de venda (R$)</label>'+
  '<input id="editPrice" type="number" min="0.01" max="1000000" step="0.01" inputmode="decimal" required value="'+n(x.price)+'">'+
  '<label class="form-label" for="editMinimum">📦 Quantidade mínima por pedido</label>'+
  '<input id="editMinimum" type="number" min="0.01" max="99999" step="0.01" inputmode="decimal" required value="'+n(x.minimum||1)+'">'+
@@ -607,13 +612,13 @@ async function getVerifiedProduct(id){
 async function verifyProductTerms(){
  const form=E('productEditForm');if(!form)return;
  const id=form.dataset.product,button=E('verifyProductTerms'),status=E('productSaveStatus');
- const expected={price:Number(E('editPrice').value),minimum:Number(E('editMinimum').value),maximum:Number(E('editMaximum').value),active:E('editActive').value==='true',availableForSale:E('editAvailable').value==='true'};
+ const expected={price:Number(E('editPrice').value),minimum:Number(E('editMinimum').value),maximum:Number(E('editMaximum').value),active:E('editActive').value==='true',availableForSale:E('editAvailable').value==='true',categoryId:E('editCategory')?.value||''};
  const original=button.textContent;button.disabled=true;button.textContent='Conferindo...';
  try{
   const published=await getVerifiedProduct(id);
   if(!published)throw Error('Produto não localizado na loja. Atualize o cadastro.');
   status.hidden=false;
-  if(productTermsMatch(published,expected.price,expected.minimum,expected.maximum,expected.active,expected.availableForSale)){
+  if(productTermsMatch(published,expected.price,expected.minimum,expected.maximum,expected.active,expected.availableForSale)&&(!expected.categoryId||published.categoryId===expected.categoryId)){
    status.className='notice success';
    status.textContent='✅ CONFIRMADO no ERP/e-commerce: '+brl(published.price)+' · '+(published.active?'ATIVO':'INATIVO')+' · '+(published.availableForSale?'DISPONÍVEL':'INDISPONÍVEL')+'.';
    st.catalog=st.catalog.map(x=>x.id===id?{...x,...published}:x);
@@ -631,23 +636,24 @@ async function saveProduct(e){
  const form=e.target,productId=form?.dataset.product;
  const x=st.catalog.find(v=>v.id===productId);
  if(!x)return toast('Produto desatualizado. Atualize antes de salvar.',true);
- const price=Number(E('editPrice').value),minimum=Number(E('editMinimum').value),maximum=Number(E('editMaximum').value),active=E('editActive').value==='true',availableForSale=E('editAvailable').value==='true';
+ const price=Number(E('editPrice').value),minimum=Number(E('editMinimum').value),maximum=Number(E('editMaximum').value),active=E('editActive').value==='true',availableForSale=E('editAvailable').value==='true',categoryId=E('editCategory')?.value||x.categoryId,categoryChanged=categoryId&&categoryId!==x.categoryId;
  if(!Number.isFinite(price)||price<=0||!Number.isFinite(minimum)||minimum<=0||!Number.isFinite(maximum)||maximum<0||(maximum>0&&maximum<minimum)){
   toast('Preencha valores válidos. Máximo deve ser zero ou maior que o mínimo.',true);return;
  }
- if(!window.confirm('Confirmar alteração de '+x.name+'? Preço '+brl(price)+' · '+(active?'ATIVO':'INATIVO (oculto)')+' · '+(availableForSale?'DISPONÍVEL':'INDISPONÍVEL (bloqueia compra)')+'. Isso será gravado no ERP e replicado para a loja.'))return;
+ if(categoryChanged&&!st.categories.some(c=>c.id===categoryId))return toast('Categoria não encontrada. Atualize.',true);
+ if(!window.confirm('Confirmar alteração de '+x.name+'? Categoria '+s(st.categories.find(c=>c.id===categoryId)?.name||x.category)+' · Preço '+brl(price)+' · '+(active?'ATIVO':'INATIVO (oculto)')+' · '+(availableForSale?'DISPONÍVEL':'INDISPONÍVEL (bloqueia compra)')+'. Isso será gravado no ERP e replicado para a loja.'))return;
  const button=form.querySelector('[type=submit]'),message=E('productSaveStatus');
  const feedback=(text,cls='warn')=>{if(message){message.hidden=false;message.className='notice '+cls;message.textContent=text;}};
  const original=button.textContent;
  button.disabled=true;button.textContent='Verificando gravação…';
  feedback('Enviando alteração para o ERP e o e-commerce…');
  let reply=null,networkError=null;
- try{reply=await api('catalog/'+encodeURIComponent(productId)+'/terms',{method:'PATCH',body:{price,minimum,maximum,active,availableForSale,expectedUpdatedAt:x.updatedAt}});}
+ try{reply=await api('catalog/'+encodeURIComponent(productId)+'/terms',{method:'PATCH',body:{price,minimum,maximum,active,availableForSale,...(categoryChanged?{categoryId}:{}),expectedUpdatedAt:x.updatedAt}});}
  catch(err){if(!err.networkError){feedback('Alteração não salva: '+err.message,'error');toast('Não foi possível salvar: '+err.message,true);button.disabled=false;button.textContent=original;return;}networkError=err;}
  let verified=null,verificationError=null;
  try{verified=await getVerifiedProduct(productId);}catch(err){verificationError=err;}
  // A lost response may follow a committed write; verifying avoids accidental double saves.
- if(verified&&productTermsMatch(verified,price,minimum,maximum,active,availableForSale)){
+ if(verified&&productTermsMatch(verified,price,minimum,maximum,active,availableForSale)&&(!categoryChanged||verified.categoryId===categoryId)){
   st.catalog=st.catalog.map(p=>p.id===productId?{...p,...verified}:p);
   hideModal();toast('✅ Preço, atividade e disponibilidade confirmados no ERP e na loja!');
   if(reply?.warning)toast(reply.warning,true);
@@ -2263,6 +2269,19 @@ async function init(){
  await pollNewOrders();
  setInterval(pollNewOrders,30000);
 }
+window.CaseirinhoCategoryBridge={
+ api,modal,hideModal,categories:()=>st.categories,
+ reload:async()=>{
+  const [conf,catalog]=await Promise.all([api('product-categories'),api('catalog')]);
+  st.categories=conf.categories||[];st.catalog=catalog.items||[];
+  renderProducts();renderMenu();window.dispatchEvent(new Event('caseirinho:categories-updated'));
+  return conf;
+ },
+ filterProducts:name=>{
+  nav('products');E('productCategory').value=name;renderProducts();
+  E('productSearch')?.scrollIntoView?.({behavior:'smooth',block:'center'});
+ }
+};
 window.CaseirinhoInsightsReceivablesBridge={api,nav,modal,hideModal};
 window.CaseirinhoInsightsStockBridge={api,report:()=>st.sales,refresh:loadSales,refreshCatalog:async()=>{const data=await api('catalog');st.catalog=data.items||st.catalog;if(st.view==='products')renderProducts()}};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
