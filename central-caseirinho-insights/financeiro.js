@@ -162,6 +162,7 @@ function startKind(kind){
 }
 function edit(id){
  const x=state.data?.entries?.find(e=>e.id===id);if(!x)return;
+ if(x.externalSale){setTab('platforms');message('Edite vendas de plataforma na aba iFood / 99Food.');return;}
  state.editing=x;el('finKind').value=x.kind;populateCategories(x.category);
  el('finDescription').value=x.description;el('finAmount').value=(Number(x.amountCents)/100).toFixed(2);
  el('finDate').value=x.competenceDate;el('finDue').value=x.dueDate||'';
@@ -263,7 +264,8 @@ function entryTable(entries){
  return table(['Competência','Lançamento','Categoria','Valor','Status / vencimento','Ações'],entries.map(x=>{
   const pending=x.status==='PENDENTE';
   const late=pending&&x.dueDate&&x.dueDate<nowBR();
-  const actions='<button type="button" class="btn small" data-fin-edit="'+esc(x.id)+'">✏️ Editar</button> '+
+  const actions=x.externalSale?'<button type="button" class="btn small" data-fin-tab="platforms">🍔 Abrir em iFood / 99Food</button>':
+   '<button type="button" class="btn small" data-fin-edit="'+esc(x.id)+'">✏️ Editar</button> '+
    (x.repeatMonthly?'<button class="btn small" type="button" data-fin-repeat="'+esc(x.id)+'">➡️ Próx. mês</button> ':'')+
    '<button type="button" class="btn small" data-fin-delete="'+esc(x.id)+'">🗑️</button>';
   return row([esc(datestr(x.competenceDate)),'<b>'+esc(x.description)+'</b><br><small>'+esc(TYPES[x.kind])+(x.employeeName?' · Funcionário: '+esc(x.employeeName):x.supplier?' · '+esc(x.supplier):'')+(x.productName?' · '+esc(x.productName)+' × '+esc(x.quantity)+' · '+esc(x.priceBasis==='PRECO_VENDA'?'preço venda':'custo'):'')+'</small>',esc(CATS[x.kind]?.[x.category]||x.category),
