@@ -380,3 +380,12 @@
 .category-actions button:disabled{opacity:.48;cursor:not-allowed}
 .category-actions .danger{color:#8e2332;border-color:#f1c3cb;background:#fff7f8}
 @media(max-width:650px){.category-grid{grid-template-columns:1fr}.category-card{padding:13px}.category-manager .actions{width:100%}.category-manager .actions .btn{flex:1;min-width:130px}.category-actions .btn{flex:1}}
+
+
+/* Descrição comercial por produto: fácil localizar e editar pelo cartão */
+.product-description-preview{font-size:12px;color:#64736c;line-height:1.45;min-height:32px;margin:6px 0 10px;
+ display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:anywhere}
+.product-description-preview em{color:#9b6b43}
+.product-card [data-action="descriptionProduct"]{background:#edf7f0;color:#135133;border:1px solid #b7d9c4}
+.product-card [data-action="descriptionProduct"]:hover{background:#d9efdf}
+#productDescriptionText{width:100%;box-sizing:border-box;line-height:1.55;min-height:145px;resize:vertical}
