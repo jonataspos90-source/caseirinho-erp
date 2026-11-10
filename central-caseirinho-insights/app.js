@@ -1365,7 +1365,8 @@ async function quickCashbackOrder(code){
  '<label><input type="radio" name="quickCashbackDecision" value="REJEITADO" '+(approval==='REJEITADO'?'checked':'')+'> 🚫 Não liberar cashback neste pedido</label></div>'+
  exceptionForm+
  '<p class="notice">Salvar esta decisão <b>não</b> marca o pedido como entregue ou pago. Se aprovado, o crédito ficará disponível somente após a conclusão.</p>'+
- '<button class="btn primary" type="button" data-action="quickSaveCashback" data-order="'+esc(code)+'">💾 Salvar decisão de cashback</button>');
+ '<button class="btn primary" type="button" data-action="quickSaveCashback" data-order="'+esc(code)+'">💾 Salvar decisão de cashback</button>'+
+ '<div class="notice warn" id="quickCashbackRepair" hidden><b>⚠️ Vínculo ERP indisponível.</b> O pedido da loja permanece intacto. Use a conciliação antes de salvar o cashback novamente. A conciliação não registra pagamento, entrega nem libera crédito.<div class="toolbar"><button class="btn" type="button" data-action="repairCashbackERP" data-order="'+esc(code)+'">🔧 Reparar vínculo ERP</button></div></div>');
 }
 async function quickSaveCashback(code){
  if(quickCashbackPending.has(code))return;
@@ -1395,10 +1396,36 @@ async function quickSaveCashback(code){
     hideModal();return toast('✅ Decisão registrada e confirmada na consulta do pedido.');
    }}catch(_){}
   }
+  if(error.httpStatus===409&&/Vínculo do pedido no ERP não confere|Repare a integração|Pedido sem integração concluída/i.test(error.message)){
+   const repair=E('quickCashbackRepair');if(repair){repair.hidden=false;repair.scrollIntoView?.({block:'nearest'});}
+  }
   toast('Não foi possível confirmar a decisão: '+error.message,true);
  }finally{
   quickCashbackPending.delete(code);
   buttons.forEach(b=>{b.disabled=false;b.textContent='💾 Salvar decisão de cashback';});
+ }
+}
+const quickERPRepairPending=new Set();
+async function repairCashbackERP(code){
+ if(quickERPRepairPending.has(code))return;
+ if(!window.confirm('Conferir e restaurar o vínculo ERP do pedido #'+code+'? Esta ação não altera pagamentos, entrega ou cashback.'))return;
+ quickERPRepairPending.add(code);
+ const btn=[...document.querySelectorAll('[data-action="repairCashbackERP"]')].find(b=>b.dataset.order===code);
+ if(btn){btn.disabled=true;btn.textContent='⏳ Conferindo vínculo no ERP...';}
+ try{
+  const result=await api('orders/'+encodeURIComponent(code)+'/reconcile-erp',{method:'POST',body:{}});
+  if(!result.erpImported)throw Error('Não foi possível confirmar a ligação do ERP.');
+  await refreshFulfillment();
+  const repair=E('quickCashbackRepair');
+  if(repair){repair.className='notice success';repair.innerHTML='<b>✅ Vínculo ERP conferido.</b> Nenhum cashback foi aprovado e nenhum pagamento foi lançado. Agora toque novamente em Salvar decisão de cashback.';}
+  toast('✅ Vínculo ERP do pedido #'+code+' conferido. Salve a decisão novamente.');
+ }catch(error){
+  const repair=E('quickCashbackRepair');
+  if(repair){repair.className='notice error';repair.hidden=false;}
+  toast('Conciliação não confirmada: '+error.message,true);
+ }finally{
+  quickERPRepairPending.delete(code);
+  if(btn&&btn.isConnected){btn.disabled=false;btn.textContent='🔧 Reparar vínculo ERP';}
  }
 }
 function showFinishAlert(message,error=true){
@@ -2338,6 +2365,7 @@ function bind(){
  if(type==='goReceivables'){hideModal();nav('receivables');return;}
  if(type==='quickCashbackOrder')return quickCashbackOrder(b.dataset.order);
  if(type==='quickSaveCashback')return quickSaveCashback(b.dataset.order);
+ if(type==='repairCashbackERP')return repairCashbackERP(b.dataset.order);
  if(type==='quickConfirmOrder')return quickConfirmOrder(b.dataset.order);
  if(type==='closeModal')return hideModal();
  if(type==='fulfillOrder')return manageOrderFulfillment(b.dataset.order);
