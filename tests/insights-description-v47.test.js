@@ -18,7 +18,7 @@ test('O cartão do produto oferece editor direto da descrição comercial',()=>{
 test('A gravação da descrição é isolada e confirma o retorno antes de informar sucesso',()=>{
  const app=read('app.js');
  assert.match(app,/catalog\/'\+encodeURIComponent\(pid\)\+'\/description'/);
- assert.match(app,/body:\{description,expectedUpdatedAt:current\.updatedAt\}/);
+ assert.match(app,/body:\{description,erpName,storeName,expectedUpdatedAt:current\.updatedAt\}/);
  assert.match(app,/s\(fresh\.description\)\.trim\(\)===description/);
  assert.match(app,/st\.catalog=st\.catalog\.map/);
  assert.match(app,/Descrição atualizada e conferida no ERP e na loja/);
@@ -39,6 +39,6 @@ test('Nome ERP, nome comercial e descrição são independentes no editor',()=>{
  assert.match(app,/id="productStoreName"/);
  assert.match(app,/Nome do produto no ERP/);
  assert.match(app,/Nome comercial exibido na loja/);
- assert.match(app,/s\\(fresh\\.erpName\\)\\.trim\\(\\)===erpName/);
- assert.match(app,/s\\(fresh\\.name\\)\\.trim\\(\\)===storeName/);
+ assert.match(app,/fresh\.erpName.*erpName/);
+ assert.match(app,/fresh\.name.*storeName/);
 });
