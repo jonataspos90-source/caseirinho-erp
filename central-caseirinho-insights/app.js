@@ -68,7 +68,7 @@ async function loginWithERP(e){
   try{localStorage.setItem(ERP_LAST_USERNAME_KEY,user);}catch(_){}
   E('loginScreen').hidden=true;
   await loadAll();
-  {const params=new URLSearchParams(location.search),requested=params.get('view');if(['orders','blackfriday','sazonais','products','operations','financeiro','sales'].includes(requested))nav(requested);if(requested==='products'&&params.get('product')){const id=params.get('product');if(st.catalog.some(x=>s(x.id)===s(id)))editProduct(id);}}
+  {const params=new URLSearchParams(location.search),requested=params.get('view');if(['orders','blackfriday','sazonais','products','operations','financeiro','sales','receivables'].includes(requested))nav(requested);if(requested==='products'&&params.get('product')){const id=params.get('product');if(st.catalog.some(x=>s(x.id)===s(id)))editProduct(id);}}
  }catch(error){
   st.token='';st.sessionExpiry=0;
   try{sessionStorage.removeItem(ERP_SESSION_KEY);}catch(_){}
@@ -124,7 +124,7 @@ function nav(tab){
  st.view=tab;
  document.querySelectorAll('.section').forEach(x=>x.classList.toggle('active',x.id===tab));
  document.querySelectorAll('[data-view]').forEach(x=>x.classList.toggle('active',x.dataset.view===tab));
- const labels={dashboard:'Visão geral',contacts:'CRM e contatos',ranking:'Ranking de acessos',orders:'Pedidos',operations:'Central Operacional',financeiro:'Financeiro e DRE',menu:'Cardápio escrito',products:'Produtos e preços',blackfriday:'Black Friday',sazonais:'Encomendas Sazonais',reports:'Relatórios e PDF',sales:'Vendas & Estoque',merch:'Grades e Packs',fichas:'Fichas Técnicas',cashbacks:'Cashback Clientes',coupons:'Cupons e Utilizações',requests:'Solicitações de cardápio',settings:'Configurações'};
+ const labels={dashboard:'Visão geral',contacts:'CRM e contatos',ranking:'Ranking de acessos',orders:'Pedidos',operations:'Central Operacional',financeiro:'Financeiro e DRE',receivables:'Conta Cliente e Recebimentos',menu:'Cardápio escrito',products:'Produtos e preços',blackfriday:'Black Friday',sazonais:'Encomendas Sazonais',reports:'Relatórios e PDF',sales:'Vendas & Estoque',merch:'Grades e Packs',fichas:'Fichas Técnicas',cashbacks:'Cashback Clientes',coupons:'Cupons e Utilizações',requests:'Solicitações de cardápio',settings:'Configurações'};
  E('pageTitle').textContent=labels[tab]||'Central de Insights';
  window.scrollTo({top:0,behavior:'smooth'});
  render();
@@ -136,6 +136,7 @@ function nav(tab){
  if(tab==='blackfriday'&&!st.bfData)loadBlackFriday();
  if(tab==='sazonais'&&!st.seasonData)loadSeasonAdmin();
  if(tab==='financeiro')window.CaseirinhoFinance?.load();
+ if(tab==='receivables')window.CaseirinhoReceivables?.load?.(true);
  if(tab==='operations')loadOpsAudit();
 }
 function badge(x){const v=s(x).toUpperCase();return '<span class="badge '+(v.includes('PENDENTE')?'warn':v.includes('IMPORTANDO')?'light':v.includes('NOVO')?'light':v.includes('IMPORTADO')||v.includes('CONCLU')||v.includes('APROV')?'good':'')+'">'+esc(x||'—')+'</span>';}
@@ -774,7 +775,7 @@ function orderButton(order){
  '<button class="btn small gold" type="button" data-action="pdfOrder" data-order="'+code+'">📄 PDF</button> '+
  (isMercadoPagoOrder(order)?'<button class="btn small" type="button" data-action="verifyOrderPayment" data-order="'+code+'">🔄 Conferir MP</button> ':'')+
  (!order.manualPayment&&order.paymentStatus!=='APROVADO'?'<button class="btn small" type="button" data-action="changePaymentMethod" data-order="'+code+'">💳 Alterar pagamento</button> ':'');
- if(rule?.completed||['ENTREGUE','RETIRADO','CONCLUIDO','FINALIZADO'].includes(status))return first+'<span class="badge good">✅ Concluído</span>';
+ if(rule?.completed||['ENTREGUE','RETIRADO','CONCLUIDO','FINALIZADO'].includes(status))return first+'<span class="badge good">✅ Concluído</span> <button class="btn small" type="button" data-action="goReceivables">💳 Conta Cliente</button>';
  if(['NOVO','PENDENTE','AGUARDANDO_ANALISE','AGUARDANDO_COTACAO_FRETE'].includes(status))
   return first+'<button class="btn small primary" type="button" data-action="quickAcceptOrder" data-order="'+code+'">✅ Aceitar pedido</button>';
  if(['ACEITO','ABERTO','PRONTO'].includes(status)){
@@ -2165,6 +2166,7 @@ function bind(){
  if(type==='saveManualPayment')return saveManualPayment(b.dataset.order);
  if(type==='verifyOrderPayment')return verifyOrderPayment(b.dataset.order);
  if(type==='quickFinishOrder')return quickFinishOrder(b.dataset.order);
+ if(type==='goReceivables'){hideModal();nav('receivables');return;}
  if(type==='quickCashbackOrder')return quickCashbackOrder(b.dataset.order);
  if(type==='quickSaveCashback')return quickSaveCashback(b.dataset.order);
  if(type==='quickConfirmOrder')return quickConfirmOrder(b.dataset.order);
@@ -2190,12 +2192,13 @@ function bind(){
 }
 async function init(){
  tokenSetup();bind();
- if(st.token){await loadAll();{const params=new URLSearchParams(location.search),requested=params.get('view');if(['blackfriday','sazonais','products','operations','financeiro','sales'].includes(requested))nav(requested);if(requested==='products'&&params.get('product')){const id=params.get('product');if(st.catalog.some(x=>s(x.id)===s(id)))editProduct(id);}}}else E('loginScreen').hidden=false;
+ if(st.token){await loadAll();{const params=new URLSearchParams(location.search),requested=params.get('view');if(['blackfriday','sazonais','products','operations','financeiro','sales','receivables'].includes(requested))nav(requested);if(requested==='products'&&params.get('product')){const id=params.get('product');if(st.catalog.some(x=>s(x.id)===s(id)))editProduct(id);}}}else E('loginScreen').hidden=false;
  setInterval(loadRequests,30000);
  setInterval(loadAll,120000);
  await pollNewOrders();
  setInterval(pollNewOrders,30000);
 }
+window.CaseirinhoInsightsReceivablesBridge={api,nav,modal,hideModal};
 window.CaseirinhoInsightsStockBridge={api,report:()=>st.sales,refresh:loadSales,refreshCatalog:async()=>{const data=await api('catalog');st.catalog=data.items||st.catalog;if(st.view==='products')renderProducts()}};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
