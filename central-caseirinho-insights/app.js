@@ -442,12 +442,12 @@ function renderProducts(){
  if(!selected.length){E('productsList').innerHTML=cellEmpty('Não há produtos com esses critérios.');return;}
  E('productsList').innerHTML='<div class="product-card-grid">'+selected.map(x=>
  '<article class="product-card"><div><div class="product-photo">'+(x.image?'<img src="'+esc(x.image)+'" alt="Foto de '+esc(x.name)+'" loading="lazy">':'<span>📷 Sem foto</span>')+'</div><span class="badge light">'+esc(x.category)+'</span> '+(x.active===false?'<span class="badge warn">⛔ INATIVO — oculto na loja</span>':x.availableForSale===false?'<span class="badge warn">🚫 INDISPONÍVEL — visível, sem compra</span>':'<span class="badge good">✅ À venda</span>')+' '+(x.promotionActive?'<span class="badge warn">Promoção ativa</span>':'')+
- '<h3>'+esc(x.name)+'</h3><small class="muted">'+esc(x.variation||x.availability||'')+'</small></div>'+
+ '<h3>'+esc(x.name)+'</h3><small class="muted">'+esc(x.variation||x.availability||'')+'</small>'+(x.erpName&&x.erpName!==x.name?'<p class="muted" style="margin:4px 0">ERP: '+esc(x.erpName)+'</p>':'')+'</div>'+
  '<div class="price-row"><b>'+brl(x.price)+'</b><span>Pedido mín: '+n(x.minimum)+' · máx: '+(n(x.maximum)||'Sem limite')+'</span></div>'+
   '<p class="muted" style="margin:5px 0 7px">📦 Estoque ERP — mínimo: <b>'+qtyBR(x.stockMinimum)+'</b> · máximo: <b>'+qtyBR(x.stockMaximum)+'</b></p>'+
   '<p class="product-description-preview" title="Descrição comercial da loja">'+(x.description?esc(x.description):'<em>Sem descrição comercial</em>')+'</p>'+
  '<button class="btn primary" type="button" data-action="editProduct" data-product="'+esc(x.id)+'">✏️ Preço / Situação</button>'+
-  '<button class="btn" type="button" data-action="descriptionProduct" data-product="'+esc(x.id)+'">📝 Descrição</button>'+
+  '<button class="btn" type="button" data-action="descriptionProduct" data-product="'+esc(x.id)+'">📝 Nome / Descrição</button>'+
   '<button class="btn gold" type="button" data-action="photosProduct" data-product="'+esc(x.id)+'">📷 Alterar fotos</button></article>'
  ).join('')+'</div>';
 }
@@ -603,59 +603,73 @@ function editProduct(id){
  modal('✏️ Editar produto',html);
 }
 function editProductDescription(id){
- const p=st.catalog.find(x=>s(x.id)===s(id));
- if(!p)return toast('Produto não encontrado. Atualize Produtos e preços.',true);
- modal('📝 Descrição do produto — '+p.name,
-  '<div class="notice">A descrição é exibida na loja quando o cliente abre o produto. Preço, fotos, categoria e estoque não serão alterados.</div>'+
-  '<form id="productDescriptionEditForm" data-product="'+esc(p.id)+'">'+
-  '<p><b>'+esc(p.name)+'</b><br><small>'+esc(p.category)+'</small></p>'+
-  '<label class="form-label" for="productDescriptionText">Descrição apresentada ao cliente</label>'+
-  '<textarea id="productDescriptionText" maxlength="1200" rows="7" placeholder="Ex.: Massa caseira artesanal com recheio cremoso de Catupiry. Peso aproximado, ingredientes e orientações de preparo.">'+esc(p.description||'')+'</textarea>'+
-  '<p class="muted"><span id="productDescriptionLength">'+s((p.description||'').length)+'</span>/1200 caracteres · Escreva ingredientes, recheio, tamanho e diferenciais do produto.</p>'+
-  '<div id="productDescriptionSaveStatus" class="notice" hidden role="status"></div>'+
-  '<div class="toolbar"><button class="btn primary" type="submit">💾 Salvar descrição no ERP e na loja</button>'+
-  '<button class="btn" type="button" data-action="closeModal">Cancelar</button></div></form>');
- E('productDescriptionText')?.focus?.();
+  const p=st.catalog.find(x=>s(x.id)===s(id));
+  if(!p)return toast('Produto não encontrado. Atualize Produtos e preços.',true);
+  modal('📝 Nome e descrição do produto — '+p.name,
+   '<div class="notice">Altere o nome cadastrado no ERP, o nome comercial que aparece na loja e o texto apresentado ao cliente. Preço, fotos, categoria e estoque permanecem inalterados.</div>'+
+   '<form id="productDescriptionEditForm" data-product="'+esc(p.id)+'">'+
+   '<p><b>'+esc(p.name)+'</b><br><small>'+esc(p.category)+'</small></p>'+
+   '<label class="form-label" for="productERPName">Nome do produto no ERP</label>'+
+   '<input id="productERPName" type="text" required maxlength="220" value="'+esc(p.erpName||p.name)+'" placeholder="Nome principal do produto no ERP">'+
+   '<label class="form-label" for="productStoreName">Nome comercial exibido na loja</label>'+
+   '<input id="productStoreName" type="text" required maxlength="160" value="'+esc(p.name)+'" placeholder="Título do produto que o cliente visualiza">'+
+   '<label class="form-label" for="productDescriptionText">Descrição apresentada ao cliente</label>'+
+   '<textarea id="productDescriptionText" maxlength="1200" rows="7" placeholder="Ex.: Massa artesanal, recheio cremoso, ingredientes, peso aproximado e orientações de preparo.">'+esc(p.description||'')+'</textarea>'+
+   '<p class="muted"><span id="productDescriptionLength">'+s((p.description||'').length)+'</span>/1200 caracteres · Descreva ingredientes, recheio, tamanho e diferenciais.</p>'+
+   '<div id="productDescriptionSaveStatus" class="notice" hidden role="status"></div>'+
+   '<div class="toolbar"><button class="btn primary" type="submit">💾 Salvar nome e descrição no ERP e na loja</button>'+
+   '<button class="btn" type="button" data-action="closeModal">Cancelar</button></div></form>');
+  E('productERPName')?.focus?.();
 }
 async function saveProductDescription(event){
- event.preventDefault();
- const form=event.target,pid=s(form?.dataset.product);
- const current=st.catalog.find(x=>s(x.id)===pid);
- if(!current)return toast('Produto desatualizado. Atualize a lista antes de editar.',true);
- const value=E('productDescriptionText')?.value;
- if(typeof value!=='string')return;
- const description=value.trim().replace(/\r\n/g,'\n'),status=E('productDescriptionSaveStatus'),button=form.querySelector('[type="submit"]');
- if(description.length>1200)return toast('A descrição deve ter até 1200 caracteres.',true);
- if(description===s(current.description).trim())return toast('A descrição já está atualizada.');
- if(!description&&!window.confirm('Remover a descrição comercial deste produto?'))return;
- if(button.disabled)return;
- button.disabled=true;button.textContent='Salvando e conferindo...';
- const feedback=(message,type='warn')=>{if(status){status.hidden=false;status.className='notice '+type;status.textContent=message;}};
- let wrote=false,reply=null;
- try{
-  reply=await api('catalog/'+encodeURIComponent(pid)+'/description',
-   {method:'PATCH',body:{description,expectedUpdatedAt:current.updatedAt}});
-  wrote=true;
- }catch(err){
-  if(!err.networkError){feedback('Descrição não salva: '+err.message,'error');button.disabled=false;button.textContent='💾 Salvar descrição no ERP e na loja';return;}
-  feedback('A conexão caiu durante a gravação. Verificando o catálogo antes de permitir outra tentativa.');
- }
- let fresh=null;
- try{fresh=await getVerifiedProduct(pid)}catch(err){
-  feedback('A alteração pode ter sido recebida, mas não foi possível conferir a publicação: '+err.message+
-    '. Atualize o cadastro antes de tentar novamente.');
-  button.disabled=false;button.textContent='🔎 Conferir e salvar';return;
- }
- if(fresh&&s(fresh.description).trim()===description){
-  st.catalog=st.catalog.map(x=>s(x.id)===pid?{...x,...fresh}:x);
-  hideModal();toast('✅ Descrição atualizada e conferida no ERP e na loja!');
-  try{await loadAll()}catch(_){}
-  nav('products');return;
- }
- feedback(wrote?
-  'O servidor recebeu a gravação, mas a consulta ainda não confirmou a nova descrição. Atualize os produtos antes de repetir.':
-  'A descrição publicada ainda está diferente. Atualize e confira antes de tentar novamente.','warn');
- button.disabled=false;button.textContent='💾 Salvar descrição no ERP e na loja';
+  event.preventDefault();
+  const form=event.target,pid=s(form?.dataset.product);
+  const current=st.catalog.find(x=>s(x.id)===pid);
+  if(!current)return toast('Produto desatualizado. Atualize a lista antes de editar.',true);
+  const value=E('productDescriptionText')?.value;
+  if(typeof value!=='string')return;
+  const normalizeName=value=>s(value).replace(/\s+/g,' ').trim();
+  const description=value.trim().replace(/\r\n/g,'\n');
+  const erpName=normalizeName(E('productERPName')?.value);
+  const storeName=normalizeName(E('productStoreName')?.value);
+  const status=E('productDescriptionSaveStatus'),button=form.querySelector('[type="submit"]');
+  if(!erpName||erpName.length>220)return toast('Nome ERP obrigatório (até 220 caracteres).',true);
+  if(!storeName||storeName.length>160)return toast('Nome da loja obrigatório (até 160 caracteres).',true);
+  if(description.length>1200)return toast('A descrição deve ter até 1200 caracteres.',true);
+  const nameChanged=erpName!==s(current.erpName||current.name).trim()||storeName!==s(current.name).trim();
+  const descriptionChanged=description!==s(current.description).trim();
+  if(!nameChanged&&!descriptionChanged)return toast('Nome e descrição já estão atualizados.');
+  if(!description&&descriptionChanged&&!window.confirm('Remover a descrição comercial deste produto?'))return;
+  if(button.disabled)return;
+  button.disabled=true;button.textContent='Salvando e conferindo...';
+  const feedback=(message,type='warn')=>{if(status){status.hidden=false;status.className='notice '+type;status.textContent=message;}};
+  let wrote=false;
+  try{
+   await api('catalog/'+encodeURIComponent(pid)+'/description',
+    {method:'PATCH',body:{description,erpName,storeName,expectedUpdatedAt:current.updatedAt}});
+   wrote=true;
+  }catch(err){
+   if(!err.networkError){feedback('Nome/descrição não salvos: '+err.message,'error');button.disabled=false;button.textContent='💾 Salvar nome e descrição';return;}
+   feedback('A conexão caiu durante a gravação. Verificando o catálogo antes de permitir outra tentativa.');
+  }
+  let fresh=null;
+  try{fresh=await getVerifiedProduct(pid)}catch(err){
+   feedback('A alteração pode ter sido recebida, mas não foi possível conferir a publicação: '+err.message+
+     '. Atualize o cadastro antes de tentar novamente.');
+   button.disabled=false;button.textContent='🔎 Conferir e salvar';return;
+  }
+  if(fresh&&s(fresh.description).trim()===description&&s(fresh.erpName).trim()===erpName&&s(fresh.name).trim()===storeName){
+   st.catalog=st.catalog.map(x=>s(x.id)===pid?{...x,...fresh}:x);
+   hideModal();
+   toast(nameChanged?'✅ Nomes atualizados e conferidos no ERP e na loja!'+(descriptionChanged?' Descrição também atualizada.':''):
+    '✅ Descrição atualizada e conferida no ERP e na loja!');
+   try{await loadAll()}catch(_){}
+   nav('products');return;
+  }
+  feedback(wrote?
+   'O servidor recebeu a gravação, mas a consulta ainda não confirmou nome e descrição. Atualize os produtos antes de repetir.':
+   'O nome ou a descrição publicados ainda estão diferentes. Atualize e confira antes de tentar novamente.','warn');
+  button.disabled=false;button.textContent='💾 Salvar nome e descrição';
 }
 function productTermsMatch(product,price,minimum,maximum,active,availableForSale){
  if(!product)return false;
