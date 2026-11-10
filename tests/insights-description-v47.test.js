@@ -13,7 +13,7 @@ test('O cartão do produto oferece editor direto da descrição comercial',()=>{
  assert.match(app,/getVerifiedProduct\(pid\)/);
  assert.match(app,/data-action="photosProduct"/);
  assert.match(app,/data-action="editProduct"/);
- assert.match(html,/app\.js\?v=20261110-descriptions-1/);
+ assert.match(html,/app\.js\?v=20261110-product-names-2/);
 });
 test('A gravação da descrição é isolada e confirma o retorno antes de informar sucesso',()=>{
  const app=read('app.js');
@@ -26,9 +26,19 @@ test('A gravação da descrição é isolada e confirma o retorno antes de infor
 });
 test('PWA invalida cache para carregar botão e estilos atualizados',()=>{
  const sw=read('sw.js'),html=read('index.html'),css=read('styles.css');
- assert.match(sw,/caseirinho-insights-app-shell-v48-platform-sales-20261110/);
- assert.match(sw,/app\.js\?v=20261110-descriptions-1/);
- assert.match(html,/styles\.css\?v=20261110-descriptions-1/);
+ assert.match(sw,/caseirinho-insights-app-shell-v49-product-names-20261110/);
+ assert.match(sw,/app\.js\?v=20261110-product-names-2/);
+ assert.match(html,/styles\.css\?v=20261110-product-names-2/);
  assert.match(css,/product-description-preview/);
  assert.doesNotThrow(()=>new vm.Script(read('app.js')));
+});
+
+test('Nome ERP, nome comercial e descrição são independentes no editor',()=>{
+ const app=read('app.js');
+ assert.match(app,/id="productERPName"/);
+ assert.match(app,/id="productStoreName"/);
+ assert.match(app,/Nome do produto no ERP/);
+ assert.match(app,/Nome comercial exibido na loja/);
+ assert.match(app,/s\\(fresh\\.erpName\\)\\.trim\\(\\)===erpName/);
+ assert.match(app,/s\\(fresh\\.name\\)\\.trim\\(\\)===storeName/);
 });
