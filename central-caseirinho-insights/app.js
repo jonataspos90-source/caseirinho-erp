@@ -106,11 +106,16 @@ async function api(path,options){
  let response;
  // Apenas consultas podem ser repetidas; gravações e pagamentos nunca são reenviados.
  for(let attempt=0;attempt<(isRead?2:1);attempt++){
+  let timer=null;
+  const controller=isRead&&typeof AbortController!=='undefined'?new AbortController():null;
   try{
+   // Leituras não devem deixar o módulo preso indefinidamente em "Consultando".
+   if(controller)timer=setTimeout(()=>controller.abort(),12000);
    response=await fetch(st.api+'/api/v1/admin/store/insights/'+path,{
     method,cache:'no-store',credentials:'omit',
     headers:{Authorization:'Bearer '+st.token,'Cache-Control':'no-store','Content-Type':'application/json'},
-    body:options&&options.body?JSON.stringify(options.body):undefined
+    body:options&&options.body?JSON.stringify(options.body):undefined,
+    ...(controller?{signal:controller.signal}:{})
    });
   }catch(cause){
    if(isRead&&attempt===0&&navigator.onLine!==false){
@@ -121,6 +126,8 @@ async function api(path,options){
     :isRead?'Conexão temporariamente indisponível. Toque em Atualizar para consultar novamente.'
     :'A conexão caiu durante a gravação. Confira os dados antes de tentar novamente.');
    err.networkError=true;err.cause=cause;throw err;
+  }finally{
+   if(timer!==null)clearTimeout(timer);
   }
   if(isRead&&attempt===0&&[502,503,504].includes(response.status)){
    await new Promise(resolve=>setTimeout(resolve,650));continue;
