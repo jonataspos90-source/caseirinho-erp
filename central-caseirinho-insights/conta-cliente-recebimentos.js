@@ -136,6 +136,6 @@ function bind(){
   if(button.dataset.accountSubmit)return pay(button.dataset.accountSubmit);
  });
 }
-window.CaseirinhoReceivables={load,detail,version:'20261110.1'};
+window.CaseirinhoReceivables={load,detail,version:'20261111.1'};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bind,{once:true});else bind();
 })();
