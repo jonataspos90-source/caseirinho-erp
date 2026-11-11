@@ -1487,7 +1487,7 @@ function quickFinishOrder(code){
   '<label>Valor efetivamente recebido agora (R$)<input type="number" id="quickPaymentAmount" min="0" step="0.01" max="'+(alreadyDue/100).toFixed(2)+'" value="'+payAmount+'" '+(confirmedAlready?'disabled':'')+'></label></div>'+
   '<label class="form-label" for="quickPaymentReference">Comprovante / referência (se houver)</label>'+
   '<input id="quickPaymentReference" maxlength="140" placeholder="Pix, NSU do cartão, número do comprovante" '+(confirmedAlready?'disabled':'')+'>'+
-  '<div class="fulfillment-options quick-finalize"><label class="quick-check"><input type="checkbox" id="fulfillmentPayment"'+(confirmedAlready?' checked disabled':'')+'> ✅ Confirmo que o valor informado entrou de verdade no caixa, na conta ou na maquininha</label></div>'+
+  '<div class="fulfillment-options quick-finalize" id="quickPaymentConfirmation"><label class="quick-check"><input type="checkbox" id="fulfillmentPayment"'+(confirmedAlready?' checked disabled':'')+'> ✅ Confirmo que o valor informado entrou de verdade no caixa, na conta ou na maquininha</label></div>'+
   '<div id="quickPaymentSummary" class="notice"></div>'+
   (confirmedAlready?'<div class="notice success">Pagamento já confirmado no pedido. A finalização não criará outra cobrança.</div>':
    isMercadoPagoOrder(order)?'<div class="notice warn">⚠️ Este pedido possui tentativa Mercado Pago. Se ela ainda estiver pendente, o servidor bloqueará outra baixa até a conciliação.</div>':'')+
@@ -1503,6 +1503,11 @@ function quickFinishOrder(code){
   const cents=confirmedAlready?0:Math.round((Number(amountInput?.value)||0)*100);
   const total=Math.round(Number(order.total)*100),effectivePrior=confirmedAlready?total:previousCents;
   const balance=Math.max(0,total-effectivePrior-cents);
+  const paymentConfirm=E('quickPaymentConfirmation'),paymentCheck=E('fulfillmentPayment');
+  if(paymentConfirm){
+   paymentConfirm.hidden=!confirmedAlready&&cents===0;
+   if(cents===0&&!confirmedAlready&&paymentCheck)paymentCheck.checked=false;
+  }
   if(!confirmedAlready&&balance>0){
    const pending=document.querySelector('input[name="quickCashbackDecision"][value="PENDENTE"]');
    if(pending)pending.checked=true;
@@ -1625,7 +1630,10 @@ async function confirmOrderComplete(code){
   if(!out?.ok||!['RETIRADO','ENTREGUE','CONCLUIDO','FINALIZADO'].includes(s(out.status).toUpperCase()))
    throw Error('O servidor não confirmou a conclusão do pedido. Atualize e confira o status antes de repetir.');
  }catch(error){
-  showFinishAlert('Pedido '+code+' NÃO teve a conclusão confirmada: '+error.message+'. Revise o pagamento e tente novamente.',true);
+  const legacyGate=/CASHBACK_REVIEW_REQUIRED|Aprove ou recuse o cashback em Encomendas e Disponibilidade/i.test(error.message);
+  showFinishAlert(legacyGate?
+   'Pedido '+code+' NÃO foi finalizado. Uma regra antiga de cashback do banco bloqueia a venda a prazo com saldo em Conta Cliente. Não é um erro do pagamento nem da confirmação. Nenhum recebimento foi lançado; o ajuste exige autorização para atualizar a regra no Neon.':
+   'Pedido '+code+' NÃO teve a conclusão confirmada: '+error.message+'. Confira o status antes de tentar novamente.',true);
   if(error.networkError){
    try{await refreshFulfillment();if(fulfillStatus(code)?.completed){
     hideModal();toast('✅ O pedido '+code+' já consta como concluído após reconciliação.',false);
