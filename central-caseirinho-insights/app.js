@@ -1556,10 +1556,14 @@ async function manageOrderFulfillment(code){
  '<div><small>Crédito previsto</small><b>'+brl(f.estimate)+'</b></div><div><small>Crédito liberado</small><b>'+brl(f.credit)+'</b></div></div>'+
  (notes?'<div class="notice warn"><b>Atenção aos critérios:</b><ul>'+notes+'</ul></div>':'');
  if(complete){
+  const balance=Number(x.receivables?.balanceCents);
+  const awaitingPayment=Number.isFinite(balance)&&balance>0;
   const content=paid?'<div class="notice success">✅ Pedido concluído e cashback de '+brl(f.credit)+' já disponível ao cliente. Não será creditado novamente.</div>':
+   awaitingPayment?'<div class="notice warn">✅ Entrega/retirada concluída. O cliente ainda deve '+brl(balance/100)+' em Conta Cliente. Cashback pendente até quitação integral; nenhum crédito foi liberado.</div>':
    '<div class="notice">✅ O pedido já consta como <b>'+esc(f.status)+'</b>. '+(eligible?'Há cashback elegível ainda não creditado.':'Nenhum crédito elegível está confirmado para liberação.')+'</div>';
   modal('✅ Situação do pedido '+code,base+content+
-  (eligible&&!paid?'<button class="btn primary" type="button" data-action="releaseOrderCashback" data-order="'+esc(code)+'">💚 Liberar '+brl(f.estimate)+' de cashback</button>':''));
+  (awaitingPayment?'<button class="btn primary" type="button" data-action="goReceivables">💳 Consultar saldo em Conta Cliente</button>':
+   eligible&&!paid?'<button class="btn primary" type="button" data-action="releaseOrderCashback" data-order="'+esc(code)+'">💚 Liberar '+brl(f.estimate)+' de cashback</button>':''));
   return;
  }
  const isPickup=s(f.modalidade).toUpperCase()==='RETIRADA',delivery=isPickup?'RETIRADO':'ENTREGUE';
