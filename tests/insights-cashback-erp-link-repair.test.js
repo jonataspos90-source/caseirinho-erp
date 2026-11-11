@@ -25,8 +25,8 @@ test('reparo ERP não repete aprovação nem altera pagamento automaticamente',(
  assert.match(fn,/window\.confirm/);
 });
 test('PWA carrega a versão do reparo do vínculo',()=>{
- assert.match(html,/app\.js\?v=20261111-network-receivables-1/);
- assert.match(sw,/caseirinho-insights-app-shell-v52-connection-receivables-20261111/);
- assert.match(sw,/app\.js\?v=20261111-network-receivables-1/);
+ assert.match(html,/app\.js\?v=20261111-connection-receivables-2/);
+ assert.match(sw,/caseirinho-insights-app-shell-v53-connection-receivables-20261111/);
+ assert.match(sw,/app\.js\?v=20261111-connection-receivables-2/);
  assert.doesNotThrow(()=>new vm.Script(app));
 });
