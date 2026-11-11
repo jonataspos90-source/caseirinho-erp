@@ -49,7 +49,7 @@ test('Atualização do painel limita consultas simultâneas a três',async()=>{
  assert.ok(max<=3);
 });
 test('Painel não inventa horário de atualização quando todas as consultas falham',()=>{
- assert.match(source,/if\(loaded\)st\.lastUpdated=new Date\(\)/);
+ assert.match(source,/if\(loadedCore\)st\.lastUpdated=new Date\(\)/);
  assert.match(source,/st\.dataStatus=!loaded\?'offline'/);
  assert.match(source,/dados anteriores foram preservados/);
 });
