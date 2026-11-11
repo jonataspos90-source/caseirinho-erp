@@ -45,16 +45,18 @@ function render(){
 async function load(reset=true){
  if(st.busy||!bridge()?.api)return;
  st.busy=true;const btn=E('receivableRefresh');if(btn){btn.disabled=true;btn.textContent='Consultando...'}
- if(reset){st.offset=0;st.orders=[];}
+ // Só substitui cartões após receber a resposta. Falha de rede não apaga vendas já exibidas.
  try{
-  const params=new URLSearchParams({limit:'100',offset:String(st.offset),search:st.query,filter:st.filter});
+  const params=new URLSearchParams({limit:'100',offset:String(reset?0:st.offset),search:st.query,filter:st.filter});
   const result=await bridge().api('receivables?'+params.toString());
+  const previous=reset?[]:st.orders;
+  const seen=new Set(previous.map(x=>x.orderId));
+  const fresh=A(result.orders).filter(x=>!seen.has(x.orderId)&&!!seen.add(x.orderId));
+  st.orders=[...previous,...fresh];
   st.stats=result.summary;st.total=N(result.total);
-  const seen=new Set(st.orders.map(x=>x.orderId));
-  st.orders.push(...A(result.orders).filter(x=>!seen.has(x.orderId)));
   st.offset=st.orders.length;render();
   notice(st.orders.length+' pedido(s) exibido(s) · '+st.total+' localizado(s).'+(result.truncated?' O histórico ultrapassou o limite da consulta; solicite paginação adicional.':''));
- }catch(error){notice('Falha ao consultar contas e recebimentos: '+error.message,true);}
+ }catch(error){notice('Conexão indisponível para Contas e Recebimentos. Os cartões já carregados foram preservados; toque em Atualizar contas para consultar novamente.',true);}
  finally{st.busy=false;if(btn){btn.disabled=false;btn.textContent='↻ Atualizar contas'}}
 }
 async function detail(code,showForm=false){
