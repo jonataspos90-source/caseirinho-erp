@@ -357,10 +357,13 @@ async function loadAll(){
   logout();E('loginNotice').textContent='Sua sessão expirou. Entre novamente com o usuário e senha do ERP.';
   st.syncing=false;E('refreshBtn').disabled=false;return;
  }
- const errors=[];
+ const errors=[],failedCore=[];
  for(let i=0;i<paths.length;i++){
  const x=responses[i],key=paths[i];
- if(x.status==='rejected'){if(!['product-categories','product-drafts','merchandising','order-fulfillment'].includes(key))errors.push(key+': '+x.reason.message);continue}
+ if(x.status==='rejected'){
+  if(!['product-categories','product-drafts','merchandising','order-fulfillment'].includes(key)){errors.push(key+': '+x.reason.message);failedCore.push(key);}
+  continue;
+ }
  const val=x.value;
  if(key==='summary')st.summary=val;
  if(key==='contacts')st.contacts=val.contacts||[];
@@ -372,18 +375,21 @@ async function loadAll(){
  if(key==='order-fulfillment')st.fulfillment=new Map((val.orders||[]).map(x=>[s(x.code),x]));
  if(key==='requests')updateRequestData(val);
  }
+ const loadedCore=responses.slice(0,5).filter(x=>x.status==='fulfilled').length;
  const loaded=responses.filter(x=>x.status==='fulfilled').length;
- if(loaded)st.lastUpdated=new Date();
- st.dataStatus=!loaded?'offline':errors.length?'partial':'ok';
- E('lastSync').textContent=!loaded?
-  'Sem conexão nesta tentativa • '+(st.lastUpdated?'Último dado: '+dt(st.lastUpdated):'aguardando primeira atualização'):
-  'Última atualização: '+dt(st.lastUpdated)+' • '+(errors.length?'Dados parciais':'Conectado ao Neon e CRM');
- E('sideSync').textContent=!loaded?'⚠ Sem conexão':errors.length?'Verificar integração':'✓ Sincronizado';
- E('globalNotice').className='notice'+(!loaded||errors.length?' error':'');
- E('globalNotice').textContent=!loaded?
-  '⚠️ Não foi possível atualizar nesta tentativa. Sua sessão e os dados anteriores foram preservados. Verifique a conexão e toque em Atualizar.':
-  errors.length?'⚠️ Atualização parcial: '+errors.join(' | ')+'. Os módulos que responderam foram atualizados; os demais mantiveram seus dados anteriores.':
-  'Dados consultados por API autenticada. Os pings não representam visitas; instalações só são confirmadas por appinstalled e só há ranking com eventos reais.';
+ if(loadedCore)st.lastUpdated=new Date();
+ st.dataStatus=!loadedCore?'offline':failedCore.length?'partial':'ok';
+ const missing=failedCore.map(x=>({summary:'Visão geral',contacts:'Clientes',orders:'Pedidos',catalog:'Produtos',requests:'Solicitações'}[x]||x));
+ E('lastSync').textContent=!loadedCore
+  ?'Dados principais indisponíveis • '+(st.lastUpdated?'Última consulta válida: '+dt(st.lastUpdated):'Sem consulta válida')
+  :'Última atualização: '+dt(st.lastUpdated)+' • '+(failedCore.length?'Dados parciais':'Dados principais atualizados');
+ E('sideSync').textContent=!loadedCore?'⚠ Sem atualização':failedCore.length?'Atualização parcial':'✓ Sincronizado';
+ const notice=E('globalNotice');
+ notice.className='notice'+(!loadedCore||failedCore.length?' error':'');
+ notice.textContent=!loadedCore
+  ?'⚠️ A conexão com as consultas principais falhou nesta tentativa. Sua sessão e os dados anteriores foram preservados. Verifique a conexão e toque em Atualizar.'
+  :failedCore.length?'⚠️ Falha temporária em '+missing.join(', ')+'. Os outros módulos foram atualizados. Toque em Atualizar para tentar novamente.'
+  :'Dados consultados pela API autenticada. Os pings não representam visitas nem instalações confirmadas.';
  E('loginScreen').hidden=true;
  st.syncing=false;E('refreshBtn').disabled=false;render();
 }
@@ -419,7 +425,7 @@ function notifyRequests(list){
  if('Notification'in window&&Notification.permission==='granted')try{new Notification('Caseirinho • Novo pedido de cardápio',{body:list.length+' solicitação(ões) aguardando atendimento.'})}catch(_){}
 }
 async function loadRequests(){
- if(!st.token||st.syncing)return;
+ if(!st.token||st.syncing||document.visibilityState==='hidden')return;
  try{const d=await api('requests');updateRequestData(d);if(st.view==='dashboard'||st.view==='requests')render();}
  catch(e){E('sideSync').textContent='Falha na consulta de alertas';}
 }
@@ -1819,7 +1825,7 @@ function toggleOrderAlerts(){
  }
 }
 async function pollNewOrders(){
- if(!st.token)return;
+ if(!st.token||st.syncing||document.visibilityState==='hidden')return;
  try{
   const data=await api('new-orders-alert'),items=data.orders||[],seen=alertSeen();
   const fresh=items.filter(x=>!seen.has(s(x.id))&&new Date(x.createdAt).getTime()>Date.now()-8*3600000);
@@ -2391,8 +2397,8 @@ function bind(){
 async function init(){
  tokenSetup();bind();
  if(st.token){await loadAll();{const params=new URLSearchParams(location.search),requested=params.get('view');if(['blackfriday','sazonais','products','operations','financeiro','sales','receivables'].includes(requested))nav(requested);if(requested==='products'&&params.get('product')){const id=params.get('product');if(st.catalog.some(x=>s(x.id)===s(id)))editProduct(id);}}}else E('loginScreen').hidden=false;
- setInterval(loadRequests,30000);
- setInterval(loadAll,120000);
+ setInterval(loadRequests,90000);
+ setInterval(()=>{if(document.visibilityState!=='hidden')loadAll();},180000);
  await pollNewOrders();
  setInterval(pollNewOrders,30000);
 }
