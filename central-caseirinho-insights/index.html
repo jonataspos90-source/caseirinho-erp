@@ -4,7 +4,7 @@
 <title>Central Caseirinho Insights | CRM e Loja</title>
 <link rel="stylesheet" href="./styles.css?v=20261110-product-names-2"><link rel="stylesheet" href="./financeiro.css?v=20261110-platform-1">
 <link rel="manifest" href="./manifest.webmanifest?v=2"><link rel="icon" type="image/png" sizes="192x192" href="/caseirinho-loja/icons/icon-192.png"><link rel="apple-touch-icon" href="/caseirinho-loja/icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default">
-</head><body>
+<style>.season-images-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;margin-top:12px}.season-image-tile{border:1px solid #c9dfd0;padding:8px;border-radius:10px;background:#f8fbf8}.season-image-tile img{height:100px;width:100%;object-fit:cover;border-radius:7px}.season-image-tile .toolbar{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}.season-image-tile button{padding:6px 8px}</style></head><body>
 <div class="auth-screen" id="loginScreen">
  <div class="auth"><div style="font-size:45px">🍝</div><p class="eyebrow">Caseirinho Massas Artesanais</p>
  <h2>Central de Insights</h2><p>Aplicativo independente para acompanhar os clientes, o movimento do app, os pedidos e o atendimento pelo WhatsApp.</p>
@@ -371,9 +371,10 @@
     <label>Nome da campanha *<input id="seasonTitle" type="text" maxlength="100" placeholder="Ex.: Encomendas de Natal" required></label>
     <label class="full">Texto do banner<input id="seasonBanner" type="text" maxlength="160" placeholder="Ex.: Seu Natal mais saboroso com Caseirinho!"></label>
     <label class="full">Descrição da campanha<textarea id="seasonDescription" rows="2" maxlength="600" placeholder="Produtos para ocasiões especiais"></textarea></label>
+    <div class="full" style="border:1px solid #d3e2d8;border-radius:12px;padding:14px"><h3>🖼️ Vinheta de fotos no aplicativo</h3><p class="subtitle">Adicione até 8 fotos. Elas passam automaticamente no banner da loja, na ordem abaixo. JPG, PNG e WebP; arquivos são reduzidos antes de salvar.</p><input id="seasonImagesUpload" type="file" accept="image/jpeg,image/png,image/webp" multiple><div class="toolbar" style="margin-top:10px"><input id="seasonImageUrl" type="url" placeholder="Ou cole o link HTTPS de uma imagem"><button id="seasonAddImageUrl" class="btn" type="button">Adicionar URL</button></div><div id="seasonImagesPreview" class="season-images-grid" aria-live="polite"></div><small>As fotos permanecem vinculadas à campanha ao editar. Use as setas para mudar a ordem.</small></div>
     <label>Receber pedidos de *<input id="seasonFrom" type="date"></label>
     <label>Encomendar até *<input id="seasonUntil" type="date"></label>
-    <label class="full">Datas disponíveis para retirada/entrega * (uma por linha, AAAA-MM-DD)<textarea id="seasonDates" rows="3" placeholder="2026-12-23&#10;2026-12-24"></textarea></label>
+    <label class="full">Datas disponíveis para retirada/entrega * (uma por linha, AAAA-MM-DD)<textarea id="seasonDates" rows="3" placeholder="Digite, por exemplo: 2026-12-23&#10;2026-12-24"></textarea><small>As datas precisam ser digitadas; os exemplos em cinza não são preenchimento.</small></label>
     <label>Pedido mínimo (R$)<input id="seasonMinValue" type="number" step=".01" min="0" value="0"></label>
     <label>Valor máximo da encomenda (R$; 0 = sem limite)<input id="seasonMaxValue" type="number" step=".01" min="0" value="0"></label>
     <label>Quantidade mínima total (UN)<input id="seasonMinTotalQty" type="number" min="1" step="1" value="1"></label>
@@ -429,7 +430,7 @@
  </nav>
 <div id="toast" class="toast" role="status" hidden></div>
 <div id="modal" class="modal-bg" hidden><div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><h2 id="modalTitle">Mensagem para WhatsApp</h2><div id="modalContent"></div><div class="toolbar" style="justify-content:flex-end;margin-top:20px"><button class="btn" id="modalClose">Fechar</button></div></div></div>
-<script src="./app.js?v=20261111-account-cashback-gate-3" defer></script>
+<script src="./app.js?v=20261112-season-images-1" defer></script>
 <script src="./category-manager.js?v=20261110-1" defer></script>
 <script src="./sales-stock-levels.js?v=43-stock-visible" defer></script>
 <script src="./cashback-pending-erp.js?v=1" defer></script>
