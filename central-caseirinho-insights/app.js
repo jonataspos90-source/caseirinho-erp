@@ -2270,12 +2270,12 @@ async function seasonLoadOrders(){
 }
 function seasonClientMessage(o){
  const f=o.seasonal||{},delivery=o.mode==='ENTREGA',items=Array.isArray(o.items)?o.items:Array.isArray(o.itens)?o.itens:[];
- const details=items.length?'\\nItens:\\n'+items.map(p=>'• '+s(p.quantity||p.quantidade||1)+' × '+s(p.name||p.nome||p.descricao||'Produto')).join('\\n'):'\\nItens e quantidades: confira o comprovante do pedido.';
- return '🎄 CASEIRINHO — CONFIRMAÇÃO DE ENCOMENDA\\nPedido: '+s(o.code)+'\\nCliente: '+s(o.name)+'\\nCampanha: '+s(f.campaignTitle)+details+
- '\\nData: '+seasonTextDate(o.deliveryDate)+'\\nModalidade: '+(delivery?'Entrega (horário a combinar)':'Retirada (confirmar horário)')+
- '\\nTotal: '+brl(o.total)+'\\nSinal (50%): '+brl(f.depositDue)+' — '+(f.depositStatus==='PAID'?'RECEBIDO':'PENDENTE DE CONFIRMAÇÃO')+
- '\\nSaldo: '+brl(f.balanceDue)+' — '+(f.balanceStatus==='PAID'?'RECEBIDO':delivery?'pagar antes da saída para entrega':'pagar na retirada')+
- '\\n\\nCONDIÇÕES: A produção é reservada após a confirmação efetiva do sinal. Confira itens, quantidades, data e endereço. Mudanças dependem de disponibilidade. Pedimos aviso antecipado para cancelamentos. Custos comprovados de produção poderão ser considerados em eventual retenção, observada a legislação e o direito de arrependimento aplicável às compras a distância. Se houver falha do Caseirinho, garantimos as soluções previstas na lei. Para entregas, o horário será combinado e o saldo deverá ser quitado antes do envio. Se não houver alguém no endereço, entraremos em contato para combinar alternativa e eventual custo de nova entrega.\\n\\nResponda: LI E CONCORDO E CONFIRMO OS DADOS DO PEDIDO. 💚';
+ const details=items.length?'\nItens:\n'+items.map(p=>'• '+s(p.quantity||p.quantidade||1)+' × '+s(p.name||p.nome||p.descricao||'Produto')).join('\n'):'\nItens e quantidades: confira o comprovante do pedido.';
+ return '🎄 CASEIRINHO — CONFIRMAÇÃO DE ENCOMENDA\nPedido: '+s(o.code)+'\nCliente: '+s(o.name)+'\nCampanha: '+s(f.campaignTitle)+details+
+ '\nData: '+seasonTextDate(o.deliveryDate)+'\nModalidade: '+(delivery?'Entrega (horário a combinar)':'Retirada (confirmar horário)')+
+ '\nTotal: '+brl(o.total)+'\nSinal (50%): '+brl(f.depositDue)+' — '+(f.depositStatus==='PAID'?'RECEBIDO':'PENDENTE DE CONFIRMAÇÃO')+
+ '\nSaldo: '+brl(f.balanceDue)+' — '+(f.balanceStatus==='PAID'?'RECEBIDO':delivery?'pagar antes da saída para entrega':'pagar na retirada')+
+ '\n\nCONDIÇÕES: A produção é reservada após a confirmação efetiva do sinal. Confira itens, quantidades, data e endereço. Mudanças dependem de disponibilidade. Pedimos aviso antecipado para cancelamentos. Custos comprovados de produção poderão ser considerados em eventual retenção, observada a legislação e o direito de arrependimento aplicável às compras a distância. Se houver falha do Caseirinho, garantimos as soluções previstas na lei. Para entregas, o horário será combinado e o saldo deverá ser quitado antes do envio. Se não houver alguém no endereço, entraremos em contato para combinar alternativa e eventual custo de nova entrega.\n\nResponda: LI E CONCORDO E CONFIRMO OS DADOS DO PEDIDO. 💚';
 }
 async function seasonCopyClientMessage(id){
  const o=(st.seasonOrders?.orders||[]).find(x=>s(x.id)===s(id));if(!o)return seasonAlert('Atualize os pedidos.',true);
