@@ -2251,7 +2251,7 @@ function renderSeasonAdmin(){
  E('seasonStats').innerHTML=[
   statsCard('🎄','Campanhas',campaigns.length,'Datas sazonais cadastradas'),
   statsCard('📅','Em aberto',campaigns.filter(c=>c.status==='ABERTA').length,'Aceitando encomendas'),
-  statsCard('💚','Sinal pendente',orders.filter(o=>o.seasonal?.depositStatus!=='PAID').length,'Encomendas não confirmadas'),
+  statsCard('💚','Sinal pendente',orders.filter(o=>o.seasonal?.campaignId&&o.seasonal?.depositStatus!=='PAID'&&!['CANCELADO','REJEITADO'].includes(s(o.status).toUpperCase())).length,'Pedidos sazonais, não carrinhos'),
   statsCard('💰','Saldo pendente',brl(orders.reduce((sum,o)=>sum+(o.seasonal?.balanceStatus==='PAID'?0:n(o.seasonal?.balanceDue)),0)),'Valor a receber na entrega')
  ].join('');
  const current=E('seasonCampaignSelect').value;
@@ -2266,7 +2266,28 @@ function renderSeasonAdmin(){
  renderSeasonOrders();
 }
 async function seasonLoadOrders(){
- try{st.seasonOrders=await api('seasonal-orders');renderSeasonAdmin();}catch(err){seasonAlert('Falha ao consultar encomendas: '+err.message,true);}
+ try{st.seasonOrders=await api('seasonal-orders');renderSeasonAdmin();await seasonLoadLeads();}catch(err){seasonAlert('Falha ao consultar encomendas: '+err.message,true);}
+}
+async function seasonLoadLeads(){
+ const holder=E('seasonLeadList'),count=E('seasonLeadCount');
+ if(!holder)return;
+ holder.textContent='Consultando carrinhos sazonais...';
+ try{
+  const data=await api('seasonal-leads');
+  const leads=Array.isArray(data.leads)?data.leads:[];
+  count.textContent=String(leads.length);
+  holder.innerHTML=leads.length?'<div class="mobile-list">'+leads.map(l=>{
+   const phone=s(l.phone).replace(/\\D/g,''),who=s(l.name).trim()||'Cliente';
+   const list=Array.isArray(l.items)?l.items:[];
+   const description=list.map(p=>s(p.quantity||1)+' × '+s(p.name)).join(', ');
+   const msg='Olá, '+who+'! 💚 Aqui é do Caseirinho Massas Artesanais. Vimos que você estava escolhendo delícias para '+s(l.campaignTitle||'uma data especial')+' e queríamos saber se podemos ajudar. 🎄🍝 Sua encomenda ainda não foi finalizada e nenhuma cobrança foi feita. Posso ajudar com os produtos, quantidades, datas ou entrega? Vai ser um prazer fazer parte da sua comemoração! 💚';
+   const url='https://wa.me/55'+phone+'?text='+encodeURIComponent(msg);
+   return '<article class="mobile-record"><div class="mobile-record-head"><b>🛒 '+esc(who)+'</b><span class="badge warn">Não finalizou</span></div>'+
+   '<p>📱 '+esc(phone)+' · '+esc(l.campaignTitle)+'<br>Produtos no carrinho: '+esc(description||'Itens não identificados')+'</p>'+
+   '<p>💰 Valor estimado: '+brl(l.total)+' · Última atividade: há '+Math.round(n(l.inactiveMinutes))+' minutos</p>'+
+   '<a class="btn primary" href="'+esc(url)+'" target="_blank" rel="noopener noreferrer">💬 Oferecer ajuda no WhatsApp</a></article>';
+  }).join('')+'</div>':cellEmpty('Nenhuma encomenda abandonada identificada neste momento. Campanhas abertas não são pedidos de clientes.');
+ }catch(err){holder.textContent='Não foi possível consultar oportunidades: '+err.message;}
 }
 function seasonClientMessage(o){
  const f=o.seasonal||{},delivery=o.mode==='ENTREGA',items=Array.isArray(o.items)?o.items:Array.isArray(o.itens)?o.itens:[];
@@ -2379,6 +2400,7 @@ function bindSeasonAdmin(){
  E('seasonSave').addEventListener('click',saveSeasonalCampaign);
  document.querySelectorAll('[data-season-admin-tab]').forEach(b=>b.addEventListener('click',()=>seasonAdminTab(b.dataset.seasonAdminTab)));
  E('seasonLoadOrders').addEventListener('click',seasonLoadOrders);
+ E('seasonLoadLeads').addEventListener('click',seasonLoadLeads);
  E('seasonOrderSearch').addEventListener('input',renderSeasonOrders);
  E('seasonOrderFilter').addEventListener('change',renderSeasonOrders);
  document.addEventListener('click',e=>{
