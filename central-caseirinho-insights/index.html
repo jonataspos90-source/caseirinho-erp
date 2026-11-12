@@ -390,6 +390,12 @@
  <div id="seasonOrdersPanel" hidden>
   <div class="toolbar"><input type="search" id="seasonOrderSearch" placeholder="Buscar cliente, campanha ou pedido..."><select id="seasonOrderFilter"><option value="all">Todas as encomendas</option><option value="deposit">⏳ Sinal pendente</option><option value="paid">✅ Sinal confirmado</option><option value="balance">💰 Saldo pendente</option><option value="completed">🎉 Quitadas</option></select><button id="seasonLoadOrders" type="button" class="btn">↻ Atualizar encomendas</button></div>
   <div id="seasonOrderList"></div>
+  <article class="card" style="margin-top:16px">
+   <h3>🛒 Clientes com encomenda não finalizada <span id="seasonLeadCount" class="badge">0</span></h3>
+   <p>Clientes identificados que adicionaram produtos sazonais e interromperam a compra há pelo menos 15 minutos. Não são pedidos confirmados, nem pagamentos pendentes. O contato por WhatsApp é iniciado manualmente.</p>
+   <button id="seasonLoadLeads" type="button" class="btn">↻ Atualizar oportunidades</button>
+   <div id="seasonLeadList" style="margin-top:12px"></div>
+  </article>
  </div>
 </section>
 <section id="merch" class="section">
