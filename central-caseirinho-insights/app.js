@@ -2268,6 +2268,21 @@ function renderSeasonAdmin(){
 async function seasonLoadOrders(){
  try{st.seasonOrders=await api('seasonal-orders');renderSeasonAdmin();}catch(err){seasonAlert('Falha ao consultar encomendas: '+err.message,true);}
 }
+function seasonClientMessage(o){
+ const f=o.seasonal||{},delivery=o.mode==='ENTREGA',items=Array.isArray(o.items)?o.items:Array.isArray(o.itens)?o.itens:[];
+ const details=items.length?'\\nItens:\\n'+items.map(p=>'• '+s(p.quantity||p.quantidade||1)+' × '+s(p.name||p.nome||p.descricao||'Produto')).join('\\n'):'\\nItens e quantidades: confira o comprovante do pedido.';
+ return '🎄 CASEIRINHO — CONFIRMAÇÃO DE ENCOMENDA\\nPedido: '+s(o.code)+'\\nCliente: '+s(o.name)+'\\nCampanha: '+s(f.campaignTitle)+details+
+ '\\nData: '+seasonTextDate(o.deliveryDate)+'\\nModalidade: '+(delivery?'Entrega (horário a combinar)':'Retirada (confirmar horário)')+
+ '\\nTotal: '+brl(o.total)+'\\nSinal (50%): '+brl(f.depositDue)+' — '+(f.depositStatus==='PAID'?'RECEBIDO':'PENDENTE DE CONFIRMAÇÃO')+
+ '\\nSaldo: '+brl(f.balanceDue)+' — '+(f.balanceStatus==='PAID'?'RECEBIDO':delivery?'pagar antes da saída para entrega':'pagar na retirada')+
+ '\\n\\nCONDIÇÕES: A produção é reservada após a confirmação efetiva do sinal. Confira itens, quantidades, data e endereço. Mudanças dependem de disponibilidade. Pedimos aviso antecipado para cancelamentos. Custos comprovados de produção poderão ser considerados em eventual retenção, observada a legislação e o direito de arrependimento aplicável às compras a distância. Se houver falha do Caseirinho, garantimos as soluções previstas na lei. Para entregas, o horário será combinado e o saldo deverá ser quitado antes do envio. Se não houver alguém no endereço, entraremos em contato para combinar alternativa e eventual custo de nova entrega.\\n\\nResponda: LI E CONCORDO E CONFIRMO OS DADOS DO PEDIDO. 💚';
+}
+async function seasonCopyClientMessage(id){
+ const o=(st.seasonOrders?.orders||[]).find(x=>s(x.id)===s(id));if(!o)return seasonAlert('Atualize os pedidos.',true);
+ const message=seasonClientMessage(o);
+ try{await navigator.clipboard.writeText(message);seasonAlert('📋 Mensagem copiada. Revise os dados antes de enviar pelo WhatsApp.');}
+ catch(_){window.prompt('Copie a mensagem para o WhatsApp:',message);}
+}
 function seasonOrderFilter(){
  const q=s(E('seasonOrderSearch').value).toLowerCase(),filter=E('seasonOrderFilter').value;
  return(st.seasonOrders?.orders||[]).filter(o=>(s(o.code)+' '+s(o.name)+' '+s(o.phone)+' '+s(o.seasonal?.campaignTitle)).toLowerCase().includes(q)&&
@@ -2283,7 +2298,7 @@ function renderSeasonOrders(){
   '<p>💰 Total: <b>'+brl(o.total)+'</b> · Sinal: <b>'+brl(f.depositDue)+'</b> · Saldo: <b>'+brl(f.balanceDue)+'</b></p>'+
   '<div class="record-actions">'+(!depositOk?'<button class="btn small primary" data-season-settle="'+esc(o.id)+'" data-stage="DEPOSIT">💚 Confirmar sinal recebido</button>':'<span class="badge good">✅ Sinal confirmado</span>')+
   (depositOk&&!balanceOk?'<button class="btn small gold" data-season-settle="'+esc(o.id)+'" data-stage="BALANCE">💰 Confirmar saldo na entrega</button>':'')+
-  (balanceOk?'<span class="badge good">✅ Saldo quitado</span>':'')+'</div></article>';
+  (balanceOk?'<span class="badge good">✅ Saldo quitado</span>':'')+'<button class="btn small" type="button" data-season-message="'+esc(o.id)+'">📋 Mensagem para cliente</button></div></article>';
  }).join('')+'</div>':cellEmpty('Nenhuma encomenda encontrada neste filtro.');
 }
 function seasonAdminTab(tab){
@@ -2369,6 +2384,7 @@ function bindSeasonAdmin(){
  document.addEventListener('click',e=>{
   const edit=e.target.closest('[data-season-edit]');if(edit){E('seasonCampaignSelect').value=edit.dataset.seasonEdit;seasonChooseCampaign(edit.dataset.seasonEdit);}
   const settle=e.target.closest('[data-season-settle]');if(settle)seasonConfirmPayment(settle.dataset.seasonSettle,settle.dataset.stage);
+   const message=e.target.closest('[data-season-message]');if(message)seasonCopyClientMessage(message.dataset.seasonMessage);
  });
 }
 function bind(){
