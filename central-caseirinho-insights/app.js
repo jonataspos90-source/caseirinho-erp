@@ -2306,7 +2306,7 @@ async function seasonCopyClientMessage(id){
 }
 function seasonOrderFilter(){
  const q=s(E('seasonOrderSearch').value).toLowerCase(),filter=E('seasonOrderFilter').value;
- return(st.seasonOrders?.orders||[]).filter(o=>(s(o.code)+' '+s(o.name)+' '+s(o.phone)+' '+s(o.seasonal?.campaignTitle)).toLowerCase().includes(q)&&
+ return(st.seasonOrders?.orders||[]).filter(o=>!!s(o.seasonal?.campaignId)).filter(o=>(s(o.code)+' '+s(o.name)+' '+s(o.phone)+' '+s(o.seasonal?.campaignTitle)).toLowerCase().includes(q)&&
  (filter==='all'||filter==='deposit'&&o.seasonal?.depositStatus!=='PAID'||filter==='paid'&&o.seasonal?.depositStatus==='PAID'||filter==='balance'&&o.seasonal?.depositStatus==='PAID'&&o.seasonal?.balanceStatus!=='PAID'||filter==='completed'&&o.seasonal?.balanceStatus==='PAID'));
 }
 function renderSeasonOrders(){
