@@ -2188,6 +2188,29 @@ async function loadSeasonAdmin(){
 function seasonTextDate(x){
  if(!x)return'—';const [y,m,d]=s(x).split('-');return d+'/'+m+'/'+y;
 }
+let seasonBannerImages=[];
+function seasonRenderImages(){
+ const holder=E('seasonImagesPreview');if(!holder)return;
+ holder.innerHTML=seasonBannerImages.map((src,i)=>'<div class="season-image-tile"><img src="'+esc(src)+'" alt="Foto '+(i+1)+' da vinheta"><div class="toolbar"><button type="button" class="btn small" data-season-img-move="'+i+'" data-delta="-1" '+(i===0?'disabled':'')+'>←</button><button type="button" class="btn small" data-season-img-move="'+i+'" data-delta="1" '+(i===seasonBannerImages.length-1?'disabled':'')+'>→</button><button type="button" class="btn small" data-season-img-remove="'+i+'">Excluir</button></div></div>').join('');
+}
+function seasonImageFromFile(file){
+ return new Promise((resolve,reject)=>{
+  if(!/^image\/(jpeg|png|webp)$/.test(file.type))return reject(Error('Use imagens JPG, PNG ou WebP.'));
+  if(file.size>12*1024*1024)return reject(Error('A foto deve ter no máximo 12 MB antes da redução.'));
+  const url=URL.createObjectURL(file),img=new Image();
+  img.onload=()=>{
+   URL.revokeObjectURL(url);
+   const scale=Math.min(1,1280/Math.max(img.naturalWidth,img.naturalHeight)),canvas=document.createElement('canvas');
+   canvas.width=Math.max(1,Math.round(img.naturalWidth*scale));canvas.height=Math.max(1,Math.round(img.naturalHeight*scale));
+   canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
+   let result='';
+   for(const quality of [.78,.65,.52,.4,.3]){result=canvas.toDataURL('image/jpeg',quality);if(result.length<290000)break;}
+   if(result.length>=290000)return reject(Error('Foto ainda grande. Escolha uma imagem mais leve.'));
+   resolve(result);
+  };
+  img.onerror=()=>{URL.revokeObjectURL(url);reject(Error('Não foi possível abrir esta imagem.'));};img.src=url;
+ });
+}
 function seasonSaveEdits(){
  document.querySelectorAll('[data-season-product]').forEach(el=>{
   const id=el.dataset.seasonProduct;
@@ -2198,6 +2221,7 @@ function seasonSaveEdits(){
 function seasonChooseCampaign(id){
  const campaign=(st.seasonData?.campaigns||[]).find(x=>x.id===id);
  st.seasonProductRules=new Map((campaign?.products||[]).map(x=>[x.id,{...x}]));
+ seasonBannerImages=Array.isArray(campaign?.bannerImages)?[...campaign.bannerImages]:[];seasonRenderImages();
  const setters={seasonTitle:campaign?.title||'',seasonBanner:campaign?.bannerText||'',seasonDescription:campaign?.description||'',
  seasonFrom:campaign?.orderFrom||'',seasonUntil:campaign?.orderUntil||'',seasonDates:(campaign?.fulfillmentDates||[]).join('\n'),
  seasonMinValue:campaign?.minimumOrderValue||0,seasonMaxValue:campaign?.maximumOrderValue||0,seasonMinTotalQty:campaign?.minTotalQuantity||1};
@@ -2269,13 +2293,20 @@ function seasonAdminTab(tab){
 }
 async function saveSeasonalCampaign(){
  seasonSaveEdits();
- const dates=s(E('seasonDates').value).split(/[\n,;]+/).map(x=>x.trim()).filter(Boolean);
+ const dates=s(E('seasonDates').value).split(/[\n,;]+/).map(x=>x.trim()).filter(Boolean).map(x=>/^\d{2}\/\d{2}\/\d{4}$/.test(x)?x.slice(6)+'-'+x.slice(3,5)+'-'+x.slice(0,2):x);
  const body={id:E('seasonCampaignSelect').value||undefined,title:s(E('seasonTitle').value).trim(),description:s(E('seasonDescription').value).trim(),
- bannerText:s(E('seasonBanner').value).trim(),orderFrom:E('seasonFrom').value,orderUntil:E('seasonUntil').value,fulfillmentDates:[...new Set(dates)].sort(),
+ bannerText:s(E('seasonBanner').value).trim(),bannerImages:[...seasonBannerImages],orderFrom:E('seasonFrom').value,orderUntil:E('seasonUntil').value,fulfillmentDates:[...new Set(dates)].sort(),
  minimumOrderValue:Number(E('seasonMinValue').value)||0,maximumOrderValue:Number(E('seasonMaxValue').value)||0,minTotalQuantity:Number(E('seasonMinTotalQty').value)||1,
  allowPickup:E('seasonPickup').checked,allowDelivery:E('seasonDelivery').checked,active:E('seasonActive').checked,
  products:[...st.seasonProductRules.values()]};
- if(!body.title||!body.orderFrom||!body.orderUntil||!body.fulfillmentDates.length||!body.products.length)return seasonAlert('Informe campanha, prazo, datas de atendimento e pelo menos um produto.',true);
+ if(!body.title)return seasonAlert('Informe o nome da campanha.',true);
+ if(!body.orderFrom||!body.orderUntil)return seasonAlert('Informe as duas datas do período de encomendas.',true);
+ if(body.orderFrom>body.orderUntil)return seasonAlert('A data inicial é posterior ao prazo final.',true);
+ if(!body.fulfillmentDates.length)return seasonAlert('Digite as datas de entrega/retirada no campo próprio. O texto de exemplo não é um valor preenchido.',true);
+ if(body.fulfillmentDates.some(d=>!/^\d{4}-\d{2}-\d{2}$/.test(d)))return seasonAlert('Datas de entrega inválidas. Utilize AAAA-MM-DD ou DD/MM/AAAA, uma por linha.',true);
+ if(body.fulfillmentDates.some(d=>d<body.orderUntil))return seasonAlert('A entrega/retirada deve ser na data limite de encomendas ou depois dela.',true);
+ if(!body.allowPickup&&!body.allowDelivery)return seasonAlert('Marque Entrega e/ou Retirada.',true);
+ if(!body.products.length)return seasonAlert('Marque ao menos uma caixa de seleção à esquerda de um produto.',true);
  if(!window.confirm('Publicar '+body.title+' com '+body.products.length+' produtos? Os clientes poderão encomendar, pagando 50% de sinal e o restante na entrega.'))return;
  const btn=E('seasonSave');btn.disabled=true;btn.textContent='Publicando...';
  try{
@@ -2311,6 +2342,24 @@ function bindSeasonAdmin(){
  });
  E('seasonProductList').addEventListener('input',e=>{
   const row=e.target.closest('[data-season-product]');if(row&&st.seasonProductRules.has(row.dataset.seasonProduct))seasonSaveEdits();
+ });
+ E('seasonImagesUpload').addEventListener('change',async e=>{
+  const input=e.currentTarget,files=[...input.files];input.value='';
+  if(files.length+seasonBannerImages.length>8)return seasonAlert('A vinheta permite até 8 fotos.',true);
+  for(const file of files){try{seasonBannerImages.push(await seasonImageFromFile(file));}catch(err){seasonAlert('Foto '+file.name+': '+err.message,true);}}
+  seasonRenderImages();
+ });
+ E('seasonAddImageUrl').addEventListener('click',()=>{
+  const value=E('seasonImageUrl').value.trim();
+  if(!/^https:\/\/\S+$/i.test(value))return seasonAlert('Use um endereço de imagem HTTPS válido.',true);
+  if(seasonBannerImages.length>=8)return seasonAlert('A vinheta permite até 8 fotos.',true);
+  seasonBannerImages.push(value);E('seasonImageUrl').value='';seasonRenderImages();
+ });
+ E('seasonImagesPreview').addEventListener('click',e=>{
+  const remove=e.target.closest('[data-season-img-remove]');
+  if(remove){seasonBannerImages.splice(Number(remove.dataset.seasonImgRemove),1);return seasonRenderImages();}
+  const move=e.target.closest('[data-season-img-move]');
+  if(move){const i=Number(move.dataset.seasonImgMove),j=i+Number(move.dataset.delta);if(j>=0&&j<seasonBannerImages.length){[seasonBannerImages[i],seasonBannerImages[j]]=[seasonBannerImages[j],seasonBannerImages[i]];seasonRenderImages();}}
  });
  E('seasonSave').addEventListener('click',saveSeasonalCampaign);
  document.querySelectorAll('[data-season-admin-tab]').forEach(b=>b.addEventListener('click',()=>seasonAdminTab(b.dataset.seasonAdminTab)));
