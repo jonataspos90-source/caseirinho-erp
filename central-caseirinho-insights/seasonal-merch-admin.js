@@ -121,7 +121,7 @@ function seasonMerchDrawList(kind){
  const select=E('season'+kind[0]+kind.slice(1).toLowerCase()+'Select');
  const entries=merchItems(kind).slice().sort((a,b)=>(a.sortOrder||0)-(b.sortOrder||0)||a.name.localeCompare(b.name));
  const prev=select.value;
- select.innerHTML=optionList(entries,'➕ Novo '+merchKindLabels[kind]);
+ select.innerHTML=optionList(entries,'➕ '+(kind==='PACK'?'Novo ':'Nova ')+merchKindLabels[kind]);
  if(entries.some(x=>x.id===prev))select.value=prev;
  const el=E('season'+kind[0]+kind.slice(1).toLowerCase()+'List');
  el.innerHTML=entries.length?entries.map(x=>{
@@ -221,7 +221,7 @@ async function seasonMerchSave(kind){
   }
   E('seasonMerchCampaign').value=campaignId;
   seasonMerchReset(kind);seasonMerchRender();
-  seasonMerchStatus('✅ '+merchKindLabels[kind]+' salvo(a) na campanha. A loja mostrará a nova organização.');
+  seasonMerchStatus('✅ '+(kind==='PACK'?'Pack salvo':'Cadastro salvo')+' com sucesso na campanha. '+(kind==='GRADE'?'Produtos e variações atualizados juntos.':'A loja mostrará a nova organização.'));
  }catch(e){seasonMerchStatus('Não foi possível salvar: '+e.message,true)}
  finally{btn.disabled=false;btn.textContent=old}
 }
