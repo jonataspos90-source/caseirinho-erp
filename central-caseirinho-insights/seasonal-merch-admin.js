@@ -4,7 +4,7 @@ const {E,st,api,loadSeasonAdmin,s,esc,brl}=window.CaseirinhoSeasonMerchBridge;
 let seasonMerchTab='category';
 const seasonMerchEditing={CATEGORY:'',GRADE:'',PACK:''};
 let seasonPackSelected=new Set();
-let seasonGradeDraft=new Map();
+let seasonGradeDraft=new Map(),seasonGradeCoverId='';
 const merchKinds={CATEGORY:'categories',GRADE:'grades',PACK:'packs'};
 const merchKindLabels={CATEGORY:'categoria',GRADE:'grade',PACK:'pack'};
 const seasonMerchCurrent=()=>String(E('seasonMerchCampaign')?.value||'');
@@ -40,18 +40,19 @@ function seasonGradeProductPool(){
   const p=catalog.get(String(rule.id));if(!p)return null;
   return{id:String(rule.id),name:p.name||p.id,price:Number(p.price)||0,
    gradeId:String(rule.gradeId||''),variantLabel:String(rule.variantLabel||''),
-   categoryId:String(rule.categoryId||''),active:true,exclusive:false};
+   categoryId:String(rule.categoryId||''),image:String(p.image||''),active:true,exclusive:false};
  }).filter(Boolean);
  const exclusive=(st.seasonData?.exclusiveProducts||[])
   .filter(p=>p.campaignId===campaign.id).map(p=>({
    id:String(p.id),name:p.name||p.id,price:Number(p.price)||0,
    gradeId:String(p.gradeId||''),variantLabel:String(p.variantLabel||''),
-   categoryId:String(p.categoryId||''),active:p.active!==false,exclusive:true
+   categoryId:String(p.categoryId||''),image:String(p.image||''),active:p.active!==false,exclusive:true
   }));
  return [...common,...exclusive].sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'));
 }
-function seasonGradeStartDraft(gradeId){
+function seasonGradeStartDraft(gradeId,coverId=''){
  seasonGradeDraft=new Map();
+ seasonGradeCoverId=coverId;
  for(const p of seasonGradeProductPool()){
   if(p.gradeId&&p.gradeId===gradeId)
    seasonGradeDraft.set(p.id,p.variantLabel||p.name);
@@ -67,6 +68,7 @@ function seasonGradeRenderChoices(){
  const free=pool.filter(p=>p.active&&!seasonGradeDraft.has(p.id)&&(!p.gradeId||p.gradeId===current));
  const shown=free.filter(p=>(p.name+' '+p.id).toLocaleLowerCase('pt-BR').includes(search));
  const selected=[...seasonGradeDraft].map(([id,label])=>({p:byId.get(id),id,label})).filter(x=>!!x.p);
+ if(!seasonGradeCoverId||!seasonGradeDraft.has(seasonGradeCoverId))seasonGradeCoverId=selected[0]?.id||'';
  E('seasonGradeUnassignedCount').textContent=String(free.length);
  E('seasonGradeLinkedCount').textContent=String(selected.length);
  const btnStyle='border:1px solid #bfd9c6;border-radius:10px;padding:7px 10px;background:#effaf1;color:#0b6042;font-weight:800;cursor:pointer';
@@ -82,7 +84,8 @@ function seasonGradeRenderChoices(){
   '<button type="button" data-season-grade-remove="'+esc(id)+'" style="border:1px solid #edcbcb;background:#fff5f5;color:#963d3d;padding:6px 8px;border-radius:8px;cursor:pointer">Remover</button></div>'+
   '<small style="color:#66786e;display:block;margin:3px 0">'+brl(p.price)+(p.active?'':' · Inativo')+'</small>'+
   '<label style="display:block;font-size:12px;color:#305c47">Sabor / tamanho na grade'+
-  '<input type="text" maxlength="80" data-season-grade-label="'+esc(id)+'" value="'+esc(label)+'" placeholder="Ex.: Frango com requeijão" style="width:100%;margin-top:4px"></label></div>'
+  '<input type="text" maxlength="80" data-season-grade-label="'+esc(id)+'" value="'+esc(label)+'" placeholder="Ex.: Frango com requeijão" style="width:100%;margin-top:4px"></label>'+
+  '<label style="display:flex;align-items:center;gap:6px;font-size:12px;margin-top:6px"><input type="radio" name="seasonGradeCover" data-season-grade-cover="'+esc(id)+'" '+(id===seasonGradeCoverId?'checked':'')+'> Foto deste produto como capa</label></div>'
  ).join(''):'<p class="subtitle">Vincule um produto ao lado. Ele aparecerá aqui com seu sabor ou tamanho.</p>';
  E('seasonGradeHint').textContent=selected.length?
   selected.length+' produto(s) na grade. Ao salvar, os vínculos e rótulos serão publicados juntos.':
@@ -154,7 +157,8 @@ function seasonMerchReset(kind){
  if(E(prefix+'Active'))E(prefix+'Active').checked=true;
  if(E(prefix+'Category'))E(prefix+'Category').value='';
  if(kind==='GRADE'){
-  seasonGradeDraft=new Map();
+  seasonGradeDraft=new Map();seasonGradeCoverId='';
+  E('seasonGradeType').value='SABOR';E('seasonGradeChoiceTitle').value='Escolha o sabor';
   if(E('seasonGradeAvailableSearch'))E('seasonGradeAvailableSearch').value='';
   seasonGradeRenderChoices();
  }
@@ -172,7 +176,11 @@ function seasonMerchEdit(kind,id){
  if(E(prefix+'Description'))E(prefix+'Description').value=item.description||'';
  if(E(prefix+'Image'))E(prefix+'Image').value=item.image||'';
  if(E(prefix+'Category'))E(prefix+'Category').value=item.categoryId||'';
- if(kind==='GRADE')seasonGradeStartDraft(item.id);
+ if(kind==='GRADE'){
+  E('seasonGradeType').value=item.type||'SABOR';
+  E('seasonGradeChoiceTitle').value=item.choiceTitle||'Escolha o sabor';
+  seasonGradeStartDraft(item.id,item.coverId||'');
+ }
  if(kind==='CATEGORY')E('seasonCategoryEmoji').value=item.emoji||'';
  if(kind==='PACK'){
   E('seasonPackQuantity').value=item.quantity;E('seasonPackPrice').value=item.price;
@@ -186,7 +194,7 @@ async function seasonMerchSave(kind){
  const body={kind,id:seasonMerchEditing[kind]||undefined,campaignId,name:E(prefix+'Name').value.trim(),
    sortOrder:Number(E(prefix+'Sort').value),active:E(prefix+'Active').checked};
  if(kind==='CATEGORY')body.emoji=E('seasonCategoryEmoji').value.trim();
- if(kind==='GRADE')Object.assign(body,{description:E('seasonGradeDescription').value.trim(),categoryId:E('seasonGradeCategory').value,image:E('seasonGradeImage').value.trim()});
+ if(kind==='GRADE')Object.assign(body,{description:E('seasonGradeDescription').value.trim(),categoryId:E('seasonGradeCategory').value,image:E('seasonGradeImage').value.trim(),type:E('seasonGradeType').value,choiceTitle:E('seasonGradeChoiceTitle').value.trim(),coverId:seasonGradeCoverId});
  if(kind==='GRADE'){
   body.productVariants=[...seasonGradeDraft].map(([id,variantLabel])=>({id,variantLabel:variantLabel.trim()}));
   if(!body.productVariants.length)return seasonMerchStatus('Vincule pelo menos um produto à grade. Não é preciso cadastrar uma grade vazia.',true);
@@ -236,7 +244,11 @@ function bindSeasonMerch(){
  E('seasonGradeLinked').addEventListener('click',e=>{
   const button=e.target.closest('[data-season-grade-remove]');if(!button)return;
   seasonGradeDraft.delete(button.dataset.seasonGradeRemove);
+  if(seasonGradeCoverId===button.dataset.seasonGradeRemove)seasonGradeCoverId='';
   seasonGradeRenderChoices();
+ });
+ E('seasonGradeLinked').addEventListener('change',e=>{
+  const id=e.target?.dataset?.seasonGradeCover;if(id)seasonGradeCoverId=id;
  });
  E('seasonGradeLinked').addEventListener('input',e=>{
   const id=e.target?.dataset?.seasonGradeLabel;
