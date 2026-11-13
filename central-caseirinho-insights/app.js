@@ -2601,6 +2601,7 @@ async function init(){
  await pollNewOrders();
  setInterval(pollNewOrders,30000);
 }
+window.CaseirinhoSeasonMerchBridge={E,st,api,loadSeasonAdmin,s,esc,brl};
 window.CaseirinhoCategoryBridge={
  api,modal,hideModal,categories:()=>st.categories,
  reload:async()=>{
