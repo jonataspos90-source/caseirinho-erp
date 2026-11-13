@@ -35,13 +35,14 @@ function seasonMerchTabSet(which){
 function seasonGradeProductPool(){
  const campaign=(st.seasonData?.campaigns||[]).find(c=>c.id===seasonMerchCurrent());
  if(!campaign)return[];
- const catalog=new Map((st.seasonData?.products||[]).map(p=>[String(p.id),p]));
- const common=(campaign.products||[]).map(rule=>{
-  const p=catalog.get(String(rule.id));if(!p)return null;
-  return{id:String(rule.id),name:p.name||p.id,price:Number(p.price)||0,
+ const rules=new Map((campaign.products||[]).map(rule=>[String(rule.id),rule]));
+ const common=(st.seasonData?.products||[]).map(p=>{
+  const rule=rules.get(String(p.id))||{};
+  return{id:String(p.id),name:p.name||p.id,price:Number(p.price)||0,
    gradeId:String(rule.gradeId||''),variantLabel:String(rule.variantLabel||''),
-   categoryId:String(rule.categoryId||''),image:String(p.image||''),active:true,exclusive:false};
- }).filter(Boolean);
+   categoryId:String(rule.categoryId||''),image:String(p.image||''),active:true,exclusive:false,
+   participant:rules.has(String(p.id))};
+ });
  const exclusive=(st.seasonData?.exclusiveProducts||[])
   .filter(p=>p.campaignId===campaign.id).map(p=>({
    id:String(p.id),name:p.name||p.id,price:Number(p.price)||0,
@@ -66,7 +67,8 @@ function seasonGradeRenderChoices(){
  const current=seasonMerchEditing.GRADE;
  const search=(E('seasonGradeAvailableSearch')?.value||'').trim().toLocaleLowerCase('pt-BR');
  const free=pool.filter(p=>p.active&&!seasonGradeDraft.has(p.id)&&(!p.gradeId||p.gradeId===current));
- const shown=free.filter(p=>(p.name+' '+p.id).toLocaleLowerCase('pt-BR').includes(search));
+ const matching=free.filter(p=>(p.name+' '+p.id).toLocaleLowerCase('pt-BR').includes(search));
+ const shown=matching.slice(0,80);
  const selected=[...seasonGradeDraft].map(([id,label])=>({p:byId.get(id),id,label})).filter(x=>!!x.p);
  if(!seasonGradeCoverId||!seasonGradeDraft.has(seasonGradeCoverId))seasonGradeCoverId=selected[0]?.id||'';
  E('seasonGradeUnassignedCount').textContent=String(free.length);
@@ -74,7 +76,7 @@ function seasonGradeRenderChoices(){
  const btnStyle='border:1px solid #bfd9c6;border-radius:10px;padding:7px 10px;background:#effaf1;color:#0b6042;font-weight:800;cursor:pointer';
  available.innerHTML=shown.length?shown.map(p=>
   '<div style="display:flex;gap:8px;align-items:center;justify-content:space-between;padding:8px 2px;border-bottom:1px solid #edf0ed">'+
-  '<div style="min-width:0;flex:1"><b>'+esc(p.name)+'</b><small style="display:block;color:#66786e">'+brl(p.price)+(p.exclusive?' · Exclusivo':' · Participante')+'</small></div>'+
+  '<div style="min-width:0;flex:1"><b>'+esc(p.name)+'</b><small style="display:block;color:#66786e">'+brl(p.price)+(p.exclusive?' · Exclusivo':p.participant?' · Na campanha':' · Catálogo — será incluído na campanha')+'</small></div>'+
   '<button type="button" data-season-grade-add="'+esc(p.id)+'" style="'+btnStyle+'">+ Vincular</button></div>'
  ).join(''):
  '<p class="subtitle">'+(search?'Nenhum produto sem grade corresponde à busca.':free.length?'Nenhum produto encontrado.':'Todos os produtos disponíveis já foram vinculados a grades. Se precisar, retire um item de outra grade.')+'</p>';
@@ -87,6 +89,7 @@ function seasonGradeRenderChoices(){
   '<input type="text" maxlength="80" data-season-grade-label="'+esc(id)+'" value="'+esc(label)+'" placeholder="Ex.: Frango com requeijão" style="width:100%;margin-top:4px"></label>'+
   '<label style="display:flex;align-items:center;gap:6px;font-size:12px;margin-top:6px"><input type="radio" name="seasonGradeCover" data-season-grade-cover="'+esc(id)+'" '+(id===seasonGradeCoverId?'checked':'')+'> Foto deste produto como capa</label></div>'
  ).join(''):'<p class="subtitle">Vincule um produto ao lado. Ele aparecerá aqui com seu sabor ou tamanho.</p>';
+ if(matching.length>80)available.insertAdjacentHTML('beforeend','<small style="display:block;padding:8px;color:#718177">Exibindo 80 de '+matching.length+' produtos. Digite o nome para localizar os demais.</small>');
  E('seasonGradeHint').textContent=selected.length?
   selected.length+' produto(s) na grade. Ao salvar, os vínculos e rótulos serão publicados juntos.':
   'Escolha pelo menos um produto para salvar a grade. Não será criada uma grade vazia.';
