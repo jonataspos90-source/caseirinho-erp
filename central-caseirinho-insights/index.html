@@ -426,7 +426,13 @@
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));gap:12px">
        <div style="border:1px solid #d2e3d6;border-radius:13px;padding:12px;background:#fff">
         <div class="toolbar" style="justify-content:space-between;align-items:center"><b>➕ Produtos sem grade</b><span class="badge" id="seasonGradeUnassignedCount">0</span></div>
-        <input type="search" id="seasonGradeAvailableSearch" placeholder="Buscar produto ou sabor disponível..." style="width:100%;margin:8px 0">
+        <input type="search" id="seasonGradeAvailableSearch" placeholder="Buscar por nome, código ou sabor..." style="width:100%;margin:8px 0">
+        <div id="seasonGradeSourceFilters" role="group" aria-label="Origem dos produtos disponíveis" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:9px">
+         <button type="button" class="btn primary small" data-season-grade-source="all">Todos</button>
+         <button type="button" class="btn small" data-season-grade-source="regular">📦 Cadastro normal</button>
+         <button type="button" class="btn small" data-season-grade-source="exclusive">🎄 Exclusivos de encomendas</button>
+        </div>
+        <p class="subtitle" style="margin:0 0 8px">Produtos cadastrados em <b>Encomendas Sazonais</b> aparecem aqui junto aos do cadastro normal, desde que pertençam à campanha selecionada.</p>
         <div id="seasonGradeAvailable" style="max-height:360px;overflow:auto" aria-live="polite"></div>
        </div>
        <div style="border:1px solid #b4d9c1;border-radius:13px;padding:12px;background:#f5fcf6">
@@ -536,7 +542,7 @@
 <div id="toast" class="toast" role="status" hidden></div>
 <div id="modal" class="modal-bg" hidden><div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><h2 id="modalTitle">Mensagem para WhatsApp</h2><div id="modalContent"></div><div class="toolbar" style="justify-content:flex-end;margin-top:20px"><button class="btn" id="modalClose">Fechar</button></div></div></div>
 <script src="./app.js?v=20261113-grade-bridge-1" defer></script>
-<script src="./seasonal-merch-admin.js?v=20261113-grade-linked-3" defer></script>
+<script src="./seasonal-merch-admin.js?v=20261113-grade-unified-1" defer></script>
 <script src="./category-manager.js?v=20261110-1" defer></script>
 <script src="./sales-stock-levels.js?v=43-stock-visible" defer></script>
 <script src="./cashback-pending-erp.js?v=1" defer></script>
