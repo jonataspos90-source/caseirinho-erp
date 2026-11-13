@@ -383,6 +383,27 @@
    <h3>🍝 Produtos participantes e quantidade mínima</h3>
    <div class="toolbar"><input id="seasonProductSearch" type="search" placeholder="Buscar produtos por nome ou código..."><span id="seasonSelected" class="badge">0 selecionados</span></div>
    <div id="seasonProductList" class="season-admin-products"></div>
+   <article class="card" id="seasonExclusivePanel" style="margin-top:18px;border:1px solid #c9decb;background:#fbfdfb">
+    <h3>🎁 Cadastro exclusivo de produtos de encomendas</h3>
+    <p>Itens criados aqui <b>não entram no cardápio comum</b>. Cada produto pertence a uma campanha, tem foto e preço próprios, e só aparece na vitrine sazonal durante sua vigência. Pode ser reutilizado na mesma campanha em outras datas.</p>
+    <div class="form-grid">
+     <label>Campanha vinculada *<select id="seasonExclusiveCampaign"><option value="">Escolha a campanha</option></select></label>
+     <label>Produto exclusivo cadastrado<select id="seasonExclusiveSelect"><option value="">➕ Novo produto sazonal</option></select></label>
+     <label>Nome do produto *<input id="seasonExclusiveName" maxlength="160" placeholder="Ex.: Nhoque especial de Natal"></label>
+     <label>Preço de venda (R$) *<input id="seasonExclusivePrice" type="number" min="0.01" step="0.01" placeholder="68,99"></label>
+     <label class="full">Descrição comercial<textarea id="seasonExclusiveDescription" maxlength="500" rows="3" placeholder="Ingredientes, peso, rendimento e informações importantes para o cliente"></textarea></label>
+     <label>Quantidade mínima<input id="seasonExclusiveMin" type="number" min="1" step="1" value="1"></label>
+     <label>Quantidade máxima (0 = livre)<input id="seasonExclusiveMax" type="number" min="0" step="1" value="0"></label>
+     <label class="full">Foto do produto (JPG, PNG ou WebP)<input id="seasonExclusiveImageUpload" type="file" accept="image/jpeg,image/png,image/webp"></label>
+     <label class="full">Ou URL HTTPS da foto<input id="seasonExclusiveImageUrl" type="url" placeholder="https://..."></label>
+     <label><input id="seasonExclusiveActive" type="checkbox" checked> Disponível nesta campanha</label>
+    </div>
+    <div id="seasonExclusiveImagePreview" style="margin:12px 0"></div>
+    <div class="toolbar"><button class="btn primary" id="seasonExclusiveSave" type="button">💾 Salvar produto exclusivo</button><button class="btn" id="seasonExclusiveNew" type="button">➕ Novo produto</button></div>
+    <div id="seasonExclusiveStatus" class="notice" hidden></div>
+    <h3>Produtos exclusivos já cadastrados</h3>
+    <div id="seasonExclusiveList" class="season-admin-products"></div>
+   </article>
    <button id="seasonSave" class="btn primary" type="button" style="width:100%">💾 Salvar e publicar campanha</button>
   </article>
   <div id="seasonCampaignCards"></div>
@@ -436,7 +457,7 @@
  </nav>
 <div id="toast" class="toast" role="status" hidden></div>
 <div id="modal" class="modal-bg" hidden><div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><h2 id="modalTitle">Mensagem para WhatsApp</h2><div id="modalContent"></div><div class="toolbar" style="justify-content:flex-end;margin-top:20px"><button class="btn" id="modalClose">Fechar</button></div></div></div>
-<script src="./app.js?v=20261112-seasonal-leads-3" defer></script>
+<script src="./app.js?v=20261113-exclusive-1" defer></script>
 <script src="./category-manager.js?v=20261110-1" defer></script>
 <script src="./sales-stock-levels.js?v=43-stock-visible" defer></script>
 <script src="./cashback-pending-erp.js?v=1" defer></script>
