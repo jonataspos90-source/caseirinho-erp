@@ -69,7 +69,7 @@ function seasonGradeRenderChoices(){
  const current=seasonMerchEditing.GRADE;
  const search=(E('seasonGradeAvailableSearch')?.value||'').trim().toLocaleLowerCase('pt-BR');
  const free=pool.filter(p=>p.active&&!seasonGradeDraft.has(p.id)&&(!p.gradeId||p.gradeId===current));
- const matching=free.filter(p=>(seasonGradeSource==='all'||(seasonGradeSource==='exclusive'===p.exclusive))&&(p.name+' '+p.id+' '+p.variantLabel).toLocaleLowerCase('pt-BR').includes(search));
+ const matching=free.filter(p=>(seasonGradeSource==='all'||(seasonGradeSource==='exclusive'&&p.exclusive)||(seasonGradeSource==='regular'&&!p.exclusive))&&(p.name+' '+p.id+' '+p.variantLabel).toLocaleLowerCase('pt-BR').includes(search));
  const shown=matching.slice(0,80);
  E('seasonGradeSourceFilters')?.querySelectorAll('[data-season-grade-source]').forEach(b=>{
   const isCurrent=b.dataset.seasonGradeSource===seasonGradeSource;
@@ -282,7 +282,7 @@ function bindSeasonMerch(){
   });
  }
  E('seasonExclusiveCampaign').addEventListener('change',e=>{
-  E('seasonMerchCampaign').value=e.target.value;seasonMerchRender();
+  seasonMerchSelectCampaign(e.target.value);
  });
  E('seasonExclusiveGrade').addEventListener('change',()=>{
   const grade=merchItems('GRADE',true).find(x=>x.id===E('seasonExclusiveGrade').value);
