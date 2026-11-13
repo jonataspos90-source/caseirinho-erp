@@ -383,6 +383,60 @@
    <h3>🍝 Produtos participantes e quantidade mínima</h3>
    <div class="toolbar"><input id="seasonProductSearch" type="search" placeholder="Buscar produtos por nome ou código..."><span id="seasonSelected" class="badge">0 selecionados</span></div>
    <div id="seasonProductList" class="season-admin-products"></div>
+   <article class="card" id="seasonMerchPanel" style="margin-top:16px;border:1px solid #c5dace;background:#fcfefc">
+    <h3>🧩 Categorias, grades e packs de encomendas</h3>
+    <p>Organize o cardápio da campanha separadamente dos produtos e promoções da loja comum.</p>
+    <label>Campanha para organizar *<select id="seasonMerchCampaign"><option value="">Selecione a campanha</option></select></label>
+    <div class="merch-tabs" style="margin:12px 0">
+     <button type="button" class="btn primary" data-season-merch-tab="category">🏷️ Categorias</button>
+     <button type="button" class="btn" data-season-merch-tab="grade">🧀 Grades e sabores</button>
+     <button type="button" class="btn" data-season-merch-tab="pack">🎁 Packs especiais</button>
+    </div>
+    <div id="seasonMerchStatus" class="notice" hidden></div>
+    <div id="seasonMerchCategoryPanel">
+     <div class="form-grid">
+      <label>Editar categoria<select id="seasonCategorySelect"><option value="">➕ Nova categoria</option></select></label>
+      <label>Nome *<input id="seasonCategoryName" maxlength="100" placeholder="Ex.: Empadas especiais"></label>
+      <label>Emoji da categoria<input id="seasonCategoryEmoji" maxlength="12" placeholder="🥟"></label>
+      <label>Ordem na vitrine<input id="seasonCategorySort" type="number" min="0" value="0"></label>
+      <label><input type="checkbox" id="seasonCategoryActive" checked> Categoria ativa</label>
+     </div>
+     <div class="toolbar"><button type="button" class="btn primary" id="seasonCategorySave">💾 Salvar categoria</button><button type="button" class="btn" id="seasonCategoryNew">➕ Nova</button></div>
+     <div id="seasonCategoryList" class="season-admin-products"></div>
+    </div>
+    <div id="seasonMerchGradePanel" hidden>
+     <p class="subtitle">Crie uma grade, como Empadas. Depois, vincule os sabores e seus valores no cadastro exclusivo de produtos.</p>
+     <div class="form-grid">
+      <label>Editar grade<select id="seasonGradeSelect"><option value="">➕ Nova grade</option></select></label>
+      <label>Nome *<input id="seasonGradeName" maxlength="100" placeholder="Ex.: Panquecas especiais"></label>
+      <label>Categoria<select id="seasonGradeCategory"><option value="">Sem categoria</option></select></label>
+      <label>Ordem na vitrine<input id="seasonGradeSort" type="number" min="0" value="0"></label>
+      <label class="full">Descrição<textarea id="seasonGradeDescription" maxlength="300" rows="2"></textarea></label>
+      <label class="full">Foto opcional (URL HTTPS)<input type="url" id="seasonGradeImage" placeholder="https://..."></label>
+      <label><input type="checkbox" id="seasonGradeActive" checked> Grade ativa</label>
+     </div>
+     <div class="toolbar"><button type="button" class="btn primary" id="seasonGradeSave">💾 Salvar grade</button><button type="button" class="btn" id="seasonGradeNew">➕ Nova</button></div>
+     <div id="seasonGradeList" class="season-admin-products"></div>
+    </div>
+    <div id="seasonMerchPackPanel" hidden>
+     <p class="subtitle">Ex.: 6 empadas de sabores mistos por um valor único, ou 10 panquecas variadas. O cliente escolhe a composição e o servidor valida o desconto.</p>
+     <div class="form-grid">
+      <label>Editar pack<select id="seasonPackSelect"><option value="">➕ Novo pack</option></select></label>
+      <label>Nome *<input id="seasonPackName" maxlength="100" placeholder="Ex.: Kit 6 Empadas"></label>
+      <label>Quantidade do kit *<input id="seasonPackQuantity" type="number" min="2" max="100" value="6"></label>
+      <label>Preço do kit (R$) *<input id="seasonPackPrice" type="number" min="0.01" step="0.01" placeholder="59,99"></label>
+      <label>Ordem na vitrine<input id="seasonPackSort" type="number" min="0" value="0"></label>
+      <label><input type="checkbox" id="seasonPackActive" checked> Pack ativo</label>
+      <label class="full">Descrição<textarea id="seasonPackDescription" maxlength="300" rows="2"></textarea></label>
+      <label class="full">Foto opcional (URL HTTPS)<input type="url" id="seasonPackImage" placeholder="https://..."></label>
+     </div>
+     <h4>Produtos e sabores participantes</h4>
+     <input type="search" id="seasonPackProductSearch" placeholder="Buscar empadas, panquecas...">
+     <div id="seasonPackProductList" class="season-admin-products" style="max-height:320px;overflow:auto"></div>
+     <div class="toolbar"><button type="button" class="btn primary" id="seasonPackSave">💾 Salvar pack</button><button type="button" class="btn" id="seasonPackNew">➕ Novo</button></div>
+     <div id="seasonPackList" class="season-admin-products"></div>
+    </div>
+   </article>
    <article class="card" id="seasonExclusivePanel" style="margin-top:18px;border:1px solid #c9decb;background:#fbfdfb">
     <h3>🎁 Cadastro exclusivo de produtos de encomendas</h3>
     <p>Itens criados aqui <b>não entram no cardápio comum</b>. Cada produto pertence a uma campanha, tem foto e preço próprios, e só aparece na vitrine sazonal durante sua vigência. Pode ser reutilizado na mesma campanha em outras datas.</p>
@@ -392,6 +446,9 @@
      <label>Nome do produto *<input id="seasonExclusiveName" maxlength="160" placeholder="Ex.: Nhoque especial de Natal"></label>
      <label>Preço de venda (R$) *<input id="seasonExclusivePrice" type="number" min="0.01" step="0.01" placeholder="68,99"></label>
      <label class="full">Descrição comercial<textarea id="seasonExclusiveDescription" maxlength="500" rows="3" placeholder="Ingredientes, peso, rendimento e informações importantes para o cliente"></textarea></label>
+     <label>Categoria<select id="seasonExclusiveCategory"><option value="">Sem categoria</option></select></label>
+     <label>Grade de sabores/tamanhos<select id="seasonExclusiveGrade"><option value="">Sem grade</option></select></label>
+     <label>Variação da grade<input id="seasonExclusiveVariant" maxlength="80" placeholder="Ex.: Frango / Grande 1 kg"></label>
      <label>Quantidade mínima<input id="seasonExclusiveMin" type="number" min="1" step="1" value="1"></label>
      <label>Quantidade máxima (0 = livre)<input id="seasonExclusiveMax" type="number" min="0" step="1" value="0"></label>
      <label class="full">Foto do produto (JPG, PNG ou WebP)<input id="seasonExclusiveImageUpload" type="file" accept="image/jpeg,image/png,image/webp"></label>
@@ -457,7 +514,7 @@
  </nav>
 <div id="toast" class="toast" role="status" hidden></div>
 <div id="modal" class="modal-bg" hidden><div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><h2 id="modalTitle">Mensagem para WhatsApp</h2><div id="modalContent"></div><div class="toolbar" style="justify-content:flex-end;margin-top:20px"><button class="btn" id="modalClose">Fechar</button></div></div></div>
-<script src="./app.js?v=20261113-exclusive-1" defer></script>
+<script src="./app.js?v=20261113-seasonal-merch-1" defer></script>
 <script src="./category-manager.js?v=20261110-1" defer></script>
 <script src="./sales-stock-levels.js?v=43-stock-visible" defer></script>
 <script src="./cashback-pending-erp.js?v=1" defer></script>
