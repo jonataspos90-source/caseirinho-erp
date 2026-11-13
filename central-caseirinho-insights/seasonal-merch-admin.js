@@ -34,7 +34,7 @@ function seasonMerchPackPool(){
  const campaign=(st.seasonData?.campaigns||[]).find(c=>c.id===seasonMerchCurrent());
  if(!campaign)return[];
  const catalog=new Map((st.seasonData?.products||[]).map(p=>[p.id,p]));
- const normal=(campaign.products||[]).map(p=>catalog.get(p.id)).filter(Boolean);
+ const normal=(campaign.products||[]).map(rule=>catalog.get(rule.id)?{...catalog.get(rule.id),...rule,price:catalog.get(rule.id).price}:null).filter(Boolean);
  const exclusive=(st.seasonData?.exclusiveProducts||[]).filter(p=>p.campaignId===campaign.id&&p.active);
  return [...normal,...exclusive].map(p=>({...p,name:p.name||p.nome||p.id}));
 }
@@ -71,7 +71,7 @@ function seasonMerchPackOptions(){
  E('seasonPackProductList').innerHTML=pool.filter(p=>(p.name+' '+p.id).toLowerCase().includes(search)).map(p=>
   '<label class="season-admin-choice" style="display:flex;gap:9px;margin:4px 0;padding:8px;border:1px solid #e5eae7;border-radius:8px">'+
   '<input type="checkbox" data-season-pack-product="'+esc(p.id)+'" '+(seasonPackSelected.has(p.id)?'checked':'')+'>'+
-  '<span><b>'+esc(p.name)+'</b><small>Preço avulso: '+brl(p.price||0)+(p.exclusive?' · Exclusivo':' · Catálogo')+'</small></span></label>'
+  '<span><b>'+esc(p.variantLabel||p.name)+'</b><small>Preço avulso: '+brl(p.price||0)+(p.exclusive?' · Exclusivo':' · Catálogo')+'</small></span></label>'
  ).join('')||'<div class="notice">Nenhum produto participante. Vincule produtos comuns à campanha ou cadastre produtos exclusivos.</div>';
 }
 function seasonMerchRender(){
