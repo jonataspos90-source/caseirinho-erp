@@ -18,9 +18,15 @@ function status(message,error=false){
  el.hidden=false;el.className='notice '+(error?'error':'success');el.textContent=message;
 }
 function edit(id){
- const btn=Array.from(document.querySelectorAll('[data-season-exclusive-edit]')).find(b=>b.dataset.seasonExclusiveEdit===id);
- if(btn){btn.click();return;}
- const selector=$('seasonExclusiveSelect');selector.value=id;selector.dispatchEvent(new Event('change'));
+ const item=saved().find(p=>p.id===id);
+ if(!item)return status('Produto não encontrado. Use Atualizar lista para sincronizar.',true);
+ const selector=$('seasonExclusiveSelect');
+ if(selector){selector.value=id;selector.dispatchEvent(new Event('change'));}
+ if($('seasonExclusiveName')?.value!==item.name){
+  const btn=Array.from(document.querySelectorAll('[data-season-exclusive-edit]')).find(b=>b.dataset.seasonExclusiveEdit===id);
+  if(btn)btn.click();
+ }
+ $('seasonExclusivePanel')?.scrollIntoView({behavior:'smooth',block:'start'});
 }
 function render(){
  if(!$('seasonBulkList'))return;
@@ -43,6 +49,9 @@ function render(){
  }).join('')||'<p class="subtitle">Nenhum cadastro existente correspondente à lista.</p>';
  $('seasonExistingCount').textContent=duplicates.length+' já cadastrados (sem criar duplicatas)';
  $('seasonPublishCount').textContent=publishable.length+' prontos · '+pending.length+' incompletos · '+published+' publicados';
+ const hint=$('seasonPublishHint');
+ if(hint)hint.textContent=publishable.length?'✅ Há '+publishable.length+' produto(s) prontos para publicar. Marque as caixas abaixo.':pending.length?'⚠️ Não está travado: '+pending.length+' produto(s) precisam ser completados. Clique em Completar para abrir o cadastro e adicionar os dados indicados.':'✅ Todos os produtos ativos já foram publicados.';
+
  $('seasonBulkPublish').textContent='🚀 Publicar selecionados ('+selected.size+')';
  $('seasonBulkPublish').disabled=!selected.size;
  $('seasonPublishQueue').innerHTML=publishable.map(p=>
@@ -119,6 +128,12 @@ document.addEventListener('DOMContentLoaded',()=>{
  $('seasonExclusiveCampaign').addEventListener('change',()=>{selected.clear();render()});
  window.addEventListener('caseirinho:season-products-updated',render);
  $('seasonRefresh')?.addEventListener('click',()=>setTimeout(render,500));
+ $('seasonQueueRefresh')?.addEventListener('click',async e=>{
+  const btn=e.currentTarget;btn.disabled=true;btn.textContent='Atualizando...';
+  try{await loadSeasonAdmin();render();status('✅ Lista sincronizada com o cadastro.');}
+  catch(err){status('Erro ao atualizar: '+err.message,true)}
+  finally{btn.disabled=false;btn.textContent='↻ Atualizar lista'}
+ });
  render();
 });
 })();
