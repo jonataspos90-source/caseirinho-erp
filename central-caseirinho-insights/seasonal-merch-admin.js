@@ -1,5 +1,6 @@
 /* Gestão independente do cardápio sazonal: categorias, grades e packs. */
 'use strict';
+const {E,st,api,loadSeasonAdmin,s,esc,brl}=window.CaseirinhoSeasonMerchBridge;
 let seasonMerchTab='category';
 const seasonMerchEditing={CATEGORY:'',GRADE:'',PACK:''};
 let seasonPackSelected=new Set();
