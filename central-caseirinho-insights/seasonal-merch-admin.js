@@ -4,7 +4,7 @@ const {E,st,api,loadSeasonAdmin,s,esc,brl}=window.CaseirinhoSeasonMerchBridge;
 let seasonMerchTab='category';
 const seasonMerchEditing={CATEGORY:'',GRADE:'',PACK:''};
 let seasonPackSelected=new Set();
-let seasonGradeDraft=new Map(),seasonGradeCoverId='';
+let seasonGradeDraft=new Map(),seasonGradeCoverId='',seasonGradeSource='all';
 const merchKinds={CATEGORY:'categories',GRADE:'grades',PACK:'packs'};
 const merchKindLabels={CATEGORY:'categoria',GRADE:'grade',PACK:'pack'};
 const seasonMerchCurrent=()=>String(E('seasonMerchCampaign')?.value||'');
@@ -44,12 +44,14 @@ function seasonGradeProductPool(){
    participant:rules.has(String(p.id))};
  });
  const exclusive=(st.seasonData?.exclusiveProducts||[])
-  .filter(p=>p.campaignId===campaign.id).map(p=>({
+  .filter(p=>String(p.campaignId)===String(campaign.id)).map(p=>({
    id:String(p.id),name:p.name||p.id,price:Number(p.price)||0,
    gradeId:String(p.gradeId||''),variantLabel:String(p.variantLabel||''),
    categoryId:String(p.categoryId||''),image:String(p.image||''),active:p.active!==false,exclusive:true
   }));
- return [...common,...exclusive].sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'));
+ const result=new Map();
+ for(const p of [...common,...exclusive])result.set(p.id,p);
+ return [...result.values()].sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'));
 }
 function seasonGradeStartDraft(gradeId,coverId=''){
  seasonGradeDraft=new Map();
@@ -67,8 +69,12 @@ function seasonGradeRenderChoices(){
  const current=seasonMerchEditing.GRADE;
  const search=(E('seasonGradeAvailableSearch')?.value||'').trim().toLocaleLowerCase('pt-BR');
  const free=pool.filter(p=>p.active&&!seasonGradeDraft.has(p.id)&&(!p.gradeId||p.gradeId===current));
- const matching=free.filter(p=>(p.name+' '+p.id).toLocaleLowerCase('pt-BR').includes(search));
+ const matching=free.filter(p=>(seasonGradeSource==='all'||(seasonGradeSource==='exclusive'===p.exclusive))&&(p.name+' '+p.id+' '+p.variantLabel).toLocaleLowerCase('pt-BR').includes(search));
  const shown=matching.slice(0,80);
+ E('seasonGradeSourceFilters')?.querySelectorAll('[data-season-grade-source]').forEach(b=>{
+  const isCurrent=b.dataset.seasonGradeSource===seasonGradeSource;
+  b.classList.toggle('primary',isCurrent);b.setAttribute('aria-pressed',String(isCurrent));
+ });
  const selected=[...seasonGradeDraft].map(([id,label])=>({p:byId.get(id),id,label})).filter(x=>!!x.p);
  if(!seasonGradeCoverId||!seasonGradeDraft.has(seasonGradeCoverId))seasonGradeCoverId=selected[0]?.id||'';
  E('seasonGradeUnassignedCount').textContent=String(free.length);
@@ -76,7 +82,7 @@ function seasonGradeRenderChoices(){
  const btnStyle='border:1px solid #bfd9c6;border-radius:10px;padding:7px 10px;background:#effaf1;color:#0b6042;font-weight:800;cursor:pointer';
  available.innerHTML=shown.length?shown.map(p=>
   '<div style="display:flex;gap:8px;align-items:center;justify-content:space-between;padding:8px 2px;border-bottom:1px solid #edf0ed">'+
-  '<div style="min-width:0;flex:1"><b>'+esc(p.name)+'</b><small style="display:block;color:#66786e">'+brl(p.price)+(p.exclusive?' · Exclusivo':p.participant?' · Na campanha':' · Catálogo — será incluído na campanha')+'</small></div>'+
+  '<div style="min-width:0;flex:1"><b>'+esc(p.name)+'</b><small style="display:block;color:#66786e">'+brl(p.price)+(p.exclusive?' · 🎄 Exclusivo de encomendas':p.participant?' · 📦 Cadastro normal · Na campanha':' · 📦 Cadastro normal · Será incluído na campanha')+'</small></div>'+
   '<button type="button" data-season-grade-add="'+esc(p.id)+'" style="'+btnStyle+'">+ Vincular</button></div>'
  ).join(''):
  '<p class="subtitle">'+(search?'Nenhum produto sem grade corresponde à busca.':free.length?'Nenhum produto encontrado.':'Todos os produtos disponíveis já foram vinculados a grades. Se precisar, retire um item de outra grade.')+'</p>';
@@ -100,8 +106,10 @@ function seasonMerchPackPool(){
  if(!campaign)return[];
  const catalog=new Map((st.seasonData?.products||[]).map(p=>[p.id,p]));
  const normal=(campaign.products||[]).map(rule=>catalog.get(rule.id)?{...catalog.get(rule.id),...rule,price:catalog.get(rule.id).price}:null).filter(Boolean);
- const exclusive=(st.seasonData?.exclusiveProducts||[]).filter(p=>p.campaignId===campaign.id&&p.active);
- return [...normal,...exclusive].map(p=>({...p,name:p.name||p.nome||p.id}));
+ const exclusive=(st.seasonData?.exclusiveProducts||[]).filter(p=>String(p.campaignId)===String(campaign.id)&&p.active);
+ const products=new Map();
+ for(const p of [...normal,...exclusive])products.set(String(p.id),{...p,name:p.name||p.nome||p.id});
+ return [...products.values()];
 }
 function seasonMerchRefreshSelectors(){
  const campaign=seasonMerchCurrent(),categories=merchItems('CATEGORY').filter(x=>x.active),grades=merchItems('GRADE').filter(x=>x.active);
@@ -136,7 +144,7 @@ function seasonMerchPackOptions(){
  E('seasonPackProductList').innerHTML=pool.filter(p=>(p.name+' '+p.id).toLowerCase().includes(search)).map(p=>
   '<label class="season-admin-choice" style="display:flex;gap:9px;margin:4px 0;padding:8px;border:1px solid #e5eae7;border-radius:8px">'+
   '<input type="checkbox" data-season-pack-product="'+esc(p.id)+'" '+(seasonPackSelected.has(p.id)?'checked':'')+'>'+
-  '<span><b>'+esc(p.variantLabel||p.name)+'</b><small>Preço avulso: '+brl(p.price||0)+(p.exclusive?' · Exclusivo':' · Catálogo')+'</small></span></label>'
+  '<span><b>'+esc(p.variantLabel||p.name)+'</b><small>Preço avulso: '+brl(p.price||0)+(p.exclusive?' · 🎄 Exclusivo de encomendas':' · 📦 Cadastro normal')+'</small></span></label>'
  ).join('')||'<div class="notice">Nenhum produto participante. Vincule produtos comuns à campanha ou cadastre produtos exclusivos.</div>';
 }
 function seasonMerchRender(){
@@ -160,7 +168,7 @@ function seasonMerchReset(kind){
  if(E(prefix+'Active'))E(prefix+'Active').checked=true;
  if(E(prefix+'Category'))E(prefix+'Category').value='';
  if(kind==='GRADE'){
-  seasonGradeDraft=new Map();seasonGradeCoverId='';
+  seasonGradeDraft=new Map();seasonGradeCoverId='';seasonGradeSource='all';
   E('seasonGradeType').value='SABOR';E('seasonGradeChoiceTitle').value='Escolha o sabor';
   if(E('seasonGradeAvailableSearch'))E('seasonGradeAvailableSearch').value='';
   seasonGradeRenderChoices();
@@ -235,6 +243,11 @@ function bindSeasonMerch(){
   E(prefix+'Select').addEventListener('change',e=>e.target.value?seasonMerchEdit(kind,e.target.value):seasonMerchReset(kind));
  }
  E('seasonGradeAvailableSearch').addEventListener('input',seasonGradeRenderChoices);
+ E('seasonGradeSourceFilters').addEventListener('click',e=>{
+  const button=e.target.closest('[data-season-grade-source]');if(!button)return;
+  seasonGradeSource=button.dataset.seasonGradeSource;
+  seasonGradeRenderChoices();
+ });
  E('seasonGradeAvailable').addEventListener('click',e=>{
   const button=e.target.closest('[data-season-grade-add]');if(!button)return;
   const p=seasonGradeProductPool().find(x=>x.id===button.dataset.seasonGradeAdd);
