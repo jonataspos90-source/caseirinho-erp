@@ -2342,7 +2342,7 @@ function renderSeasonAdmin(){
  E('seasonCampaignSelect').value=campaigns.some(c=>c.id===current)?current:'';
  E('seasonCampaignCards').innerHTML=campaigns.map(c=>'<article class="card season-campaign-card"><div class="mobile-record-head"><b>🎄 '+esc(c.title)+'</b><span class="badge '+(c.status==='ABERTA'?'good':'light')+'">'+esc(c.status)+'</span></div>'+
  '<p>Encomendar: '+esc(seasonTextDate(c.orderFrom))+' a '+esc(seasonTextDate(c.orderUntil))+'</p><p>Entrega/retirada: '+c.fulfillmentDates.map(seasonTextDate).map(esc).join(' · ')+'</p>'+
- '<p>Produtos: '+c.products.length+' · Mínimo total: '+c.minTotalQuantity+' · Sinal: 50%</p>'+
+ '<p>Produtos: '+(c.products.length+(st.seasonData?.exclusiveProducts||[]).filter(p=>p.campaignId===c.id&&p.active).length)+' (inclui exclusivos ativos) · Mínimo total: '+c.minTotalQuantity+' · Sinal: 50%</p>'+
  '<button type="button" class="btn small primary" data-season-edit="'+esc(c.id)+'">✏️ Editar campanha</button></article>').join('');
  renderSeasonProducts();
  seasonExclusiveRender();
@@ -2425,7 +2425,7 @@ async function saveSeasonalCampaign(){
  if(body.fulfillmentDates.some(d=>!/^\d{4}-\d{2}-\d{2}$/.test(d)))return seasonAlert('Datas de entrega inválidas. Utilize AAAA-MM-DD ou DD/MM/AAAA, uma por linha.',true);
  if(body.fulfillmentDates.some(d=>d<body.orderUntil))return seasonAlert('A entrega/retirada deve ser na data limite de encomendas ou depois dela.',true);
  if(!body.allowPickup&&!body.allowDelivery)return seasonAlert('Marque Entrega e/ou Retirada.',true);
- if(!body.products.length&&!(st.seasonData?.exclusiveProducts||[]).some(p=>p.campaignId===body.id&&p.active))return seasonAlert('Marque um produto comum ou cadastre um produto exclusivo para a campanha.',true);
+ // Campanhas novas podem ser salvas sem itens, para receber produtos exclusivos depois.
  if(!window.confirm('Publicar '+body.title+' com '+body.products.length+' produtos? Os clientes poderão encomendar, pagando 50% de sinal e o restante na entrega.'))return;
  const btn=E('seasonSave');btn.disabled=true;btn.textContent='Publicando...';
  try{
