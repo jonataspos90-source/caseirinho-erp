@@ -405,7 +405,7 @@
      <div id="seasonCategoryList" class="season-admin-products"></div>
     </div>
     <div id="seasonMerchGradePanel" hidden>
-     <p class="subtitle">Crie uma grade, como Empadas. Depois, vincule os sabores e seus valores no cadastro exclusivo de produtos.</p>
+     <p class="subtitle">Como no ERP: dê um nome à grade e selecione os produtos <b>nesta mesma tela</b>. À medida que vincular, eles saem dos produtos disponíveis e passam para a grade. Ao salvar, tudo é publicado junto.</p>
      <div class="form-grid">
       <label>Editar grade<select id="seasonGradeSelect"><option value="">➕ Nova grade</option></select></label>
       <label>Nome *<input id="seasonGradeName" maxlength="100" placeholder="Ex.: Panquecas especiais"></label>
@@ -415,7 +415,23 @@
       <label class="full">Foto opcional (URL HTTPS)<input type="url" id="seasonGradeImage" placeholder="https://..."></label>
       <label><input type="checkbox" id="seasonGradeActive" checked> Grade ativa</label>
      </div>
-     <div class="toolbar"><button type="button" class="btn primary" id="seasonGradeSave">💾 Salvar grade</button><button type="button" class="btn" id="seasonGradeNew">➕ Nova</button></div>
+     <div style="margin:16px 0 10px;border-top:1px solid #dce8de;padding-top:14px">
+      <h4 style="margin:0 0 6px;color:#104b37">🍝 Produtos da grade</h4>
+      <p class="subtitle">Selecione os produtos já participantes desta campanha. Cada produto só pode pertencer a uma grade por vez.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));gap:12px">
+       <div style="border:1px solid #d2e3d6;border-radius:13px;padding:12px;background:#fff">
+        <div class="toolbar" style="justify-content:space-between;align-items:center"><b>➕ Produtos sem grade</b><span class="badge" id="seasonGradeUnassignedCount">0</span></div>
+        <input type="search" id="seasonGradeAvailableSearch" placeholder="Buscar produto ou sabor disponível..." style="width:100%;margin:8px 0">
+        <div id="seasonGradeAvailable" style="max-height:360px;overflow:auto" aria-live="polite"></div>
+       </div>
+       <div style="border:1px solid #b4d9c1;border-radius:13px;padding:12px;background:#f5fcf6">
+        <div class="toolbar" style="justify-content:space-between;align-items:center"><b>✅ Produtos desta grade</b><span class="badge good" id="seasonGradeLinkedCount">0</span></div>
+        <div id="seasonGradeLinked" style="max-height:410px;overflow:auto;margin-top:8px" aria-live="polite"></div>
+       </div>
+      </div>
+      <p id="seasonGradeHint" class="subtitle" style="margin:10px 0">Escolha pelo menos um produto para poder salvar a grade.</p>
+     </div>
+     <div class="toolbar"><button type="button" class="btn primary" id="seasonGradeSave">💾 Salvar grade e produtos</button><button type="button" class="btn" id="seasonGradeNew">➕ Nova grade</button></div>
      <div id="seasonGradeList" class="season-admin-products"></div>
     </div>
     <div id="seasonMerchPackPanel" hidden>
@@ -515,7 +531,7 @@
 <div id="toast" class="toast" role="status" hidden></div>
 <div id="modal" class="modal-bg" hidden><div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><h2 id="modalTitle">Mensagem para WhatsApp</h2><div id="modalContent"></div><div class="toolbar" style="justify-content:flex-end;margin-top:20px"><button class="btn" id="modalClose">Fechar</button></div></div></div>
 <script src="./app.js?v=20261113-seasonal-merch-4" defer></script>
-<script src="./seasonal-merch-admin.js?v=20261113-4" defer></script>
+<script src="./seasonal-merch-admin.js?v=20261113-grade-linked-1" defer></script>
 <script src="./category-manager.js?v=20261110-1" defer></script>
 <script src="./sales-stock-levels.js?v=43-stock-visible" defer></script>
 <script src="./cashback-pending-erp.js?v=1" defer></script>
