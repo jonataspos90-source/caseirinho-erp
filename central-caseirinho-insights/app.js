@@ -2225,6 +2225,7 @@ function seasonExclusiveReset(){
  E('seasonExclusiveSelect').value='';E('seasonExclusiveName').value='';E('seasonExclusivePrice').value='';
  E('seasonExclusiveDescription').value='';E('seasonExclusiveMin').value=1;E('seasonExclusiveMax').value=0;
  E('seasonExclusiveActive').checked=true;E('seasonExclusiveImageUrl').value='';E('seasonExclusiveImageUpload').value='';
+ E('seasonExclusiveCategory').value='';E('seasonExclusiveGrade').value='';E('seasonExclusiveVariant').value='';
  seasonExclusiveShowPhoto();
 }
 function seasonExclusiveEdit(id){
@@ -2232,11 +2233,14 @@ function seasonExclusiveEdit(id){
  if(!p)return;
  seasonExclusiveEditing=id;seasonExclusiveImage=p.image||'';
  E('seasonExclusiveCampaign').value=p.campaignId;
+ E('seasonMerchCampaign').value=p.campaignId;
+ seasonMerchRender();
  E('seasonExclusiveSelect').value=id;
  E('seasonExclusiveName').value=p.name;E('seasonExclusivePrice').value=p.price;
  E('seasonExclusiveDescription').value=p.description;
  E('seasonExclusiveMin').value=p.minQuantity;E('seasonExclusiveMax').value=p.maxQuantity;
  E('seasonExclusiveActive').checked=p.active===true;
+ E('seasonExclusiveCategory').value=p.categoryId||'';E('seasonExclusiveGrade').value=p.gradeId||'';E('seasonExclusiveVariant').value=p.variantLabel||'';
  E('seasonExclusiveImageUrl').value=/^https:\/\//i.test(p.image)?p.image:'';
  seasonExclusiveShowPhoto();
  E('seasonExclusivePanel').scrollIntoView({behavior:'smooth',block:'start'});
@@ -2247,6 +2251,7 @@ function seasonExclusiveRender(){
  select.innerHTML='<option value="">Escolha a campanha</option>'+campaigns.map(c=>'<option value="'+esc(c.id)+'">'+esc(c.title)+'</option>').join('');
  if(campaigns.some(c=>c.id===before))select.value=before;
  else if(E('seasonCampaignSelect').value)select.value=E('seasonCampaignSelect').value;
+ seasonMerchRender();
  const productSelect=E('seasonExclusiveSelect'),old=productSelect.value;
  productSelect.innerHTML='<option value="">➕ Novo produto sazonal</option>'+products.map(p=>'<option value="'+esc(p.id)+'">'+esc(p.name)+' — '+esc(campaigns.find(c=>c.id===p.campaignId)?.title||'Campanha')+'</option>').join('');
  if(products.some(p=>p.id===old))productSelect.value=old;
@@ -2263,11 +2268,13 @@ async function seasonExclusiveSave(){
  const image=url||seasonExclusiveImage;
  const body={id:seasonExclusiveEditing||undefined,campaignId,name:E('seasonExclusiveName').value.trim(),
   description:E('seasonExclusiveDescription').value.trim(),price:Number(E('seasonExclusivePrice').value),
-  image,minQuantity:Number(E('seasonExclusiveMin').value),maxQuantity:Number(E('seasonExclusiveMax').value),
+  image,categoryId:E('seasonExclusiveCategory').value,gradeId:E('seasonExclusiveGrade').value,variantLabel:E('seasonExclusiveVariant').value.trim(),
+  minQuantity:Number(E('seasonExclusiveMin').value),maxQuantity:Number(E('seasonExclusiveMax').value),
   active:E('seasonExclusiveActive').checked};
  if(!campaignId)return seasonExclusiveFeedback('Selecione uma campanha sazonal já cadastrada.',true);
  if(body.name.length<3||!(body.price>0))return seasonExclusiveFeedback('Informe nome do produto e preço maior que zero.',true);
  if(!image)return seasonExclusiveFeedback('Adicione uma foto do produto.',true);
+ if(body.gradeId&&!body.variantLabel)return seasonExclusiveFeedback('Informe o sabor ou tamanho deste item na grade.',true);
  const button=E('seasonExclusiveSave');button.disabled=true;button.textContent='Salvando...';
  try{
   await api('seasonal-exclusive-products',{method:'POST',body});
@@ -2279,6 +2286,7 @@ async function seasonExclusiveSave(){
  finally{button.disabled=false;button.textContent='💾 Salvar produto exclusivo'}
 }
 function bindSeasonExclusive(){
+ bindSeasonMerch();
  E('seasonExclusiveSave').addEventListener('click',seasonExclusiveSave);
  E('seasonExclusiveNew').addEventListener('click',seasonExclusiveReset);
  E('seasonExclusiveSelect').addEventListener('change',e=>e.target.value?seasonExclusiveEdit(e.target.value):seasonExclusiveReset());
@@ -2310,6 +2318,7 @@ function seasonChooseCampaign(id){
  E('seasonPickup').checked=campaign?.allowPickup!==false;E('seasonDelivery').checked=campaign?.allowDelivery!==false;E('seasonActive').checked=campaign?.active!==false;
  renderSeasonProducts();
  if(E('seasonExclusiveCampaign')&&id)E('seasonExclusiveCampaign').value=id;
+ if(E('seasonMerchCampaign')&&id){E('seasonMerchCampaign').value=id;seasonMerchRender();}
 }
 function seasonProductsFiltered(){
  const q=s(E('seasonProductSearch').value).toLowerCase();
