@@ -2255,7 +2255,7 @@ function seasonExclusiveRender(){
  productSelect.innerHTML='<option value="">➕ Novo produto sazonal</option>'+products.map(p=>'<option value="'+esc(p.id)+'">'+esc(p.name)+' — '+esc(campaigns.find(c=>c.id===p.campaignId)?.title||'Campanha')+'</option>').join('');
  if(products.some(p=>p.id===old))productSelect.value=old;
  E('seasonExclusiveList').innerHTML=products.length?products.map(p=>
-  '<div class="season-admin-product"><img src="'+esc(p.image)+'" alt="" style="width:80px;height:80px;object-fit:cover;border-radius:10px">'+
+  '<div class="season-admin-product">'+(p.image?'<img loading="lazy" src="'+esc(p.image)+'" alt="" style="width:80px;height:80px;object-fit:cover;border-radius:10px">':'<span class="subtitle">📷 Sem foto</span>')+
   '<div style="flex:1"><b>'+esc(p.name)+'</b><p>'+esc(campaigns.find(c=>c.id===p.campaignId)?.title||'Campanha não encontrada')+' · '+brl(p.price)+'</p>'+
   '<span class="badge '+(p.active?'good':'warn')+'">'+(p.active?'Disponível':'Inativo')+'</span></div>'+
   '<span class="badge">'+(p.published?'🟢 Publicado':'📝 Rascunho')+'</span> <button type="button" class="btn small" data-season-exclusive-edit="'+esc(p.id)+'">✏️ Editar</button></div>').join(''):
@@ -2276,8 +2276,13 @@ async function seasonExclusiveSave(){
  if(body.gradeId&&!body.variantLabel)return seasonExclusiveFeedback('Informe o sabor ou tamanho deste item na grade.',true);
  const button=E('seasonExclusiveSave');button.disabled=true;button.textContent='Salvando...';
  try{
-  await api('seasonal-exclusive-products',{method:'POST',body});
-  await loadSeasonAdmin();
+  const result=await api('seasonal-exclusive-products',{method:'POST',body});
+  if(result.product&&st.seasonData){
+   const list=st.seasonData.exclusiveProducts||[];
+   st.seasonData.exclusiveProducts=[...list.filter(p=>p.id!==result.product.id),result.product];
+   seasonExclusiveRender();
+  }else await loadSeasonAdmin();
+  window.dispatchEvent(new Event('caseirinho:season-products-updated'));
   seasonExclusiveReset();
   E('seasonExclusiveCampaign').value=campaignId;
   seasonMerchSelectCampaign(campaignId);
