@@ -6,81 +6,117 @@ const $=id=>document.getElementById(id);
 const normalize=x=>String(x||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
 const money=x=>Number(x).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const escape=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const catalogKeys=new Set(products.map(p=>normalize(p.name)));
+const excluded=new Set();
+const selected=new Set();
 const campaign=()=> $('seasonExclusiveCampaign')?.value||$('seasonCampaignSelect')?.value||'';
+const saved=()=> (st.seasonData?.exclusiveProducts||[]).filter(p=>String(p.campaignId)===campaign());
+const missing=p=>[!p.image?'foto':null,!p.categoryId?'categoria':null].filter(Boolean);
+const ready=p=>p.active!==false&&!p.published&&!missing(p).length;
 function status(message,error=false){
  const el=$('seasonBulkStatus');if(!el)return;
  el.hidden=false;el.className='notice '+(error?'error':'success');el.textContent=message;
 }
-function productsForCampaign(){
- return (st.seasonData?.exclusiveProducts||[]).filter(p=>String(p.campaignId)===campaign());
+function edit(id){
+ const btn=Array.from(document.querySelectorAll('[data-season-exclusive-edit]')).find(b=>b.dataset.seasonExclusiveEdit===id);
+ if(btn){btn.click();return;}
+ const selector=$('seasonExclusiveSelect');selector.value=id;selector.dispatchEvent(new Event('change'));
 }
-function missing(p){return [!p.image?'foto':null,!p.categoryId?'categoria':null].filter(Boolean)}
 function render(){
  if(!$('seasonBulkList'))return;
- const saved=productsForCampaign();
- const matched=new Map(saved.map(p=>[normalize(p.name),p]));
- const ready=saved.filter(p=>p.active!==false&&!p.published&&!missing(p).length);
- const published=saved.filter(p=>p.published);
- const pending=saved.filter(p=>!p.published&&missing(p).length);
- $('seasonBulkCount').textContent=saved.length+' exclusivos · '+published.length+' publicados · '+ready.length+' prontos · '+pending.length+' com pendências';
- $('seasonBulkPublish').textContent='🚀 Publicar '+ready.length+' pronto(s)';
- $('seasonBulkPublish').disabled=!ready.length;
- $('seasonBulkList').innerHTML=products.map((p,i)=>{
-  const item=matched.get(normalize(p.name));
-  if(!item)return '<tr><td>'+(i+1)+'</td><td>'+escape(p.name)+'</td><td>'+money(p.price)+'</td><td>Não cadastrado</td></tr>';
-  const lack=missing(item);
-  const label=item.published?'✅ Publicado':lack.length?'⚠️ Falta '+lack.join(' e '):'🟢 Pronto';
-  return '<tr><td>'+(i+1)+'</td><td>'+escape(item.name)+'</td><td style="white-space:nowrap">'+money(item.price)+'</td><td>'+label+
-   '<div class="toolbar" style="margin-top:4px"><button type="button" class="btn small" data-exclusive-edit="'+escape(item.id)+'">✏️ Editar</button> '+
-   (!item.published&&!lack.length?'<button type="button" class="btn small primary" data-exclusive-publish="'+escape(item.id)+'">🚀 Publicar</button>':'')+'</div></td></tr>';
- }).join('');
- const other=saved.filter(p=>!matched.has(normalize(p.name))||!products.some(q=>normalize(q.name)===normalize(p.name)));
- $('seasonOtherExclusive').innerHTML=other.map(p=>'<div class="season-admin-product"><span><b>'+escape(p.name)+'</b> · '+money(p.price)+'</span><span>'+ (p.published?'✅ Publicado':missing(p).length?'⚠️ Falta '+missing(p).join(' e '):'🟢 Pronto')+'</span><button type="button" class="btn small" data-exclusive-edit="'+escape(p.id)+'">✏️ Editar</button>'+(!p.published&&!missing(p).length?'<button type="button" class="btn small primary" data-exclusive-publish="'+escape(p.id)+'">🚀 Publicar</button>':'')+'</div>').join('')||'<p class="subtitle">Nenhum produto adicional.</p>';
+ const current=saved();
+ const existingByName=new Map(current.map(p=>[normalize(p.name),p]));
+ const newItems=products.filter(p=>!existingByName.has(normalize(p.name))&&!excluded.has(normalize(p.name)));
+ const duplicates=products.filter(p=>existingByName.has(normalize(p.name))&&!excluded.has(normalize(p.name)));
+ const published=current.filter(p=>p.published).length;
+ const waiting=current.filter(p=>!p.published);
+ const publishable=waiting.filter(ready);
+ const pending=waiting.filter(p=>!ready(p));
+ for(const id of [...selected])if(!publishable.some(p=>p.id===id))selected.delete(id);
+ $('seasonBulkCount').textContent=current.length+' cadastrados · '+newItems.length+' faltam cadastrar · '+duplicates.length+' já existentes';
+ $('seasonBulkImport').textContent='📥 Cadastrar '+newItems.length+' restante(s)';
+ $('seasonBulkImport').disabled=!newItems.length;
+ $('seasonBulkList').innerHTML=newItems.map((p,i)=>'<tr><td>'+(i+1)+'</td><td>'+escape(p.name)+'</td><td>'+money(p.price)+'</td><td>🆕 Novo <button type="button" class="btn small" data-ignore-name="'+escape(p.name)+'">Excluir da fila</button></td></tr>').join('')||'<tr><td colspan="4">✅ Nenhum produto novo a cadastrar.</td></tr>';
+ $('seasonExistingItems').innerHTML=duplicates.map(p=>{
+  const x=existingByName.get(normalize(p.name));
+  return '<div class="season-admin-product"><span style="flex:1"><b>'+escape(x.name)+'</b> · '+money(x.price)+'</span><button type="button" class="btn small" data-exclusive-edit="'+escape(x.id)+'">Editar cadastro</button><button type="button" class="btn small" data-ignore-name="'+escape(p.name)+'">Remover da lista</button></div>';
+ }).join('')||'<p class="subtitle">Nenhum cadastro existente correspondente à lista.</p>';
+ $('seasonExistingCount').textContent=duplicates.length+' já cadastrados (sem criar duplicatas)';
+ $('seasonPublishCount').textContent=publishable.length+' prontos · '+pending.length+' incompletos · '+published+' publicados';
+ $('seasonBulkPublish').textContent='🚀 Publicar selecionados ('+selected.size+')';
+ $('seasonBulkPublish').disabled=!selected.size;
+ $('seasonPublishQueue').innerHTML=publishable.map(p=>
+  '<div class="season-admin-product" style="align-items:center;gap:12px">'+
+   '<label style="display:flex;align-items:center;gap:10px;flex:1;cursor:pointer"><input type="checkbox" data-publish-check="'+escape(p.id)+'" '+(selected.has(p.id)?'checked':'')+'><span><b>'+escape(p.name)+'</b><small> · '+money(p.price)+'</small></span></label>'+
+   '<button type="button" class="btn small" data-exclusive-edit="'+escape(p.id)+'">Editar</button>'+
+   '<button type="button" class="btn small primary" data-exclusive-publish="'+escape(p.id)+'">Publicar</button></div>'
+ ).join('')||'<p class="notice">✅ Nenhum produto pronto aguardando publicação.</p>';
+ $('seasonPendingList').innerHTML=pending.map(p=>'<div class="season-admin-product"><span style="flex:1"><b>'+escape(p.name)+'</b> · '+money(p.price)+'<small> · '+(p.active===false?'Inativo': 'Falta '+missing(p).join(' e '))+'</small></span><button type="button" class="btn small" data-exclusive-edit="'+escape(p.id)+'">Completar</button></div>').join('')||'<p class="subtitle">Nenhum item incompleto.</p>';
+ $('seasonOtherExclusive').innerHTML='<p class="subtitle">Produtos adicionais já estão contemplados nas filas acima.</p>';
 }
 function updateProduct(product){
  if(!st.seasonData||!product)return;
  st.seasonData.exclusiveProducts=(st.seasonData.exclusiveProducts||[]).map(p=>p.id===product.id?product:p);
 }
-async function execute(button,endpoint,body,mode){
+async function request(button,endpoint,body,mode){
  const campaignId=campaign();
  if(!campaignId)return status('Selecione uma campanha cadastrada.',true);
- button.disabled=true;const before=button.textContent;button.textContent='Salvando...';
+ button.disabled=true;const prior=button.textContent;button.textContent='Processando...';
  try{
-  const result=await api(endpoint,{method:'POST',body:{campaignId,...body}});
+  const data=await api(endpoint,{method:'POST',body:{campaignId,...body}});
   if(mode==='import'){
    await loadSeasonAdmin();
-   status('✅ '+result.created+' novos, '+result.changed+' preços atualizados e '+result.unchanged+' já existentes.');
+   status('✅ '+data.created+' cadastrados; '+data.unchanged+' já existentes preservados. Nenhuma duplicata criada.');
   }else if(mode==='one'){
-   updateProduct(result.product);
-   status('✅ '+result.product.name+' publicado na vitrine de encomendas.');
+   updateProduct(data.product);selected.delete(data.product.id);
+   status('✅ '+data.product.name+' publicado. Saiu da fila de pendentes.');
   }else{
-   const ids=new Set((body.ids||[]).map(String));
-   (st.seasonData?.exclusiveProducts||[]).forEach(p=>{if(ids.has(String(p.id))&&!missing(p).length)p.published=true});
-   status('✅ '+result.published+' produtos publicados.'+(result.pending?.length?' '+result.pending.length+' incompletos ficaram como rascunho.':''));
+   const ids=new Set(body.ids.map(String));
+   (st.seasonData?.exclusiveProducts||[]).forEach(p=>{if(ids.has(String(p.id)))p.published=true});
+   ids.forEach(id=>selected.delete(id));
+   status('✅ '+data.published+' publicados. Itens publicados retirados da fila.');
   }
   render();
- }catch(e){status('Erro ao publicar: '+e.message,true)}
- finally{button.disabled=false;button.textContent=before;if(mode!=='import')render()}
+ }catch(err){status('Falha: '+err.message,true)}
+ finally{button.disabled=false;button.textContent=prior;render()}
+}
+function handleClick(e){
+ const editBtn=e.target.closest('[data-exclusive-edit]');
+ if(editBtn){edit(editBtn.dataset.exclusiveEdit);return;}
+ const ignore=e.target.closest('[data-ignore-name]');
+ if(ignore){excluded.add(normalize(ignore.dataset.ignoreName));render();return;}
+ const publish=e.target.closest('[data-exclusive-publish]');
+ if(publish){
+  const p=saved().find(x=>x.id===publish.dataset.exclusivePublish);
+  if(p&&ready(p))request(publish,'seasonal-exclusive-products/'+encodeURIComponent(p.id)+'/publish',{},'one');
+  return;
+ }
 }
 document.addEventListener('DOMContentLoaded',()=>{
  if(!$('seasonBulkImport'))return;
- $('seasonBulkImport').addEventListener('click',e=>execute(e.currentTarget,'seasonal-exclusive-products/bulk-import',{products},'import'));
- $('seasonBulkPublish').addEventListener('click',e=>{
-  const selected=productsForCampaign().filter(p=>p.active!==false&&!p.published&&!missing(p).length);
-  if(!selected.length)return status('Não há produtos prontos para publicar.',true);
-  execute(e.currentTarget,'seasonal-exclusive-products/bulk-publish',{ids:selected.map(p=>p.id)},'many');
+ $('seasonBulkImport').addEventListener('click',e=>{
+  const names=new Set(saved().map(p=>normalize(p.name)));
+  const remaining=products.filter(p=>!names.has(normalize(p.name))&&!excluded.has(normalize(p.name)));
+  if(remaining.length)request(e.currentTarget,'seasonal-exclusive-products/bulk-import',{products:remaining},'import');
  });
- function handleClick(e){
-  const edit=e.target.closest('[data-exclusive-edit]');
-  if(edit){document.querySelector('[data-season-exclusive-edit="'+CSS.escape(edit.dataset.exclusiveEdit)+'"]')?.click();return;}
-  const pub=e.target.closest('[data-exclusive-publish]');if(!pub)return;
-  const item=productsForCampaign().find(p=>p.id===pub.dataset.exclusivePublish);
-  if(!item||missing(item).length)return status('Complete foto e categoria para publicar.',true);
-  execute(pub,'seasonal-exclusive-products/'+encodeURIComponent(item.id)+'/publish',{},'one');
- }
+ $('seasonBulkPublish').addEventListener('click',e=>{
+  const ids=[...selected].filter(id=>saved().some(p=>p.id===id&&ready(p)));
+  if(ids.length)request(e.currentTarget,'seasonal-exclusive-products/bulk-publish',{ids},'many');
+ });
+ $('seasonPublishSelectAll').addEventListener('click',()=>{saved().filter(ready).forEach(p=>selected.add(p.id));render()});
+ $('seasonPublishUnselectAll').addEventListener('click',()=>{selected.clear();render()});
  $('seasonBulkList').addEventListener('click',handleClick);
+ $('seasonExistingItems').addEventListener('click',handleClick);
+ $('seasonPublishQueue').addEventListener('click',handleClick);
+ $('seasonPendingList').addEventListener('click',handleClick);
  $('seasonOtherExclusive').addEventListener('click',handleClick);
- $('seasonExclusiveCampaign').addEventListener('change',render);
+ $('seasonPublishQueue').addEventListener('change',e=>{
+  const c=e.target.closest('[data-publish-check]');if(!c)return;
+  if(c.checked)selected.add(c.dataset.publishCheck);else selected.delete(c.dataset.publishCheck);
+  $('seasonBulkPublish').disabled=!selected.size;
+  $('seasonBulkPublish').textContent='🚀 Publicar selecionados ('+selected.size+')';
+ });
+ $('seasonExclusiveCampaign').addEventListener('change',()=>{selected.clear();render()});
  window.addEventListener('caseirinho:season-products-updated',render);
  $('seasonRefresh')?.addEventListener('click',()=>setTimeout(render,500));
  render();
