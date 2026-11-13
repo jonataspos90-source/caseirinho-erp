@@ -33,13 +33,13 @@ function render(){
  const current=saved();
  const existingByName=new Map(current.map(p=>[normalize(p.name),p]));
  const newItems=products.filter(p=>!existingByName.has(normalize(p.name))&&!excluded.has(normalize(p.name)));
- const duplicates=products.filter(p=>existingByName.has(normalize(p.name))&&!excluded.has(normalize(p.name)));
+ const duplicates=products.filter(p=>existingByName.has(normalize(p.name))&&!existingByName.get(normalize(p.name)).published&&!excluded.has(normalize(p.name)));
  const published=current.filter(p=>p.published).length;
  const waiting=current.filter(p=>!p.published);
  const publishable=waiting.filter(ready);
  const pending=waiting.filter(p=>!ready(p));
  for(const id of [...selected])if(!publishable.some(p=>p.id===id))selected.delete(id);
- $('seasonBulkCount').textContent=current.length+' cadastrados · '+newItems.length+' faltam cadastrar · '+duplicates.length+' já existentes';
+ $('seasonBulkCount').textContent=current.length+' cadastrados · '+newItems.length+' faltam cadastrar · '+duplicates.length+' existentes pendentes · '+published+' publicados ocultos';
  $('seasonBulkImport').textContent='📥 Cadastrar '+newItems.length+' restante(s)';
  $('seasonBulkImport').disabled=!newItems.length;
  $('seasonBulkList').innerHTML=newItems.map((p,i)=>'<tr><td>'+(i+1)+'</td><td>'+escape(p.name)+'</td><td>'+money(p.price)+'</td><td>🆕 Novo <button type="button" class="btn small" data-ignore-name="'+escape(p.name)+'">Excluir da fila</button></td></tr>').join('')||'<tr><td colspan="4">✅ Nenhum produto novo a cadastrar.</td></tr>';
@@ -47,7 +47,7 @@ function render(){
   const x=existingByName.get(normalize(p.name));
   return '<div class="season-admin-product"><span style="flex:1"><b>'+escape(x.name)+'</b> · '+money(x.price)+'</span><button type="button" class="btn small" data-exclusive-edit="'+escape(x.id)+'">Editar cadastro</button><button type="button" class="btn small" data-ignore-name="'+escape(p.name)+'">Remover da lista</button></div>';
  }).join('')||'<p class="subtitle">Nenhum cadastro existente correspondente à lista.</p>';
- $('seasonExistingCount').textContent=duplicates.length+' já cadastrados (sem criar duplicatas)';
+ $('seasonExistingCount').textContent=duplicates.length+' cadastrados ainda pendentes (publicados ocultos)';
  $('seasonPublishCount').textContent=publishable.length+' prontos · '+pending.length+' incompletos · '+published+' publicados';
  const hint=$('seasonPublishHint');
  if(hint)hint.textContent=publishable.length?'✅ Há '+publishable.length+' produto(s) prontos para publicar. Marque as caixas abaixo.':pending.length?'⚠️ Não está travado: '+pending.length+' produto(s) precisam ser completados. Clique em Completar para abrir o cadastro e adicionar os dados indicados.':'✅ Todos os produtos ativos já foram publicados.';
@@ -62,6 +62,10 @@ function render(){
  ).join('')||'<p class="notice">✅ Nenhum produto pronto aguardando publicação.</p>';
  $('seasonPendingList').innerHTML=pending.map(p=>'<div class="season-admin-product"><span style="flex:1"><b>'+escape(p.name)+'</b> · '+money(p.price)+'<small> · '+(p.active===false?'Inativo': 'Falta '+missing(p).join(' e '))+'</small></span><button type="button" class="btn small" data-exclusive-edit="'+escape(p.id)+'">Completar</button></div>').join('')||'<p class="subtitle">Nenhum item incompleto.</p>';
  $('seasonOtherExclusive').innerHTML='<p class="subtitle">Produtos adicionais já estão contemplados nas filas acima.</p>';
+}
+function syncAllQueues(){
+ render();
+ if(typeof seasonExclusiveRender==='function')seasonExclusiveRender();
 }
 function updateProduct(product){
  if(!st.seasonData||!product)return;
@@ -85,9 +89,9 @@ async function request(button,endpoint,body,mode){
    ids.forEach(id=>selected.delete(id));
    status('✅ '+data.published+' publicados. Itens publicados retirados da fila.');
   }
-  render();
+  syncAllQueues();
  }catch(err){status('Falha: '+err.message,true)}
- finally{button.disabled=false;button.textContent=prior;render()}
+ finally{button.disabled=false;button.textContent=prior;syncAllQueues()}
 }
 function handleClick(e){
  const editBtn=e.target.closest('[data-exclusive-edit]');
@@ -126,7 +130,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   $('seasonBulkPublish').textContent='🚀 Publicar selecionados ('+selected.size+')';
  });
  $('seasonExclusiveCampaign').addEventListener('change',()=>{selected.clear();render()});
- window.addEventListener('caseirinho:season-products-updated',render);
+ window.addEventListener('caseirinho:season-products-updated',syncAllQueues);
  $('seasonRefresh')?.addEventListener('click',()=>setTimeout(render,500));
  $('seasonQueueRefresh')?.addEventListener('click',async e=>{
   const btn=e.currentTarget;btn.disabled=true;btn.textContent='Atualizando...';
