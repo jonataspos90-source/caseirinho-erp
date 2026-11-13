@@ -380,9 +380,9 @@
     <label>Quantidade mínima total (UN)<input id="seasonMinTotalQty" type="number" min="1" step="1" value="1"></label>
     <label>Permissões de atendimento<div class="season-checks"><label><input id="seasonPickup" type="checkbox" checked> Retirada</label><label><input id="seasonDelivery" type="checkbox" checked> Entrega</label><label><input id="seasonActive" type="checkbox" checked> Campanha ativa</label></div></label>
    </div>
-   <h3>🍝 Produtos participantes e quantidade mínima</h3>
+   <h3>🏬 1. Produtos já cadastrados no ERP</h3><p>Selecione os produtos existentes que devem participar desta campanha. A publicação destes produtos é feita ao salvar a campanha, sem alterar o catálogo exclusivo.</p>
    <div class="toolbar"><input id="seasonProductSearch" type="search" placeholder="Buscar produtos por nome ou código..."><span id="seasonSelected" class="badge">0 selecionados</span></div>
-   <div id="seasonProductList" class="season-admin-products"></div>
+   <div id="seasonProductList" class="season-admin-products"></div><div class="toolbar" style="margin:12px 0"><button type="button" class="btn primary" id="seasonExistingPublish">🚀 Salvar e publicar produtos existentes da campanha</button></div>
    <article class="card" id="seasonMerchPanel" style="margin-top:16px;border:1px solid #c5dace;background:#fcfefc">
     <h3>🧩 Categorias, grades e packs de encomendas</h3>
     <p>Organize o cardápio da campanha separadamente dos produtos e promoções da loja comum.</p>
@@ -465,16 +465,16 @@
     </div>
    </article>
    <article class="card" id="seasonBulkPanel" style="margin-top:18px;border:1px solid #b9d8c5;background:#f7fcf8">
-    <h3>📋 Importar cardápio de encomendas (33 produtos)</h3>
+    <h3>🎄 2. Produtos exclusivos de encomendas</h3><p>Estes produtos são independentes do catálogo comum. Cada item pode ser publicado individualmente quando estiver pronto.</p><h4>📋 Cardápio com 33 produtos</h4>
     <p>Selecione a campanha no cadastro de produtos exclusivos abaixo. Importe todos os produtos e preços em um clique. As fotos e categorias podem ser adicionadas depois, editando cada produto. A publicação é separada do cadastro.</p>
-    <div class="toolbar"><button type="button" class="btn primary" id="seasonBulkImport">📥 Cadastrar os 33 produtos</button><button type="button" class="btn" id="seasonBulkPublish">🚀 Publicar todos na loja</button></div>
+    <div class="toolbar"><button type="button" class="btn primary" id="seasonBulkImport">📥 Cadastrar os 33 produtos</button><button type="button" class="btn" id="seasonBulkPublish">🚀 Publicar os prontos</button></div>
     <p class="subtitle" id="seasonBulkCount">Selecione uma campanha para conferir os produtos.</p>
-    <p class="subtitle">A publicação só será concluída quando todos os produtos ativos da campanha tiverem foto e categoria. Sem publicação parcial.</p>
+    <p class="subtitle">Somente os produtos com foto e categoria serão publicados. Os incompletos continuarão como rascunho e não impedirão os demais.</p>
     <div id="seasonBulkStatus" class="notice" role="status" hidden></div>
-    <div style="overflow:auto;max-height:350px"><table style="width:100%;min-width:540px"><thead><tr><th>#</th><th>Produto</th><th>Preço</th><th>Situação</th></tr></thead><tbody id="seasonBulkList"></tbody></table></div>
+    <div style="overflow:auto;max-height:350px"><table style="width:100%;min-width:540px"><thead><tr><th>#</th><th>Produto</th><th>Preço</th><th>Situação</th></tr></thead><tbody id="seasonBulkList"></tbody></table></div><h4>Outros produtos exclusivos de encomendas</h4><div id="seasonOtherExclusive" class="season-admin-products"></div>
    </article>
    <article class="card" id="seasonExclusivePanel" style="margin-top:18px;border:1px solid #c9decb;background:#fbfdfb">
-    <h3>🎁 Cadastro exclusivo de produtos de encomendas</h3>
+    <h3>✏️ Criar ou editar produto exclusivo</h3>
     <p>Itens criados aqui <b>não entram no cardápio comum</b>. Cada produto pertence a uma campanha, tem preço próprio e pode receber foto e categoria depois. Só aparece na vitrine sazonal após a publicação e durante a vigência da campanha. Pode ser reutilizado na mesma campanha em outras datas.</p>
     <div class="form-grid">
      <label>Campanha vinculada *<select id="seasonExclusiveCampaign"><option value="">Escolha a campanha</option></select></label>
@@ -550,10 +550,11 @@
  </nav>
 <div id="toast" class="toast" role="status" hidden></div>
 <div id="modal" class="modal-bg" hidden><div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><h2 id="modalTitle">Mensagem para WhatsApp</h2><div id="modalContent"></div><div class="toolbar" style="justify-content:flex-end;margin-top:20px"><button class="btn" id="modalClose">Fechar</button></div></div></div>
-<script src="./app.js?v=20261113-season-bulk-1" defer></script>
+<script src="./app.js?v=20261113-season-bulk-2" defer></script>
 <script src="./seasonal-merch-admin.js?v=20261113-unified-products-2" defer></script>
-<script src="./seasonal-bulk-products.js?v=20261113-1" defer></script>
+<script src="./seasonal-bulk-products.js?v=20261113-2" defer></script>
 <script src="./category-manager.js?v=20261110-1" defer></script>
+<script defer>document.addEventListener('DOMContentLoaded',()=>{document.getElementById('seasonExistingPublish')?.addEventListener('click',()=>document.getElementById('seasonSave')?.click());});</script>
 <script src="./sales-stock-levels.js?v=43-stock-visible" defer></script>
 <script src="./cashback-pending-erp.js?v=1" defer></script>
 <script src="./order-reject.js?v=4" defer></script>
