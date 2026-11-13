@@ -2233,8 +2233,7 @@ function seasonExclusiveEdit(id){
  if(!p)return;
  seasonExclusiveEditing=id;seasonExclusiveImage=p.image||'';
  E('seasonExclusiveCampaign').value=p.campaignId;
- E('seasonMerchCampaign').value=p.campaignId;
- seasonMerchRender();
+ seasonMerchSelectCampaign(p.campaignId);
  E('seasonExclusiveSelect').value=id;
  E('seasonExclusiveName').value=p.name;E('seasonExclusivePrice').value=p.price;
  E('seasonExclusiveDescription').value=p.description;
@@ -2281,7 +2280,8 @@ async function seasonExclusiveSave(){
   await loadSeasonAdmin();
   seasonExclusiveReset();
   E('seasonExclusiveCampaign').value=campaignId;
-  seasonExclusiveFeedback('✅ Produto exclusivo salvo e vinculado à campanha. Ele aparecerá na loja apenas enquanto a campanha permitir encomendas.');
+  seasonMerchSelectCampaign(campaignId);
+  seasonExclusiveFeedback('✅ Produto salvo! Ele já está disponível em Grades e Sabores, junto com os produtos do cadastro normal desta campanha.');
  }catch(e){seasonExclusiveFeedback('Não foi possível salvar: '+e.message,true)}
  finally{button.disabled=false;button.textContent='💾 Salvar produto exclusivo'}
 }
