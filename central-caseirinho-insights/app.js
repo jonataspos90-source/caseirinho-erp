@@ -2243,6 +2243,12 @@ function seasonExclusiveEdit(id){
  E('seasonExclusiveImageUrl').value=/^https:\/\//i.test(p.image)?p.image:'';
  seasonExclusiveShowPhoto();
  E('seasonExclusivePanel').scrollIntoView({behavior:'smooth',block:'start'});
+ const needsPhoto=!p.image,needsCategory=!p.categoryId;
+ const target=needsPhoto?E('seasonExclusiveImageUpload'):needsCategory?E('seasonExclusiveCategory'):E('seasonExclusiveName');
+ E('seasonExclusiveStatus').hidden=false;
+ E('seasonExclusiveStatus').className='notice '+(needsPhoto||needsCategory?'warn':'success');
+ E('seasonExclusiveStatus').textContent=needsPhoto||needsCategory?'Complete '+[needsPhoto?'a foto':'',needsCategory?'a categoria':''].filter(Boolean).join(' e ')+' de '+p.name+' e clique em Salvar produto exclusivo. Depois ele entrará na fila de publicação.':'Produto pronto! Você pode salvar alterações ou voltar à fila para publicar.';
+ requestAnimationFrame(()=>target?.focus({preventScroll:true}));
 }
 function seasonExclusiveRender(){
  const campaigns=st.seasonData?.campaigns||[],products=st.seasonData?.exclusiveProducts||[];
