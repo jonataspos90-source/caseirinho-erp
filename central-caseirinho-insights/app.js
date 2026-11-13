@@ -2617,5 +2617,5 @@ window.CaseirinhoCategoryBridge={
 };
 window.CaseirinhoInsightsReceivablesBridge={api,nav,modal,hideModal};
 window.CaseirinhoInsightsStockBridge={api,report:()=>st.sales,refresh:loadSales,refreshCatalog:async()=>{const data=await api('catalog');st.catalog=data.items||st.catalog;if(st.view==='products')renderProducts()}};
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+if(document.readyState==='complete')init();else document.addEventListener('DOMContentLoaded',init,{once:true});
 })();
