@@ -2304,7 +2304,7 @@ function seasonSaveEdits(){
  document.querySelectorAll('[data-season-product]').forEach(el=>{
   const id=el.dataset.seasonProduct;
   if(!st.seasonProductRules.has(id))return;
-  st.seasonProductRules.set(id,{id,minQuantity:Number(el.querySelector('[data-season-min]').value)||1,maxQuantity:Number(el.querySelector('[data-season-max]').value)||0});
+  st.seasonProductRules.set(id,{id,minQuantity:Number(el.querySelector('[data-season-min]').value)||1,maxQuantity:Number(el.querySelector('[data-season-max]').value)||0,categoryId:el.querySelector('[data-season-cat]')?.value||'',gradeId:el.querySelector('[data-season-grade]')?.value||'',variantLabel:el.querySelector('[data-season-variant]')?.value.trim()||''});
  });
 }
 function seasonChooseCampaign(id){
@@ -2325,6 +2325,9 @@ function seasonProductsFiltered(){
  return(st.seasonData?.products||[]).filter(p=>(s(p.name)+' '+s(p.id)).toLowerCase().includes(q));
 }
 function renderSeasonProducts(){
+ const campaignId=E('seasonCampaignSelect').value;
+ const categories=(st.seasonData?.categories||[]).filter(p=>p.active&&p.campaignId===campaignId);
+ const grades=(st.seasonData?.grades||[]).filter(p=>p.active&&p.campaignId===campaignId);
  const items=seasonProductsFiltered();
  E('seasonSelected').textContent=st.seasonProductRules.size+' selecionado(s)';
  E('seasonProductList').innerHTML=items.map(p=>{
@@ -2333,7 +2336,12 @@ function renderSeasonProducts(){
     '<label class="season-admin-choice"><input type="checkbox" data-season-check value="'+esc(p.id)+'" '+(picked?'checked':'')+'>'+
     '<span><b>'+esc(p.name)+'</b><small>Preço atual: '+brl(p.price)+' · '+esc(p.category||'')+'</small></span></label>'+
     '<label>Mínimo por produto<input data-season-min type="number" min="1" step="1" value="'+esc(rule?.minQuantity??1)+'"></label>'+
-    '<label>Máximo (0 = livre)<input data-season-max type="number" min="0" step="1" value="'+esc(rule?.maxQuantity??0)+'"></label></div>';
+    '<label>Máximo (0 = livre)<input data-season-max type="number" min="0" step="1" value="'+esc(rule?.maxQuantity??0)+'"></label>'+
+     '<label>Categoria sazonal<select data-season-cat><option value="">Sem categoria</option>'+
+     categories.map(c=>'<option value="'+esc(c.id)+'" '+(rule?.categoryId===c.id?'selected':'')+'>'+esc(c.emoji||'🏷️')+' '+esc(c.name)+'</option>').join('')+'</select></label>'+
+     '<label>Grade sazonal<select data-season-grade><option value="">Sem grade</option>'+
+     grades.map(g=>'<option value="'+esc(g.id)+'" '+(rule?.gradeId===g.id?'selected':'')+'>'+esc(g.name)+'</option>').join('')+'</select></label>'+
+     '<label>Sabor / tamanho na grade<input data-season-variant maxlength="80" placeholder="Ex.: Frango com requeijão" value="'+esc(rule?.variantLabel||'')+'"></label></div>';
  }).join('')||cellEmpty('Nenhum produto encontrado.');
 }
 function renderSeasonAdmin(){
