@@ -409,6 +409,11 @@
      <div class="form-grid">
       <label>Editar grade<select id="seasonGradeSelect"><option value="">➕ Nova grade</option></select></label>
       <label>Nome *<input id="seasonGradeName" maxlength="100" placeholder="Ex.: Panquecas especiais"></label>
+      <label>Tipo da grade<select id="seasonGradeType">
+       <option value="SABOR">😋 Sabor</option><option value="RECHEIO">🥟 Recheio</option>
+       <option value="TAMANHO">📏 Tamanho</option><option value="PESO">⚖️ Peso</option><option value="APRESENTACAO">📦 Apresentação</option>
+      </select></label>
+      <label>Título da escolha<input id="seasonGradeChoiceTitle" maxlength="40" placeholder="Ex.: Escolha o sabor"></label>
       <label>Categoria<select id="seasonGradeCategory"><option value="">Sem categoria</option></select></label>
       <label>Ordem na vitrine<input id="seasonGradeSort" type="number" min="0" value="0"></label>
       <label class="full">Descrição<textarea id="seasonGradeDescription" maxlength="300" rows="2"></textarea></label>
@@ -531,7 +536,7 @@
 <div id="toast" class="toast" role="status" hidden></div>
 <div id="modal" class="modal-bg" hidden><div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><h2 id="modalTitle">Mensagem para WhatsApp</h2><div id="modalContent"></div><div class="toolbar" style="justify-content:flex-end;margin-top:20px"><button class="btn" id="modalClose">Fechar</button></div></div></div>
 <script src="./app.js?v=20261113-seasonal-merch-4" defer></script>
-<script src="./seasonal-merch-admin.js?v=20261113-grade-linked-1" defer></script>
+<script src="./seasonal-merch-admin.js?v=20261113-grade-linked-2" defer></script>
 <script src="./category-manager.js?v=20261110-1" defer></script>
 <script src="./sales-stock-levels.js?v=43-stock-visible" defer></script>
 <script src="./cashback-pending-erp.js?v=1" defer></script>
