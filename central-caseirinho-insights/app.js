@@ -2250,16 +2250,18 @@ function seasonExclusiveRender(){
  select.innerHTML='<option value="">Escolha a campanha</option>'+campaigns.map(c=>'<option value="'+esc(c.id)+'">'+esc(c.title)+'</option>').join('');
  if(campaigns.some(c=>c.id===before))select.value=before;
  else if(E('seasonCampaignSelect').value)select.value=E('seasonCampaignSelect').value;
+ else if(campaigns.length===1)select.value=campaigns[0].id;
  seasonMerchRender();
  const productSelect=E('seasonExclusiveSelect'),old=productSelect.value;
  productSelect.innerHTML='<option value="">➕ Novo produto sazonal</option>'+products.map(p=>'<option value="'+esc(p.id)+'">'+esc(p.name)+' — '+esc(campaigns.find(c=>c.id===p.campaignId)?.title||'Campanha')+'</option>').join('');
  if(products.some(p=>p.id===old))productSelect.value=old;
- E('seasonExclusiveList').innerHTML=products.length?products.map(p=>
+ const remainingProducts=products.filter(p=>!p.published);
+ E('seasonExclusiveList').innerHTML=remainingProducts.length?remainingProducts.map(p=>
   '<div class="season-admin-product">'+(p.image?'<img loading="lazy" src="'+esc(p.image)+'" alt="" style="width:80px;height:80px;object-fit:cover;border-radius:10px">':'<span class="subtitle">📷 Sem foto</span>')+
   '<div style="flex:1"><b>'+esc(p.name)+'</b><p>'+esc(campaigns.find(c=>c.id===p.campaignId)?.title||'Campanha não encontrada')+' · '+brl(p.price)+'</p>'+
   '<span class="badge '+(p.active?'good':'warn')+'">'+(p.active?'Disponível':'Inativo')+'</span></div>'+
   '<span class="badge">'+(p.published?'🟢 Publicado':'📝 Rascunho')+'</span> <button type="button" class="btn small" data-season-exclusive-edit="'+esc(p.id)+'">✏️ Editar</button></div>').join(''):
-  '<div class="notice">Nenhum produto exclusivo cadastrado. Escolha uma campanha e crie o primeiro item.</div>';
+  '<div class="notice">✅ Nenhum produto exclusivo pendente. Os publicados saíram desta lista.</div>';
 }
 async function seasonExclusiveSave(){
  const campaignId=E('seasonExclusiveCampaign').value;
