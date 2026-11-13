@@ -2258,7 +2258,7 @@ function seasonExclusiveRender(){
   '<div class="season-admin-product"><img src="'+esc(p.image)+'" alt="" style="width:80px;height:80px;object-fit:cover;border-radius:10px">'+
   '<div style="flex:1"><b>'+esc(p.name)+'</b><p>'+esc(campaigns.find(c=>c.id===p.campaignId)?.title||'Campanha não encontrada')+' · '+brl(p.price)+'</p>'+
   '<span class="badge '+(p.active?'good':'warn')+'">'+(p.active?'Disponível':'Inativo')+'</span></div>'+
-  '<button type="button" class="btn small" data-season-exclusive-edit="'+esc(p.id)+'">✏️ Editar</button></div>').join(''):
+  '<span class="badge">'+(p.published?'🟢 Publicado':'📝 Rascunho')+'</span> <button type="button" class="btn small" data-season-exclusive-edit="'+esc(p.id)+'">✏️ Editar</button></div>').join(''):
   '<div class="notice">Nenhum produto exclusivo cadastrado. Escolha uma campanha e crie o primeiro item.</div>';
 }
 async function seasonExclusiveSave(){
@@ -2272,7 +2272,7 @@ async function seasonExclusiveSave(){
   active:E('seasonExclusiveActive').checked};
  if(!campaignId)return seasonExclusiveFeedback('Selecione uma campanha sazonal já cadastrada.',true);
  if(body.name.length<3||!(body.price>0))return seasonExclusiveFeedback('Informe nome do produto e preço maior que zero.',true);
- if(!image)return seasonExclusiveFeedback('Adicione uma foto do produto.',true);
+ // O cadastro pode ser salvo como rascunho sem foto ou categoria.
  if(body.gradeId&&!body.variantLabel)return seasonExclusiveFeedback('Informe o sabor ou tamanho deste item na grade.',true);
  const button=E('seasonExclusiveSave');button.disabled=true;button.textContent='Salvando...';
  try{
