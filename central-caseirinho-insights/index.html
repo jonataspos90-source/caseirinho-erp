@@ -478,6 +478,7 @@
     <h3>🚀 3. Fila de publicação — exclusivos</h3>
     <p>Marque os produtos prontos para publicar. Cada publicação concluída retira o item automaticamente desta lista, até zerar a fila.</p>
     <p id="seasonPublishCount" class="subtitle"></p>
+    <p id="seasonPublishHint" class="notice" role="status">Carregando situação da fila...</p><div class="toolbar"><button type="button" class="btn small" id="seasonQueueRefresh">↻ Atualizar lista</button></div>
     <div class="toolbar" style="margin:12px 0">
       <button type="button" class="btn" id="seasonPublishSelectAll">☑ Marcar todos prontos</button>
       <button type="button" class="btn" id="seasonPublishUnselectAll">☐ Desmarcar todos</button>
@@ -565,9 +566,9 @@
  </nav>
 <div id="toast" class="toast" role="status" hidden></div>
 <div id="modal" class="modal-bg" hidden><div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><h2 id="modalTitle">Mensagem para WhatsApp</h2><div id="modalContent"></div><div class="toolbar" style="justify-content:flex-end;margin-top:20px"><button class="btn" id="modalClose">Fechar</button></div></div></div>
-<script src="./app.js?v=20261113-season-bulk-2" defer></script>
+<script src="./app.js?v=20261113-season-bulk-3" defer></script>
 <script src="./seasonal-merch-admin.js?v=20261113-unified-products-2" defer></script>
-<script src="./seasonal-bulk-products.js?v=20261113-3" defer></script>
+<script src="./seasonal-bulk-products.js?v=20261113-4" defer></script>
 <script src="./category-manager.js?v=20261110-1" defer></script>
 <script defer>document.addEventListener('DOMContentLoaded',()=>{document.getElementById('seasonExistingPublish')?.addEventListener('click',()=>document.getElementById('seasonSave')?.click());});</script>
 <script src="./sales-stock-levels.js?v=43-stock-visible" defer></script>
