@@ -464,9 +464,18 @@
      <div id="seasonPackList" class="season-admin-products"></div>
     </div>
    </article>
+   <article class="card" id="seasonBulkPanel" style="margin-top:18px;border:1px solid #b9d8c5;background:#f7fcf8">
+    <h3>📋 Importar cardápio de encomendas (33 produtos)</h3>
+    <p>Selecione a campanha no cadastro de produtos exclusivos abaixo. Importe todos os produtos e preços em um clique. As fotos e categorias podem ser adicionadas depois, editando cada produto. A publicação é separada do cadastro.</p>
+    <div class="toolbar"><button type="button" class="btn primary" id="seasonBulkImport">📥 Cadastrar os 33 produtos</button><button type="button" class="btn" id="seasonBulkPublish">🚀 Publicar todos na loja</button></div>
+    <p class="subtitle" id="seasonBulkCount">Selecione uma campanha para conferir os produtos.</p>
+    <p class="subtitle">A publicação só será concluída quando todos os produtos ativos da campanha tiverem foto e categoria. Sem publicação parcial.</p>
+    <div id="seasonBulkStatus" class="notice" role="status" hidden></div>
+    <div style="overflow:auto;max-height:350px"><table style="width:100%;min-width:540px"><thead><tr><th>#</th><th>Produto</th><th>Preço</th><th>Situação</th></tr></thead><tbody id="seasonBulkList"></tbody></table></div>
+   </article>
    <article class="card" id="seasonExclusivePanel" style="margin-top:18px;border:1px solid #c9decb;background:#fbfdfb">
     <h3>🎁 Cadastro exclusivo de produtos de encomendas</h3>
-    <p>Itens criados aqui <b>não entram no cardápio comum</b>. Cada produto pertence a uma campanha, tem foto e preço próprios, e só aparece na vitrine sazonal durante sua vigência. Pode ser reutilizado na mesma campanha em outras datas.</p>
+    <p>Itens criados aqui <b>não entram no cardápio comum</b>. Cada produto pertence a uma campanha, tem preço próprio e pode receber foto e categoria depois. Só aparece na vitrine sazonal após a publicação e durante a vigência da campanha. Pode ser reutilizado na mesma campanha em outras datas.</p>
     <div class="form-grid">
      <label>Campanha vinculada *<select id="seasonExclusiveCampaign"><option value="">Escolha a campanha</option></select></label>
      <label>Produto exclusivo cadastrado<select id="seasonExclusiveSelect"><option value="">➕ Novo produto sazonal</option></select></label>
@@ -541,8 +550,9 @@
  </nav>
 <div id="toast" class="toast" role="status" hidden></div>
 <div id="modal" class="modal-bg" hidden><div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><h2 id="modalTitle">Mensagem para WhatsApp</h2><div id="modalContent"></div><div class="toolbar" style="justify-content:flex-end;margin-top:20px"><button class="btn" id="modalClose">Fechar</button></div></div></div>
-<script src="./app.js?v=20261113-unified-products-1" defer></script>
+<script src="./app.js?v=20261113-season-bulk-1" defer></script>
 <script src="./seasonal-merch-admin.js?v=20261113-unified-products-2" defer></script>
+<script src="./seasonal-bulk-products.js?v=20261113-1" defer></script>
 <script src="./category-manager.js?v=20261110-1" defer></script>
 <script src="./sales-stock-levels.js?v=43-stock-visible" defer></script>
 <script src="./cashback-pending-erp.js?v=1" defer></script>
