@@ -6,7 +6,7 @@ const path=require('node:path');
 const main=fs.readFileSync(path.join(__dirname,'../central-caseirinho-insights/app.js'),'utf8');
 const index=fs.readFileSync(path.join(__dirname,'../central-caseirinho-insights/index.html'),'utf8');
 const sw=fs.readFileSync(path.join(__dirname,'../central-caseirinho-insights/sw.js'),'utf8');
-const cut=main.slice(main.indexOf('function suspectedDuplicateOrders('),main.indexOf('function renderOrders(){'));
+const cut=main.slice(main.indexOf('let duplicateOrdersSource='),main.indexOf('function renderOrders(){'));
 const detector=new Function('s','n',cut+'\nreturn suspectedDuplicateOrders')(
  v=>String(v??''),v=>Number(v)||0
 );
