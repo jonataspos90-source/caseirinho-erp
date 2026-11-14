@@ -244,14 +244,34 @@ function renderOrderFulfillmentKpis(){
   statsCard('🎉','Entregues / retirados',complete.length,'Pedidos com situação finalizada')
  ].join('');
 }
+// Alerta informativo para duplicidades históricas, sem cancelamento automático.
+function suspectedDuplicateOrders(orders){
+ const found=new Map(),previous=new Map();
+ const rows=[...(Array.isArray(orders)?orders:[])].sort((a,b)=>Date.parse(a.created_at||0)-Date.parse(b.created_at||0));
+ for(const o of rows){
+  const status=s(o.status).toUpperCase();
+  if(['CANCELADO','REJEITADO','FRETE_RECUSADO_CLIENTE'].includes(status))continue;
+  const time=Date.parse(o.created_at),phone=s(o.phone).replace(/\D/g,'').slice(-11),items=Array.isArray(o.items)?o.items:[];
+  if(!phone||!Number.isFinite(time)||!items.length)continue;
+  const sku=items.map(i=>s(i.productId||i.produtoId||i.name).toLowerCase()+'×'+n(i.quantity||i.quantidade||0)).sort().join(';');
+  const key=phone+'|'+sku+'|'+Math.round(n(o.total)*100);
+  const prior=previous.get(key);
+  if(prior&&time-prior.time>=0&&time-prior.time<30*60*1000)found.set(s(o.code),s(prior.code));
+  else previous.set(key,{code:o.code,time});
+ }
+ return found;
+}
 function renderOrders(){
  renderOrderFulfillmentKpis();
+ const potentialDuplicates=suspectedDuplicateOrders(st.orders);
  const q=s(E('orderSearch').value).toLowerCase().trim(),f=E('orderFilter').value;
  const rows=st.orders.filter(x=>{const v=st.fulfillment.get(s(x.code));const match=(s(x.code)+' '+s(x.name)+' '+s(x.phone)+' '+(x.items||[]).map(i=>i.name).join(' ')).toLowerCase().includes(q);const status=s(v?.status||x.status).toUpperCase();const integrated=v?.integration==='IMPORTADO'&&v?.erpLinked;const filter=f==='all'||x.integration_status===f||f==='NEW'&&['NOVO','PENDENTE','AGUARDANDO_ANALISE','AGUARDANDO_COTACAO_FRETE'].includes(status)||f==='READY'&&!v?.completed&&['ACEITO','ABERTO','PRONTO'].includes(status)||f==='CASHBACK_PENDING'&&!v?.completed&&v?.approval==='PENDENTE'||f==='CASHBACK_GRANTED'&&n(v?.credit)>0||f==='COMPLETED'&&v?.completed;return match&&filter;});
  if(window.matchMedia('(max-width:790px)').matches){
-  E('ordersTable').innerHTML=rows.length?'<div class="mobile-list">'+rows.map(x=>'<article class="mobile-record"><div class="mobile-record-head"><strong>Pedido #'+esc(x.code)+'</strong>'+badge(x.status)+'</div><p><b>'+esc(x.name||'Cliente')+'</b> · '+dt(x.created_at)+'</p><p><b>'+brl(x.total)+'</b> · '+(x.items||[]).length+' item(ns)</p><p>'+badge(x.integration_status)+'</p><p>'+paymentBadge(x)+'</p><div class="record-actions">'+orderButton(x)+'</div></article>').join('')+'</div>':cellEmpty('Nenhum pedido encontrado.');
+  const visibleRows=rows.slice(0,80);
+  const more=rows.length>visibleRows.length?'<p class="notice">Exibindo 80 de '+rows.length+' pedidos. Use a busca acima para encontrar os demais.</p>':'';
+  E('ordersTable').innerHTML=visibleRows.length?more+'<div class="mobile-list">'+visibleRows.map(x=>'<article class="mobile-record"><div class="mobile-record-head"><strong>Pedido #'+esc(x.code)+'</strong>'+badge(x.status)+'</div><p><b>'+esc(x.name||'Cliente')+'</b> · '+dt(x.created_at)+'</p><p><b>'+brl(x.total)+'</b> · '+(x.items||[]).length+' item(ns)</p><p>'+badge(x.integration_status)+'</p><p>'+paymentBadge(x)+'</p>'+(potentialDuplicates.has(s(x.code))?'<div class="notice warn" style="font-size:12px;margin:8px 0"><b>⚠️ Possível pedido duplicado</b><br>Confira o pedido nº '+esc(potentialDuplicates.get(s(x.code)))+' antes de finalizar ou receber pagamento. Nenhuma alteração foi feita automaticamente.</div>':'')+'<div class="record-actions">'+orderButton(x)+'</div></article>').join('')+'</div>':cellEmpty('Nenhum pedido encontrado.');
  }else{
-  E('ordersTable').innerHTML=table(['Data','Pedido','Cliente','Itens pedidos','Total','Status / ERP','Pagamento','Ações'],rows.map(x=>'<tr><td>'+dt(x.created_at)+'</td><td><b>'+esc(x.code)+'</b></td><td>'+esc(x.name||'—')+'<br><small>'+esc(tel(x.phone))+'</small></td><td>'+esc((x.items||[]).map(i=>n(i.quantity)+'× '+i.name).join(', '))+'</td><td><b>'+brl(x.total)+'</b></td><td>'+badge(x.status)+'<br>'+badge(x.integration_status)+'</td><td>'+paymentBadge(x)+'</td><td class="actions-cell">'+orderButton(x)+'</td></tr>'));
+  E('ordersTable').innerHTML=table(['Data','Pedido','Cliente','Itens pedidos','Total','Status / ERP','Pagamento','Ações'],rows.map(x=>'<tr><td>'+dt(x.created_at)+'</td><td><b>'+esc(x.code)+'</b></td><td>'+esc(x.name||'—')+'<br><small>'+esc(tel(x.phone))+'</small></td><td>'+esc((x.items||[]).map(i=>n(i.quantity)+'× '+i.name).join(', '))+'</td><td><b>'+brl(x.total)+'</b></td><td>'+badge(x.status)+'<br>'+badge(x.integration_status)+'</td><td>'+paymentBadge(x)+(potentialDuplicates.has(s(x.code))?'<div class="notice warn" style="font-size:11px">⚠️ Possível duplicado do nº '+esc(potentialDuplicates.get(s(x.code)))+'</div>':'')+'</td><td class="actions-cell">'+orderButton(x)+'</td></tr>'));
  }
 }
 const expected=new Map([['Panqueca Palmito',13.99],['Molho 250 gr - Sugo',12.99],['Molho 500 gr - Sugo',15.99],['Molho 1 Kg - Sugo',24.99],['Macarrão Talharim com Massa Caseira G (900 gr) - Molho Branco',31.99]]);
@@ -2618,7 +2638,7 @@ async function init(){
  tokenSetup();bind();
  if(st.token){await loadAll();{const params=new URLSearchParams(location.search),requested=params.get('view');if(['blackfriday','sazonais','products','operations','financeiro','sales','receivables'].includes(requested))nav(requested);if(requested==='products'&&params.get('product')){const id=params.get('product');if(st.catalog.some(x=>s(x.id)===s(id)))editProduct(id);}}}else E('loginScreen').hidden=false;
  setInterval(loadRequests,90000);
- setInterval(()=>{if(document.visibilityState!=='hidden')loadAll();},180000);
+ setInterval(()=>{if(document.visibilityState!=='hidden')loadAll();},300000);
  await pollNewOrders();
  setInterval(pollNewOrders,30000);
 }
