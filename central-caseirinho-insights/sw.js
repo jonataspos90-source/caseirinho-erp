@@ -1,6 +1,6 @@
 /* Central Caseirinho Insights — cache SOMENTE de arquivos públicos; nenhuma informação de clientes */
-const CACHE='caseirinho-insights-app-shell-v56-unified-products-20261113';
-const SHELL=['./','./index.html','./styles.css?v=20261110-product-names-2','./app.js?v=20261113-unified-products-1','./seasonal-merch-admin.js?v=20261113-unified-products-2','./category-manager.js?v=20261110-1','./sales-stock-levels.js?v=43-stock-visible','./cashback-pending-erp.js?v=1','./order-reject.js?v=4','./financeiro.js?v=20261110-platform-1','./platform-sales.js?v=20261110-platform-1','./conta-cliente-recebimentos.js?v=20261111-2','./financeiro.css?v=20261110-platform-1','./operations-recovery.js?v=1','./manifest.webmanifest?v=2','./icon.svg'];
+const CACHE='caseirinho-insights-app-shell-v57-best-deals-20261113';
+const SHELL=['./','./index.html','./styles.css?v=20261110-product-names-2','./app.js?v=20261113-unified-products-1','./seasonal-merch-admin.js?v=20261113-unified-products-2','./seasonal-best-deal-admin.js?v=20261113-bestdeal-1','./category-manager.js?v=20261110-1','./sales-stock-levels.js?v=43-stock-visible','./cashback-pending-erp.js?v=1','./order-reject.js?v=4','./financeiro.js?v=20261110-platform-1','./platform-sales.js?v=20261110-platform-1','./conta-cliente-recebimentos.js?v=20261111-2','./financeiro.css?v=20261110-platform-1','./operations-recovery.js?v=1','./manifest.webmanifest?v=2','./icon.svg'];
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting()));
 });
