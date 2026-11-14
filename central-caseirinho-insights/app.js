@@ -245,7 +245,9 @@ function renderOrderFulfillmentKpis(){
  ].join('');
 }
 // Alerta informativo para duplicidades históricas, sem cancelamento automático.
+let duplicateOrdersSource=null,duplicateOrdersCache=new Map();
 function suspectedDuplicateOrders(orders){
+ if(orders===duplicateOrdersSource)return duplicateOrdersCache;
  const found=new Map(),previous=new Map();
  const rows=[...(Array.isArray(orders)?orders:[])].sort((a,b)=>Date.parse(a.created_at||0)-Date.parse(b.created_at||0));
  for(const o of rows){
@@ -259,6 +261,8 @@ function suspectedDuplicateOrders(orders){
   if(prior&&time-prior.time>=0&&time-prior.time<30*60*1000)found.set(s(o.code),s(prior.code));
   else previous.set(key,{code:o.code,time});
  }
+ duplicateOrdersSource=orders;
+ duplicateOrdersCache=found;
  return found;
 }
 function renderOrders(){
@@ -2559,7 +2563,8 @@ function bind(){
  E('clearSession').addEventListener('click',logout);
  E('contactSearch').addEventListener('input',renderContacts);
  E('contactFilter').addEventListener('change',renderContacts);
- E('orderSearch').addEventListener('input',renderOrders);
+ let orderSearchTimer=null;
+ E('orderSearch').addEventListener('input',()=>{clearTimeout(orderSearchTimer);orderSearchTimer=setTimeout(renderOrders,170)});
  E('orderFilter').addEventListener('change',renderOrders);
  E('orderQuickNewFilter').addEventListener('click',()=>{E('orderFilter').value='NEW';nav('orders');renderOrders();});
  E('refreshFulfillment').addEventListener('click',refreshFulfillment);
