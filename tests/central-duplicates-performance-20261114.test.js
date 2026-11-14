@@ -35,6 +35,6 @@ test('limita cartões montados na tela mobile, não a busca no histórico',()=>{
  assert.match(main,/st\.orders\.filter/);
  assert.match(main,/suspectedDuplicateOrders\(st\.orders\)/);
  assert.match(main,/setInterval\(\(\)=>\{if\(document\.visibilityState!=='hidden'\)loadAll\(\);\},300000\)/);
- assert.match(index,/app\.js\?v=20261114-duplicates-fast-1/);
- assert.match(sw,/caseirinho-insights-app-shell-v58-duplicate-fast/);
+ assert.match(index,/app\.js\?v=20261114-duplicates-fast-2/);
+ assert.match(sw,/caseirinho-insights-app-shell-v59-duplicate-fast/);
 });
