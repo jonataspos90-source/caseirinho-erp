@@ -2,7 +2,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#183c2e"><meta name="description" content="Central Caseirinho Insights — painel administrativo independente de CRM, acessos, pedidos e cardápio.">
 <title>Central Caseirinho Insights | CRM e Loja</title>
-<link rel="stylesheet" href="./styles.css?v=20261110-product-names-2"><link rel="stylesheet" href="./store-hours-admin.css?v=20261116-1"><link rel="stylesheet" href="./financeiro.css?v=20261110-platform-1">
+<link rel="stylesheet" href="./styles.css?v=20261110-product-names-2"><link rel="stylesheet" href="./store-hours-admin.css?v=20261116-1"><link rel="stylesheet" href="./season-virtual-packs.css?v=20261116-virtual1"><link rel="stylesheet" href="./financeiro.css?v=20261110-platform-1">
 <link rel="manifest" href="./manifest.webmanifest?v=2"><link rel="icon" type="image/png" sizes="192x192" href="/caseirinho-loja/icons/icon-192.png"><link rel="apple-touch-icon" href="/caseirinho-loja/icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default">
 <style>.season-images-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;margin-top:12px}.season-image-tile{border:1px solid #c9dfd0;padding:8px;border-radius:10px;background:#f8fbf8}.season-image-tile img{height:100px;width:100%;object-fit:cover;border-radius:7px}.season-image-tile .toolbar{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}.season-image-tile button{padding:6px 8px}</style></head><body>
 <div class="auth-screen" id="loginScreen">
@@ -390,7 +390,7 @@
     <div class="merch-tabs" style="margin:12px 0">
      <button type="button" class="btn primary" data-season-merch-tab="category">🏷️ Categorias</button>
      <button type="button" class="btn" data-season-merch-tab="grade">🧀 Grades e sabores</button>
-     <button type="button" class="btn" data-season-merch-tab="pack">🎁 Packs especiais</button>
+     <button type="button" class="btn" data-season-merch-tab="pack">🎁 Pack Virtual</button>
     </div>
     <div id="seasonMerchStatus" class="notice" hidden></div>
     <div id="seasonMerchCategoryPanel">
@@ -446,21 +446,21 @@
      <div id="seasonGradeList" class="season-admin-products"></div>
     </div>
     <div id="seasonMerchPackPanel" hidden>
-     <p class="subtitle">Ex.: 6 empadas de sabores mistos por um valor único, ou 10 panquecas variadas. O cliente escolhe a composição e o servidor valida o desconto.</p>
+     <p class="subtitle"><strong>Selecione 2 ou mais itens do cadastro</strong>, defina quantas unidades o cliente poderá escolher e determine o preço total. Os produtos que ainda não fazem parte da campanha serão vinculados automaticamente. Ex.: cinco empadas, misturando sabores, por R$ 47,99.</p>
      <div class="form-grid">
-      <label>Editar pack<select id="seasonPackSelect"><option value="">➕ Novo pack</option></select></label>
+      <label>Editar Pack Virtual<select id="seasonPackSelect"><option value="">➕ Novo Pack Virtual</option></select></label>
       <label>Nome *<input id="seasonPackName" maxlength="100" placeholder="Ex.: Kit 6 Empadas"></label>
-      <label>Quantidade do kit *<input id="seasonPackQuantity" type="number" min="2" max="100" value="6"></label>
-      <label>Preço do kit (R$) *<input id="seasonPackPrice" type="number" min="0.01" step="0.01" placeholder="59,99"></label>
+      <label>Quantas unidades o cliente poderá escolher? *<input id="seasonPackQuantity" type="number" min="2" max="100" value="5"></label>
+      <label>Preço TOTAL do Pack Virtual (R$) *<input id="seasonPackPrice" type="number" min="0.01" step="0.01" placeholder="47,99"></label>
       <label>Ordem na vitrine<input id="seasonPackSort" type="number" min="0" value="0"></label>
       <label><input type="checkbox" id="seasonPackActive" checked> Pack ativo</label>
       <label class="full">Descrição<textarea id="seasonPackDescription" maxlength="300" rows="2"></textarea></label>
       <label class="full">Foto opcional (URL HTTPS)<input type="url" id="seasonPackImage" placeholder="https://..."></label>
      </div>
-     <h4>Produtos e sabores participantes</h4>
-     <input type="search" id="seasonPackProductSearch" placeholder="Buscar empadas, panquecas...">
+     <h4>✅ Selecione os produtos e sabores que o cliente poderá combinar</h4><p class="subtitle">Marque pelo menos dois produtos do catálogo ou exclusivos de encomendas. Produtos comuns serão incluídos na campanha automaticamente, sem criar cadastros duplicados.</p>
+     <input type="search" id="seasonPackProductSearch" placeholder="🔎 Buscar por sabor, produto ou categoria...">
      <div id="seasonPackProductList" class="season-admin-products" style="max-height:320px;overflow:auto"></div>
-     <div class="toolbar"><button type="button" class="btn primary" id="seasonPackSave">💾 Salvar pack</button><button type="button" class="btn" id="seasonPackNew">➕ Novo</button></div>
+     <div class="toolbar"><button type="button" class="btn primary" id="seasonPackSave">🚀 Salvar e publicar Pack Virtual</button><button type="button" class="btn" id="seasonPackNew">➕ Novo</button></div>
      <div id="seasonPackList" class="season-admin-products"></div>
     </div>
    </article>
@@ -603,8 +603,8 @@
 <div id="modal" class="modal-bg" hidden><div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><h2 id="modalTitle">Mensagem para WhatsApp</h2><div id="modalContent"></div><div class="toolbar" style="justify-content:flex-end;margin-top:20px"><button class="btn" id="modalClose">Fechar</button></div></div></div>
 <script src="./app.js?v=20261116-store-hours-1" defer></script>
 <script src="./store-hours-admin.js?v=20261116-2" defer></script>
-<script src="./seasonal-merch-admin.js?v=20261113-unified-products-2" defer></script>
-<script src="./seasonal-best-deal-admin.js?v=20261113-bestdeal-1" defer></script>
+<script src="./seasonal-merch-admin.js?v=20261116-virtual1" defer></script>
+<script src="./seasonal-best-deal-admin.js?v=20261116-virtual1" defer></script>
 <script src="./seasonal-bulk-products.js?v=20261113-5" defer></script>
 <script src="./category-manager.js?v=20261110-1" defer></script>
 <script defer>document.addEventListener('DOMContentLoaded',()=>{document.getElementById('seasonExistingPublish')?.addEventListener('click',()=>document.getElementById('seasonSave')?.click());});</script>
