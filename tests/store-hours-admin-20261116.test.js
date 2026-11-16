@@ -27,7 +27,7 @@ test('Formulário é validado antes de publicar e utiliza API com login ERP',()=
 test('PWA publica nova tela de horários sem misturar credenciais no HTML',()=>{
  assert.match(index,/store-hours-admin\.js\?v=20261116-2/);
  assert.match(index,/store-hours-admin\.css/);
- assert.match(sw,/caseirinho-insights-app-shell-v61-store-hours/);
+ assert.match(sw,/caseirinho-insights-app-shell-v62-virtual-packs/);
  assert.match(sw,/store-hours-admin\.js\?v=20261116-2/);
  assert.match(css,/store-hours-days/);
  assert.ok(!index.includes('Bearer '));
