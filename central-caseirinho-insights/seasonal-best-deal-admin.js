@@ -12,7 +12,7 @@ function preview(){
  const ids=selection(),products=new Map(pool().map(p=>[s(p.id),p]));
  const chosen=ids.map(id=>products.get(id)).filter(Boolean);
  const campaign=s($('seasonMerchCampaign')?.value);
- const qty=Number($('seasonPackQuantity')?.value),price=Number($('seasonPackPrice')?.value);
+ const qty=Number($('seasonPackQuantity')?.value),price=typeof seasonPackPriceNumber==='function'?seasonPackPriceNumber($('seasonPackPrice')?.value):Number($('seasonPackPrice')?.value);
  const active=$('seasonPackActive')?.checked;
  const valid=!!campaign&&ids.length>=2&&ids.length===chosen.length&&Number.isInteger(qty)&&qty>=2&&qty<=100&&Number.isFinite(price)&&price>0;
  const lowest=chosen.length?Math.min(...chosen.map(p=>cents(p.price))):0;
