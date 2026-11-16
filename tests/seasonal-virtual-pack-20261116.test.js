@@ -41,7 +41,7 @@ test('Central inclui botão direto Pack Virtual na área de encomendas',()=>{
  assert.match(html,/data-season-merch-tab="pack">🎁 Pack Virtual/);
  assert.match(html,/preço total/i);
  assert.match(html,/season-virtual-packs\.css/);
- assert.match(sw,/caseirinho-insights-app-shell-v62-virtual-packs/);
+ assert.match(sw,/caseirinho-insights-app-shell-v63-virtual-packs/);
  assert.match(css,/season-virtual-launch/);
  assert.doesNotThrow(()=>new Function(ui));
  assert.doesNotThrow(()=>new Function(admin));
