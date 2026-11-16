@@ -104,12 +104,17 @@ function seasonGradeRenderChoices(){
 function seasonMerchPackPool(){
  const campaign=(st.seasonData?.campaigns||[]).find(c=>c.id===seasonMerchCurrent());
  if(!campaign)return[];
- const catalog=new Map((st.seasonData?.products||[]).map(p=>[p.id,p]));
- const normal=(campaign.products||[]).map(rule=>catalog.get(rule.id)?{...catalog.get(rule.id),...rule,price:catalog.get(rule.id).price}:null).filter(Boolean);
- const exclusive=(st.seasonData?.exclusiveProducts||[]).filter(p=>String(p.campaignId)===String(campaign.id)&&p.active);
+ const rules=new Map((campaign.products||[]).map(p=>[String(p.id),p]));
+ const normal=(st.seasonData?.products||[]).filter(p=>Number(p.price)>0).map(p=>({
+  ...p,...(rules.get(String(p.id))||{}),id:String(p.id),price:Number(p.price),
+  inCampaign:rules.has(String(p.id)),exclusive:false
+ }));
+ const exclusive=(st.seasonData?.exclusiveProducts||[])
+  .filter(p=>String(p.campaignId)===String(campaign.id)&&p.active===true&&p.published!==false&&Number(p.price)>0)
+  .map(p=>({...p,id:String(p.id),inCampaign:true,exclusive:true}));
  const products=new Map();
  for(const p of [...normal,...exclusive])products.set(String(p.id),{...p,name:p.name||p.nome||p.id});
- return [...products.values()];
+ return [...products.values()].sort((a,b)=>Number(!!b.inCampaign)-Number(!!a.inCampaign)||(a.name||'').localeCompare(b.name||'','pt-BR'));
 }
 function seasonMerchRefreshSelectors(){
  const campaign=seasonMerchCurrent(),categories=merchItems('CATEGORY').filter(x=>x.active),grades=merchItems('GRADE').filter(x=>x.active);
@@ -140,12 +145,21 @@ function seasonMerchDrawList(kind){
  }).join(''): '<div class="notice">Nenhum '+merchKindLabels[kind]+' cadastrado nesta campanha.</div>';
 }
 function seasonMerchPackOptions(){
- const pool=seasonMerchPackPool(),search=(E('seasonPackProductSearch')?.value||'').toLowerCase();
- E('seasonPackProductList').innerHTML=pool.filter(p=>(p.name+' '+p.id).toLowerCase().includes(search)).map(p=>
-  '<label class="season-admin-choice" style="display:flex;gap:9px;margin:4px 0;padding:8px;border:1px solid #e5eae7;border-radius:8px">'+
+ const pool=seasonMerchPackPool(),search=(E('seasonPackProductSearch')?.value||'').trim().toLocaleLowerCase('pt-BR');
+ const selected=pool.filter(p=>seasonPackSelected.has(String(p.id)));
+ const query=pool.filter(p=>(p.name+' '+(p.variantLabel||'')+' '+p.id+' '+(p.category||'')).toLocaleLowerCase('pt-BR').includes(search));
+ // Sempre mostre os já selecionados, mesmo que o usuário esteja filtrando por outro sabor.
+ const shown=[...selected,...query.filter(p=>!seasonPackSelected.has(String(p.id))).slice(0,70)];
+ const uniq=[...new Map(shown.map(p=>[p.id,p])).values()];
+ const counter=E('seasonPackSelectedCount');
+ if(counter)counter.textContent=selected.length+' produto(s) selecionado(s) · '+selected.filter(p=>!p.inCampaign).length+' será(ão) incluído(s) nesta campanha ao publicar';
+ E('seasonPackProductList').innerHTML=uniq.map(p=>
+  '<label class="season-admin-choice season-pack-virtual-option'+(seasonPackSelected.has(p.id)?' is-selected':'')+'">'+
   '<input type="checkbox" data-season-pack-product="'+esc(p.id)+'" '+(seasonPackSelected.has(p.id)?'checked':'')+'>'+
-  '<span><b>'+esc(p.variantLabel||p.name)+'</b><small>Preço avulso: '+brl(p.price||0)+(p.exclusive?' · 🎄 Exclusivo de encomendas':' · 📦 Cadastro normal')+'</small></span></label>'
- ).join('')||'<div class="notice">Nenhum produto participante. Vincule produtos comuns à campanha ou cadastre produtos exclusivos.</div>';
+  '<span><b>'+esc(p.variantLabel||p.name)+'</b><small>'+brl(p.price||0)+' avulso · '+(p.exclusive?'🎄 Exclusivo':p.inCampaign?'✅ Já na encomenda':'➕ Entrará na encomenda ao publicar')+'</small></span></label>'
+ ).join('')||'<div class="notice">Nenhum produto encontrado. Verifique a campanha e o catálogo.</div>';
+ if(query.length>70)E('seasonPackProductList').insertAdjacentHTML('beforeend','<small class="subtitle">Mostrando 70 de '+query.length+' resultados. Use a busca para localizar os demais.</small>');
+ window.CaseirinhoVirtualPackAdmin?.preview?.();
 }
 function seasonMerchRender(){
  const select=E('seasonMerchCampaign');if(!select)return;
@@ -215,7 +229,16 @@ async function seasonMerchSave(kind){
  if(kind==='PACK')Object.assign(body,{description:E('seasonPackDescription').value.trim(),image:E('seasonPackImage').value.trim(),
   quantity:Number(E('seasonPackQuantity').value),price:Number(E('seasonPackPrice').value),productIds:[...seasonPackSelected]});
  if(body.name.length<2)return seasonMerchStatus('Informe o nome da '+merchKindLabels[kind]+'.',true);
- if(kind==='PACK'&&(!body.productIds.length||body.quantity<2||!(body.price>0)))return seasonMerchStatus('Defina sabores, quantidade e preço do pack.',true);
+ if(kind==='PACK'){
+  const pool=new Map(seasonMerchPackPool().map(p=>[p.id,p]));
+  if(body.productIds.length<2||!Number.isInteger(body.quantity)||body.quantity<2||body.quantity>100||!(body.price>0))
+   return seasonMerchStatus('Selecione dois ou mais produtos, informe uma quantidade entre 2 e 100 e o preço total.',true);
+  const rows=body.productIds.map(id=>pool.get(id));
+  if(rows.some(p=>!p||!(p.price>0)))return seasonMerchStatus('Algum produto selecionado não possui preço avulso válido.',true);
+  const min=Math.min(...rows.map(p=>Math.round(Number(p.price)*100)));
+  if(Math.round(body.price*100)>=min*body.quantity&&body.active)
+   return seasonMerchStatus('Para garantir preço único em qualquer combinação, defina valor inferior a '+brl(min*body.quantity/100)+' (preço dos '+body.quantity+' itens mais baratos).',true);
+ }
  const btn=E(prefix+'Save');btn.disabled=true;const old=btn.textContent;btn.textContent='Salvando...';
  try{
   await api('seasonal-merch',{method:'POST',body});
@@ -229,7 +252,8 @@ async function seasonMerchSave(kind){
   }
   E('seasonMerchCampaign').value=campaignId;
   seasonMerchReset(kind);seasonMerchRender();
-  seasonMerchStatus('✅ '+(kind==='PACK'?'Pack salvo':'Cadastro salvo')+' com sucesso na campanha. '+(kind==='GRADE'?'Produtos e variações atualizados juntos.':'A loja mostrará a nova organização.'));
+  seasonMerchStatus('✅ '+(kind==='PACK'?'Pack Virtual publicado com preço fixo e produtos participantes vinculados':'Cadastro salvo')+' com sucesso na campanha. '+(kind==='GRADE'?'Produtos e variações atualizados juntos.':'A loja mostrará a nova organização.'));
+  window.CaseirinhoVirtualPackAdmin?.preview?.();
  }catch(e){seasonMerchStatus('Não foi possível salvar: '+e.message,true)}
  finally{btn.disabled=false;btn.textContent=old}
 }
@@ -274,6 +298,7 @@ function bindSeasonMerch(){
  E('seasonPackProductList').addEventListener('change',e=>{
   const id=e.target?.dataset?.seasonPackProduct;if(!id)return;
   if(e.target.checked)seasonPackSelected.add(id);else seasonPackSelected.delete(id);
+  seasonMerchPackOptions();
  });
  for(const kind of Object.keys(merchKinds)){
   const prefix='season'+kind[0]+kind.slice(1).toLowerCase();
@@ -284,6 +309,7 @@ function bindSeasonMerch(){
  E('seasonExclusiveCampaign').addEventListener('change',e=>{
   seasonMerchSelectCampaign(e.target.value);
  });
+ E('seasonPackProductSearch').addEventListener('change',()=>window.CaseirinhoVirtualPackAdmin?.preview?.());
  E('seasonExclusiveGrade').addEventListener('change',()=>{
   const grade=merchItems('GRADE',true).find(x=>x.id===E('seasonExclusiveGrade').value);
   if(grade?.categoryId)E('seasonExclusiveCategory').value=grade.categoryId;
