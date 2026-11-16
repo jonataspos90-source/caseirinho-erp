@@ -1,92 +1,120 @@
-/* Ofertas de quantidade e preco fechado para encomendas: usa o cadastro sazonal oficial. */
+/* Caseirinho — Pack Virtual de Encomendas: escolha 2+ SKUs e um preço total fixo. */
 (function(){
 'use strict';
-const $=id=>document.getElementById(id);
-const v=x=>String(x==null?'':x);
-const price=x=>Number(x||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-const normalize=x=>v(x).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
-function pool(){
-  try{return typeof seasonMerchPackPool==='function'?seasonMerchPackPool():[];}catch(_){return [];}
-}
-function selectedIds(){
-  try{return [...seasonPackSelected].map(String);}catch(_){return [];}
-}
+const $=id=>document.getElementById(id),s=x=>String(x??'');
+const money=x=>(Number(x)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const normal=x=>s(x).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+const cents=x=>Math.round((Number(x)||0)*100);
+const selection=()=>{try{return[...seasonPackSelected].map(String)}catch(_){return[]}};
+const pool=()=>{try{return typeof seasonMerchPackPool==='function'?seasonMerchPackPool():[]}catch(_){return[]}};
 function preview(){
- const box=$('seasonBestDealPreview');if(!box)return;
- const ids=selectedIds(),items=pool().filter(p=>ids.includes(v(p.id)));
- const qty=Math.floor(Number($('seasonPackQuantity')?.value||0));
- const total=Number($('seasonPackPrice')?.value||0);
+ const target=$('seasonBestDealPreview');if(!target)return;
+ const ids=selection(),products=new Map(pool().map(p=>[s(p.id),p]));
+ const chosen=ids.map(id=>products.get(id)).filter(Boolean);
+ const campaign=s($('seasonMerchCampaign')?.value);
+ const qty=Number($('seasonPackQuantity')?.value),price=Number($('seasonPackPrice')?.value);
  const active=$('seasonPackActive')?.checked;
- const valid=qty>=2&&qty<=100&&Number.isFinite(total)&&total>0&&items.length>0;
- const min=items.length?Math.min(...items.map(p=>Number(p.price)||0)):0;
- const max=items.length?Math.max(...items.map(p=>Number(p.price)||0)):0;
- const safe=(x)=>Math.round(x*100)/100;
- const best=valid&&min>0&&safe(qty*min)>safe(total);
+ const valid=!!campaign&&ids.length>=2&&ids.length===chosen.length&&Number.isInteger(qty)&&qty>=2&&qty<=100&&Number.isFinite(price)&&price>0;
+ const lowest=chosen.length?Math.min(...chosen.map(p=>cents(p.price))):0;
+ const highest=chosen.length?Math.max(...chosen.map(p=>cents(p.price))):0;
+ const minRetail=lowest*qty,maxRetail=highest*qty,offer=cents(price);
+ const guarantee=valid&&lowest>0&&offer<minRetail;
+ const newProducts=chosen.filter(p=>!p.inCampaign).length;
  const save=$('seasonPackSave');
- box.className='season-bestdeal-preview '+(best?'is-good':'');
- if(!items.length){
-  box.innerHTML='<b>1. Escolha os sabores participantes.</b><small>Depois informe quantas unidades o cliente poderá combinar e o valor fechado do combo.</small>';
+ if(save)save.disabled=!!active&&!guarantee||!valid;
+ target.className='season-bestdeal-preview'+(guarantee?' is-good':'');
+ target.replaceChildren();
+ const title=document.createElement('b'),info=document.createElement('small'),extra=document.createElement('small'),status=document.createElement('strong');
+ if(!campaign){
+  title.textContent='1. Selecione a campanha de encomendas.';
+  info.textContent='O Pack Virtual ficará exclusivamente na campanha escolhida, sem alterar a loja comum.';
+ }else if(ids.length<2){
+  title.textContent='2. Marque pelo menos dois produtos ou sabores.';
+  info.textContent='Pode escolher empadas, panquecas ou outros itens ativos do catálogo. Não precisa cadastrá-los outra vez.';
  }else if(!valid){
-  box.innerHTML='<b>'+items.length+' sabor(es) selecionado(s)</b><small>Informe quantidade de 2 a 100 e preço fechado maior que zero para ver a oferta.</small>';
+  title.textContent=ids.length+' itens participantes selecionados.';
+  info.textContent='3. Informe quantidade total de unidades e o preço fechado do pack.';
  }else{
-  const low=safe(qty*min),high=safe(qty*max),minSave=safe(low-total),maxSave=safe(high-total);
-  box.innerHTML='<b>'+(best?'🔥 MELHOR NEGÓCIO':'🎁 COMBO DE ENCOMENDAS')+' · '+qty+' unidades por '+price(total)+'</b>'+
-   '<small>Preço equivalente: '+price(safe(total/qty))+' por unidade · '+items.length+' sabor(es) à escolha</small>'+
-   '<small>Avulso com estes sabores: de '+price(low)+' a '+price(high)+' (dependendo da combinação)</small>'+
-   (best?'<strong>Economia a partir de '+price(minSave)+' · até '+price(maxSave)+'</strong>':
-   '<strong class="warning">Atenção: este preço não gera desconto para todas as combinações. A loja só aplicará o pack quando ele for mais barato que a compra avulsa.</strong>')+
-   (active?'':'<small>⚠ O pack está inativo e não aparecerá na loja.</small>');
+  title.textContent='🎁 '+qty+' unidades de sabores à escolha por '+money(price);
+  info.textContent='Preço equivalente: '+money(price/qty)+' por unidade. Avulso varia de '+money(minRetail/100)+' a '+money(maxRetail/100)+' conforme os sabores.';
+  extra.textContent=chosen.length+' produtos participantes'+(newProducts?' · '+newProducts+' será(ão) vinculado(s) à campanha automaticamente':' · todos já vinculados à campanha');
+  status.textContent=guarantee?
+   '✅ Valor garantido para qualquer combinação: economia mínima de '+money((minRetail-offer)/100)+'.':
+   '⚠️ Para garantir preço único em todas as combinações, informe um total inferior a '+money(minRetail/100)+'.';
+  status.className=guarantee?'season-virtual-success':'season-virtual-warning';
  }
- if(save)save.textContent='🚀 Salvar e publicar combo na loja';
+ target.append(title,info);
+ if(extra.textContent)target.append(extra);
+ if(status.textContent)target.append(status);
+ const label=$('seasonPackSave');
+ if(label)label.textContent='🚀 Salvar e publicar Pack Virtual';
 }
-function preset(type){
- const isEmpada=type==='empadas',name=isEmpada?'Combo 5 Empadas':'Combo 10 Panquecas',quantity=isEmpada?5:10;
- try{
-  if(typeof seasonMerchTabSet==='function')seasonMerchTabSet('pack');
-  if(typeof seasonMerchReset==='function')seasonMerchReset('PACK');
-  const eligible=pool().filter(p=>{
-   const name=normalize(p.name+' '+(p.variantLabel||''));
-   return (isEmpada?name.includes('empada')&&!name.includes('camarao'):name.includes('panqueca'));
-  });
-  $('seasonPackName').value=name;
-  $('seasonPackQuantity').value=quantity;
-  $('seasonPackDescription').value='Escolha '+quantity+' unidades e combine seus sabores favoritos.';
-  $('seasonPackProductSearch').value='';
-  if(typeof seasonPackSelected!=='undefined')seasonPackSelected=new Set(eligible.map(p=>v(p.id)));
-  if(typeof seasonMerchPackOptions==='function')seasonMerchPackOptions();
-  preview();
-  if(!eligible.length){
-   const status=$('seasonMerchStatus');
-   if(status){status.hidden=false;status.className='notice warn';status.textContent='Nenhum sabor de '+(isEmpada?'empada':'panqueca')+' participante desta campanha. Inclua os produtos na campanha antes de publicar o combo.';}
-  }
-  $('seasonPackPrice').focus();
-  $('seasonMerchPackPanel').scrollIntoView({behavior:'smooth',block:'start'});
- }catch(err){console.error('[Combos de encomenda]',err);}
+function gotoPack(reset=false){
+ const desired=$('seasonMerchCampaign')?.value||$('seasonCampaignSelect')?.value||$('seasonExclusiveCampaign')?.value;
+ if(desired&&typeof seasonMerchSelectCampaign==='function'&&$('seasonMerchCampaign')?.value!==desired)
+  seasonMerchSelectCampaign(desired);
+ if(typeof seasonMerchTabSet==='function')seasonMerchTabSet('pack');
+ if(reset&&typeof seasonMerchReset==='function')seasonMerchReset('PACK');
+ preview();
+ $('seasonMerchPanel')?.scrollIntoView({behavior:'smooth',block:'start'});
+ $('seasonPackName')?.focus({preventScroll:true});
+}
+function example(kind){
+ gotoPack(true);
+ const isEmpada=kind==='empadas';
+ const qty=isEmpada?5:12;
+ const name=isEmpada?'Pack Virtual — 5 Empadas':'Pack Virtual — 12 Panquecas';
+ const chosen=pool().filter(p=>{
+  const term=normal(p.name+' '+(p.variantLabel||''));
+  return isEmpada?
+   term.includes('empada')&&!term.includes('empadao')&&!term.includes('camarao')&&!/pack|combo|kit/.test(term):
+   term.includes('panqueca')&&!/pack|combo|kit/.test(term);
+ });
+ $('seasonPackName').value=name;
+ $('seasonPackQuantity').value=qty;
+ $('seasonPackDescription').value='Escolha '+qty+' unidades e combine os sabores participantes por um preço único.';
+ $('seasonPackPrice').value=isEmpada?'47.99':'139.99';
+ if(typeof seasonPackSelected!=='undefined')seasonPackSelected=new Set(chosen.map(p=>s(p.id)));
+ if(typeof seasonMerchPackOptions==='function')seasonMerchPackOptions();
+ preview();
+ if(chosen.length<2) {
+  const status=$('seasonMerchStatus');
+  if(status){status.hidden=false;status.className='notice warn';status.textContent='Encontrei menos de 2 produtos deste tipo. Selecione manualmente os produtos participantes ou confirme que os sabores estão ativos no catálogo.';}
+ }
 }
 function init(){
- const panel=$('seasonMerchPackPanel'),target=$('seasonMerchPanel');
- if(!panel||!target||$('seasonBestDealPreview'))return;
+ const panel=$('seasonMerchPackPanel'),merch=$('seasonMerchPanel');
+ if(!panel||!merch||$('seasonBestDealPreview'))return;
+ const feature=document.createElement('article');
+ feature.id='seasonVirtualPackLaunch';feature.className='season-virtual-launch';
+ feature.innerHTML='<div><strong>🎁 Pack Virtual de Encomendas</strong>'+
+  '<p>Escolha dois ou mais produtos, informe quantas unidades o cliente poderá combinar e defina um preço único. Ex.: 5 empadas por R$ 47,99.</p>'+
+  '<small>Sem criar novos produtos. Os sabores ficam disponíveis apenas na campanha de encomendas.</small></div>'+
+  '<button type="button" class="btn primary" id="seasonVirtualPackOpen">➕ Novo Pack Virtual</button>';
+ merch.insertAdjacentElement('beforebegin',feature);
+ $('seasonVirtualPackOpen').addEventListener('click',()=>gotoPack(true));
  const top=document.createElement('div');top.className='season-bestdeal-entry';
- top.innerHTML='<div><strong>🔥 Melhor Negócio · Combos de Encomendas</strong><small>Cadastre X empadas ou X panquecas por um preço fechado. O cliente escolhe os sabores na loja.</small></div>'+
- '<button class="btn primary" type="button" id="seasonGoBestDeal">➕ Criar combo de encomenda</button>';
- target.insertBefore(top,target.querySelector('.merch-tabs'));
+ top.innerHTML='<div><strong>🎁 Cadastre seu Pack Virtual</strong><small>Defina um preço total para qualquer mistura de sabores e publique na vitrine de encomendas.</small></div>'+
+  '<button class="btn" type="button" id="seasonGoBestDeal">➕ Criar novo</button>';
+ merch.insertBefore(top,merch.querySelector('.merch-tabs'));
+ $('seasonGoBestDeal').addEventListener('click',()=>gotoPack(true));
  const guide=document.createElement('div');guide.className='season-bestdeal-guide';
- guide.innerHTML='<b>🎁 Cadastro rápido: quantidade + preço fechado</b><p>Use um modelo ou crie sua própria combinação. O cadastro permanece separado dos produtos avulsos e é publicado diretamente na campanha escolhida.</p>'+
- '<div class="toolbar"><button type="button" class="btn" data-season-bestdeal-preset="empadas">🥟 5 Empadas</button><button type="button" class="btn" data-season-bestdeal-preset="panquecas">🥞 10 Panquecas</button></div>';
+ guide.innerHTML='<b>Comece com um modelo ou personalize do zero</b><p>Você pode selecionar qualquer conjunto de produtos existentes ou exclusivos da campanha, configurar a quantidade e editar o valor fechado.</p>'+
+ '<div class="toolbar"><button type="button" class="btn" data-season-virtual-example="empadas">🥟 5 Empadas · R$ 47,99</button>'+
+ '<button type="button" class="btn" data-season-virtual-example="panquecas">🥞 12 Panquecas · R$ 139,99</button></div>';
  panel.insertBefore(guide,panel.querySelector('.form-grid'));
+ guide.addEventListener('click',e=>{const b=e.target.closest('[data-season-virtual-example]');if(b)example(b.dataset.seasonVirtualExample);});
+ const counter=document.createElement('p');counter.id='seasonPackSelectedCount';counter.className='season-pack-virtual-count';
+ $('seasonPackProductSearch').insertAdjacentElement('afterend',counter);
  const p=document.createElement('div');p.id='seasonBestDealPreview';p.className='season-bestdeal-preview';p.setAttribute('role','status');p.setAttribute('aria-live','polite');
  $('seasonPackProductList').insertAdjacentElement('afterend',p);
- const css=document.createElement('style');css.textContent='.season-bestdeal-entry{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin:14px 0;padding:16px;border:1px solid #d6bd72;border-radius:14px;background:linear-gradient(115deg,#fff9e8,#f1fbef)}.season-bestdeal-entry strong{display:block;color:#154d3c;font-size:17px}.season-bestdeal-entry small{display:block;color:#56685c;margin-top:5px}.season-bestdeal-guide{border:1px dashed #d5ad69;border-radius:13px;padding:13px;margin:11px 0;background:#fff9ec}.season-bestdeal-guide p{margin:7px 0;font-size:13px}.season-bestdeal-preview{display:grid;gap:6px;border-radius:12px;padding:13px;margin:12px 0;background:#f6f7f5;border:1px solid #c9d3c9;color:#204c38}.season-bestdeal-preview.is-good{background:#eaf8ee;border-color:#7ab68b}.season-bestdeal-preview b{font-size:16px}.season-bestdeal-preview small{display:block;color:#50645c}.season-bestdeal-preview strong{color:#087348}.season-bestdeal-preview .warning{color:#a45219}@media(max-width:680px){.season-bestdeal-entry{align-items:stretch}.season-bestdeal-entry button{width:100%}}';
- document.head.appendChild(css);
- $('seasonGoBestDeal').addEventListener('click',()=>{if(typeof seasonMerchTabSet==='function')seasonMerchTabSet('pack');panel.scrollIntoView({behavior:'smooth',block:'start'});$('seasonPackName')?.focus();});
- guide.addEventListener('click',e=>{const b=e.target.closest('[data-season-bestdeal-preset]');if(b)preset(b.dataset.seasonBestdealPreset);});
  for(const id of ['seasonPackName','seasonPackQuantity','seasonPackPrice','seasonPackActive','seasonMerchCampaign','seasonPackSelect']){
-  $(id)?.addEventListener('input',preview);$(id)?.addEventListener('change',()=>setTimeout(preview,0));
+  $(id)?.addEventListener('input',preview);$(id)?.addEventListener('change',preview);
  }
- $('seasonPackProductList').addEventListener('change',()=>setTimeout(preview,0));
  const observer=new MutationObserver(()=>preview());
  observer.observe($('seasonPackProductList'),{childList:true});
- // Apos salvar, a lista de packs e atualizada pela API; nova escolha continua editavel.
+ window.CaseirinhoVirtualPackAdmin={preview,gotoPack,example};
+ if(typeof seasonMerchPackOptions==='function')seasonMerchPackOptions();
  preview();
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
