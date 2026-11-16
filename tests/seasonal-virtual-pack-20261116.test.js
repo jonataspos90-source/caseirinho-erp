@@ -41,8 +41,17 @@ test('Central inclui botão direto Pack Virtual na área de encomendas',()=>{
  assert.match(html,/data-season-merch-tab="pack">🎁 Pack Virtual/);
  assert.match(html,/preço total/i);
  assert.match(html,/season-virtual-packs\.css/);
- assert.match(sw,/caseirinho-insights-app-shell-v63-virtual-packs/);
+ assert.match(sw,/caseirinho-insights-app-shell-v64-virtual-packs/);
  assert.match(css,/season-virtual-launch/);
  assert.doesNotThrow(()=>new Function(ui));
  assert.doesNotThrow(()=>new Function(admin));
+});
+
+test('valor em reais pode ser digitado com vírgula, ponto ou milhar brasileiro',()=>{
+ const first=admin.indexOf('function seasonPackPriceNumber('),last=admin.indexOf('const merchItems=',first);
+ const parse=new Function(admin.slice(first,last)+'\nreturn seasonPackPriceNumber;')();
+ assert.equal(parse('47,99'),47.99);
+ assert.equal(parse('47.99'),47.99);
+ assert.equal(parse('1.234,56'),1234.56);
+ assert.equal(parse('R$ 47,99'),47.99);
 });
