@@ -93,8 +93,8 @@ function statusMessage(data){
    ' O cliente pode continuar enviando pedidos fora do expediente.':
    '⚠️ Horários detalhados ainda não cadastrados nesta Central. Revise a semana abaixo e salve para publicar no app.';
  const previous=$('storeHoursLegacy');
- previous.hidden=!data.legacyHours;
- if(data.legacyHours)previous.textContent='Horário anterior no cadastro do ERP: '+data.legacyHours+'. Use a programação semanal para substituí-lo na loja.';
+ previous.hidden=!data.legacyHours||data.configured;
+ if(data.legacyHours&&!data.configured)previous.textContent='Horário anterior no cadastro do ERP: '+data.legacyHours+'. Use a programação semanal para substituí-lo na loja.';
 }
 async function load(force=false){
  if(working||!B()?.st?.token||loaded&&!force)return;
@@ -125,7 +125,7 @@ async function save(e){
  try{
   const result=await B().api('operating-hours',{method:'PUT',body:{horariosSemana:schedule}});
   loaded=true;version=result.version;exceptions=result.horariosSemana.excecoes;
-  statusMessage({...result,configured:true,legacyHours:$('storeHoursLegacy').hidden?'':$('storeHoursLegacy').textContent});
+  statusMessage({...result,configured:true,legacyHours:''});
   B().toast('✅ Horário publicado na loja Caseirinho.');
  }catch(err){
   B().toast('Não foi possível salvar: '+err.message,true);
