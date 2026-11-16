@@ -243,7 +243,7 @@ async function seasonMerchSave(kind){
  try{
   await api('seasonal-merch',{method:'POST',body});
   await loadSeasonAdmin();
-  if(kind==='GRADE'&&E('seasonCampaignSelect')?.value===campaignId){
+  if(['GRADE','PACK'].includes(kind)&&E('seasonCampaignSelect')?.value===campaignId){
    const campaign=(st.seasonData?.campaigns||[]).find(c=>c.id===campaignId);
    if(campaign){
     st.seasonProductRules=new Map((campaign.products||[]).map(p=>[p.id,{...p}]));
