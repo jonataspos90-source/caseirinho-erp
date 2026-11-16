@@ -8,6 +8,12 @@ let seasonGradeDraft=new Map(),seasonGradeCoverId='',seasonGradeSource='all';
 const merchKinds={CATEGORY:'categories',GRADE:'grades',PACK:'packs'};
 const merchKindLabels={CATEGORY:'categoria',GRADE:'grade',PACK:'pack'};
 const seasonMerchCurrent=()=>String(E('seasonMerchCampaign')?.value||'');
+function seasonPackPriceNumber(value){
+ const raw=String(value??'').trim().replace(/^R\$\s*/i,'').replace(/\s/g,'');
+ // Aceita tanto 47,99 quanto 47.99; milhar brasileiro: 1.234,56.
+ return Number(/,\d{1,2}$/.test(raw)?raw.replace(/\./g,'').replace(',','.'):raw);
+}
+
 const merchItems=(kind,all=false)=>{
  const entries=st.seasonData?.[merchKinds[kind]]||[];
  return all?entries:entries.filter(x=>x.campaignId===seasonMerchCurrent());
@@ -227,7 +233,7 @@ async function seasonMerchSave(kind){
    return seasonMerchStatus('Informe o sabor ou tamanho de cada produto vinculado (máximo de 80 caracteres).',true);
  }
  if(kind==='PACK')Object.assign(body,{description:E('seasonPackDescription').value.trim(),image:E('seasonPackImage').value.trim(),
-  quantity:Number(E('seasonPackQuantity').value),price:Number(E('seasonPackPrice').value),productIds:[...seasonPackSelected]});
+  quantity:Number(E('seasonPackQuantity').value),price:seasonPackPriceNumber(E('seasonPackPrice').value),productIds:[...seasonPackSelected]});
  if(body.name.length<2)return seasonMerchStatus('Informe o nome da '+merchKindLabels[kind]+'.',true);
  if(kind==='PACK'){
   const pool=new Map(seasonMerchPackPool().map(p=>[p.id,p]));
