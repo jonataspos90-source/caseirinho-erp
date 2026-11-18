@@ -1,6 +1,9 @@
 /* Catálogo padrão de encomendas Caseirinho: importação sem duplicar e publicação em lote. */
 (()=>{
 'use strict';
+// O app principal usa um escopo privado; acessar funções somente pela ponte oficial.
+const {st,api,renderSeasonAdmin,seasonExclusiveRender}=window.CaseirinhoSeasonMerchBridge||{};
+if(!st||typeof api!=='function')return console.error('[Caseirinho] Ponte de encomendas indisponível.');
 const products=[{"name":"Talharim 2 kg — Molho Branco","price":59.99},{"name":"Talharim 2 kg — Molho Bolonhesa","price":64.99},{"name":"Talharim 2 kg — Molho 3 Queijos","price":64.99},{"name":"Talharim 2 kg — Molho Sugo","price":60.99},{"name":"Nhoque 2 kg — Molho Branco","price":59.99},{"name":"Nhoque 2 kg — Molho Bolonhesa","price":64.99},{"name":"Nhoque 2 kg — Molho 3 Queijos","price":64.99},{"name":"Nhoque 2 kg — Molho Sugo","price":60.99},{"name":"Talharim 1 kg — Molho Branco","price":34.99},{"name":"Talharim 1 kg — Molho Bolonhesa","price":34.99},{"name":"Talharim 1 kg — Molho 3 Queijos","price":34.99},{"name":"Talharim 1 kg — Molho Sugo","price":30.99},{"name":"Nhoque 1 kg — Molho Branco","price":31.99},{"name":"Nhoque 1 kg — Molho Bolonhesa","price":34.99},{"name":"Nhoque 1 kg — Molho 3 Queijos","price":34.99},{"name":"Nhoque 1 kg — Molho Sugo","price":32.99},{"name":"Torta Massa Leve de Sardinha 2 kg","price":94.99},{"name":"Torta Massa Leve de Frango 2 kg","price":94.99},{"name":"Catupiry Explodido com Alho Dourado, Azeite e Orégano","price":69.99},{"name":"Empadão de Frango Cremoso 2 kg","price":99.99},{"name":"Empadão de Palmito 2 kg","price":99.99},{"name":"Panqueca de Palmito (6 unidades) ao Molho Sugo","price":79.99},{"name":"Panqueca de Frango (12 unidades) ao Molho Sugo","price":139.99},{"name":"Panqueca de Carne (12 unidades) ao Molho Sugo","price":139.99},{"name":"Panqueca Mista de Carne e Frango (12 unidades) ao Molho Sugo","price":139.99},{"name":"Salpicão 2 kg","price":99.99},{"name":"Salpicão 1 kg","price":59.99},{"name":"Maionese 2 kg","price":79.99},{"name":"Maionese 1 kg","price":59.99},{"name":"Batata em Conserva 2 kg","price":49.99},{"name":"Batata em Conserva 1 kg","price":29.99},{"name":"Rabanada 1 kg","price":29.99},{"name":"Rabanada 2 kg","price":49.99}];
 const $=id=>document.getElementById(id);
 const normalize=x=>String(x||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
@@ -67,31 +70,43 @@ function syncAllQueues(){
  render();
  if(typeof seasonExclusiveRender==='function')seasonExclusiveRender();
 }
-function updateProduct(product){
- if(!st.seasonData||!product)return;
- st.seasonData.exclusiveProducts=(st.seasonData.exclusiveProducts||[]).map(p=>p.id===product.id?product:p);
-}
 async function request(button,endpoint,body,mode){
  const campaignId=campaign();
  if(!campaignId)return status('Selecione uma campanha cadastrada.',true);
- button.disabled=true;const prior=button.textContent;button.textContent='Processando...';
+ button.disabled=true;
+ const prior=button.textContent;button.textContent='Processando...';
  try{
   const data=await api(endpoint,{method:'POST',body:{campaignId,...body}});
+  if(data?.ok!==true)throw Error('O servidor não confirmou a operação.');
+  // Nunca marcar itens como publicados só pela resposta do POST.
+  const snapshot=await api('seasonal-campaigns');
+  if(!Array.isArray(snapshot?.exclusiveProducts))throw Error('A consulta de confirmação dos produtos falhou.');
+  st.seasonData=snapshot;
+  const current=snapshot.exclusiveProducts.filter(p=>String(p.campaignId)===String(campaignId));
   if(mode==='import'){
-   await loadSeasonAdmin();
-   status('✅ '+data.created+' cadastrados; '+data.unchanged+' já existentes preservados. Nenhuma duplicata criada.');
+   status('✅ '+(Number(data.created)||0)+' produto(s) cadastrado(s). '+(Number(data.unchanged)||0)+' existente(s) preservado(s), sem duplicação.');
   }else if(mode==='one'){
-   updateProduct(data.product);selected.delete(data.product.id);
-   status('✅ '+data.product.name+' publicado. Saiu da fila de pendentes.');
+   const found=current.find(p=>String(p.id)===String(data.product?.id));
+   if(!found?.published)throw Error('O produto não consta como publicado no servidor. Permanece na fila.');
+   selected.delete(String(found.id));
+   status('✅ '+found.name+' publicado e retirado da fila. Já pode aparecer na loja.');
   }else{
-   const ids=new Set(body.ids.map(String));
-   (st.seasonData?.exclusiveProducts||[]).forEach(p=>{if(ids.has(String(p.id)))p.published=true});
-   ids.forEach(id=>selected.delete(id));
-   status('✅ '+data.published+' publicados. Itens publicados retirados da fila.');
+   const ids=body.ids.map(String),confirmed=ids.filter(id=>current.some(p=>String(p.id)===id&&p.published===true));
+   confirmed.forEach(id=>selected.delete(id));
+   const remaining=ids.length-confirmed.length;
+   status('✅ '+confirmed.length+' de '+ids.length+' produto(s) confirmados como publicados. '+
+    (remaining?remaining+' continuam pendentes; confira foto, categoria ou erros na lista.':'Todos os publicados saíram da fila.'),remaining>0);
   }
+  if(typeof renderSeasonAdmin==='function')renderSeasonAdmin();
   syncAllQueues();
- }catch(err){status('Falha: '+err.message,true)}
- finally{button.disabled=false;button.textContent=prior;syncAllQueues()}
+ }catch(err){
+  // O POST pode ter sido efetivado mesmo se a consulta falhar: orientar atualização,
+  // sem reenviar o mesmo lote nem fingir que foi publicado.
+  status('Não foi possível confirmar a publicação: '+err.message+' Atualize a lista para conferir os dados reais.',true);
+ }finally{
+  button.disabled=false;button.textContent=prior;
+  syncAllQueues();
+ }
 }
 function handleClick(e){
  const editBtn=e.target.closest('[data-exclusive-edit]');
