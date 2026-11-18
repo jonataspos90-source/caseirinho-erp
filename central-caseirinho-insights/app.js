@@ -109,8 +109,10 @@ async function api(path,options){
   let timer=null;
   const controller=isRead&&typeof AbortController!=='undefined'?new AbortController():null;
   try{
-   // Leituras não devem deixar o módulo preso indefinidamente em "Consultando".
-   if(controller)timer=setTimeout(()=>controller.abort(),12000);
+   // As fotos sazonais são carregadas separadamente; ainda assim a consulta recebe
+   // mais margem em redes móveis lentas. POST nunca é reenviado automaticamente.
+   const readTimeout=path.startsWith('seasonal-')?30000:20000;
+   if(controller)timer=setTimeout(()=>controller.abort(),readTimeout);
    response=await fetch(st.api+'/api/v1/admin/store/insights/'+path,{
     method,cache:'no-store',credentials:'omit',
     headers:{Authorization:'Bearer '+st.token,'Cache-Control':'no-store','Content-Type':'application/json'},
@@ -2204,11 +2206,28 @@ function seasonAlert(message,error=false){
  const node=E('seasonNotice');node.hidden=false;node.textContent=message;node.className='notice '+(error?'error':'success');
 }
 function seasonCurrent(){return(st.seasonData?.campaigns||[]).find(x=>x.id===E('seasonCampaignSelect').value)}
+let seasonAdminInFlight=null;
 async function loadSeasonAdmin(){
- try{
-  st.seasonData=await api('seasonal-campaigns');
-  renderSeasonAdmin();
- }catch(err){seasonAlert('Falha ao carregar campanhas: '+err.message,true);}
+ // Uma única consulta compartilhada por Atualizar, abertura de tela e outros módulos.
+ if(seasonAdminInFlight)return seasonAdminInFlight;
+ const current=(async()=>{
+  try{
+   const fresh=await api('seasonal-campaigns');
+   if(!Array.isArray(fresh?.campaigns)||!Array.isArray(fresh?.exclusiveProducts))
+    throw Error('A resposta da API não contém as campanhas completas.');
+   st.seasonData=fresh;
+   renderSeasonAdmin();
+   const notice=E('seasonNotice');
+   if(notice&&!notice.hidden&&notice.textContent.startsWith('Falha ao carregar campanhas'))notice.hidden=true;
+   return true;
+  }catch(err){
+   seasonAlert('Falha ao carregar campanhas: '+err.message+
+    (st.seasonData?' Os últimos dados carregados foram preservados.':' Toque em Atualizar para tentar novamente.'),true);
+   return false;
+  }
+ })();
+ seasonAdminInFlight=current;
+ try{return await current}finally{seasonAdminInFlight=null;}
 }
 function seasonTextDate(x){
  if(!x)return'—';const [y,m,d]=s(x).split('-');return d+'/'+m+'/'+y;
