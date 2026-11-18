@@ -2345,6 +2345,45 @@ function seasonSaveEdits(){
   st.seasonProductRules.set(id,{id,minQuantity:Number(el.querySelector('[data-season-min]').value)||1,maxQuantity:Number(el.querySelector('[data-season-max]').value)||0,categoryId:el.querySelector('[data-season-cat]')?.value||'',gradeId:el.querySelector('[data-season-grade]')?.value||'',variantLabel:el.querySelector('[data-season-variant]')?.value.trim()||''});
  });
 }
+function seasonOrderControlRefresh(campaign=seasonCurrent()){
+ const panel=E('seasonOrderControl');if(!panel)return;
+ panel.hidden=!campaign;
+ if(!campaign)return;
+ const visible=campaign.active===true,closed=campaign.acceptingOrders===false;
+ E('seasonOrderCurrent').textContent=visible
+  ?(closed?'🔒 Publicada no Caseirinho · ENCOMENDAS FECHADAS':'🟢 Publicada no Caseirinho · '+s(campaign.status||'').replaceAll('_',' '))
+  :'⚪ Campanha não publicada na loja';
+ E('seasonOrderOpen').disabled=!visible||!closed;
+ E('seasonOrderClose').disabled=!visible||closed;
+}
+async function seasonToggleOrders(acceptingOrders){
+ const campaign=seasonCurrent();
+ if(!campaign)return seasonAlert('Selecione uma campanha já cadastrada.',true);
+ if(campaign.active!==true)return seasonAlert('Marque "Publicar campanha na loja" e salve antes de abrir ou fechar encomendas.',true);
+ const action=acceptingOrders?'abrir':'fechar';
+ const msg=acceptingOrders
+  ?'Abrir o recebimento de encomendas de '+campaign.title+'? A loja passará a aceitar pedidos quando estiver dentro do prazo.'
+  :'Fechar as encomendas de '+campaign.title+'? A campanha continuará PUBLICADA na loja, mas nenhum novo pedido sazonal será aceito.';
+ if(!window.confirm(msg))return;
+ const btn=E(acceptingOrders?'seasonOrderOpen':'seasonOrderClose');
+ btn.disabled=true;
+ try{
+  const result=await api('seasonal-campaigns/toggle-orders',{method:'POST',body:{id:campaign.id,acceptingOrders}});
+  if(!result?.ok)throw Error('A API não confirmou a alteração.');
+  const snapshot=await api('seasonal-campaigns');
+  const confirmed=(snapshot.campaigns||[]).find(c=>c.id===campaign.id);
+  if(!confirmed||confirmed.acceptingOrders!==acceptingOrders)
+   throw Error('Não foi possível confirmar o novo estado da campanha no servidor. Atualize antes de tentar novamente.');
+  st.seasonData=snapshot;
+  renderSeasonAdmin();
+  E('seasonCampaignSelect').value=campaign.id;
+  seasonChooseCampaign(campaign.id);
+  seasonAlert(acceptingOrders
+   ?'✅ Encomendas liberadas. A vitrine permanece publicada e aceita pedidos dentro das datas configuradas.'
+   :'✅ Encomendas fechadas. A campanha continua publicada no Caseirinho, com fotos e produtos visíveis para consulta.');
+ }catch(err){seasonAlert('Não foi possível '+action+' as encomendas: '+err.message,true);}
+ finally{seasonOrderControlRefresh();}
+}
 function seasonChooseCampaign(id){
  const campaign=(st.seasonData?.campaigns||[]).find(x=>x.id===id);
  st.seasonProductRules=new Map((campaign?.products||[]).map(x=>[x.id,{...x}]));
@@ -2354,6 +2393,8 @@ function seasonChooseCampaign(id){
  seasonMinValue:campaign?.minimumOrderValue||0,seasonMaxValue:campaign?.maximumOrderValue||0,seasonMinTotalQty:campaign?.minTotalQuantity||1};
  Object.entries(setters).forEach(([k,v])=>E(k).value=v);
  E('seasonPickup').checked=campaign?.allowPickup!==false;E('seasonDelivery').checked=campaign?.allowDelivery!==false;E('seasonActive').checked=campaign?.active!==false;
+ E('seasonAccepting').checked=campaign?.acceptingOrders!==false;
+ seasonOrderControlRefresh(campaign);
  renderSeasonProducts();
  if(E('seasonExclusiveCampaign')&&id)E('seasonExclusiveCampaign').value=id;
  if(E('seasonMerchCampaign')&&id){E('seasonMerchCampaign').value=id;seasonMerchRender();}
@@ -2472,7 +2513,7 @@ async function saveSeasonalCampaign(){
  bannerText:s(E('seasonBanner').value).trim(),bannerImages:[...seasonBannerImages],orderFrom:E('seasonFrom').value,orderUntil:E('seasonUntil').value,fulfillmentDates:[...new Set(dates)].sort(),
  minimumOrderValue:Number(E('seasonMinValue').value)||0,maximumOrderValue:Number(E('seasonMaxValue').value)||0,minTotalQuantity:Number(E('seasonMinTotalQty').value)||1,
  allowPickup:E('seasonPickup').checked,allowDelivery:E('seasonDelivery').checked,active:E('seasonActive').checked,
- products:[...st.seasonProductRules.values()]};
+ acceptingOrders:E('seasonAccepting').checked,products:[...st.seasonProductRules.values()]};
  if(!body.title)return seasonAlert('Informe o nome da campanha.',true);
  if(!body.orderFrom||!body.orderUntil)return seasonAlert('Informe as duas datas do período de encomendas.',true);
  if(body.orderFrom>body.orderUntil)return seasonAlert('A data inicial é posterior ao prazo final.',true);
@@ -2481,12 +2522,12 @@ async function saveSeasonalCampaign(){
  if(body.fulfillmentDates.some(d=>d<body.orderUntil))return seasonAlert('A entrega/retirada deve ser na data limite de encomendas ou depois dela.',true);
  if(!body.allowPickup&&!body.allowDelivery)return seasonAlert('Marque Entrega e/ou Retirada.',true);
  // Campanhas novas podem ser salvas sem itens, para receber produtos exclusivos depois.
- if(!window.confirm('Publicar '+body.title+' com '+body.products.length+' produtos? Os clientes poderão encomendar, pagando 50% de sinal e o restante na entrega.'))return;
+ if(!window.confirm('Salvar '+body.title+' com '+body.products.length+' produtos? '+(body.active?(body.acceptingOrders?'A campanha ficará publicada e receberá encomendas dentro do prazo.':'A campanha ficará publicada, mas FECHADA para novos pedidos.'):'A campanha não será publicada na loja.')+' O sinal das encomendas abertas permanece em 50%.'))return;
  const btn=E('seasonSave');btn.disabled=true;btn.textContent='Publicando...';
  try{
-  await api('seasonal-campaigns',{method:'POST',body});
-  await loadSeasonAdmin();E('seasonCampaignSelect').value='';seasonChooseCampaign('');
-  seasonAlert('✅ Campanha publicada. O banner aparecerá no e-commerce enquanto a campanha estiver disponível.');
+  const result=await api('seasonal-campaigns',{method:'POST',body});
+  await loadSeasonAdmin();E('seasonCampaignSelect').value=result.id||body.id||'';seasonChooseCampaign(E('seasonCampaignSelect').value);
+  seasonAlert(body.active?(body.acceptingOrders?'✅ Campanha publicada e habilitada para receber encomendas dentro do prazo.':'✅ Campanha publicada com encomendas fechadas. O catálogo continuará visível na loja.'):'✅ Campanha salva, mas não publicada na loja.');
  }catch(err){seasonAlert('Falha na publicação: '+err.message,true);}
  finally{btn.disabled=false;btn.textContent='💾 Salvar e publicar campanha';}
 }
@@ -2536,6 +2577,8 @@ function bindSeasonAdmin(){
   const move=e.target.closest('[data-season-img-move]');
   if(move){const i=Number(move.dataset.seasonImgMove),j=i+Number(move.dataset.delta);if(j>=0&&j<seasonBannerImages.length){[seasonBannerImages[i],seasonBannerImages[j]]=[seasonBannerImages[j],seasonBannerImages[i]];seasonRenderImages();}}
  });
+ E('seasonOrderOpen').addEventListener('click',()=>seasonToggleOrders(true));
+ E('seasonOrderClose').addEventListener('click',()=>seasonToggleOrders(false));
  E('seasonSave').addEventListener('click',saveSeasonalCampaign);
  document.querySelectorAll('[data-season-admin-tab]').forEach(b=>b.addEventListener('click',()=>seasonAdminTab(b.dataset.seasonAdminTab)));
  E('seasonLoadOrders').addEventListener('click',seasonLoadOrders);
