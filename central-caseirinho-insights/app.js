@@ -2514,7 +2514,7 @@ async function saveSeasonalCampaign(){
  bannerText:s(E('seasonBanner').value).trim(),bannerImages:[...seasonBannerImages],orderFrom:E('seasonFrom').value,orderUntil:E('seasonUntil').value,fulfillmentDates:[...new Set(dates)].sort(),
  minimumOrderValue:Number(E('seasonMinValue').value)||0,maximumOrderValue:Number(E('seasonMaxValue').value)||0,minTotalQuantity:Number(E('seasonMinTotalQty').value)||1,
  allowPickup:E('seasonPickup').checked,allowDelivery:E('seasonDelivery').checked,active:E('seasonActive').checked,
- acceptingOrders:E('seasonAccepting').checked,products:[...st.seasonProductRules.values()]};
+ acceptingOrders:E('seasonAccepting').checked,publishReadyProducts:true,products:[...st.seasonProductRules.values()]};
  if(!body.title)return seasonAlert('Informe o nome da campanha.',true);
  if(!body.orderFrom||!body.orderUntil)return seasonAlert('Informe as duas datas do período de encomendas.',true);
  if(body.orderFrom>body.orderUntil)return seasonAlert('A data inicial é posterior ao prazo final.',true);
@@ -2527,8 +2527,26 @@ async function saveSeasonalCampaign(){
  const btn=E('seasonSave');btn.disabled=true;btn.textContent='Publicando...';
  try{
   const result=await api('seasonal-campaigns',{method:'POST',body});
-  await loadSeasonAdmin();E('seasonCampaignSelect').value=result.id||body.id||'';seasonChooseCampaign(E('seasonCampaignSelect').value);
-  seasonAlert(body.active?(body.acceptingOrders?'✅ Campanha publicada e habilitada para receber encomendas dentro do prazo.':'✅ Campanha publicada com encomendas fechadas. O catálogo continuará visível na loja.'):'✅ Campanha salva, mas não publicada na loja.');
+  if(!result?.ok||!result.id)throw Error('A API não confirmou a gravação da campanha.');
+  const snapshot=await api('seasonal-campaigns');
+  const id=result.id;
+  const confirmed=(snapshot.campaigns||[]).find(c=>c.id===id);
+  if(!confirmed)throw Error('A campanha não foi encontrada na verificação do servidor. Confira antes de salvar novamente.');
+  if(body.active&&body.publishReadyProducts&&Number(result.publishedProducts)>0){
+   const published=(snapshot.exclusiveProducts||[]).filter(p=>p.campaignId===id&&p.published===true).length;
+   if(published<Number(result.publishedProducts))
+    throw Error('Não foi possível confirmar todos os produtos publicados. Confira a fila antes de reenviar.');
+  }
+  st.seasonData=snapshot;
+  renderSeasonAdmin();
+  E('seasonCampaignSelect').value=id;
+  seasonChooseCampaign(id);
+  window.dispatchEvent(new Event('caseirinho:season-products-updated'));
+  const publishedCount=Number(result.publishedProducts)||0;
+  const pendingCount=Number(result.pendingProducts)||0;
+  seasonAlert((body.active?(body.acceptingOrders?'✅ Campanha publicada e recebendo encomendas dentro do prazo. ':'✅ Campanha publicada com encomendas fechadas. '):'✅ Campanha salva e não publicada. ')+
+   publishedCount+' produto(s) exclusivo(s) publicado(s) agora. '+pendingCount+
+   ' ainda pendente(s), geralmente por falta de foto ou categoria. Os publicados saíram da fila.');
  }catch(err){seasonAlert('Falha na publicação: '+err.message,true);}
  finally{btn.disabled=false;btn.textContent='💾 Salvar e publicar campanha';}
 }
@@ -2693,7 +2711,7 @@ async function init(){
  setInterval(pollNewOrders,30000);
 }
 window.CaseirinhoHoursBridge={api,E,toast,st};
-window.CaseirinhoSeasonMerchBridge={E,st,api,loadSeasonAdmin,renderSeasonProducts,s,esc,brl};
+window.CaseirinhoSeasonMerchBridge={E,st,api,loadSeasonAdmin,renderSeasonProducts,seasonExclusiveRender,s,esc,brl};
 window.CaseirinhoCategoryBridge={
  api,modal,hideModal,categories:()=>st.categories,
  reload:async()=>{
