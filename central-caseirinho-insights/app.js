@@ -2442,6 +2442,7 @@ function renderSeasonAdmin(){
  '<button type="button" class="btn small primary" data-season-edit="'+esc(c.id)+'">✏️ Editar campanha</button></article>').join('');
  renderSeasonProducts();
  seasonExclusiveRender();
+ seasonOrderControlRefresh();
  renderSeasonOrders();
 }
 async function seasonLoadOrders(){
