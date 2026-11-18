@@ -247,8 +247,24 @@ async function seasonMerchSave(kind){
  }
  const btn=E(prefix+'Save');btn.disabled=true;const old=btn.textContent;btn.textContent='Salvando...';
  try{
-  await api('seasonal-merch',{method:'POST',body});
-  await loadSeasonAdmin();
+  const saved=await api('seasonal-merch',{method:'POST',body});
+  if(!saved?.ok||!saved?.item?.id)throw Error('A API não confirmou o cadastro. Nada será apresentado como salvo.');
+  // Conferir persistência real no servidor antes de limpar a seleção da tela.
+  const snapshot=await api('seasonal-campaigns');
+  const registered=(snapshot?.[merchKinds[kind]]||[]).find(x=>String(x.id)===String(saved.item.id)&&String(x.campaignId)===campaignId);
+  if(!registered)throw Error('A API respondeu, mas o cadastro não apareceu na consulta posterior. A seleção foi preservada; atualize e confira antes de reenviar.');
+  if(kind==='GRADE'){
+   const campaign=(snapshot.campaigns||[]).find(c=>String(c.id)===campaignId);
+   const rules=new Map((campaign?.products||[]).map(p=>[String(p.id),p]));
+   const exclusive=new Map((snapshot.exclusiveProducts||[]).filter(p=>String(p.campaignId)===campaignId).map(p=>[String(p.id),p]));
+   const mismatch=body.productVariants.find(p=>{
+    const row=exclusive.get(String(p.id))||rules.get(String(p.id));
+    return !row||String(row.gradeId||'')!==String(saved.item.id)||String(row.variantLabel||'')!==p.variantLabel;
+   });
+   if(mismatch)throw Error('A grade foi cadastrada, mas o vínculo de '+mismatch.variantLabel+' não foi confirmado. Os produtos continuam selecionados para conferência.');
+  }
+  st.seasonData=snapshot;
+  window.CaseirinhoSeasonMerchBridge.renderSeasonAdmin?.();
   if(['GRADE','PACK'].includes(kind)&&E('seasonCampaignSelect')?.value===campaignId){
    const campaign=(st.seasonData?.campaigns||[]).find(c=>c.id===campaignId);
    if(campaign){
