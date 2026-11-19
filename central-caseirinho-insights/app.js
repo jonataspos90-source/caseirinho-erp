@@ -63,7 +63,7 @@ async function loginWithERP(e){
   try{expiry=Number(JSON.parse(atob(data.token.split('.')[0].replace(/-/g,'+').replace(/_/g,'/'))).exp)||0;}catch(_){}
   if(expiry<=Date.now())throw Error('Sessão recebida do ERP está inválida ou expirada.');
   st.token=data.token;st.sessionExpiry=expiry;E('erpPassword').value='';
-  await api('summary');
+  // A primeira consulta do carregamento já valida o token: não duplicar summary no login.
   saveSession();
   try{localStorage.setItem(ERP_LAST_USERNAME_KEY,user);}catch(_){}
   E('loginScreen').hidden=true;
@@ -141,11 +141,12 @@ async function api(path,options){
  return data;
 }
 // Três consultas em paralelo, em vez de nove competindo na rede móvel.
-async function fetchDashboardGroups(paths){
+async function fetchDashboardGroups(paths,onGroup){
  const responses=new Array(paths.length);
  for(let i=0;i<paths.length;i+=3){
   const group=await Promise.allSettled(paths.slice(i,i+3).map(path=>api(path)));
   group.forEach((result,index)=>{responses[i+index]=result;});
+  if(typeof onGroup==='function')onGroup(group,i);
  }
  return responses;
 }
@@ -173,7 +174,34 @@ function badge(x){const v=s(x).toUpperCase();return '<span class="badge '+(v.inc
 function cellEmpty(title){return '<div class="empty">'+esc(title)+'</div>';}
 function table(headers,rows){if(!rows.length)return cellEmpty('Nenhum registro encontrado para este filtro.');return '<div class="table-wrap"><table class="table"><thead><tr>'+headers.map(x=>'<th>'+esc(x)+'</th>').join('')+'</tr></thead><tbody>'+rows.join('')+'</tbody></table></div>';}
 function statsCard(icon,label,num,note){return '<div class="stat"><span class="icon">'+icon+'</span><strong>'+esc(label)+'</strong><div class="n">'+esc(num)+'</div><small>'+esc(note||'')+'</small></div>';}
+function renderDailyPulse(){
+ const holder=E('dailyPulse');if(!holder)return;
+ const today=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+ const iso=date=>{
+  const d=new Date(date);
+  return Number.isFinite(d.getTime())
+   ?new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).format(d):'';
+ };
+ const rows=st.orders.filter(x=>iso(x.created_at)===today);
+ const status=x=>s(st.fulfillment.get(s(x.code))?.status||x.status).toUpperCase();
+ const newOrders=rows.filter(x=>['NOVO','PENDENTE','AGUARDANDO_ANALISE','AGUARDANDO_COTACAO_FRETE'].includes(status(x)));
+ const active=rows.filter(x=>['ACEITO','ABERTO','PRONTO'].includes(status(x)));
+ const done=rows.filter(x=>['ENTREGUE','RETIRADO','CONCLUIDO','FINALIZADO'].includes(status(x)));
+ const integrationPending=st.orders.filter(x=>['PENDENTE','IMPORTANDO'].includes(s(x.integration_status).toUpperCase())&&!['CANCELADO','REJEITADO'].includes(status(x)));
+ const value=(count,label,description,target)=>'<button type="button" class="daily-pulse-item" data-view="'+target+'"><b>'+count+'</b><strong>'+label+'</strong><small>'+description+'</small><span>Abrir →</span></button>';
+ holder.innerHTML='<div class="daily-pulse-grid">'+[
+  value(newOrders.length,'Pedidos novos','Registrados hoje','orders'),
+  value(active.length,'Em atendimento','Aceitos, abertos ou prontos hoje','orders'),
+  value(done.length,'Concluídos','Entregues ou retirados hoje','orders'),
+  value(integrationPending.length,'Integração a conferir','Ainda não confirmada no ERP','operations')
+ ].join('')+'</div><div class="daily-pulse-shortcuts">'+
+ '<button type="button" class="btn primary" data-view="sazonais">🎄 Encomendas</button>'+
+ '<button type="button" class="btn" data-view="receivables">💳 Contas a receber</button>'+
+ '<button type="button" class="btn" data-view="financeiro">💰 Caixa / DRE</button>'+
+ '<button type="button" class="btn" data-view="products">🏷️ Publicar produtos</button></div>';
+}
 function renderOverview(){
+ renderDailyPulse();
  const a=st.summary||{},u=a.usage||{},p=a.registrations||{},o=a.orders||{},e=a.events||{},req=a.requests||{};
  E('statGrid').innerHTML=[
  statsCard('👥','Contatos identificáveis',st.contacts.length||n(p.unique_contacts),'Pessoas com WhatsApp conhecido'),
@@ -385,8 +413,18 @@ function render(){
 async function loadAll(){
  if(st.syncing||!st.token)return;
  st.syncing=true;E('refreshBtn').disabled=true;E('lastSync').textContent='Sincronizando dados do Neon…';
- const paths=['summary','contacts','orders','catalog','requests','product-categories','product-drafts','merchandising','order-fulfillment'];
- const responses=await fetchDashboardGroups(paths);
+ const paths=['summary','orders','requests','contacts','catalog','product-categories','product-drafts','merchandising','order-fulfillment'];
+ const responses=await fetchDashboardGroups(paths,(batch,index)=>{
+  if(index!==0)return;
+  // A interface aparece assim que o resumo e pedidos chegam; os demais módulos seguem carregando.
+  if(!batch.some(x=>x.status==='fulfilled'))return;
+  if(batch[0]?.status==='fulfilled')st.summary=batch[0].value;
+  if(batch[1]?.status==='fulfilled')st.orders=batch[1].value.orders||[];
+  if(batch[2]?.status==='fulfilled')updateRequestData(batch[2].value);
+  E('lastSync').textContent='Pedidos disponíveis · preparando outros módulos…';
+  E('loginScreen').hidden=true;
+  render();
+ });
  if(responses.slice(0,5).every(x=>x.status==='rejected'&&x.reason?.httpStatus===401)){
   logout();E('loginNotice').textContent='Sua sessão expirou. Entre novamente com o usuário e senha do ERP.';
   st.syncing=false;E('refreshBtn').disabled=false;return;
@@ -2455,7 +2493,7 @@ function renderSeasonAdmin(){
  E('seasonCampaignSelect').innerHTML='<option value="">➕ Nova campanha</option>'+
   campaigns.map(c=>'<option value="'+esc(c.id)+'">'+esc(c.title)+' · '+esc(c.status)+'</option>').join('');
  E('seasonCampaignSelect').value=campaigns.some(c=>c.id===current)?current:'';
- E('seasonCampaignCards').innerHTML=campaigns.map(c=>'<article class="card season-campaign-card"><div class="mobile-record-head"><b>🎄 '+esc(c.title)+'</b><span class="badge '+(c.status==='ABERTA'?'good':'light')+'">'+esc(c.status)+'</span></div>'+
+ E('seasonCampaignCards').innerHTML=campaigns.map(c=>'<article class="card season-campaign-card" data-season-edit="'+esc(c.id)+'"><div class="mobile-record-head"><b>🎄 '+esc(c.title)+'</b><span class="badge '+(c.status==='ABERTA'?'good':'light')+'">'+esc(c.status)+'</span></div>'+
  '<p>Encomendar: '+esc(seasonTextDate(c.orderFrom))+' a '+esc(seasonTextDate(c.orderUntil))+'</p><p>Entrega/retirada: '+c.fulfillmentDates.map(seasonTextDate).map(esc).join(' · ')+'</p>'+
  '<p>Produtos: '+(c.products.length+(st.seasonData?.exclusiveProducts||[]).filter(p=>p.campaignId===c.id&&p.active).length)+' (inclui exclusivos ativos) · Mínimo total: '+c.minTotalQuantity+' · Sinal: 50%</p>'+
  '<button type="button" class="btn small primary" data-season-edit="'+esc(c.id)+'">✏️ Editar campanha</button></article>').join('');
@@ -2503,6 +2541,23 @@ async function seasonCopyClientMessage(id){
  try{await navigator.clipboard.writeText(message);seasonAlert('📋 Mensagem copiada. Revise os dados antes de enviar pelo WhatsApp.');}
  catch(_){window.prompt('Copie a mensagem para o WhatsApp:',message);}
 }
+function seasonOrderDetails(id){
+ const order=(st.seasonOrders?.orders||[]).find(o=>s(o.id)===s(id));
+ if(!order)return seasonAlert('Esta encomenda não está disponível. Atualize a lista e tente novamente.',true);
+ const info=order.seasonal||{};
+ const lines=Array.isArray(order.items)?order.items:Array.isArray(order.itens)?order.itens:[];
+ const itemHtml=lines.length?'<ul>'+lines.map(item=>'<li>'+esc(item.quantity||item.quantidade||1)+' × '+esc(item.name||item.nome||item.descricao||'Item')+'</li>').join('')+'</ul>':'<p>Os itens não foram enviados no resumo. Abra o pedido no módulo Pedidos para conferir.</p>';
+ modal('🎄 Encomenda #'+esc(order.code),'<p><strong>Cliente:</strong> '+esc(order.name||'Não informado')+
+ '<br><strong>Telefone:</strong> '+esc(tel(order.phone))+
+ '<br><strong>Campanha:</strong> '+esc(info.campaignTitle||'—')+
+ '<br><strong>Entrega/retirada:</strong> '+esc(seasonTextDate(order.deliveryDate))+' · '+esc(order.mode==='ENTREGA'?'Entrega':'Retirada')+
+ '<br><strong>Status do pedido:</strong> '+esc(order.status||'—')+'</p>'+
+ '<h3>Itens da encomenda</h3>'+itemHtml+
+ '<p><strong>Total:</strong> '+brl(order.total)+
+ '<br><strong>Sinal (50%):</strong> '+brl(info.depositDue)+' · '+esc(info.depositStatus==='PAID'?'Confirmado':'Pendente')+
+ '<br><strong>Saldo:</strong> '+brl(info.balanceDue)+' · '+esc(info.balanceStatus==='PAID'?'Quitado':'Pendente')+'</p>'+
+ '<p class="notice">A confirmação de pagamento exige a conferência do dinheiro recebido. Abrir esta ficha não altera nem baixa o pedido.</p>');
+}
 function seasonOrderFilter(){
  const q=s(E('seasonOrderSearch').value).toLowerCase(),filter=E('seasonOrderFilter').value;
  return(st.seasonOrders?.orders||[]).filter(o=>!!s(o.seasonal?.campaignId)).filter(o=>(s(o.code)+' '+s(o.name)+' '+s(o.phone)+' '+s(o.seasonal?.campaignTitle)).toLowerCase().includes(q)&&
@@ -2513,12 +2568,12 @@ function renderSeasonOrders(){
  const items=seasonOrderFilter();
  holder.innerHTML=items.length?'<div class="mobile-list">'+items.map(o=>{
   const f=o.seasonal||{},depositOk=f.depositStatus==='PAID',balanceOk=f.balanceStatus==='PAID';
-  return '<article class="mobile-record"><div class="mobile-record-head"><b>🎄 '+esc(o.code)+'</b><span class="badge '+(balanceOk?'good':'warn')+'">'+esc(balanceOk?'Quitado':depositOk?'Sinal pago':'Sinal pendente')+'</span></div>'+
+  return '<article class="mobile-record season-order-card" data-season-order-card="'+esc(o.id)+'" tabindex="0" role="group" aria-label="Encomenda '+esc(o.code)+'"><div class="mobile-record-head"><b>🎄 '+esc(o.code)+'</b><span class="badge '+(balanceOk?'good':'warn')+'">'+esc(balanceOk?'Quitado':depositOk?'Sinal pago':'Sinal pendente')+'</span></div>'+
   '<p><b>'+esc(o.name)+'</b> · '+esc(o.phone)+'<br>'+esc(f.campaignTitle)+' · '+esc(seasonTextDate(o.deliveryDate))+' · '+esc(o.mode==='ENTREGA'?'Entrega':'Retirada')+'</p>'+
   '<p>💰 Total: <b>'+brl(o.total)+'</b> · Sinal: <b>'+brl(f.depositDue)+'</b> · Saldo: <b>'+brl(f.balanceDue)+'</b></p>'+
   '<div class="record-actions">'+(!depositOk?'<button class="btn small primary" data-season-settle="'+esc(o.id)+'" data-stage="DEPOSIT">💚 Confirmar sinal recebido</button>':'<span class="badge good">✅ Sinal confirmado</span>')+
   (depositOk&&!balanceOk?'<button class="btn small gold" data-season-settle="'+esc(o.id)+'" data-stage="BALANCE">💰 Confirmar saldo na entrega</button>':'')+
-  (balanceOk?'<span class="badge good">✅ Saldo quitado</span>':'')+'<button class="btn small" type="button" data-season-message="'+esc(o.id)+'">📋 Mensagem para cliente</button></div></article>';
+  (balanceOk?'<span class="badge good">✅ Saldo quitado</span>':'')+'<button class="btn small" type="button" data-season-message="'+esc(o.id)+'">📋 Mensagem para cliente</button><button class="btn small" type="button" data-season-details="'+esc(o.id)+'">🔎 Ver detalhes</button></div></article>';
  }).join('')+'</div>':cellEmpty('Nenhuma encomenda encontrada neste filtro.');
 }
 function seasonAdminTab(tab){
@@ -2624,13 +2679,29 @@ function bindSeasonAdmin(){
  E('seasonOrderSearch').addEventListener('input',renderSeasonOrders);
  E('seasonOrderFilter').addEventListener('change',renderSeasonOrders);
  document.addEventListener('click',e=>{
-  const edit=e.target.closest('[data-season-edit]');if(edit){E('seasonCampaignSelect').value=edit.dataset.seasonEdit;seasonChooseCampaign(edit.dataset.seasonEdit);}
-  const settle=e.target.closest('[data-season-settle]');if(settle)seasonConfirmPayment(settle.dataset.seasonSettle,settle.dataset.stage);
-   const message=e.target.closest('[data-season-message]');if(message)seasonCopyClientMessage(message.dataset.seasonMessage);
+  const edit=e.target.closest('[data-season-edit]');if(edit){E('seasonCampaignSelect').value=edit.dataset.seasonEdit;seasonChooseCampaign(edit.dataset.seasonEdit);E('seasonCampaignSelect').scrollIntoView({behavior:'smooth',block:'center'});seasonAlert('✏️ Campanha selecionada para edição. Altere os campos e clique em Salvar e publicar para gravar.');return;}
+  const settle=e.target.closest('[data-season-settle]');if(settle){seasonConfirmPayment(settle.dataset.seasonSettle,settle.dataset.stage);return;}
+   const message=e.target.closest('[data-season-message]');if(message){seasonCopyClientMessage(message.dataset.seasonMessage);return;}
+  const details=e.target.closest('[data-season-details]');
+  if(details){seasonOrderDetails(details.dataset.seasonDetails);return;}
+  const card=e.target.closest('[data-season-order-card]');
+  if(card)seasonOrderDetails(card.dataset.seasonOrderCard);
  });
 }
 function bind(){
  setupInstall();
+ // Ação visual imediata sem afirmar que a gravação já foi concluída.
+ document.addEventListener('click',event=>{
+  const button=event.target.closest('button,a.btn');
+  if(!button||button.disabled)return;
+  button.classList.add('btn-pressed');
+  setTimeout(()=>button.classList.remove('btn-pressed'),340);
+ },true);
+ document.addEventListener('keydown',event=>{
+  if(!['Enter',' '].includes(event.key)||event.target?.matches?.('button,input,select,textarea,a'))return;
+  const card=event.target?.closest?.('[data-season-order-card]');
+  if(card){event.preventDefault();seasonOrderDetails(card.dataset.seasonOrderCard);}
+ });
  window.addEventListener('caseirinho:order-rejected',refreshOrdersAfterRejection);
  bindSeasonAdmin();
  bindBlackFriday();

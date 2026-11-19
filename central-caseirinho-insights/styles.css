@@ -389,3 +389,34 @@
 .product-card [data-action="descriptionProduct"]{background:#edf7f0;color:#135133;border:1px solid #b7d9c4}
 .product-card [data-action="descriptionProduct"]:hover{background:#d9efdf}
 #productDescriptionText{width:100%;box-sizing:border-box;line-height:1.55;min-height:145px;resize:vertical}
+
+
+/* Caseirinho Gestão — interação visível em qualquer ação. */
+button, a.btn, .season-order-card, [data-season-edit]{touch-action:manipulation}
+button, a.btn{transition:transform .14s ease,box-shadow .14s ease,filter .14s ease}
+button:not(:disabled):active,a.btn:active,.btn-pressed{transform:scale(.975)!important;filter:brightness(.94)!important;box-shadow:0 0 0 3px #d3ac5533!important}
+button:focus-visible,a.btn:focus-visible,[data-season-order-card]:focus-visible{outline:3px solid #d9ad58;outline-offset:2px}
+button:disabled{cursor:not-allowed!important}
+.season-order-card,[data-season-edit].season-campaign-card{cursor:pointer;transition:border-color .15s ease,box-shadow .15s ease}
+.season-order-card:hover,[data-season-edit].season-campaign-card:hover{border-color:#abcaaf;box-shadow:0 9px 24px #163b271f}
+.debt-panel{margin:18px 0}.debt-panel .debt-stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+.debt-panel #debtSearch{width:100%;min-height:44px;padding:11px 13px;margin:10px 0 15px;border:1px solid #cbdccb;border-radius:12px;font:inherit}
+.debt-customer{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:17px 2px;border-bottom:1px solid #e0eadf}
+.debt-customer>div:first-child{min-width:0}.debt-customer strong{color:var(--green)}.debt-customer small{display:block;color:var(--mute);font-size:12px;margin:5px 0 8px}
+.debt-orders{display:flex;flex-wrap:wrap;gap:6px}.debt-order{font-size:12px;background:#edf5ed;color:#315943;border-radius:7px;padding:5px 9px}
+.debt-actions{display:flex;flex-direction:column;align-items:flex-end;gap:9px;white-space:nowrap}
+@media(max-width:790px){.debt-panel .debt-stats{grid-template-columns:1fr}.debt-customer{align-items:flex-start;flex-direction:column}.debt-actions{width:100%;flex-direction:row;justify-content:space-between;align-items:center}.debt-actions .btn{min-width:135px}}
+@media(prefers-reduced-motion:reduce){button,a.btn,.season-order-card,[data-season-edit]{transition:none!important}}
+
+.auth-logo{display:block;width:76px;height:76px;object-fit:cover;border-radius:19px;box-shadow:0 5px 17px #24423222}.brand .emblem img{width:100%;height:100%;border-radius:13px;object-fit:cover}
+
+/* Painel operacional compacto para uso diário no celular */
+.daily-pulse{margin-bottom:16px;border-color:#bdd6c5;background:linear-gradient(135deg,#fcfffa,#f5fbf3)}
+.daily-pulse-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.daily-pulse-item{text-align:left;border:1px solid #cbdccc;border-radius:13px;background:#fff;padding:14px;min-height:117px;display:flex;flex-direction:column;align-items:flex-start;gap:3px;color:#254533}
+.daily-pulse-item b{font-size:27px;font-weight:850;color:#17472e}
+.daily-pulse-item strong{font-size:13px}.daily-pulse-item small{font-size:11px;color:#6f8173;line-height:1.3}
+.daily-pulse-item span{margin-top:auto;color:#17683f;font-size:11px;font-weight:800}
+.daily-pulse-shortcuts{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+@media(max-width:850px){.daily-pulse-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.daily-pulse-item{min-height:111px}}
+@media(max-width:450px){.daily-pulse-shortcuts .btn{flex:1 1 45%;min-width:0;font-size:12px;padding:9px 5px}}
