@@ -431,3 +431,7 @@ button:disabled{cursor:not-allowed!important}
 .install-login-button{width:100%;min-height:54px;background:#183c2e!important;border:1px solid #183c2e!important;color:#fff!important;font-size:15px!important;box-shadow:0 5px 12px #16372724}
 .install-login-hint{font-size:11px!important;line-height:1.45!important;color:#567363!important;margin:9px 0 0!important;text-align:center}
 @media(max-width:790px){#installAppMain{white-space:normal;text-align:center;min-height:45px}}
+
+/* Contas a receber: duplicatas separadas dos pedidos da loja. */
+.convenio-document{display:flex;flex-wrap:wrap;align-items:center;gap:9px;padding:9px 0;border-bottom:1px dashed #d8e4dc;font-size:12px}.convenio-document>b{color:#183c2e;margin-left:auto}.convenio-document .badge{white-space:normal}
+@media(max-width:600px){.convenio-document{align-items:flex-start;flex-direction:column}.convenio-document>b{margin-left:0}}
