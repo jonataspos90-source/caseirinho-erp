@@ -436,10 +436,34 @@ function render(){
  E('apiLabel').textContent=st.api;
  E('apiState').innerHTML='<p class="notice '+(st.dataStatus==='offline'?'warn':st.dataStatus==='partial'?'warn':'success')+'">'+(st.dataStatus==='offline'?'Sem atualização nesta tentativa; dados anteriores preservados.':st.dataStatus==='partial'?'Consulta parcial — confira os módulos sinalizados.':'Última consulta: '+dt(st.lastUpdated)+'. Dados recebidos da API autenticada.')+'</p>';
 }
+// Consultas de apoio não bloqueiam o primeiro painel nem o botão Atualizar.
+// Mantemos exatamente o mesmo banco e as mesmas rotas administrativas.
+let optionalDashboardRequest=null;
+async function loadOptionalDashboard(){
+ if(!st.token)return;
+ if(optionalDashboardRequest)return optionalDashboardRequest;
+ optionalDashboardRequest=(async()=>{
+  const sessionToken=st.token;
+  const optionalPaths=['product-categories','product-drafts','merchandising','order-fulfillment'];
+  const results=await Promise.allSettled(optionalPaths.map(path=>api(path)));
+  if(!st.token||st.token!==sessionToken)return; // Não mostrar dados de sessão encerrada.
+  let updated=false;
+  results.forEach((result,index)=>{
+   if(result.status!=='fulfilled')return;
+   const key=optionalPaths[index],data=result.value;
+   if(key==='product-categories'){st.categories=data.categories||[];updated=true;}
+   if(key==='product-drafts'){st.drafts=data.drafts||[];updated=true;}
+   if(key==='merchandising'){st.merch={grades:data.grades||[],packs:data.packs||[]};st.merchLoaded=true;updated=true;}
+   if(key==='order-fulfillment'){st.fulfillment=new Map((data.orders||[]).map(x=>[s(x.code),x]));updated=true;}
+  });
+  if(updated&&E('modal')?.hidden!==false&&['dashboard','orders','products','merch'].includes(st.view))render();
+ })();
+ try{return await optionalDashboardRequest}finally{optionalDashboardRequest=null;}
+}
 async function loadAll(){
  if(st.syncing||!st.token)return;
  st.syncing=true;E('refreshBtn').disabled=true;E('lastSync').textContent='Sincronizando dados do Neon…';
- const paths=['summary','orders','requests','contacts','catalog','product-categories','product-drafts','merchandising','order-fulfillment'];
+ const paths=['summary','orders','requests','contacts','catalog'];
  const responses=await fetchDashboardGroups(paths,(batch,index)=>{
   if(index!==0)return;
   // A interface aparece assim que o resumo e pedidos chegam; os demais módulos seguem carregando.
@@ -490,6 +514,8 @@ async function loadAll(){
   :'Dados consultados pela API autenticada. Os pings não representam visitas nem instalações confirmadas.';
  E('loginScreen').hidden=true;
  st.syncing=false;E('refreshBtn').disabled=false;render();
+ // As quatro consultas auxiliares continuam em paralelo, sem travar o painel.
+ void loadOptionalDashboard();
 }
 async function refreshOrdersAfterRejection(event){
  // A API já confirmou a recusa: não reenviar o POST nem recarregar a página.
