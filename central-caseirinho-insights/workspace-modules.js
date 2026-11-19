@@ -10,7 +10,8 @@ const configs=[
  {root:'sales',name:'Vendas & Estoque',items:[
   {key:'performance',label:'📈 Indicadores de vendas',elements:['#sales > .grid.two:has(#salesTopRevenue)']},
   {key:'stock',label:'📦 Estoque mínimo e máximo',elements:['#salesStockFeatureNotice','#stockSmartSection']},
-  {key:'analysis',label:'📊 Análise e curva ABC',elements:['#sales > .grid.two:has(#salesAbcSummary)','#sales > .card:not(.sales-filter-card)','#sales > .notice:last-child']}
+  {key:'analysis',label:'📊 Análise e curva ABC',elements:['#sales > .grid.two:has(#salesAbcSummary)','#sales > .card:not(.sales-filter-card)','#sales > .notice:last-child']},
+  {key:'profit',label:'🧮 Margens estimadas',elements:[]}
  ]},
  {root:'receivables',name:'Conta Cliente',items:[
   {key:'debts',label:'👤 Saldos de clientes',elements:['#debtPanel']},
