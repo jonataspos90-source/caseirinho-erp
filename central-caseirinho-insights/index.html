@@ -176,6 +176,21 @@
   <div id="debtRows"></div>
   <p class="subtitle">Não representa automaticamente dívida vencida. Confira os prazos combinados e os comprovantes antes de cobrar. A conversa pelo WhatsApp só abre após seu clique.</p>
  </article>
+ <article class="card debt-panel" id="convenioPanel">
+  <div class="section-head"><div><h3>🧾 Convênios, Fiado e Duplicatas</h3>
+   <p>Outra fonte do ERP: parcelas abertas e vencidas, com identificação das que estão vinculadas a pedidos da loja.</p></div>
+   <div class="actions"><button type="button" class="btn primary" id="convenioRefresh">↻ Atualizar convênios</button>
+   <button type="button" class="btn" id="convenioExport" disabled>⬇ Exportar CSV</button></div></div>
+  <div id="convenioNotice" class="notice">Abra Contas e Recebimentos para consultar as duplicatas do ERP.</div>
+  <div class="toolbar"><input type="search" id="convenioSearch" placeholder="Localizar cliente ou pedido…">
+   <select id="convenioFilter"><option value="ALL">Todas com saldo</option><option value="OVERDUE">Somente vencidas</option>
+   <option value="SEPARATE">Sem vínculo com pedido da loja</option><option value="LINKED">Vinculadas à loja — conferir</option></select></div>
+  <div class="grid stats" id="convenioStats"></div>
+  <div id="convenioRows"></div>
+  <p id="convenioIndependent" class="subtitle"></p>
+  <div class="notice"><strong>Atenção:</strong> essas duplicatas não são somadas ao relatório de pedidos do e-commerce nem à DRE.
+   Verifique pagamentos externos, pedidos de teste e possíveis duplicidades antes de entrar em contato para cobrança.</div>
+ </article>
  <div class="card">
   <div class="toolbar">
    <input id="receivableSearch" type="search" placeholder="Buscar cliente, telefone ou pedido…" aria-label="Pesquisar contas">
@@ -645,4 +660,5 @@
 <script src="./platform-sales.js?v=20261110-platform-1" defer></script>
 <script src="./conta-cliente-recebimentos.js?v=20261111-2" defer></script>
 <script src="./devedores.js?v=20261119-1" defer></script>
+<script src="./convenios-receber.js?v=20261119-1" defer></script>
 </body></html>
