@@ -37,9 +37,10 @@ test('manifest instala o app certo no escopo da Central',()=>{
 test('versões de app, estilo e manifesto estão sincronizadas com o SW',()=>{
  const html=read('index.html'),sw=read('sw.js'),css=read('styles.css');
  assert.doesNotThrow(()=>new Function(sw));
- for(const ref of ['./app.js?v=20261119-instalacao-direta','./styles.css?v=20261119-instalacao-direta','./manifest.webmanifest?v=20261119-central']){
-  assert.ok(html.includes(ref),'HTML '+ref);
-  assert.ok(sw.includes(ref),'Service worker '+ref);
+ for(const name of ['app.js','styles.css','manifest.webmanifest']){
+  const found=html.match(new RegExp('\\./'+name.replace(/\./g,'\\.')+'\\?v=[\\w-]+'));
+  assert.ok(found,'HTML deve referenciar '+name+' com versão');
+  assert.ok(sw.includes(found[0]),'Service worker '+found[0]);
  }
  assert.match(css,/\.install-login-panel/);
  assert.match(css,/\.install-login-button/);
