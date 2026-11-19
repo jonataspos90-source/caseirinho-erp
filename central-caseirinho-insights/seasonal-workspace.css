@@ -1,0 +1,13 @@
+/* Submódulos de encomendas: leitura rápida e sem rolagem gigante */
+.season-workspace-nav{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:8px;margin:14px 0 20px}
+.season-workspace-tab{appearance:none;min-height:55px;padding:11px 12px;border-radius:12px;border:1px solid #d4e3d9;background:#fff;color:#204d3a;font-weight:700;font-size:13px;cursor:pointer;text-align:left;transition:background .15s,border-color .15s,box-shadow .15s}
+.season-workspace-tab:hover{border-color:#40866a;background:#f1faf5}
+.season-workspace-tab:focus-visible{outline:3px solid #d5a63b;outline-offset:2px}
+.season-workspace-tab.active{border-color:#075338;background:#084b35;color:#fff;box-shadow:0 2px 6px #092f2117}
+.season-workspace-panel{padding:20px;background:#fff;border:1px solid #dce8dd;border-radius:15px;margin-bottom:16px}
+.season-workspace-head{margin:0 0 16px;border-bottom:1px solid #e4eee5;padding-bottom:12px}
+.season-workspace-head h3{font-size:19px;color:#0b5038;margin:0 0 5px}
+.season-workspace-head p{font-size:13px;color:#597164;line-height:1.5;margin:0}
+.season-workspace-campaign>.season-workspace-head{margin-bottom:18px}
+.season-workspace-panel>article.card{margin-top:0!important}
+@media(max-width:680px){.season-workspace-nav{grid-template-columns:repeat(2,minmax(0,1fr))}.season-workspace-tab{font-size:12px;min-height:52px;padding:10px}.season-workspace-panel{padding:12px}}
