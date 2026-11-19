@@ -409,3 +409,14 @@ button:disabled{cursor:not-allowed!important}
 @media(prefers-reduced-motion:reduce){button,a.btn,.season-order-card,[data-season-edit]{transition:none!important}}
 
 .auth-logo{display:block;width:76px;height:76px;object-fit:cover;border-radius:19px;box-shadow:0 5px 17px #24423222}.brand .emblem img{width:100%;height:100%;border-radius:13px;object-fit:cover}
+
+/* Painel operacional compacto para uso diário no celular */
+.daily-pulse{margin-bottom:16px;border-color:#bdd6c5;background:linear-gradient(135deg,#fcfffa,#f5fbf3)}
+.daily-pulse-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.daily-pulse-item{text-align:left;border:1px solid #cbdccc;border-radius:13px;background:#fff;padding:14px;min-height:117px;display:flex;flex-direction:column;align-items:flex-start;gap:3px;color:#254533}
+.daily-pulse-item b{font-size:27px;font-weight:850;color:#17472e}
+.daily-pulse-item strong{font-size:13px}.daily-pulse-item small{font-size:11px;color:#6f8173;line-height:1.3}
+.daily-pulse-item span{margin-top:auto;color:#17683f;font-size:11px;font-weight:800}
+.daily-pulse-shortcuts{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+@media(max-width:850px){.daily-pulse-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.daily-pulse-item{min-height:111px}}
+@media(max-width:450px){.daily-pulse-shortcuts .btn{flex:1 1 45%;min-width:0;font-size:12px;padding:9px 5px}}
