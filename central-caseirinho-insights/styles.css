@@ -407,3 +407,5 @@ button:disabled{cursor:not-allowed!important}
 .debt-actions{display:flex;flex-direction:column;align-items:flex-end;gap:9px;white-space:nowrap}
 @media(max-width:790px){.debt-panel .debt-stats{grid-template-columns:1fr}.debt-customer{align-items:flex-start;flex-direction:column}.debt-actions{width:100%;flex-direction:row;justify-content:space-between;align-items:center}.debt-actions .btn{min-width:135px}}
 @media(prefers-reduced-motion:reduce){button,a.btn,.season-order-card,[data-season-edit]{transition:none!important}}
+
+.auth-logo{display:block;width:76px;height:76px;object-fit:cover;border-radius:19px;box-shadow:0 5px 17px #24423222}.brand .emblem img{width:100%;height:100%;border-radius:13px;object-fit:cover}
