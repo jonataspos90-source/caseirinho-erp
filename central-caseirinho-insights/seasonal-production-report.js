@@ -6,12 +6,12 @@ const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const qty=x=>{const n=Number(x);return Number.isFinite(n)&&n>0?n:0};
 const fmt=n=>Number(n).toLocaleString('pt-BR',{maximumFractionDigits:3});
 const date=s=>/^\d{4}-\d{2}-\d{2}$/.test(String(s))?s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice(0,4):String(s||'Sem data');
-let orders=[],loaded=false,selectedCodes=new Set(),lastRefresh='';
+let orders=[],loaded=false,selectedCodes=new Set(),lastRefresh='',lastRefreshAt=0;
 function rows(){
  const from=$('prodFrom').value,to=$('prodTo').value,camp=$('prodCampaign').value,mode=$('prodMode').value,term=$('prodSearch').value.trim().toLowerCase();
  return orders.filter(o=>{
   const d=String(o.deliveryDate||'').slice(0,10),s=o.seasonal||{},state=String(o.status||'').toUpperCase();
-  if(['CANCELADO','CANCELLED','REJEITADO','RECUSADO','REJECTED','ESTORNADO'].includes(state))return false;
+  if(['CANCELADO','CANCELLED','REJEITADO','RECUSADO','REJECTED','ESTORNADO','ENTREGUE','RETIRADO','FINALIZADO','CONCLUIDO','COMPLETED','DELIVERED'].includes(state))return false;
   if(from&&d<from||to&&d>to||camp&&String(s.campaignId)!==camp)return false;
   if(mode==='confirmed'&&s.depositStatus!=='PAID'||mode==='pending'&&s.depositStatus==='PAID')return false;
   return !term||(String(o.code)+' '+String(o.name)+' '+String(o.phone)+' '+String(s.campaignTitle)).toLowerCase().includes(term);
@@ -92,7 +92,7 @@ async function load(){
  try{
   const result=await bridge.api('seasonal-orders');
   if(!result?.ok||!Array.isArray(result.orders))throw Error('Retorno incompleto');
-  orders=result.orders;loaded=true;lastRefresh=new Date().toLocaleString('pt-BR');
+  orders=result.orders;loaded=true;lastRefreshAt=Date.now();lastRefresh=new Date().toLocaleString('pt-BR');
   $('prodTimestamp').textContent='Atualizado em '+lastRefresh+(orders.length===400?' · Atenção: limite de 400 pedidos retornados.':'');
   const prev=$('prodCampaign').value,campaigns=new Map(orders.map(o=>[String(o.seasonal?.campaignId||''),String(o.seasonal?.campaignTitle||'Campanha')]).filter(([id])=>id));
   $('prodCampaign').innerHTML='<option value="">Todas</option>'+[...campaigns].map(([id,title])=>'<option value="'+esc(id)+'">'+esc(title)+'</option>').join('');
@@ -109,6 +109,7 @@ function htmlDoc(title,body){
 function printReport(cards){
  const list=chosen();
  if(!loaded||!list.length)return alert('Atualize e selecione pelo menos um pedido.');
+ if(Date.now()-lastRefreshAt>10*60*1000)return alert('Os pedidos não são atualizados há mais de 10 minutos. Clique em Atualizar antes de imprimir para não produzir pedidos alterados.');
  const {groups,errors}=summarize(list);
  if(errors.length)return alert('Existem itens inválidos. Confira os pedidos antes de imprimir.');
  const pending=list.filter(o=>o.seasonal?.depositStatus!=='PAID');
