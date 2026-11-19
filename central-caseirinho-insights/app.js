@@ -2710,6 +2710,13 @@ function bind(){
  bindMerch();
  E('opsRefresh')?.addEventListener('click',loadOpsAudit);
  document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>nav(b.dataset.view)));
+ // Os atalhos do painel Meu Dia são criados após o carregamento dos dados.
+ document.addEventListener('click',event=>{
+  const action=event.target.closest?.('#dailyPulse [data-view]');
+  if(!action)return;
+  event.preventDefault();
+  nav(action.dataset.view);
+ });
  E('refreshBtn').addEventListener('click',async()=>{await loadAll();if(st.view==='sales')await loadSales();if(st.view==='operations')await loadOpsAudit();});
  document.addEventListener('click',e=>{if(e.target?.id==='verifyProductTerms')verifyProductTerms();});
  E('logoutBtn').addEventListener('click',logout);
