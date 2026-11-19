@@ -4,7 +4,7 @@ const fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const load=n=>fs.readFileSync(path.join(__dirname,'..','central-caseirinho-insights',n),'utf8');
 test('nova central inclui módulos PCP, produção, painéis e sem duplicar app',()=>{
  const html=load('index.html');
- for(const n of ['seasonal-production-report.js','seasonal-pcp-workflow.js','daily-ops-pulse.js','home-card-images-admin.js','seasonal-workspace.js'])assert.ok(html.includes(n),n);
+ for(const n of ['seasonal-production-report.js','seasonal-pcp-workflow.js','daily-ops-pulse.js','home-card-images-admin.js','seasonal-workspace.js','seasonal-ingredients-planning.js'])assert.ok(html.includes(n),n);
  assert.equal((html.match(/<script src="\.\/app\.js\?/g)||[]).length,1);
 });
 test('produção bloqueia venda sem sinal e exige confirmação do operador',()=>{
@@ -23,5 +23,13 @@ test('painel de gestão é somente leitura e não altera lançamento financeiro'
  assert.doesNotMatch(pulse,/confirm-payment/);
 });
 test('novos componentes são JavaScript sintaticamente válido',()=>{
- for(const n of ['seasonal-production-report.js','seasonal-pcp-workflow.js','daily-ops-pulse.js','seasonal-workspace.js','home-card-images-admin.js'])new vm.Script(load(n),{filename:n});
+ for(const n of ['seasonal-production-report.js','seasonal-pcp-workflow.js','daily-ops-pulse.js','seasonal-workspace.js','home-card-images-admin.js','seasonal-ingredients-planning.js'])new vm.Script(load(n),{filename:n});
+});
+test('lista de ingredientes calcula por ficha e não baixa estoque nem cria compras',()=>{
+ const src=load('seasonal-ingredients-planning.js');
+ assert.match(src,/bridge\.api\('fichas'\)/);
+ assert.match(src,/bridge\.api\('seasonal-orders'\)/);
+ assert.match(src,/qty\*componentQty\/yieldQty/);
+ assert.match(src,/depositStatus==='PAID'/);
+ assert.doesNotMatch(src,/method:\s*['"]POST['"]/);
 });
