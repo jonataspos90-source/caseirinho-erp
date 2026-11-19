@@ -1,0 +1,21 @@
+name: Fluxos críticos Central Caseirinho
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Checar sintaxe dos módulos operacionais
+        run: |
+          node --check central-caseirinho-insights/seasonal-production-report.js
+          node --check central-caseirinho-insights/seasonal-pcp-workflow.js
+          node --check central-caseirinho-insights/daily-ops-pulse.js
+      - name: Validar produção e gestão sem alterar pedidos
+        run: node --test tests/central-critical-20261119.test.js
