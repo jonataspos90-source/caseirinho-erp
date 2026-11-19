@@ -23,7 +23,7 @@ test('painel de gestão é somente leitura e não altera lançamento financeiro'
  assert.doesNotMatch(pulse,/confirm-payment/);
 });
 test('novos componentes são JavaScript sintaticamente válido',()=>{
- for(const n of ['seasonal-production-report.js','seasonal-pcp-workflow.js','daily-ops-pulse.js','seasonal-workspace.js','home-card-images-admin.js','seasonal-ingredients-planning.js'])new vm.Script(load(n),{filename:n});
+ for(const n of ['seasonal-production-report.js','seasonal-pcp-workflow.js','daily-ops-pulse.js','seasonal-workspace.js','home-card-images-admin.js','seasonal-ingredients-planning.js','sales-margin-insights.js'])new vm.Script(load(n),{filename:n});
 });
 test('lista de ingredientes calcula por ficha e não baixa estoque nem cria compras',()=>{
  const src=load('seasonal-ingredients-planning.js');
@@ -31,5 +31,13 @@ test('lista de ingredientes calcula por ficha e não baixa estoque nem cria comp
  assert.match(src,/bridge\.api\('seasonal-orders'\)/);
  assert.match(src,/qty\*componentQty\/yieldQty/);
  assert.match(src,/depositStatus==='PAID'/);
+ assert.doesNotMatch(src,/method:\s*['"]POST['"]/);
+});
+
+test('margem usa vendas e custos existentes sem editar o DRE',()=>{
+ const src=load('sales-margin-insights.js');
+ assert.match(src,/CaseirinhoInsightsStockBridge/);
+ assert.match(src,/estimatedMargin/);
+ assert.match(src,/estimatedTotalCost/);
  assert.doesNotMatch(src,/method:\s*['"]POST['"]/);
 });
