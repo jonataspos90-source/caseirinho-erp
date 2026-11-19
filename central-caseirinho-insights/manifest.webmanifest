@@ -1,8 +1,8 @@
 {
   "id": "./",
-  "name": "Caseirinho | Central de Gestão",
-  "short_name": "Caseirinho Gestão",
-  "description": "Gestão diária do Caseirinho: pedidos, encomendas, clientes, financeiro e loja.",
+  "name": "Central Caseirinho | Gestão",
+  "short_name": "Central Caseirinho",
+  "description": "Aplicativo da Central Caseirinho para gerenciar pedidos, encomendas, clientes, financeiro e loja.",
   "lang": "pt-BR",
   "start_url": "./",
   "scope": "./",
