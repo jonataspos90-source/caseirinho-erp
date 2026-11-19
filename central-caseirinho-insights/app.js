@@ -193,6 +193,7 @@ function nav(tab){
  if(tab==='sazonais'&&!st.seasonData)loadSeasonAdmin();
  if(tab==='financeiro')window.CaseirinhoFinance?.load();
  if(tab==='receivables')window.CaseirinhoReceivables?.load?.(true);
+ if(tab==='receivables')window.CaseirinhoConvenios?.load?.();
  if(tab==='operations')loadOpsAudit();
  if(tab==='settings')window.CaseirinhoStoreHoursAdmin?.load?.();
 }
