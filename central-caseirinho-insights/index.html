@@ -1,9 +1,9 @@
 <!doctype html><html lang="pt-BR"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#183c2e"><meta name="description" content="Central Caseirinho Insights — painel administrativo independente de CRM, acessos, pedidos e cardápio.">
-<title>Central Caseirinho Insights | CRM e Loja</title>
-<link rel="stylesheet" href="./styles.css?v=20261119-gestao2"><link rel="stylesheet" href="./store-hours-admin.css?v=20261116-1"><link rel="stylesheet" href="./season-virtual-packs.css?v=20261116-virtual1"><link rel="stylesheet" href="./financeiro.css?v=20261110-platform-1">
-<link rel="manifest" href="./manifest.webmanifest?v=20261119-1"><link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png"><link rel="apple-touch-icon" href="./icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Central Caseirinho | Gestão e Loja</title>
+<link rel="stylesheet" href="./styles.css?v=20261119-instalacao-direta"><link rel="stylesheet" href="./store-hours-admin.css?v=20261116-1"><link rel="stylesheet" href="./season-virtual-packs.css?v=20261116-virtual1"><link rel="stylesheet" href="./financeiro.css?v=20261110-platform-1">
+<link rel="manifest" href="./manifest.webmanifest?v=20261119-central"><link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png"><link rel="apple-touch-icon" href="./icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default">
 <style>.season-images-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;margin-top:12px}.season-image-tile{border:1px solid #c9dfd0;padding:8px;border-radius:10px;background:#f8fbf8}.season-image-tile img{height:100px;width:100%;object-fit:cover;border-radius:7px}.season-image-tile .toolbar{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}.season-image-tile button{padding:6px 8px}</style></head><body>
 <div class="auth-screen" id="loginScreen">
  <div class="auth"><img src="./icons/icon-192.png" class="auth-logo" alt="Ícone do Caseirinho" width="76" height="76"><p class="eyebrow">Caseirinho Massas Artesanais</p>
@@ -15,6 +15,11 @@
  <input id="erpPassword" name="password" type="password" maxlength="200" autocomplete="current-password" placeholder="Digite sua senha" required>
  <button type="submit" class="btn primary" id="erpLoginBtn" style="width:100%;margin-top:12px">🔐 Entrar</button>
  </form>
+ <section class="install-login-panel" id="installLoginPanel" aria-label="Instalar Central no celular">
+  <div class="install-login-heading"><span aria-hidden="true">📲</span><div><strong>Central Caseirinho no seu celular</strong><small>Instale e abra pelo ícone, como um aplicativo.</small></div></div>
+  <button type="button" class="btn install-login-button" id="installAppLogin">📲 Instalar Central Caseirinho</button>
+  <p class="install-login-hint" id="installAppHint" role="status" aria-live="polite">Instalação gratuita. Seus pedidos e dados continuam no ERP.</p>
+ </section>
  <p class="notice" id="loginNotice" role="status">Use o mesmo usuário e a mesma senha que você utiliza no ERP Caseirinho.</p>
  <p class="subtitle" style="font-size:12px">A Central respeita as permissões do ERP. Seu login é verificado com segurança e a senha não é armazenada neste aplicativo.</p>
  </div>
@@ -47,7 +52,7 @@
 </aside>
 <main class="app">
  <header class="topbar"><div><span class="eyebrow">Painel exclusivo • Caseirinho Massas Artesanais</span><h1 id="pageTitle">Visão geral</h1><p class="subtitle" id="lastSync">Carregando informações...</p></div>
- <div class="actions"><a class="btn primary" id="salesStockTopLink" href="./?view=sales&v=43-stock-visible">📦 Vendas & Estoque</a><a class="btn" href="https://jonataspos90-source.github.io/caseirinho-loja/" target="_blank" rel="noopener">↗ Abrir loja</a><button class="btn gold" id="installAppMain" type="button">📲 Instalar</button><button class="btn primary" id="refreshBtn" type="button">↻ Atualizar</button><button class="btn" id="logoutBtn" type="button">Sair</button></div></header>
+ <div class="actions"><a class="btn primary" id="salesStockTopLink" href="./?view=sales&v=43-stock-visible">📦 Vendas & Estoque</a><a class="btn" href="https://jonataspos90-source.github.io/caseirinho-loja/" target="_blank" rel="noopener">↗ Abrir loja</a><button class="btn gold" id="installAppMain" type="button">📲 Instalar Central Caseirinho</button><button class="btn primary" id="refreshBtn" type="button">↻ Atualizar</button><button class="btn" id="logoutBtn" type="button">Sair</button></div></header>
  <div id="newOrderBanner" class="notice new-order-alert" role="alert" hidden><b>🔔 Novo pedido recebido!</b> <span id="newOrderBannerText"></span> <button class="btn small primary" type="button" id="openNewOrders">Ver pedidos</button> <button class="btn small" type="button" id="dismissNewOrders">Dispensar</button></div>
  <div class="notice" id="globalNotice">As visitas são contadas apenas quando houver eventos da nova instrumentação; pings não são visitas. O cadastro não representa necessariamente uma compra.</div>
  <section id="dashboard" class="section active">
@@ -625,7 +630,7 @@
  </nav>
 <div id="toast" class="toast" role="status" hidden></div>
 <div id="modal" class="modal-bg" hidden><div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><h2 id="modalTitle">Mensagem para WhatsApp</h2><div id="modalContent"></div><div class="toolbar" style="justify-content:flex-end;margin-top:20px"><button class="btn" id="modalClose">Fechar</button></div></div></div>
-<script src="./app.js?v=20261119-daily2" defer></script>
+<script src="./app.js?v=20261119-instalacao-direta" defer></script>
 <script src="./store-hours-admin.js?v=20261116-2" defer></script>
 <script src="./seasonal-merch-admin.js?v=20261117-save-verify1" defer></script>
 <script src="./seasonal-best-deal-admin.js?v=20261116-virtual3" defer></script>

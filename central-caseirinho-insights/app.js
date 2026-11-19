@@ -79,25 +79,51 @@ async function loginWithERP(e){
 }
 let installEvent=null;
 function isInstalled(){return !!(window.matchMedia?.('(display-mode: standalone)').matches||navigator.standalone===true);}
+function refreshInstallControls(){
+ const installed=isInstalled();
+ for(const id of ['installAppMain','installAppLogin']){const btn=E(id);if(btn)btn.hidden=installed;}
+ const panel=E('installLoginPanel');if(panel)panel.hidden=installed;
+ const hint=E('installAppHint');
+ if(hint&&!installed)hint.textContent=installEvent?'Pronto para instalar: toque no botão acima.':'Instale no celular e abra diretamente pelo ícone do Caseirinho.';
+}
 function showInstallSteps(){
- const samsung=/SamsungBrowser/i.test(navigator.userAgent),android=/Android/i.test(navigator.userAgent);
- const steps=samsung?'No Samsung Internet: menu ☰ → Adicionar página a → Tela inicial.':
- android?'No Google Chrome: menu ⋮ → Instalar aplicativo (ou Adicionar à tela inicial) → Instalar.':
- 'No iPhone (Safari): Compartilhar → Adicionar à Tela de Início.';
- modal('📲 Instalar Caseirinho Insights','<p>'+steps+'</p><p class="notice success">Depois, basta tocar no ícone da tela inicial para abrir diretamente a Central.</p><p>O login usa a senha do ERP, sem salvar sua senha.</p>');
+ const ua=navigator.userAgent||'',samsung=/SamsungBrowser/i.test(ua),ios=/iPhone|iPad|iPod/i.test(ua),android=/Android/i.test(ua);
+ const steps=ios?'No Safari, toque em Compartilhar e depois em Adicionar à Tela de Início.':
+ samsung?'No Samsung Internet, abra o menu ☰ e toque em Adicionar página a → Tela inicial.':
+ android?'No Chrome, abra o menu ⋮ e escolha Instalar aplicativo ou Adicionar à tela inicial.':
+ 'No navegador, procure a opção Instalar aplicativo ou Adicionar à tela inicial.';
+ modal('📲 Instalar Central Caseirinho','<p>O navegador ainda não ofereceu a janela de instalação automática neste aparelho.</p>'+
+ '<p><strong>Para instalar:</strong> '+steps+'</p>'+
+ '<p class="notice success">Depois, abra pelo ícone <strong>Central Caseirinho</strong>, direto da tela inicial do celular.</p>'+
+ '<p>O aplicativo usa o login do ERP e não salva sua senha aqui.</p>');
 }
 async function installApp(){
- if(isInstalled()){toast('O aplicativo já está instalado! Abra pelo ícone da tela inicial.');return;}
+ if(isInstalled()){toast('A Central Caseirinho já está instalada neste aparelho.');refreshInstallControls();return;}
  if(!installEvent){showInstallSteps();return;}
- const ev=installEvent;installEvent=null;
- try{await ev.prompt();const choice=await ev.userChoice;if(choice?.outcome==='accepted')toast('Instalação aceita! Veja o ícone na tela inicial.');}
- catch(_){showInstallSteps();}
+ const event=installEvent;
+ installEvent=null;
+ try{
+  await event.prompt();
+  const choice=await event.userChoice;
+  if(choice?.outcome==='accepted')toast('Instalação solicitada. Confira o ícone Central Caseirinho no celular.');
+  else toast('Instalação cancelada. Você pode tentar novamente pelo menu do navegador.');
+ }catch(_){showInstallSteps();}
+ finally{refreshInstallControls();}
 }
 function setupInstall(){
- for(const id of ['installAppMain'])E(id)?.addEventListener('click',installApp);
- window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();installEvent=event;});
- window.addEventListener('appinstalled',()=>{installEvent=null;E('installAppMain').hidden=true;toast('Central Caseirinho instalada!');});
- if(isInstalled())E('installAppMain').hidden=true;
+ for(const id of ['installAppMain','installAppLogin'])E(id)?.addEventListener('click',installApp);
+ window.addEventListener('beforeinstallprompt',event=>{
+  event.preventDefault();
+  installEvent=event;
+  refreshInstallControls();
+ });
+ window.addEventListener('appinstalled',()=>{
+  installEvent=null;
+  refreshInstallControls();
+  toast('✅ Central Caseirinho instalada! Abra pelo ícone no celular.');
+ });
+ window.matchMedia?.('(display-mode: standalone)').addEventListener?.('change',refreshInstallControls);
+ refreshInstallControls();
  if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js',{scope:'./'}).catch(()=>{});
 }
 async function api(path,options){
