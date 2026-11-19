@@ -39,6 +39,7 @@ test('Encomendas podem ser abertas sem modificar pagamento',()=>{
  assert.match(app,/data-season-order-card/);
  assert.match(app,/data-season-edit/);
  assert.match(app,/Pedidos disponíveis/);
+ assert.match(app,/#dailyPulse \[data-view\]/);
 });
 test('Relatório filtra saldos conciliados e não envia WhatsApp automaticamente',()=>{
  const code=read('devedores.js');
