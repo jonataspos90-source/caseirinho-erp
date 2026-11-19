@@ -443,8 +443,10 @@ async function loadOptionalDashboard(){
  if(!st.token)return;
  if(optionalDashboardRequest)return optionalDashboardRequest;
  optionalDashboardRequest=(async()=>{
+  const sessionToken=st.token;
   const optionalPaths=['product-categories','product-drafts','merchandising','order-fulfillment'];
   const results=await Promise.allSettled(optionalPaths.map(path=>api(path)));
+  if(!st.token||st.token!==sessionToken)return; // Não mostrar dados de sessão encerrada.
   let updated=false;
   results.forEach((result,index)=>{
    if(result.status!=='fulfilled')return;
