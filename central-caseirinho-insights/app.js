@@ -2663,6 +2663,18 @@ function bindSeasonAdmin(){
 }
 function bind(){
  setupInstall();
+ // Ação visual imediata sem afirmar que a gravação já foi concluída.
+ document.addEventListener('click',event=>{
+  const button=event.target.closest('button,a.btn');
+  if(!button||button.disabled)return;
+  button.classList.add('btn-pressed');
+  setTimeout(()=>button.classList.remove('btn-pressed'),340);
+ },true);
+ document.addEventListener('keydown',event=>{
+  if(!['Enter',' '].includes(event.key)||event.target?.matches?.('button,input,select,textarea,a'))return;
+  const card=event.target?.closest?.('[data-season-order-card]');
+  if(card){event.preventDefault();seasonOrderDetails(card.dataset.seasonOrderCard);}
+ });
  window.addEventListener('caseirinho:order-rejected',refreshOrdersAfterRejection);
  bindSeasonAdmin();
  bindBlackFriday();
