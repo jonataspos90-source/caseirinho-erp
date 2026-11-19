@@ -8,9 +8,9 @@ const configs=[
   {key:'categories',label:'🏷️ Categorias',elements:['#categoryManagerPanel']}
  ]},
  {root:'sales',name:'Vendas & Estoque',items:[
-  {key:'performance',label:'📈 Indicadores de vendas',elements:['#sales > .grid.two']},
+  {key:'performance',label:'📈 Indicadores de vendas',elements:['#sales > .grid.two:first-of-type']},
   {key:'stock',label:'📦 Estoque mínimo e máximo',elements:['#salesStockFeatureNotice','#stockSmartSection']},
-  {key:'analysis',label:'📊 Análise e curva ABC',elements:['#sales > .card:not(.sales-filter-card)','#sales > .notice:last-child']}
+  {key:'analysis',label:'📊 Análise e curva ABC',elements:['#sales > .grid.two','#sales > .card:not(.sales-filter-card)','#sales > .notice:last-child']}
  ]},
  {root:'receivables',name:'Conta Cliente',items:[
   {key:'debts',label:'👤 Saldos de clientes',elements:['#debtPanel']},
