@@ -27,7 +27,7 @@ self.addEventListener('fetch', event => {
   const request = event.request;
   if(request.method !== 'GET') return;
   const url = new URL(request.url);
-  if(url.origin !== self.location.origin || !url.href.startsWith(self.registration.scope)) return;
+  if(url.origin!==self.location.origin || !url.href.startsWith(self.registration.scope)) return;
   if(/\/(?:api|auth|admin)\//i.test(url.pathname)) return;
 
   if(request.mode === 'navigate') {
