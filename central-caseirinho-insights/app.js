@@ -63,7 +63,7 @@ async function loginWithERP(e){
   try{expiry=Number(JSON.parse(atob(data.token.split('.')[0].replace(/-/g,'+').replace(/_/g,'/'))).exp)||0;}catch(_){}
   if(expiry<=Date.now())throw Error('Sessão recebida do ERP está inválida ou expirada.');
   st.token=data.token;st.sessionExpiry=expiry;E('erpPassword').value='';
-  await api('summary');
+  // A primeira consulta do carregamento já valida o token: não duplicar summary no login.
   saveSession();
   try{localStorage.setItem(ERP_LAST_USERNAME_KEY,user);}catch(_){}
   E('loginScreen').hidden=true;
@@ -174,7 +174,34 @@ function badge(x){const v=s(x).toUpperCase();return '<span class="badge '+(v.inc
 function cellEmpty(title){return '<div class="empty">'+esc(title)+'</div>';}
 function table(headers,rows){if(!rows.length)return cellEmpty('Nenhum registro encontrado para este filtro.');return '<div class="table-wrap"><table class="table"><thead><tr>'+headers.map(x=>'<th>'+esc(x)+'</th>').join('')+'</tr></thead><tbody>'+rows.join('')+'</tbody></table></div>';}
 function statsCard(icon,label,num,note){return '<div class="stat"><span class="icon">'+icon+'</span><strong>'+esc(label)+'</strong><div class="n">'+esc(num)+'</div><small>'+esc(note||'')+'</small></div>';}
+function renderDailyPulse(){
+ const holder=E('dailyPulse');if(!holder)return;
+ const today=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+ const iso=date=>{
+  const d=new Date(date);
+  return Number.isFinite(d.getTime())
+   ?new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).format(d):'';
+ };
+ const rows=st.orders.filter(x=>iso(x.created_at)===today);
+ const status=x=>s(st.fulfillment.get(s(x.code))?.status||x.status).toUpperCase();
+ const newOrders=rows.filter(x=>['NOVO','PENDENTE','AGUARDANDO_ANALISE','AGUARDANDO_COTACAO_FRETE'].includes(status(x)));
+ const active=rows.filter(x=>['ACEITO','ABERTO','PRONTO'].includes(status(x)));
+ const done=rows.filter(x=>['ENTREGUE','RETIRADO','CONCLUIDO','FINALIZADO'].includes(status(x)));
+ const integrationPending=st.orders.filter(x=>['PENDENTE','IMPORTANDO'].includes(s(x.integration_status).toUpperCase())&&!['CANCELADO','REJEITADO'].includes(status(x)));
+ const value=(count,label,description,target)=>'<button type="button" class="daily-pulse-item" data-view="'+target+'"><b>'+count+'</b><strong>'+label+'</strong><small>'+description+'</small><span>Abrir →</span></button>';
+ holder.innerHTML='<div class="daily-pulse-grid">'+[
+  value(newOrders.length,'Pedidos novos','Registrados hoje','orders'),
+  value(active.length,'Em atendimento','Aceitos, abertos ou prontos hoje','orders'),
+  value(done.length,'Concluídos','Entregues ou retirados hoje','orders'),
+  value(integrationPending.length,'Integração a conferir','Ainda não confirmada no ERP','operations')
+ ].join('')+'</div><div class="daily-pulse-shortcuts">'+
+ '<button type="button" class="btn primary" data-view="sazonais">🎄 Encomendas</button>'+
+ '<button type="button" class="btn" data-view="receivables">💳 Contas a receber</button>'+
+ '<button type="button" class="btn" data-view="financeiro">💰 Caixa / DRE</button>'+
+ '<button type="button" class="btn" data-view="products">🏷️ Publicar produtos</button></div>';
+}
 function renderOverview(){
+ renderDailyPulse();
  const a=st.summary||{},u=a.usage||{},p=a.registrations||{},o=a.orders||{},e=a.events||{},req=a.requests||{};
  E('statGrid').innerHTML=[
  statsCard('👥','Contatos identificáveis',st.contacts.length||n(p.unique_contacts),'Pessoas com WhatsApp conhecido'),
