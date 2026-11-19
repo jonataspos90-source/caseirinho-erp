@@ -389,3 +389,21 @@
 .product-card [data-action="descriptionProduct"]{background:#edf7f0;color:#135133;border:1px solid #b7d9c4}
 .product-card [data-action="descriptionProduct"]:hover{background:#d9efdf}
 #productDescriptionText{width:100%;box-sizing:border-box;line-height:1.55;min-height:145px;resize:vertical}
+
+
+/* Caseirinho Gestão — interação visível em qualquer ação. */
+button, a.btn, .season-order-card, [data-season-edit]{touch-action:manipulation}
+button, a.btn{transition:transform .14s ease,box-shadow .14s ease,filter .14s ease}
+button:not(:disabled):active,a.btn:active,.btn-pressed{transform:scale(.975)!important;filter:brightness(.94)!important;box-shadow:0 0 0 3px #d3ac5533!important}
+button:focus-visible,a.btn:focus-visible,[data-season-order-card]:focus-visible{outline:3px solid #d9ad58;outline-offset:2px}
+button:disabled{cursor:not-allowed!important}
+.season-order-card,[data-season-edit].season-campaign-card{cursor:pointer;transition:border-color .15s ease,box-shadow .15s ease}
+.season-order-card:hover,[data-season-edit].season-campaign-card:hover{border-color:#abcaaf;box-shadow:0 9px 24px #163b271f}
+.debt-panel{margin:18px 0}.debt-panel .debt-stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+.debt-panel #debtSearch{width:100%;min-height:44px;padding:11px 13px;margin:10px 0 15px;border:1px solid #cbdccb;border-radius:12px;font:inherit}
+.debt-customer{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:17px 2px;border-bottom:1px solid #e0eadf}
+.debt-customer>div:first-child{min-width:0}.debt-customer strong{color:var(--green)}.debt-customer small{display:block;color:var(--mute);font-size:12px;margin:5px 0 8px}
+.debt-orders{display:flex;flex-wrap:wrap;gap:6px}.debt-order{font-size:12px;background:#edf5ed;color:#315943;border-radius:7px;padding:5px 9px}
+.debt-actions{display:flex;flex-direction:column;align-items:flex-end;gap:9px;white-space:nowrap}
+@media(max-width:790px){.debt-panel .debt-stats{grid-template-columns:1fr}.debt-customer{align-items:flex-start;flex-direction:column}.debt-actions{width:100%;flex-direction:row;justify-content:space-between;align-items:center}.debt-actions .btn{min-width:135px}}
+@media(prefers-reduced-motion:reduce){button,a.btn,.season-order-card,[data-season-edit]{transition:none!important}}
