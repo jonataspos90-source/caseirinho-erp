@@ -1,14 +1,15 @@
 {
-  "id": "/central-caseirinho",
-  "name": "Central Caseirinho",
-  "short_name": "Central Caseirinho",
-  "description": "Painel independente de clientes, insights, pedidos e cardápio do Caseirinho Massas Artesanais",
+  "id": "./",
+  "name": "Caseirinho | Central de Gestão",
+  "short_name": "Caseirinho Gestão",
+  "description": "Gestão diária do Caseirinho: pedidos, encomendas, clientes, financeiro e loja.",
   "lang": "pt-BR",
-  "start_url": "/",
-  "scope": "/",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "display_override": [
-    "standalone"
+    "standalone",
+    "minimal-ui"
   ],
   "orientation": "any",
   "background_color": "#f7f5ef",
@@ -19,10 +20,10 @@
   ],
   "icons": [
     {
-      "src": "/icon.svg",
+      "src": "./icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any"
+      "purpose": "any maskable"
     }
   ]
 }
