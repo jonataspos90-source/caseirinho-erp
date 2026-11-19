@@ -2,7 +2,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#183c2e"><meta name="description" content="Central Caseirinho Insights — painel administrativo independente de CRM, acessos, pedidos e cardápio.">
 <title>Central Caseirinho | Gestão e Loja</title>
-<link rel="stylesheet" href="./styles.css?v=20261119-instalacao-direta"><link rel="stylesheet" href="./store-hours-admin.css?v=20261116-1"><link rel="stylesheet" href="./season-virtual-packs.css?v=20261116-virtual1"><link rel="stylesheet" href="./financeiro.css?v=20261110-platform-1">
+<link rel="stylesheet" href="./styles.css?v=20261119-convenios"><link rel="stylesheet" href="./store-hours-admin.css?v=20261116-1"><link rel="stylesheet" href="./season-virtual-packs.css?v=20261116-virtual1"><link rel="stylesheet" href="./financeiro.css?v=20261110-platform-1">
 <link rel="manifest" href="./manifest.webmanifest?v=20261119-central"><link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png"><link rel="apple-touch-icon" href="./icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default">
 <style>.season-images-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;margin-top:12px}.season-image-tile{border:1px solid #c9dfd0;padding:8px;border-radius:10px;background:#f8fbf8}.season-image-tile img{height:100px;width:100%;object-fit:cover;border-radius:7px}.season-image-tile .toolbar{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}.season-image-tile button{padding:6px 8px}</style></head><body>
 <div class="auth-screen" id="loginScreen">
@@ -175,6 +175,21 @@
   <input id="debtSearch" type="search" placeholder="Pesquisar cliente, telefone ou pedido…" aria-label="Pesquisar clientes com saldo" hidden>
   <div id="debtRows"></div>
   <p class="subtitle">Não representa automaticamente dívida vencida. Confira os prazos combinados e os comprovantes antes de cobrar. A conversa pelo WhatsApp só abre após seu clique.</p>
+ </article>
+ <article class="card debt-panel" id="convenioPanel">
+  <div class="section-head"><div><h3>🧾 Convênios, Fiado e Duplicatas</h3>
+   <p>Outra fonte do ERP: parcelas abertas e vencidas, com identificação das que estão vinculadas a pedidos da loja.</p></div>
+   <div class="actions"><button type="button" class="btn primary" id="convenioRefresh">↻ Atualizar convênios</button>
+   <button type="button" class="btn" id="convenioExport" disabled>⬇ Exportar CSV</button></div></div>
+  <div id="convenioNotice" class="notice">Abra Contas e Recebimentos para consultar as duplicatas do ERP.</div>
+  <div class="toolbar"><input type="search" id="convenioSearch" placeholder="Localizar cliente ou pedido…">
+   <select id="convenioFilter"><option value="ALL">Todas com saldo</option><option value="OVERDUE">Somente vencidas</option>
+   <option value="SEPARATE">Sem vínculo com pedido da loja</option><option value="LINKED">Vinculadas à loja — conferir</option></select></div>
+  <div class="grid stats" id="convenioStats"></div>
+  <div id="convenioRows"></div>
+  <p id="convenioIndependent" class="subtitle"></p>
+  <div class="notice"><strong>Atenção:</strong> essas duplicatas não são somadas ao relatório de pedidos do e-commerce nem à DRE.
+   Verifique pagamentos externos, pedidos de teste e possíveis duplicidades antes de entrar em contato para cobrança.</div>
  </article>
  <div class="card">
   <div class="toolbar">
@@ -630,7 +645,7 @@
  </nav>
 <div id="toast" class="toast" role="status" hidden></div>
 <div id="modal" class="modal-bg" hidden><div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><h2 id="modalTitle">Mensagem para WhatsApp</h2><div id="modalContent"></div><div class="toolbar" style="justify-content:flex-end;margin-top:20px"><button class="btn" id="modalClose">Fechar</button></div></div></div>
-<script src="./app.js?v=20261119-instalacao-direta" defer></script>
+<script src="./app.js?v=20261119-convenios" defer></script>
 <script src="./store-hours-admin.js?v=20261116-2" defer></script>
 <script src="./seasonal-merch-admin.js?v=20261117-save-verify1" defer></script>
 <script src="./seasonal-best-deal-admin.js?v=20261116-virtual3" defer></script>
@@ -645,4 +660,5 @@
 <script src="./platform-sales.js?v=20261110-platform-1" defer></script>
 <script src="./conta-cliente-recebimentos.js?v=20261111-2" defer></script>
 <script src="./devedores.js?v=20261119-1" defer></script>
+<script src="./convenios-receber.js?v=20261119-1" defer></script>
 </body></html>
