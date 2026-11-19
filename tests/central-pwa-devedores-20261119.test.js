@@ -28,7 +28,7 @@ test('Service worker preserva privacidade e não quebra instalação por arquivo
  const sw=read('sw.js');
  assert.match(sw,/Promise\.allSettled/);
  assert.match(sw,/request\.mode === 'navigate'/);
- assert.match(sw,/url\.origin !== self\.location\.origin/);
+ assert.match(sw,/url\.origin\s*!==\s*self\.location\.origin/);
  assert.match(sw,/api\|auth\|admin/);
  assert.match(sw,/devedores\.js/);
 });
