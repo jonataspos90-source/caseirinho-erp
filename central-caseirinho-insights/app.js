@@ -331,7 +331,7 @@ function renderOrders(){
  if(window.matchMedia('(max-width:790px)').matches){
   const visibleRows=rows.slice(0,80);
   const more=rows.length>visibleRows.length?'<p class="notice">Exibindo 80 de '+rows.length+' pedidos. Use a busca acima para encontrar os demais.</p>':'';
-  E('ordersTable').innerHTML=visibleRows.length?more+'<div class="mobile-list">'+visibleRows.map(x=>'<article class="mobile-record"><div class="mobile-record-head"><strong>Pedido #'+esc(x.code)+'</strong>'+badge(x.status)+'</div><p><b>'+esc(x.name||'Cliente')+'</b> · '+dt(x.created_at)+'</p><p><b>'+brl(x.total)+'</b> · '+(x.items||[]).length+' item(ns)</p><p>'+badge(x.integration_status)+'</p><p>'+paymentBadge(x)+'</p>'+(potentialDuplicates.has(s(x.code))?'<div class="notice warn" style="font-size:12px;margin:8px 0"><b>⚠️ Possível pedido duplicado</b><br>Confira o pedido nº '+esc(potentialDuplicates.get(s(x.code)))+' antes de finalizar ou receber pagamento. Nenhuma alteração foi feita automaticamente.</div>':'')+'<div class="record-actions">'+orderButton(x)+'</div></article>').join('')+'</div>':cellEmpty('Nenhum pedido encontrado.');
+  E('ordersTable').innerHTML=visibleRows.length?more+'<div class="mobile-list">'+visibleRows.map(x=>'<article class="mobile-record"><div class="mobile-record-head"><strong>Pedido #'+esc(x.code)+'</strong>'+badge(x.status)+'</div><p><b>'+esc(x.name||'Cliente')+'</b> · '+dt(x.created_at)+'</p><p><b>'+brl(x.total)+'</b> · '+orderItemCount(x).products+' produtos · '+orderItemCount(x).units+' unidades</p><p>'+badge(x.integration_status)+'</p><p>'+paymentBadge(x)+'</p>'+(potentialDuplicates.has(s(x.code))?'<div class="notice warn" style="font-size:12px;margin:8px 0"><b>⚠️ Possível pedido duplicado</b><br>Confira o pedido nº '+esc(potentialDuplicates.get(s(x.code)))+' antes de finalizar ou receber pagamento. Nenhuma alteração foi feita automaticamente.</div>':'')+'<div class="record-actions">'+orderButton(x)+'</div></article>').join('')+'</div>':cellEmpty('Nenhum pedido encontrado.');
  }else{
   E('ordersTable').innerHTML=table(['Data','Pedido','Cliente','Itens pedidos','Total','Status / ERP','Pagamento','Ações'],rows.map(x=>'<tr><td>'+dt(x.created_at)+'</td><td><b>'+esc(x.code)+'</b></td><td>'+esc(x.name||'—')+'<br><small>'+esc(tel(x.phone))+'</small></td><td>'+esc((x.items||[]).map(i=>n(i.quantity)+'× '+i.name).join(', '))+'</td><td><b>'+brl(x.total)+'</b></td><td>'+badge(x.status)+'<br>'+badge(x.integration_status)+'</td><td>'+paymentBadge(x)+(potentialDuplicates.has(s(x.code))?'<div class="notice warn" style="font-size:11px">⚠️ Possível duplicado do nº '+esc(potentialDuplicates.get(s(x.code)))+'</div>':'')+'</td><td class="actions-cell">'+orderButton(x)+'</td></tr>'));
  }
@@ -900,19 +900,61 @@ async function saveProduct(e){
  }
  button.disabled=false;button.textContent=original;
 }
+function orderItemCount(order){
+ const rows=Array.isArray(order.items)?order.items:[];
+ return {products:rows.length,units:rows.reduce((sum,x)=>sum+n(x.quantity),0)};
+}
 function itemListHtml(order){
- const lines=(Array.isArray(order.items)?order.items:[]).map(x=>'<tr><td>'+esc(x.name||x.code)+'</td><td>'+n(x.quantity)+'</td><td>'+brl(x.unitPrice)+'</td><td>'+brl(x.total)+'</td></tr>');
- return '<div class="table-wrap"><table class="table"><thead><tr><th>Produto</th><th>Qtde.</th><th>Unitário</th><th>Total</th></tr></thead><tbody>'+lines.join('')+'</tbody></table></div>';
+ const rows=Array.isArray(order.items)?order.items:[];
+ if(!rows.length)return '<p class="notice">Este pedido não tem itens detalhados nesta consulta.</p>';
+ return '<div class="receipt-items">'+rows.map(x=>
+  '<div class="receipt-item"><div class="receipt-item-name">'+esc(x.name||x.code||'Produto')+'</div>'+
+  '<div class="receipt-item-values"><span>'+n(x.quantity)+' unidade(s) × '+brl(x.unitPrice)+'</span><strong>'+brl(x.total)+'</strong></div>'+
+  (n(x.discount)>0?'<small class="receipt-saving">Economia na promoção: '+brl(x.discount)+'</small>':'')+'</div>'
+ ).join('')+'</div>';
+}
+function orderFinancialSummary(order){
+ const rows=Array.isArray(order.items)?order.items:[];
+ const cents=value=>Math.round(n(value)*100);
+ const fromCents=value=>brl(value/100);
+ const paidItems=rows.reduce((sum,x)=>sum+cents(x.total),0);
+ const originalItems=rows.reduce((sum,x)=>sum+cents(n(x.originalTotal)>0?x.originalTotal:n(x.total)+n(x.discount)),0);
+ const original=cents(order.originalSubtotal)>0?cents(order.originalSubtotal):originalItems;
+ const couponKnown=order.couponDiscount!==undefined&&order.couponDiscount!==null;
+ const coupon=cents(order.couponDiscount);
+ const promoSubtotal=paidItems||Math.max(0,original-cents(order.discount));
+ const promoSavings=Math.max(0,original-promoSubtotal);
+ const freight=cents(order.freight),savedTotal=cents(order.total);
+ const estimated=promoSubtotal-coupon+freight;
+ const difference=savedTotal-estimated;
+ const receiptLabel=s(order.paymentStatus).toUpperCase()==='APROVADO'?'Total pago (Mercado Pago)':'Total registrado no pedido';
+ let body='<div class="receipt-money">'+
+  '<div><span>Produtos sem descontos</span><b>'+fromCents(original)+'</b></div>'+
+  (promoSavings?'<div><span>Ofertas e Black Friday (já nos itens)</span><b>− '+fromCents(promoSavings)+'</b></div>':'')+
+  '<div><span>Produtos com ofertas</span><b>'+fromCents(promoSubtotal)+'</b></div>'+
+  (couponKnown&&coupon>0?'<div><span>Cupom '+esc(order.couponCode||'aplicado')+'</span><b>− '+fromCents(coupon)+'</b></div>':'')+
+  '<div><span>'+('RETIRADA'===s(order.modality).toUpperCase()?'Retirada / frete':'Frete')+'</span><b>'+fromCents(freight)+'</b></div>'+
+  '<div class="receipt-total"><span>'+receiptLabel+'</span><strong>'+fromCents(savedTotal)+'</strong></div></div>';
+ if(couponKnown&&rows.length&&Math.abs(difference)>1)
+  body+='<div class="receipt-alert"><b>⚠️ Conferir valores deste pedido</b><p>A soma dos itens, descontos e frete resulta em '+fromCents(estimated)+', diferente do total registrado em '+fromCents(Math.abs(difference))+'. O valor histórico do pedido e o pagamento não foram alterados. Confira a conciliação antes de qualquer ajuste.</p></div>';
+ else if(!couponKnown&&rows.length)
+  body+='<p class="receipt-note">Detalhamento de cupons indisponível nesta versão da API. O total acima é o valor gravado no pedido.</p>';
+ return body;
 }
 function orderDetailsHtml(order){
- return '<p><b>Pedido #'+esc(order.code||'—')+'</b> • '+dt(order.created_at)+'</p>'+
- '<p><b>Cliente:</b> '+esc(order.name||'Não informado')+'<br><b>WhatsApp:</b> '+esc(tel(order.phone))+
- '<br><b>Status:</b> '+esc(order.status||'—')+' · <b>Integração:</b> '+esc(order.integration_status||'—')+
- '<br><b>Pagamento:</b> '+esc(order.payment||'Não informado')+'<br><b>Modalidade:</b> '+esc(order.modality||'—')+'</p>'+
- itemListHtml(order)+
- '<p><b>Subtotal:</b> '+brl(order.subtotal)+'<br><b>Frete:</b> '+brl(order.freight)+
- '<br><b>Desconto promocional informado:</b> '+brl(order.discount)+
- '<br><b>Total do pedido:</b> '+brl(order.total)+'</p>';
+ const counts=orderItemCount(order);
+ return '<section class="order-receipt">'+
+  '<div class="receipt-heading"><h2>Pedido #'+esc(order.code||'—')+'</h2><span>'+esc(order.status||'—')+'</span></div>'+
+  '<p class="receipt-date">Registrado em '+dt(order.created_at)+'</p>'+
+  '<div class="receipt-identification"><p><b>Cliente</b><span>'+esc(order.name||'Não informado')+'</span></p>'+
+  '<p><b>WhatsApp</b><span>'+esc(tel(order.phone))+'</span></p>'+
+  '<p><b>Modalidade</b><span>'+esc(order.modality||'—')+'</span></p>'+
+  '<p><b>Pagamento</b><span>'+esc(order.payment||'Não informado')+'</span></p>'+
+  '<p><b>Integração ERP</b><span>'+esc(order.integration_status||'—')+'</span></p></div>'+
+  '<h3>Itens • '+counts.products+' produtos, '+counts.units+' unidades</h3>'+
+  itemListHtml(order)+
+  '<h3>Resumo financeiro</h3>'+orderFinancialSummary(order)+
+  '<p class="receipt-note">Resumo operacional do Caseirinho. Este documento não é nota fiscal.</p></section>';
 }
 function isMercadoPagoOrder(order){
  return /MERCADO\s*PAGO|MERCADOPAGO/i.test(s(order?.payment))||!!order?.paymentStatus;
@@ -1048,13 +1090,13 @@ function printDocument(title,html){
  const page='<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>'+esc(title)+'</title><style>'+styles+'</style></head><body>'+
  '<header><h1>🍝 Caseirinho Massas Artesanais</h1><h2>'+esc(title)+'</h2><p>Gerado em '+dt(new Date())+' • Central Insights</p></header>'+html+
  '<footer>Uso interno e atendimento. Informações obtidas dos registros do Caseirinho no momento da consulta.</footer></body></html>';
- w.document.open();w.document.write(page);w.document.close();
+ w.document.open();w.document.write(page.replace('</style>','<style>.order-receipt{font-family:Arial,sans-serif;font-size:14px;line-height:1.5;color:#223a2d;max-width:760px;margin:auto}.order-receipt h2{font-size:22px;margin:0}.order-receipt h3{font-size:17px;margin:20px 0 10px}.receipt-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}.receipt-date,.receipt-note{font-size:11px;color:#66756c}.receipt-identification{background:#f5f8f4;padding:12px 16px;border-radius:8px}.receipt-identification p{display:flex;gap:10px;margin:5px 0}.receipt-identification b{min-width:115px}.receipt-item{padding:10px 0;border-bottom:1px solid #dce2da;break-inside:avoid}.receipt-item-name{font-weight:700}.receipt-item-values,.receipt-money>div{display:flex;justify-content:space-between;gap:12px;align-items:baseline}.receipt-item-values{margin-top:4px}.receipt-saving{color:#247047}.receipt-money{margin:10px 0 18px}.receipt-money>div{padding:8px 0;border-bottom:1px solid #dce2da}.receipt-money .receipt-total{font-size:18px;font-weight:800;border-top:2px solid #244936;padding-top:14px}.receipt-alert{border:2px solid #b45309;background:#fffbeb;padding:12px;border-radius:8px}.receipt-alert p{margin-bottom:0}@media print{.receipt-item{page-break-inside:avoid}}'+'</style>'));w.document.close();
  w.focus();setTimeout(()=>{try{w.print();}catch(_){toast('Abra o menu da nova aba e escolha Imprimir → Salvar como PDF.',true)}},450);
 }
 function pdfOrder(code){
  const x=st.orders.find(v=>s(v.code)===s(code))||(window.__customerOrders||[]).find(v=>s(v.code)===s(code));
  if(!x)return toast('Pedido não localizado.',true);
- printDocument('Comprovante do Pedido '+s(x.code),orderDetailsHtml(x));
+ printDocument('Resumo do pedido '+s(x.code),orderDetailsHtml(x));
 }
 function pdfReport(type){
  if(type==='contacts'){
