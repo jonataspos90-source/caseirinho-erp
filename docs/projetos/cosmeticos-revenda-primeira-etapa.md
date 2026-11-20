@@ -1,22 +1,22 @@
 # John Sistemas — Empresa parceira de cosméticos (revenda com estoque próprio)
 
 > **Projeto de implantação, não liberado para vendas.**
-> Nenhuma mudança no tenant existente \`john-default\`, nem em cadastros, pedidos, pagamentos ou DRE do Caseirinho.
+> Nenhuma mudança no tenant existente `john-default`, nem em cadastros, pedidos, pagamentos ou DRE do Caseirinho.
 > Nome da marca, CNPJ, responsável financeiro, conta PIX e dados fiscais ainda não foram informados/confirmados.
 
 ## Modelo de negócio
 A empresa parceira compra seus produtos, mantém estoque próprio e os revende em uma loja independente. 
 A Central John Sistemas funciona como plataforma de administração multiempresa, **não** como base financeira única.
 
-- **Empresa 1:** \`caseirinho\` — alimentação, regras de encomenda, produção e cashback atuais.
-- **Empresa 2:** tenant novo (slug provisório \`cosmeticos-parceira\`), vertical \`COSMETICOS\`; ainda **não criado em produção**.
+- **Empresa 1:** `caseirinho` — alimentação, regras de encomenda, produção e cashback atuais.
+- **Empresa 2:** tenant novo (slug provisório `cosmeticos-parceira`), vertical `COSMETICOS`; ainda **não criado em produção**.
 - **Gestão:** mesmo portal administrativo, autenticação separada por empresa e permissão explícita de suporte/gestão pelo proprietário da plataforma.
 - **Loja:** repositório e endereço web próprios; jamais importar automaticamente banco/carrinho dos clientes Caseirinho.
 - **Não misturar:** nome fantasia, CNPJ emissor, PIX, Mercado Pago, estoque, compras, lotes, preços, pedidos, clientes, cashback, cupons, fretes, DRE, notas fiscais e arquivos de imagem.
 - **Visão consolidada:** apenas relatório agregado autorizado, com origem por empresa e separação dos saldos contábeis.
 
 ## Arquitetura proposta
-\`\`\`text
+```text
 Central John Sistemas (portal de gestão multiempresa)
   ├── Caseirinho (tenant john-default, /?empresa=caseirinho)
   │     └── Loja Caseirinho [repositório e domínio atuais]
@@ -30,9 +30,9 @@ Central John Sistemas (portal de gestão multiempresa)
                   ├── ERP compras, entradas, estoque, vendas
                   ├── lotes, datas de validade, custo médio
                   └── financeiro, caixa, DRE, relatórios
-\`\`\`
+```
 
-Não usar token, cookie, localStorage ou nome de usuário do Caseirinho na nova loja. O parâmetro \`empresa\` identifica apenas a loja pública: **a API determina a empresa pelo token assinado**, nunca por campo editável enviado pelo cliente.
+Não usar token, cookie, localStorage ou nome de usuário do Caseirinho na nova loja. O parâmetro `empresa` identifica apenas a loja pública: **a API determina a empresa pelo token assinado**, nunca por campo editável enviado pelo cliente.
 
 ## Módulos por prioridade
 
@@ -61,15 +61,15 @@ Não usar token, cookie, localStorage ou nome de usuário do Caseirinho na nova 
 - Indicadores comparativos multiempresa sem exposição de dados entre empresas.
 
 ## Esquema de dados recomendado
-Manter as tabelas genéricas existentes com \`tenant_id\`, protegidas por RLS. Não clonar tabelas comuns por marca.
+Manter as tabelas genéricas existentes com `tenant_id`, protegidas por RLS. Não clonar tabelas comuns por marca.
 Campos específicos permanecem em payloads compatíveis com ERP e, para operações transacionais, usar tabelas especializadas:
 
-- \`cosmetic_product_variants\`: tenant_id, sku, product_id, cor, tonalidade, fragrancia, volume, marca, gtin, status_regulatorio.
-- \`cosmetic_stock_lots\`: tenant_id, id, sku, lote, validade, recebido_em, quantidade_recebida, quantidade_disponivel, custo_unitario, bloqueado, fornecedor_id, nf_entrada.
-- \`cosmetic_stock_movements\`: tenant_id, id, sku, lote_id, tipo, quantidade, referencia, ocorrido_em, usuario_id, chave_idempotencia.
+- `cosmetic_product_variants`: tenant_id, sku, product_id, cor, tonalidade, fragrancia, volume, marca, gtin, status_regulatorio.
+- `cosmetic_stock_lots`: tenant_id, id, sku, lote, validade, recebido_em, quantidade_recebida, quantidade_disponivel, custo_unitario, bloqueado, fornecedor_id, nf_entrada.
+- `cosmetic_stock_movements`: tenant_id, id, sku, lote_id, tipo, quantidade, referencia, ocorrido_em, usuario_id, chave_idempotencia.
 
 **Sem movimento físico sem pedido ou documento:** venda reserva item; confirmação operacional emite saída; cancelamento estorna; devolução registra entrada correspondente e conserva vínculo ao lote.
-**Sem overselling:** confirmação e reserva de lotes em transação com lock \`FOR UPDATE\`, sempre verificando tenant e saldo.
+**Sem overselling:** confirmação e reserva de lotes em transação com lock `FOR UPDATE`, sempre verificando tenant e saldo.
 **Sem registro duplicado:** índice único por empresa + chave idempotente de operação.
 **Sem itens vencidos:** regra da API consulta lote válido e saldo; frontend apenas exibe o resultado. 
 Regras fiscais e permissões sanitárias devem ser confirmadas para o estabelecimento antes da abertura comercial.
@@ -77,10 +77,10 @@ Regras fiscais e permissões sanitárias devem ser confirmadas para o estabeleci
 ## Primeira etapa de implantação — segura
 - [x] Análise do multi-tenant existente na API e ERP.
 - [x] RLS presente e forçado em tabelas comerciais existentes.
-- [x] Criada branch técnica isolada \`feature/cosmeticos-revenda-fundacao\` na API e Central.
+- [x] Criada branch técnica isolada `feature/cosmeticos-revenda-fundacao` na API e Central.
 - [x] Contrato de SKU/lote/cadastro e checagem de elegibilidade de venda criado em branch de teste.
 - [x] Endpoint público de loja inexistente configurado para falhar com 404 (branch; não afetou produção).
-- [ ] Criar novo repositório privado \`cosmeticos-loja\` e implantar a loja em domínio separado.
+- [ ] Criar novo repositório privado `cosmeticos-loja` e implantar a loja em domínio separado.
 - [ ] Confirmar marca comercial, dados fiscais, checkout, proprietário legal e permissões da parceria.
 - [ ] Criar tenant dedicado via mecanismo seguro de plataforma (loja nasce **desativada** e vazia).
 - [ ] Criar MASTER da empresa com token de bootstrap individual (jamais fornecer token do Caseirinho).
