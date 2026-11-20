@@ -435,3 +435,28 @@ button:disabled{cursor:not-allowed!important}
 /* Contas a receber: duplicatas separadas dos pedidos da loja. */
 .convenio-document{display:flex;flex-wrap:wrap;align-items:center;gap:9px;padding:9px 0;border-bottom:1px dashed #d8e4dc;font-size:12px}.convenio-document>b{color:#183c2e;margin-left:auto}.convenio-document .badge{white-space:normal}
 @media(max-width:600px){.convenio-document{align-items:flex-start;flex-direction:column}.convenio-document>b{margin-left:0}}
+
+/* Comprovante operacional legível em telas pequenas, sem rolagem horizontal */
+.order-receipt{font-size:14px;line-height:1.55;color:var(--ink);min-width:0}
+.order-receipt h2{font-size:22px;margin:0}
+.order-receipt h3{font-size:17px;margin:19px 0 10px}
+.receipt-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.receipt-heading span{font-size:12px;font-weight:800;padding:5px 9px;border-radius:18px;background:#e9f4ea}
+.receipt-date,.receipt-note{font-size:12px;color:#68776c}
+.receipt-identification{background:#f4f8f4;padding:12px;border-radius:10px}
+.receipt-identification p{display:flex;gap:10px;flex-wrap:wrap;margin:6px 0}
+.receipt-identification b{min-width:102px}
+.receipt-identification span{flex:1;overflow-wrap:anywhere}
+.receipt-items{border-top:1px solid #dce2da}
+.receipt-item{padding:11px 0;border-bottom:1px solid #dce2da}
+.receipt-item-name{font-weight:750}
+.receipt-item-values{display:flex;justify-content:space-between;gap:12px;margin-top:3px}
+.receipt-item-values strong{white-space:nowrap}
+.receipt-saving{display:block;color:#237446;font-weight:700;margin-top:4px}
+.receipt-money>div{display:flex;justify-content:space-between;gap:14px;align-items:baseline;padding:8px 0;border-bottom:1px solid #dce2da}
+.receipt-money>div span{flex:1}
+.receipt-money>div b,.receipt-money>div strong{white-space:nowrap}
+.receipt-money .receipt-total{border-top:2px solid #244936;font-size:18px;font-weight:800;padding-top:13px}
+.receipt-alert{background:#fff9e8;border:2px solid #bd8529;border-radius:10px;padding:13px}
+.receipt-alert p{margin-bottom:0}
+@media(max-width:520px){.receipt-identification p{display:block}.receipt-identification b{display:block;font-size:11px}.receipt-money .receipt-total{font-size:16px}}
