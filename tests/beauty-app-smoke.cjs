@@ -1,0 +1,47 @@
+'use strict';
+const {chromium}=require('playwright');
+const assert=require('node:assert/strict');
+(async()=>{
+ const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+ const errors=[];
+ try{
+  const context=await browser.newContext({viewport:{width:390,height:840},isMobile:true,deviceScaleFactor:1});
+  const page=await context.newPage();
+  page.on('pageerror',e=>errors.push(e.message));
+  const external=[];
+  page.on('request',req=>{const u=req.url();if(/\/api\/v1\/|\/orders|\/checkout|mercadopago/i.test(u))external.push(u)});
+  await page.goto('http://127.0.0.1:8080/lojas/cosmeticos/',{waitUntil:'domcontentloaded'});
+  await page.locator('#beautyIdentity').waitFor({state:'visible'});
+  assert.equal(await page.locator('body').evaluate(e=>e.classList.contains('beauty-locked')),true);
+  assert.equal(await page.locator('#beautyPixDemo').count(),1);
+  await page.locator('#beautyName').fill('Cliente Teste');
+  await page.locator('#beautyPhone').fill('11987654321');
+  await page.locator('#beautyForm button[type=submit]').click();
+  assert.match(await page.locator('#beautyIdentityStatus').textContent(),/Política de Privacidade/);
+  await page.locator('#beautyConsent').check();
+  await page.locator('#beautyForm button[type=submit]').click();
+  await page.locator('#beautyIdentity').waitFor({state:'hidden'});
+  assert.equal(await page.locator('body').evaluate(e=>e.classList.contains('beauty-locked')),false);
+  await page.locator('#tabs [data-page=catalogo]').click();
+  await page.locator('#products .product').first().waitFor({state:'visible'});
+  assert.ok(await page.locator('#products .product-image svg').count()>=5,'Produtos devem usar fotos/arte de catálogo no lugar de emojis');
+  await page.locator('#products .product').first().click();
+  await page.locator('#detail').waitFor({state:'visible'});
+  await page.locator('#detailClose').click();
+  await page.locator('.headright .beauty-user-btn',{hasText:'Como será o PIX'}).click();
+  await page.locator('#beautyPixDemo').waitFor({state:'visible'});
+  assert.equal(await page.locator('#beautyPixDemo .pix-demo-disabled').isDisabled(),true);
+  assert.match(await page.locator('#beautyPixDemo').textContent(),/Nenhum PIX é gerado ou cobrado/);
+  await page.locator('#beautyPixDemo [data-close-pix]').click();
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.locator('#beautyIdentity').waitFor({state:'hidden'});
+  const manifest=await page.request.get('http://127.0.0.1:8080/lojas/cosmeticos/manifest.webmanifest');
+  const data=await manifest.json();
+  assert.equal(data.scope,'./');
+  assert.ok(data.icons.some(x=>x.sizes==='192x192'));
+  assert.ok(data.icons.some(x=>x.sizes==='512x512'));
+  assert.deepEqual(external,[],'Prévia nunca envia pedido ou pagamento');
+  assert.deepEqual(errors,[],'Nenhum erro de runtime JS');
+  console.log('PASS: gate, identificação, produtos, modal, PIX sem cobrança, recarga, PWA independente');
+ }finally{await browser.close()}
+})().catch(e=>{console.error(e);process.exitCode=1});
