@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "company": "beauty",
+  "companyName": "Sua Marca Beauty",
+  "salesEnabled": false,
+  "checkoutEnabled": false,
+  "publishedAt": null,
+  "categories": [],
+  "products": [],
+  "campaigns": [],
+  "payment": {
+    "pixConfigured": false
+  }
+}
