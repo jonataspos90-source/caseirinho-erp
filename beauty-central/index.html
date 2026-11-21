@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="pt-BR"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#784b63">
+<meta name="robots" content="noindex,nofollow">
+<title>Beauty Central | Gestão de Cosméticos</title>
+<link rel="icon" href="../lojas/cosmeticos/icon-192.png" type="image/png">
+<link rel="stylesheet" href="./style.css?v=1">
+</head>
+<body>
+<div class="app">
+<aside class="sidebar" id="sidebar">
+  <div class="side-brand"><span class="brand-symbol">B</span><span><strong>Beauty Central</strong><small>Gestão independente</small></span></div>
+  <nav id="moduleNav" aria-label="Módulos de gestão">
+    <button data-module="dashboard" class="active">◫ <span>Visão geral</span></button>
+    <button data-module="products">▣ <span>Produtos e preços</span></button>
+    <button data-module="categories">▦ <span>Categorias</span></button>
+    <button data-module="stock">◈ <span>Estoque e lotes</span></button>
+    <button data-module="purchases">◉ <span>Compras e fornecedores</span></button>
+    <button data-module="orders">♢ <span>Pedidos e vendas</span></button>
+    <button data-module="customers">♧ <span>Clientes e CRM</span></button>
+    <button data-module="marketing">✧ <span>Ofertas e kits</span></button>
+    <button data-module="finance">▥ <span>Financeiro e DRE</span></button>
+    <button data-module="reports">▤ <span>Relatórios</span></button>
+    <button data-module="settings">⚙ <span>Configurações</span></button>
+  </nav>
+  <div class="side-foot">Empresa Beauty · rascunho local<br>Nenhum vínculo com dados do Caseirinho</div>
+</aside>
+<div class="main-layout">
+<header class="topbar">
+ <button id="menuToggle" class="menu-toggle" type="button" aria-label="Abrir módulos">☰</button>
+ <div class="top-title"><strong>Beauty Central</strong><small>Empresa de cosméticos · revenda com estoque próprio</small></div>
+ <div class="top-actions"><a class="link-btn" href="../lojas/cosmeticos/?preview=central" target="_blank" rel="noopener noreferrer">Ver vitrine ↗</a><span class="top-avatar">B</span></div>
+</header>
+<main class="content">
+<section id="dashboard" class="module active">
+ <div class="heading"><div><span class="eyebrow">PAINEL BEAUTY</span><h1>Seu negócio, com mais controle.</h1><p>Cadastros iniciais separados dos dados do Caseirinho.</p></div><button type="button" class="primary" data-module="products">+ Cadastrar produto</button></div>
+ <div class="warning"><strong>Ambiente de preparação de cadastros</strong><span>As alterações são armazenadas somente neste navegador. Não há login administrativo, API, sincronização entre aparelhos nem vendas habilitadas. Exporte o backup antes de trocar de dispositivo.</span></div>
+ <div class="stats" id="dashboardStats"></div>
+ <div class="panel"><h2>Como colocar a Beauty em operação</h2>
+  <div class="steps"><div><strong>1. Identidade</strong><span>Confirmar nome comercial, responsável e dados fiscais</span></div><div><strong>2. Cadastro</strong><span>Categorias, produtos, fotos, custo, preço, lote e estoque</span></div><div><strong>3. Integração segura</strong><span>Banco próprio, login, API, PIX e políticas comerciais da empresa</span></div><div><strong>4. Homologação</strong><span>Testar pedidos, pagamentos, estoque, devolução e conciliação</span></div></div>
+ </div>
+</section>
+<section id="products" class="module">
+ <div class="heading"><div><span class="eyebrow">CATÁLOGO</span><h1>Produtos e preços</h1><p>Organize cada SKU, categoria, custo, foto e estoque próprio.</p></div><button type="button" class="primary" id="newProduct">+ Novo produto</button></div>
+ <div class="panel"><div class="tools"><input type="search" id="productSearch" placeholder="Buscar nome, SKU ou marca..." aria-label="Pesquisar produtos"><select id="productCategoryFilter" aria-label="Filtrar categoria"></select></div><div class="table-wrap"><table><thead><tr><th>Produto</th><th>Categoria</th><th>Custo</th><th>Preço</th><th>Saldo</th><th>Situação</th><th>Ações</th></tr></thead><tbody id="productRows"></tbody></table></div></div>
+</section>
+<section id="categories" class="module">
+ <div class="heading"><div><span class="eyebrow">VITRINE</span><h1>Categorias da loja</h1><p>Uma categoria só aparece para o cliente quando possui produto liberado e com estoque.</p></div><button type="button" class="primary" id="newCategory">+ Nova categoria</button></div>
+ <div class="category-grid" id="categoryRows"></div>
+</section>
+<section id="stock" class="module">
+ <div class="heading"><div><span class="eyebrow">CONTROLE DE ESTOQUE</span><h1>Saldo e validade</h1><p>Conferência preliminar por SKU. Movimentações e rastreabilidade exigem o futuro banco transacional.</p></div></div>
+ <div class="panel"><div class="table-wrap"><table><thead><tr><th>Produto</th><th>Lote informado</th><th>Validade</th><th>Quantidade</th><th>Alerta</th><th>Ação</th></tr></thead><tbody id="stockRows"></tbody></table></div></div>
+</section>
+<section id="purchases" class="module"><div class="heading"><div><span class="eyebrow">SUPRIMENTOS</span><h1>Compras e fornecedores</h1></div></div><div class="coming"><strong>Fluxo planejado</strong><p>Cadastro de fornecedores, pedidos de compra, notas fiscais, entrada por lote e custo médio. Precisa de controle de acesso e banco exclusivo antes do uso operacional.</p></div></section>
+<section id="orders" class="module"><div class="heading"><div><span class="eyebrow">COMERCIAL</span><h1>Pedidos e vendas</h1></div></div><div class="coming"><strong>Pedidos reais ainda não habilitados</strong><p>O checkout ficará ligado à API Beauty, com reserva de estoque, idempotência, pagamento e histórico por cliente. Nenhum pedido do Caseirinho será compartilhado.</p></div></section>
+<section id="customers" class="module"><div class="heading"><div><span class="eyebrow">RELACIONAMENTO</span><h1>Clientes e CRM</h1></div></div><div class="coming"><strong>Cadastro em preparação</strong><p>Identificação por nome e telefone, consentimento, histórico, favoritos e campanhas. Os dados dos clientes exigem armazenamento protegido e autenticação; não são mantidos nesta Central de rascunhos.</p></div></section>
+<section id="marketing" class="module"><div class="heading"><div><span class="eyebrow">CAMPANHAS</span><h1>Ofertas, kits e combos</h1></div></div><div class="coming"><strong>Próximo módulo</strong><p>Descontos por período, kits que consomem estoque de cada SKU, campanhas por categoria e cupons exclusivos da Beauty.</p></div></section>
+<section id="finance" class="module"><div class="heading"><div><span class="eyebrow">FINANÇAS</span><h1>Financeiro e DRE</h1></div></div><div class="coming"><strong>Independente por empresa</strong><p>Contas a pagar/receber, conciliação PIX, taxas, CMV, margem e DRE. Nenhum valor é importado do Caseirinho. Para registrar lançamentos reais é necessária a API da Beauty com autenticação e auditoria.</p></div></section>
+<section id="reports" class="module"><div class="heading"><div><span class="eyebrow">INDICADORES</span><h1>Relatórios</h1></div></div><div class="stats" id="reportStats"></div><div class="coming"><strong>Indicadores preliminares</strong><p>Os cards utilizam apenas os produtos cadastrados neste dispositivo. ABC, vendas, lucratividade e estoque valorizado reais dependerão de operações sincronizadas no banco independente.</p></div></section>
+<section id="settings" class="module">
+ <div class="heading"><div><span class="eyebrow">IDENTIDADE E DADOS</span><h1>Configurações Beauty</h1><p>Sem acesso à Central ou às credenciais do Caseirinho.</p></div></div>
+ <div class="panel"><h2>Marca provisória</h2><label>Nome da loja<input id="storeName" type="text" maxlength="100" placeholder="Nome da marca de cosméticos"></label><button type="button" class="primary" id="saveSettings">Salvar nome neste dispositivo</button></div>
+ <div class="panel"><h2>Backup e publicação</h2><p class="muted">Faça backup dos rascunhos. O arquivo JSON permite futura migração para a API Beauty. <strong>Exportar não publica na internet.</strong></p><div class="tools"><button type="button" class="secondary" id="exportData">⬇ Exportar backup JSON</button><label class="secondary file-label">⬆ Importar backup JSON<input type="file" id="importData" accept=".json,application/json" hidden></label><button type="button" class="secondary" id="exportPublic">Preparar catálogo publicável</button></div></div>
+ <div class="warning"><strong>Condições antes de receber vendas</strong><span>Empresa registrada; banco e API próprios; usuários com permissões; estoque por lote; domínio da marca; emissor e titular do PIX definidos; teste de checkout e conciliação aprovados.</span></div>
+</section>
+</main></div></div>
+<dialog id="categoryDialog"><form id="categoryForm" class="editor"><div class="modal-head"><h2>Categoria</h2><button type="button" data-close="categoryDialog" aria-label="Fechar">×</button></div><input type="hidden" name="previousId"><label>Nome da categoria<input name="name" required maxlength="50" placeholder="Ex.: Perfumes"></label><label>Ícone ou emoji<input name="icon" maxlength="8" placeholder="🌷"></label><label class="checkline"><input name="active" type="checkbox" checked> Categoria ativa</label><div class="modal-actions"><button class="secondary" type="button" data-close="categoryDialog">Cancelar</button><button class="primary" type="submit">Salvar categoria</button></div><p class="form-error" role="status"></p></form></dialog>
+<dialog id="productDialog"><form id="productForm" class="editor"><div class="modal-head"><h2>Cadastro de produto</h2><button type="button" data-close="productDialog" aria-label="Fechar">×</button></div>
+<input type="hidden" name="previousId">
+<div class="editor-grid">
+<label>Nome do produto<input name="name" required maxlength="120" placeholder="Ex.: Batom Rosa 01"></label>
+<label>SKU / Código<input name="id" required maxlength="70" placeholder="Ex.: BT-ROSA-01"></label>
+<label>Categoria<select name="categoryId" required id="productCategory"></select></label>
+<label>Marca<input name="brand" maxlength="100" placeholder="Marca do produto"></label>
+<label>Custo unitário (R$)<input name="cost" type="number" min="0" step="0.01" inputmode="decimal"></label>
+<label>Preço de venda (R$)<input name="price" type="number" min="0" step="0.01" inputmode="decimal"></label>
+<label>Saldo para conferência<input name="stock" type="number" min="0" step="1" inputmode="numeric"></label>
+<label>Número do lote<input name="lot" maxlength="80"></label>
+<label>Validade<input name="expiry" type="date"></label>
+<label>Regularização<select name="regularization"><option value="PENDENTE_VERIFICACAO">Pendente de verificação</option><option value="VERIFICADO">Verificada</option><option value="BLOQUEADO">Bloqueada</option></select></label>
+<label>Cor / tonalidade<input name="shade" maxlength="60"></label>
+<label>Volume / tamanho<input name="volume" maxlength="60"></label>
+<label>Imagem por URL HTTPS<input name="image" type="url" placeholder="https://..." maxlength="1500"></label>
+<label>Enviar foto para prévia local<input id="productPhotoFile" type="file" accept="image/png,image/jpeg,image/webp"></label>
+</div>
+<label>Descrição<textarea name="description" maxlength="400" rows="3"></textarea></label>
+<label class="checkline"><input name="active" type="checkbox" checked> Produto ativo</label>
+<label class="checkline"><input name="published" type="checkbox"> Pronto para pré-visualização (não publica na loja)</label>
+<div class="modal-actions"><button class="secondary" type="button" data-close="productDialog">Cancelar</button><button class="primary" type="submit">Salvar produto</button></div><p class="form-error" role="status"></p>
+</form></dialog>
+<div class="toast" role="status" aria-live="polite" id="toast"></div>
+<script src="./app.js?v=1" defer></script>
+</body></html>
