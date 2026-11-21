@@ -1,0 +1,163 @@
+/* Beauty App — mobile-first refinement, November 2026.
+   Loaded AFTER legacy inline styles so small-screen proportions are deterministic. */
+.beauty-header-tools{display:flex;align-items:center;gap:7px;min-width:0}
+.beauty-header-tools .beauty-quickactions{display:flex;align-items:center;gap:7px;min-width:0}
+.beauty-header-tools .beauty-user-btn,
+.beauty-header-tools #beautyInstall{white-space:nowrap;min-height:38px}
+.brand{min-width:0}
+.brand>span:last-child{min-width:0}
+@media(max-width:700px){
+  html,body{width:100%;max-width:100%;overflow-x:clip}
+  body{padding-bottom:14px}
+  .demo{padding:7px 12px;font-size:10px;line-height:1.3;letter-spacing:.01em}
+  .header{z-index:30}
+  .header-inner{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) 42px;
+    grid-template-rows:auto auto;
+    column-gap:8px;row-gap:7px;
+    align-items:center;
+    width:100%;padding:9px 12px 8px;gap:7px 8px;
+  }
+  .brand{grid-column:1;grid-row:1;min-width:0;display:flex;align-items:center;gap:9px}
+  .monogram{width:39px;height:39px;min-width:39px;border-radius:11px;font-size:23px}
+  .brand strong{display:block;font-size:17px;line-height:1.06;letter-spacing:-.025em;max-width:100%;overflow-wrap:break-word}
+  .brand small{display:block;font-size:9px;line-height:1.24;letter-spacing:.075em;margin-top:3px}
+  .headright{display:contents}
+  .headright>.cart{
+    grid-column:2;grid-row:1;justify-self:end;align-self:center;
+    width:40px;height:40px;min-width:40px;padding:0;font-size:19px;border-radius:11px;
+  }
+  .headright>.pill-link{display:none!important}
+  .headright>.beauty-header-tools{
+    grid-column:1/-1;grid-row:2;
+    display:flex;align-items:stretch;width:100%;gap:7px;min-width:0;
+  }
+  .beauty-header-tools>#beautyInstall.ready{display:flex;align-items:center;justify-content:center}
+  .beauty-header-tools>#beautyInstall:not(.ready){display:none!important}
+  .beauty-header-tools>#beautyInstall,
+  .beauty-header-tools>button[data-beauty-pix],
+  .beauty-header-tools>.beauty-quickactions{
+    flex:1 1 0;min-width:0;
+  }
+  .beauty-header-tools .beauty-quickactions{display:flex;align-items:stretch;gap:0}
+  .beauty-header-tools .beauty-welcome{display:none}
+  .beauty-header-tools .beauty-user-btn,
+  .beauty-header-tools #beautyInstall{
+    display:flex;align-items:center;justify-content:center;
+    width:100%;height:38px;min-height:38px;line-height:1.1;
+    padding:7px 8px;font-size:12px;font-weight:800;text-align:center;
+    border-radius:10px;
+  }
+  .tabs{
+    display:flex;flex-wrap:nowrap;align-items:center;
+    gap:6px;max-width:100%;width:100%;
+    overflow-x:auto;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;
+    scrollbar-width:none;padding:5px 12px 10px;
+  }
+  .tabs::-webkit-scrollbar{display:none}
+  .tabs button{flex:0 0 auto;min-height:37px;padding:8px 13px;white-space:nowrap;font-size:12px;line-height:1.2;border-radius:999px}
+  main{width:100%;max-width:100%;padding:13px 12px 30px}
+  .hero{
+    display:flex;align-items:flex-start;
+    min-height:298px;height:auto;
+    padding:24px 19px 22px;
+    border-radius:18px;overflow:hidden;
+  }
+  .hero-copy{width:100%;max-width:100%;position:relative;z-index:2}
+  .hero .eyebrow{display:block;max-width:88%;font-size:9px;letter-spacing:.12em;line-height:1.25}
+  .hero h1{
+    max-width:100%;
+    font-size:clamp(29px,8vw,36px);
+    line-height:1.05;letter-spacing:-.055em;
+    margin:10px 0 10px;
+  }
+  .hero p{
+    max-width:236px;font-size:13px;line-height:1.43;
+    margin:0 0 13px;
+  }
+  .hero .primary{
+    min-height:40px;max-width:230px;
+    padding:10px 13px;font-size:12px;line-height:1.2;
+    border-radius:9px;margin:0;
+  }
+  .hero-art{
+    width:126px;height:126px;
+    top:auto;bottom:-5px;right:-4px;
+    opacity:.72;transform:none;pointer-events:none;
+  }
+  .hero-art svg{width:100%;height:100%}
+  .section{margin:24px 0 27px}
+  .section-header{margin-bottom:13px;gap:9px}
+  .section h2,.page-title h1{font-size:clamp(22px,5.8vw,28px);line-height:1.18;margin:5px 0}
+  .section-header p,.page-title p{font-size:12px;line-height:1.4}
+  .eyebrow{font-size:9px;letter-spacing:.13em}
+  .categories{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  .category{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:7px;min-width:0;min-height:104px;
+    padding:10px 4px;border-radius:13px;font-size:11px;line-height:1.18;
+    overflow-wrap:anywhere;text-align:center;
+  }
+  .category span{width:47px;height:47px;flex:none;font-size:25px;margin:0;border-radius:50%}
+  .feature{padding:19px 16px;margin:24px 0;border-radius:16px;gap:8px}
+  .feature strong{font-size:21px;line-height:1.2}
+  .feature p{font-size:12px;line-height:1.42}
+  .feature span{font-size:33px}
+  .feature button{padding:10px 14px;font-size:12px;border-radius:9px}
+  .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+  .product{min-width:0;border-radius:12px}
+  .product-image{height:145px;min-height:0}
+  .product-image svg{width:87%;height:86%}
+  .product-info{min-width:0;gap:5px;padding:10px}
+  .product-info strong{font-size:15px;line-height:1.18}
+  .product-info small{font-size:9px;line-height:1.2}
+  .product-info em{font-size:11px;line-height:1.35}
+  .product-info b{font-size:11px}
+  .tools{gap:10px}
+  .searchbar{min-width:0;flex-basis:100%;height:44px;padding:8px 12px}
+  .filters{width:100%;gap:6px}
+  .filters button{flex:0 0 auto;padding:9px 12px;font-size:11px}
+  .page-title{padding:20px 7px 12px}
+  .page-title h1{font-size:28px}
+  .beauty-safety-strip{gap:6px;margin-top:15px}
+  .beauty-safety-strip span{font-size:10px;padding:8px 9px}
+  .kits{grid-template-columns:1fr;gap:10px}
+  .kit{padding:20px}
+  .bottom{padding:22px 14px}
+  .pix-demo-dialog{width:min(96vw,450px);max-height:92dvh}
+  .pix-demo-content{padding:14px}
+  .pix-demo-dialog h3{font-size:23px;line-height:1.2}
+  .pix-demo-top{padding:12px 16px}
+  .beauty-gate-form h2{font-size:27px}
+  .beauty-gate-form{padding:20px 22px 22px}
+}
+@media(max-width:360px){
+  .header-inner{grid-template-columns:minmax(0,1fr) 40px;padding:9px 10px 7px;row-gap:6px}
+  .brand strong{font-size:15px}
+  .brand small{font-size:8px;letter-spacing:.05em}
+  .beauty-header-tools .beauty-user-btn,
+  .beauty-header-tools #beautyInstall{font-size:11px;padding:7px 5px}
+  .tabs{padding-inline:10px}
+  .tabs button{font-size:11px;padding:8px 12px}
+  main{padding-inline:10px}
+  .hero{min-height:285px;padding:20px 16px 18px}
+  .hero h1{font-size:29px}
+  .hero p{max-width:214px;font-size:12px}
+  .hero .primary{padding:10px 11px;font-size:11px}
+  .hero-art{width:102px;height:102px}
+  .categories{gap:6px}
+  .category{min-height:98px;font-size:10px;padding:9px 4px}
+  .category span{width:44px;height:44px;font-size:23px}
+  .product-image{height:126px}
+  .product-info strong{font-size:14px}
+}
+@media(min-width:701px) and (max-width:950px){
+  .header-inner{gap:12px}
+  .headright{gap:6px}
+  .beauty-header-tools .beauty-user-btn,
+  .beauty-header-tools #beautyInstall{font-size:11px;padding:8px}
+  .brand strong{font-size:18px}
+  .hero{min-height:365px}
+  .hero-art{width:245px;height:245px;right:2%}
+}
