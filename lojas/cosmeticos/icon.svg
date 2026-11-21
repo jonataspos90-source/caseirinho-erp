@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Sua Marca Beauty">
+<rect width="512" height="512" rx="116" fill="#815268"/>
+<circle cx="256" cy="246" r="191" fill="#f9eeed" stroke="#d4acaa" stroke-width="8"/>
+<path d="M256 130c-66-82-115-21-89 40-87-38-119 40-51 80-71 46-26 116 51 93-8 82 79 96 92 24 58 62 123-1 80-69 82 2 94-85 21-107 46-63-20-113-82-70z" fill="#c98eaa"/>
+<path d="M256 154c-42-56-78-7-56 40-58-23-75 24-29 51-47 34-15 79 37 56-7 50 44 67 55 19 40 45 85 1 55-43 54 3 65-56 12-72 31-44-11-76-52-51z" fill="#f4d6dc"/>
+<circle cx="256" cy="241" r="44" fill="#be9363" stroke="#fdf4d9" stroke-width="13"/>
+<path d="M254 336v48m0-21c-41-47-70-24-81-8m81 15c38-43 66-21 75-4" fill="none" stroke="#64795a" stroke-width="12" stroke-linecap="round"/>
+</svg>
