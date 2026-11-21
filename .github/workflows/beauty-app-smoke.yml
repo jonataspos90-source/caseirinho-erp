@@ -1,0 +1,36 @@
+name: Beauty App - Teste real no navegador
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'lojas/cosmeticos/**'
+      - 'tests/beauty-app-smoke.cjs'
+      - '.github/workflows/beauty-app-smoke.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'lojas/cosmeticos/**'
+      - 'tests/beauty-app-smoke.cjs'
+      - '.github/workflows/beauty-app-smoke.yml'
+jobs:
+  browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar Chromium isolado
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.58.2
+          npx playwright install --with-deps chromium
+      - name: Servidor local somente de demonstração
+        run: |
+          python3 -m http.server 8080 --bind 127.0.0.1 >/tmp/beauty-demo.log 2>&1 &
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            if curl --fail --silent http://127.0.0.1:8080/lojas/cosmeticos/ >/dev/null; then break; fi
+            sleep 1
+          done
+      - name: Validar app, cadastro, PWA e segurança de pagamentos
+        run: node tests/beauty-app-smoke.cjs
