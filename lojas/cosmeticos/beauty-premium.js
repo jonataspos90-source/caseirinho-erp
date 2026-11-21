@@ -1,4 +1,4 @@
-/* Beauty Premium — PWA de demonstração independente. Sem API, sem pagamentos. */
+/* Beauty storefront — cadastro local de entrada. Checkout indisponível até empresa habilitada. */
 (()=>{
 'use strict';
 const $=id=>document.getElementById(id);
@@ -24,7 +24,7 @@ function hidePersonalData(){
 function activate(p){
  document.body.classList.remove('beauty-locked');
  const gate=$('beautyIdentity');if(gate)gate.hidden=true;
- $('beautyUser').textContent='Dados';
+ $('beautyUser').textContent='Alterar meu cadastro';
  $('beautyWelcome').textContent='Olá, '+p.name.split(/\s+/)[0]+'!';
 }
 function gateMarkup(){
@@ -107,24 +107,15 @@ function installApp(){
 }
 function init(){
  gateMarkup();
- const account=document.createElement('button');account.type='button';account.id='beautyUser';account.className='beauty-user-btn';account.textContent='Dados';
+ const account=document.createElement('button');account.type='button';account.id='beautyUser';account.className='beauty-user-btn';account.textContent='Alterar meu cadastro';
  const welcome=document.createElement('span');welcome.id='beautyWelcome';welcome.className='beauty-welcome';
- const row=document.createElement('div');row.className='beauty-quickactions';row.append(welcome,account);
- document.querySelector('.headright')?.prepend(row);
+ const row=document.createElement('div');row.className='beauty-account-area';row.append(welcome,account);
+ const profileSection=document.querySelector('#sobre .notice')||document.querySelector('.bottom');
+ profileSection?.append(row);
  account.onclick=hidePersonalData;
  const prev=profile();if(prev)activate(prev);else hidePersonalData();
- pixDemo();installApp();
- // Agrupa as ações para criar cabeçalho mobile em duas linhas.
- const headerRight=document.querySelector('.headright');
- if(headerRight&&!headerRight.querySelector('.beauty-header-tools')){
-   const actions=document.createElement('div');
-   actions.className='beauty-header-tools';
-   actions.setAttribute('role','group');
-   actions.setAttribute('aria-label','Ações da loja');
-   for(const control of [document.getElementById('beautyInstall'),headerRight.querySelector('[data-beauty-pix]'),row])
-     if(control)actions.append(control);
-   headerRight.insertBefore(actions,headerRight.querySelector('.pill-link')||headerRight.querySelector('.cart')||null);
- }
+ // O PIX aparece somente no checkout real. A prévia não possui checkout habilitado.
+ installApp();
  const hero=document.querySelector('.hero-art');if(hero){hero.innerHTML=bottleSvg('hero');}
  decorateProducts();
  const productGrid=$('products');
