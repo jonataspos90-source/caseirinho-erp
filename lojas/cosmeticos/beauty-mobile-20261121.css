@@ -161,3 +161,13 @@
   .hero{min-height:365px}
   .hero-art{width:245px;height:245px;right:2%}
 }
+
+/* Catálogo próprio: categorias e kits só aparecem quando existe produto publicado. */
+#inicio .section[hidden],#inicio .feature[hidden],#kits .kits[hidden]{display:none!important}
+.beauty-product-photo{width:100%;height:100%;object-fit:contain;display:block;padding:12px}
+.beauty-product-cta{display:block;color:#815268;font-weight:800;font-size:11px;margin-top:2px}
+.beauty-local-preview{margin:0 0 15px;padding:10px 12px;border:1px solid #dcbf78;background:#fff8df;border-radius:9px;font-size:12px;color:#73541e;text-align:center}
+.beauty-account-area{margin:16px auto 0;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
+.beauty-account-area .beauty-user-btn{font-size:12px;padding:10px 14px}
+@media(max-width:700px){.header-inner{grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto;gap:7px;padding:11px 12px}.headright{grid-column:2;grid-row:1;display:flex;align-items:center;gap:7px}.headright>.cart{grid-column:auto;grid-row:auto}.headright #beautyInstall.ready{display:inline-flex;align-items:center;justify-content:center;height:39px;min-height:39px;max-width:110px;padding:6px 9px;font-size:11px}.tabs{padding-top:7px}.page-title{padding:18px 6px 12px}}
+@media(max-width:360px){.headright #beautyInstall.ready{max-width:85px;padding:6px;font-size:10px}.brand strong{font-size:15px}}
