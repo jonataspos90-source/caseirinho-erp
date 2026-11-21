@@ -4,7 +4,9 @@ on:
     branches: [main]
     paths:
       - 'lojas/cosmeticos/**'
+      - 'beauty-central/**'
       - 'tests/beauty-app-smoke.cjs'
+      - 'tests/beauty-central-smoke.cjs'
       - '.github/workflows/beauty-app-smoke.yml'
   pull_request:
     branches: [main]
@@ -33,4 +35,6 @@ jobs:
             sleep 1
           done
       - name: Validar app, cadastro, PWA e segurança de pagamentos
-        run: node tests/beauty-app-smoke.cjs
+        run: |
+          node tests/beauty-app-smoke.cjs
+          node tests/beauty-central-smoke.cjs
