@@ -126,7 +126,7 @@ function editProduct(id=''){
  const p=db.products.find(p=>p.id===id);
  form.elements.previousId.value=p?.id||'';
  for(const name of ['id','name','categoryId','brand','cost','price','stock','lot','expiry','regularization','shade','volume','image','description']){
-  if(form.elements[name])form.elements[name].value=p?.[name]??'';
+  if(form.elements[name])form.elements[name].value=name==='image'&&String(p?.image||'').startsWith('data:')?'':(p?.[name]??'');
  }
  form.elements.active.checked=p?.active===true;
  form.elements.published.checked=p?.published===true;
@@ -219,7 +219,7 @@ async function start(){
  }
  render();
  $('moduleNav').addEventListener('click',e=>{const b=e.target.closest('[data-module]');if(b)navigate(b.dataset.module)});
- document.querySelectorAll('.content [data-module]').forEach(b=>b.addEventListener('click',()=>{navigate(b.dataset.module);if(b.id==='')editProduct()}));
+ // Delegação única de cliques evita abrir o diálogo duas vezes.
  $('menuToggle').onclick=()=>$('sidebar').classList.toggle('open');
  $('newProduct').onclick=()=>editProduct();
  $('newCategory').onclick=()=>editCategory();
