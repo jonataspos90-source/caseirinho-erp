@@ -28,13 +28,54 @@ const assert=require('node:assert/strict');
   await page.locator('#products .product').first().click();
   await page.locator('#detail').waitFor({state:'visible'});
   await page.locator('#detailClose').click();
-  await page.locator('.headright .beauty-user-btn',{hasText:'Como será o PIX'}).click();
+  await page.locator('[data-beauty-pix]').click();
   await page.locator('#beautyPixDemo').waitFor({state:'visible'});
   assert.equal(await page.locator('#beautyPixDemo .pix-demo-disabled').isDisabled(),true);
   assert.match(await page.locator('#beautyPixDemo').textContent(),/Nenhum PIX é gerado ou cobrado/);
   await page.locator('#beautyPixDemo [data-close-pix]').click();
   await page.reload({waitUntil:'domcontentloaded'});
   await page.locator('#beautyIdentity').waitFor({state:'hidden'});
+  await page.locator('#tabs [data-page="inicio"]').click();
+  for(const width of [320,360,390,430,700,768,1024,1280]){
+    await page.setViewportSize({width,height:844});
+    const size=await page.evaluate(()=>{
+      const bounds=selector=>{
+        const e=document.querySelector(selector);
+        if(!e)return null;
+        const r=e.getBoundingClientRect();
+        return{left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height,visible:r.width>0&&r.height>0};
+      };
+      const css=e=>getComputedStyle(document.querySelector(e));
+      return{
+        viewWidth:window.innerWidth,
+        scrollWidth:document.documentElement.scrollWidth,
+        header:bounds('.header'),
+        brand:bounds('.brand'),
+        cart:bounds('.headright .cart'),
+        toolbar:bounds('.beauty-header-tools'),
+        hero:bounds('.hero'),
+        headingFont:parseFloat(css('.hero h1').fontSize),
+        categoryColumns:css('.categories').gridTemplateColumns.split(' ').length,
+        pix:bounds('[data-beauty-pix]'),
+        data:bounds('#beautyUser')
+      };
+    });
+    assert.ok(size.scrollWidth<=width+2,'Horizontal overflow at '+width+'px: '+JSON.stringify(size));
+    if(width<=700){
+      assert.ok(size.header.height<=175,'Header too tall at '+width+'px: '+size.header.height);
+      assert.ok(size.hero.height<=355,'Hero too tall at '+width+'px: '+size.hero.height);
+      assert.ok(size.headingFont<=39,'Hero headline too large at '+width+'px: '+size.headingFont);
+      assert.equal(size.categoryColumns,3,'Categories must have 3 columns at '+width+'px');
+      assert.ok(size.toolbar.top>=size.brand.bottom-2,'Actions must be on second row at '+width+'px');
+      assert.ok(size.cart.top<size.toolbar.top,'Cart must stay by logo at '+width+'px');
+      assert.ok(size.hero.right<=width+2&&size.hero.left>=-2,'Hero exits viewport at '+width+'px');
+      for(const label of ['pix','data']){
+        const b=size[label];
+        assert.ok(b&&b.visible&&b.left>=-1&&b.right<=width+1,label+' action clipped at '+width+'px');
+      }
+    }
+    console.log('PASS: responsive layout '+width+'px');
+  }
   const manifest=await page.request.get('http://127.0.0.1:8080/lojas/cosmeticos/manifest.webmanifest');
   const data=await manifest.json();
   assert.equal(data.scope,'./');
