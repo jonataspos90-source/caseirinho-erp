@@ -35,7 +35,7 @@ function gateMarkup(){
  '<div class="beauty-gate-art" aria-hidden="true">'+bottleSvg('hero')+'</div>'+
  '<div class="beauty-gate-form"><span class="eyebrow">BEM-VINDA À SUA MARCA BEAUTY</span>'+
  '<h2 id="beautyGateTitle">Um espaço de beleza feito para você.</h2>'+
- '<p>Antes de explorar, informe seu nome e WhatsApp. Esta é uma prévia: os dados ficam somente neste dispositivo.</p>'+
+ '<p>Antes de explorar, informe seu nome e WhatsApp. Por enquanto, seus dados são mantidos apenas neste dispositivo.</p>'+
  '<form id="beautyForm" novalidate>'+
  '<label for="beautyName">Seu nome</label><input type="text" name="name" id="beautyName" maxlength="80" minlength="2" required autocomplete="name" placeholder="Como podemos chamar você?">'+
  '<label for="beautyPhone">WhatsApp com DDD</label><input type="tel" name="phone" id="beautyPhone" maxlength="20" inputmode="tel" required autocomplete="tel" placeholder="(11) 99999-9999">'+
@@ -73,6 +73,7 @@ function decorateProducts(){
  for(const card of document.querySelectorAll('.product[data-product]')){
   const surface=card.querySelector('.product-image');
   if(!surface||surface.dataset.beautyDone)return;
+  if(surface.querySelector('img')){surface.dataset.beautyDone='1';return;}
   surface.dataset.beautyDone='1';
   [...surface.childNodes].filter(n=>n.nodeType===Node.TEXT_NODE).forEach(n=>n.remove());
   surface.insertAdjacentHTML('beforeend',bottleSvg(styleForProduct(card.dataset.product)));
