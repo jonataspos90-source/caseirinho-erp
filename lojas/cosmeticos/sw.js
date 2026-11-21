@@ -1,8 +1,8 @@
 /* Service worker dedicado à loja de cosméticos.
    Nunca cacheia API, pagamentos, nomes, telefones ou pedidos.
    Nunca intercepta o domínio do Caseirinho. */
-const CACHE='john-beauty-preview-v2';
-const SHELL=['./','./index.html','./beauty-premium.css','./beauty-premium.js','./manifest.webmanifest','./icon.svg','./privacidade.html'];
+const CACHE='john-beauty-preview-v3';
+const SHELL=['./','./index.html','./beauty-premium.css','./beauty-premium.js','./manifest.webmanifest','./icon.svg','./icon-192.png','./icon-512.png','./privacidade.html'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)));self.skipWaiting()});
 self.addEventListener('activate',event=>{event.waitUntil((async()=>{for(const key of await caches.keys())if(key.startsWith('john-beauty-preview-')&&key!==CACHE)await caches.delete(key);await self.clients.claim()})())});
 self.addEventListener('fetch',event=>{
