@@ -1,0 +1,104 @@
+/* Boutique Beauty — identidade própria, sem dependência do Caseirinho */
+:root{--ink:#35292f;--muted:#796e73;--wine:#733f59;--pink:#f8e9ee;--cream:#fefcf9;--line:#eadfdc;--gold:#b58e60;background:#fefcf9}
+body{background:#fefcf9;color:var(--ink);padding-bottom:64px}
+.demo{background:#2e5145;color:#fff;letter-spacing:.02em;font-size:11px}
+.header{background:#fffefdf0;box-shadow:0 2px 18px #6c3f5312;border-bottom:1px solid #f0e8e6}
+.header-inner{max-width:1260px;padding:15px 24px}
+.monogram{width:48px;height:48px;background:#f7eaec;border:1px solid #e4d1cf;border-radius:50%;color:#835268;font-family:Georgia,serif}
+.brand strong{font-family:Georgia,serif;font-size:23px;font-weight:500;letter-spacing:-.04em}.brand small{font-size:9px;letter-spacing:.2em}
+.pill-link{background:#fcf8f8;border-color:#eee1e1}
+.tabs{max-width:1260px;gap:4px;padding-bottom:12px}
+.tabs button{border:0;background:transparent;border-radius:9px;font-size:13px;padding:9px 17px}
+.tabs button:hover{background:#f8eff2}
+.tabs button.active{background:#f7e7ef;color:#713c56}
+main{max-width:1260px;padding:28px 24px 64px}
+.hero{min-height:450px;background:linear-gradient(116deg,#f8e8e9 0%,#f7ece7 50%,#d5b3ad 100%);padding:clamp(32px,6vw,80px);border-radius:18px}
+.hero:before{content:"";position:absolute;left:54%;top:-30%;height:145%;width:55%;border-radius:100%;background:radial-gradient(circle,#fffaf933 20%,transparent 70%)}
+.hero h1{font-size:clamp(43px,6vw,76px);color:#513443}
+.hero p{max-width:410px;color:#7c6769}
+.hero .eyebrow{color:#8b576c}
+.primary{background:#6d3e54;border-radius:8px;box-shadow:0 5px 12px #6d3e5425}
+.hero-art{width:clamp(210px,31vw,368px);height:clamp(210px,31vw,368px);right:7%;top:9%;border-radius:50%;transform:none;opacity:1;background:radial-gradient(circle,#fffef9 0,#e3b7bd90 47%,#be8b9477 73%,transparent 75%);box-shadow:none;font-size:unset}
+.hero-art:after{content:"";display:none}
+.hero-art svg{width:91%;height:91%;filter:drop-shadow(0 24px 17px #7f47582e)}
+.section{margin:42px 0}
+.section-header h2,.page-title h1{font-family:Georgia,serif;color:#3d3035;font-weight:500}
+.eyebrow{color:#956477;letter-spacing:.2em}
+.categories{gap:15px}
+.category{border:1px solid #eee4e2;border-radius:14px;padding:19px 8px;color:#55414a;font-weight:750;box-shadow:none}
+.category span{width:72px;height:72px;display:grid;place-items:center;border-radius:50%;background:linear-gradient(140deg,#f9e8e9,#f6edf1);font-size:35px}
+.category:hover{border-color:#cda9b7}
+.feature{border-radius:16px;background:linear-gradient(100deg,#684356 0%,#956579 100%);box-shadow:0 9px 40px #70475520}
+.feature strong{font-family:Georgia,serif;font-weight:400}
+.grid{gap:17px}
+.product{border:1px solid #eae2e0;border-radius:11px;box-shadow:none}
+.product-image{height:225px;background:#f5eeee!important;overflow:hidden}
+.product-image small{top:11px;left:11px;font-size:9px;background:#ffffffde;color:#7b5666}
+.product-image svg{width:87%;height:88%;filter:drop-shadow(0 20px 15px #68445426)}
+.product-info{padding:17px}
+.product-info small{color:#997e85;font-weight:750}
+.product-info strong{font-family:Georgia,serif;font-weight:500;font-size:19px}
+.product-info b{display:inline-block;color:#6d3f56}
+.product:hover{transform:translateY(-2px)}
+.page-title{padding:30px 10px}
+.filters button.active{background:#794a61}
+.searchbar{background:#fff;border-color:#e8dcdd}
+.notice{background:#faf2f4;border-color:#e9d8de}
+.kit{background:#fffafb;border-color:#e8dce1}
+.bottom{background:#513645}
+#beautyIdentity{position:fixed;inset:0;z-index:99999;background:#2d1b29b0;display:grid;place-items:center;padding:16px;overflow:auto;backdrop-filter:blur(9px)}
+#beautyIdentity[hidden]{display:none!important}
+.beauty-gate{display:grid;grid-template-columns:minmax(220px,.8fr) minmax(300px,1fr);max-width:850px;width:100%;background:#fffdfa;overflow:hidden;border-radius:22px;box-shadow:0 30px 120px #14091065}
+.beauty-gate-art{background:linear-gradient(148deg,#d9a8b4,#f6e7e5);padding:28px;display:flex;align-items:center;justify-content:center;position:relative}
+.beauty-gate-art:after{content:"Sua beleza. Seu momento.";position:absolute;bottom:26px;font:italic 25px Georgia,serif;color:#523347;text-align:center;padding:0 20px}
+.beauty-gate-art svg{width:95%;max-width:270px}
+.beauty-gate-form{padding:34px 36px 32px}
+.beauty-gate-form .eyebrow{font-size:10px}
+.beauty-gate-form h2{font:400 clamp(30px,4vw,42px) Georgia,serif;line-height:1.08;margin:12px 0;color:#44313c}
+.beauty-gate-form p{color:#766c71;font-size:13px;line-height:1.58}
+.beauty-gate-form label:not(.consent-label){display:block;margin:17px 0 7px;font-size:12px;font-weight:800;color:#5a4b50}
+.beauty-gate-form input[type=text],.beauty-gate-form input[type=tel]{display:block;width:100%;border:1px solid #d8cbce;border-radius:10px;padding:13px 12px;font-size:16px;color:#43323a;background:white}
+.consent-label{display:flex;gap:9px;align-items:flex-start;color:#675962;font-size:11px;line-height:1.5;margin:15px 0}
+.consent-label input{margin-top:3px;accent-color:#8d586e}
+.consent-label a{text-decoration:underline;text-underline-offset:2px}
+.beauty-gate-form button[type=submit]{width:100%;border:0;border-radius:11px;background:#74445c;color:#fff;padding:14px;font-size:14px;font-weight:850}
+#beautyIdentityStatus{min-height:18px;color:#ae3d43;font-size:12px;font-weight:700}
+body.beauty-locked>.header,body.beauty-locked>main,body.beauty-locked>.bottom{filter:blur(4px);pointer-events:none;user-select:none}
+.beauty-welcome{font-size:11px;color:#866575;font-weight:700}
+.beauty-user-btn{border:1px solid #e7d4df;background:#fff8fa;border-radius:10px;padding:10px;color:#825369;font-size:12px;font-weight:800}
+#beautyInstall{display:none;border:1px solid #d9bac8;background:#fff2f6;color:#70445a;border-radius:10px;padding:10px;font-size:12px;font-weight:800}
+#beautyInstall.ready{display:inline-block}
+.beauty-safety-strip{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin:26px auto 0;max-width:1250px}
+.beauty-safety-strip span{font-size:12px;background:#fff;border:1px solid #f0e5e4;border-radius:30px;padding:10px 13px;color:#8d667a}
+.pix-demo-dialog{border:0;border-radius:22px;background:#fff;max-width:480px;width:min(96vw,480px);max-height:94vh;overflow-y:auto;box-shadow:0 25px 90px #1b112b60;text-align:left;padding:0}
+.pix-demo-dialog::backdrop{background:#2e1c3088;backdrop-filter:blur(2px)}
+.pix-demo-top{padding:20px 24px;background:#faf5f7;display:flex;align-items:center;justify-content:space-between}
+.pix-demo-top button{border:0;background:white;font-size:22px;border-radius:50%;width:37px;height:37px}
+.pix-demo-dialog h3{font:400 28px Georgia,serif;text-align:center;margin:15px 17px}
+.pix-demo-content{padding:20px}
+.pix-demo-warn{border:1px solid #e9d3a8;background:#fff7e3;color:#785c29;padding:13px 14px;border-radius:11px;font-size:12px;line-height:1.55}
+.pix-demo-steps{font-size:14px;color:#70656c;line-height:1.8;padding-left:25px}
+.pix-demo-disabled{width:100%;border:0;padding:15px;background:#d3c6cd;color:#5b4754;border-radius:11px;font-weight:900}
+.pix-demo-info{background:#eaf5f1;border:1px solid #bcd4cd;border-radius:10px;padding:13px;font-size:12px;color:#37594e}
+.beauty-quickactions{display:flex;align-items:center;gap:8px}
+@media(max-width:900px){.product-image{height:182px}.hero-art{right:-5%;opacity:.95}}
+@media(max-width:650px){
+body{padding-bottom:62px}
+.header-inner{padding:12px}.brand strong{font-size:17px}.monogram{width:40px;height:40px}
+.pill-link{display:none}.tabs{padding:5px 11px 11px}
+main{padding:16px 12px 35px}
+.hero{min-height:410px;padding:29px 20px}.hero h1{font-size:48px}
+.hero-art{width:220px;height:220px;right:-44px;top:auto;bottom:-21px;opacity:.75}
+.categories{gap:9px}.category span{height:55px;width:55px;font-size:28px}
+.grid{gap:11px}.product-image{height:165px}
+.product-info strong{font-size:16px}
+.beauty-gate{display:block;max-width:440px;max-height:95vh;overflow:auto}
+.beauty-gate-art{min-height:118px;padding:5px}.beauty-gate-art svg{height:95px;width:auto}
+.beauty-gate-art:after{font-size:14px;bottom:9px}
+.beauty-gate-form{padding:21px 23px 24px}
+.beauty-gate-form h2{font-size:29px;margin:9px 0}
+.beauty-gate-form input[type=text],.beauty-gate-form input[type=tel]{padding:12px}
+#beautyInstall{padding:9px;font-size:11px}
+.beauty-user-btn{padding:9px}
+.beauty-welcome{display:none}
+}
