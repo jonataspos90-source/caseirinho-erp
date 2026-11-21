@@ -1,0 +1,26 @@
+{
+  "id": "./",
+  "name": "Beauty Central — Gestão de Cosméticos",
+  "short_name": "Beauty Central",
+  "description": "Central exclusiva para preparar cadastros e operação da loja de cosméticos",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#faf7f7",
+  "theme_color": "#784b63",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "../lojas/cosmeticos/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../lojas/cosmeticos/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
