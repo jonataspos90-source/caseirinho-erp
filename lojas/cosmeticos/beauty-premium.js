@@ -24,7 +24,7 @@ function hidePersonalData(){
 function activate(p){
  document.body.classList.remove('beauty-locked');
  const gate=$('beautyIdentity');if(gate)gate.hidden=true;
- $('beautyUser').textContent='Alterar dados';
+ $('beautyUser').textContent='Dados';
  $('beautyWelcome').textContent='Olá, '+p.name.split(/\s+/)[0]+'!';
 }
 function gateMarkup(){
@@ -89,11 +89,11 @@ function pixDemo(){
  document.body.append(dialog);
  dialog.querySelector('[data-close-pix]').onclick=()=>dialog.close();
  dialog.addEventListener('click',e=>{if(e.target===dialog)dialog.close()});
- const btn=document.createElement('button');btn.className='beauty-user-btn';btn.type='button';btn.textContent='Como será o PIX';btn.onclick=()=>dialog.showModal();
+ const btn=document.createElement('button');btn.className='beauty-user-btn';btn.type='button';btn.textContent='PIX';btn.dataset.beautyPix='true';btn.setAttribute('aria-label','Visualizar instruções para pagamento PIX');btn.title='Como será o pagamento PIX';btn.onclick=()=>dialog.showModal();
  document.querySelector('.headright')?.prepend(btn);
 }
 function installApp(){
- const button=document.createElement('button');button.id='beautyInstall';button.type='button';button.textContent='↓ Instalar app';
+ const button=document.createElement('button');button.id='beautyInstall';button.type='button';button.textContent='↓ Instalar';
  document.querySelector('.headright')?.prepend(button);
  window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e;button.classList.add('ready')});
  button.onclick=async()=>{
@@ -107,13 +107,24 @@ function installApp(){
 }
 function init(){
  gateMarkup();
- const account=document.createElement('button');account.type='button';account.id='beautyUser';account.className='beauty-user-btn';account.textContent='Identificar-me';
+ const account=document.createElement('button');account.type='button';account.id='beautyUser';account.className='beauty-user-btn';account.textContent='Dados';
  const welcome=document.createElement('span');welcome.id='beautyWelcome';welcome.className='beauty-welcome';
  const row=document.createElement('div');row.className='beauty-quickactions';row.append(welcome,account);
  document.querySelector('.headright')?.prepend(row);
  account.onclick=hidePersonalData;
  const prev=profile();if(prev)activate(prev);else hidePersonalData();
  pixDemo();installApp();
+ // Agrupa as ações para criar cabeçalho mobile em duas linhas.
+ const headerRight=document.querySelector('.headright');
+ if(headerRight&&!headerRight.querySelector('.beauty-header-tools')){
+   const actions=document.createElement('div');
+   actions.className='beauty-header-tools';
+   actions.setAttribute('role','group');
+   actions.setAttribute('aria-label','Ações da loja');
+   for(const control of [document.getElementById('beautyInstall'),headerRight.querySelector('[data-beauty-pix]'),row])
+     if(control)actions.append(control);
+   headerRight.insertBefore(actions,headerRight.querySelector('.pill-link')||headerRight.querySelector('.cart')||null);
+ }
  const hero=document.querySelector('.hero-art');if(hero){hero.innerHTML=bottleSvg('hero');}
  decorateProducts();
  const productGrid=$('products');
