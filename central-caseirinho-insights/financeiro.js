@@ -18,7 +18,33 @@ const el=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"']/g
 const money=c=>(Number(c||0)/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const datestr=x=>x?String(x).slice(0,10).split('-').reverse().join('/'):'—';
 const nowBR=()=>{const x=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()),p=Object.fromEntries(x.map(i=>[i.type,i.value]));return p.year+'-'+p.month+'-'+p.day;};
-const state={data:null,month:'',tab:'entries',editing:null,loading:false,dailyRange:null,dailyData:null,dailyLoading:false,employeePriceBasis:'CUSTO',employeeBasisLoaded:false,employeeProducts:[]};
+const currentMonthBR=()=>nowBR().slice(0,7);
+const monthValid=month=>/^\d{4}-(0[1-9]|1[0-2])$/.test(String(month||''));
+function monthLabel(month){
+ if(!monthValid(month))return 'Competência inválida';
+ const [y,m]=month.split('-').map(Number);
+ return new Intl.DateTimeFormat('pt-BR',{month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(Date.UTC(y,m-1,1,12)));
+}
+function selectedCompetence(){
+ const input=el('finMonth');
+ return monthValid(input?.value)?input.value:currentMonthBR();
+}
+function showSelectedCompetence(){
+ const month=selectedCompetence();
+ const label=el('finMonthCaption');
+ if(label)label.textContent='Competência selecionada: '+monthLabel(month);
+ return month;
+}
+function clearPreviousMonthData(month){
+ state.data=null;
+ const containers=['finKpis','finDre','finRevenueKpis','finRevenueList','finDaily','finDailyInfo',
+  'finEntries','finFixed','finPayroll','finPayrollKpis','finEmployeeExpenseKpis',
+  'finEmployeeExpenseList','finAssets'];
+ for(const id of containers){const node=el(id);if(node)node.replaceChildren();}
+ const loaded=el('finLoadedMonth');
+ if(loaded)loaded.textContent='Consultando competência '+monthLabel(month)+'…';
+}
+const state={data:null,month:'',tab:'entries',editing:null,loading:false,dailyRange:null,dailyData:null,dailyLoading:false,employeePriceBasis:'CUSTO',employeeBasisLoaded:false,employeeProducts:[],loadedMonth:'',pendingReload:false};
 function session(){
  try{const x=JSON.parse(sessionStorage.getItem(KEY)||'{}');return x.token&&Number(x.expiresAt)>Date.now()+10000?x.token:'';}catch(_){return ''}
 }
@@ -210,27 +236,64 @@ function edit(id){
  setTab('entries');el('finDescription').focus();
 }
 async function load(){
- if(state.loading)return;
+ const month=showSelectedCompetence();
+ // When another month is selected during a request, its previous results must never appear.
+ if(state.loading){
+  state.pendingReload=true;
+  clearPreviousMonthData(month);
+  message('Consultando '+monthLabel(month)+'…');
+  return;
+ }
  if(!session()){message('Entre com seu usuário e senha do ERP antes de consultar o Financeiro.',true);return;}
- state.loading=true;el('finRefresh').disabled=true;message('Consultando vendas e lançamentos financeiros…');
+ state.loading=true;
+ state.month=month;
+ state.loadedMonth='';
+ clearPreviousMonthData(month);
+ el('finRefresh').disabled=true;
+ message('Consultando vendas e lançamentos de '+monthLabel(month)+'…');
  try{
-  state.month=el('finMonth').value||nowBR().slice(0,7);el('finMonth').value=state.month;
   const rollover=await reconcileMonth();
-  state.data=await api('/overview?month='+encodeURIComponent(state.month));
-  await employeeExtras();
+  // No cached or previous-month data may be used as a substitute for this response.
+  const response=await api('/overview?month='+encodeURIComponent(month));
+  if(response.month!==month)throw Error('A API retornou a competência '+String(response.month||'desconhecida')+' em vez de '+month+'.');
+  if(selectedCompetence()!==month){
+   state.pendingReload=true;
+   return;
+  }
+  state.data=response;
+  state.loadedMonth=month;
+  // Draw validated month data first; loading employee settings must not block DRE.
+  render();
+  const loaded=el('finLoadedMonth');
+  if(loaded)loaded.textContent='Dados confirmados: '+monthLabel(month)+' • '+(response.entries||[]).length+' lançamentos financeiros.';
   if(state.tab==='assets')window.CaseirinhoAssetRegistry?.load?.();
   if(state.tab==='fixed')window.CaseirinhoRent?.load?.();
   if(state.dailyRange){
-   try{state.dailyData=await api(dailyPath(state.dailyRange.from,state.dailyRange.to));}
-   catch(error){state.dailyData=null;message('DRE atualizado; período não carregou: '+error.message,true);}
+   try{
+    const daily=await api(dailyPath(state.dailyRange.from,state.dailyRange.to));
+    if(selectedCompetence()===month){state.dailyData=daily;render();}
+   }catch(error){state.dailyData=null;message('DRE atualizado; período diário indisponível: '+error.message,true);}
   }
-  render();
-  message('Financeiro sincronizado com o ERP • competência '+state.month+' • '+new Date().toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo'})+(rollover?.error?' • Atenção: confirmação mensal não executada: '+rollover.error:''),!!rollover?.error);
- }catch(e){message('Não foi possível consultar o financeiro: '+e.message,true);}
- finally{state.loading=false;el('finRefresh').disabled=false;}
+  message('✅ Financeiro sincronizado • competência '+monthLabel(month)+' • '+new Date().toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo'})+(rollover?.error?' • Confirmação automática não executada: '+rollover.error:''),!!rollover?.error);
+  // Optional configuration errors must not erase a successfully loaded DRE.
+  try{await employeeExtras()}catch(error){message('Dados de '+monthLabel(month)+' carregados. Configurações de funcionários indisponíveis: '+error.message,true);}
+ }catch(error){
+  if(selectedCompetence()===month){
+   clearPreviousMonthData(month);
+   message('Não foi possível consultar '+monthLabel(month)+': '+error.message+'. Não exibiremos números de outra competência.',true);
+  }else state.pendingReload=true;
+ }finally{
+  state.loading=false;
+  el('finRefresh').disabled=false;
+  if(state.pendingReload){
+   state.pendingReload=false;
+   void load();
+  }
+ }
 }
+
 function render(){
- const data=state.data;if(!data)return;
+ const data=state.data;if(!data||data.month!==state.month||state.loadedMonth!==state.month)return;
  const d=data.summary||{},days=currentDailyDays(),entries=data.entries||[];
  el('finKpis').innerHTML=[
   kpi('✅','Vendas realizadas (App + ERP)',money(d.confirmedCents),number(d.orders)+' pedido(s) concluído(s)'),
@@ -418,11 +481,31 @@ function downloadCsv(){
 }
 function bind(){
  if(!el('finMonth'))return;
- state.month=nowBR().slice(0,7);el('finMonth').value=state.month;
+ state.month=currentMonthBR();el('finMonth').value=state.month;showSelectedCompetence();
  populateTypes();resetForm();setTab('entries');
  const initialTab=new URLSearchParams(window.location.search).get('finTab');
  if(Object.keys(MODULES).includes(initialTab))setTab(initialTab);
- el('finMonth').addEventListener('change',()=>{state.month=el('finMonth').value;clearDailyFilter();resetForm();load();});
+ el('finMonth').addEventListener('change',()=>{
+  state.month=selectedCompetence();
+  showSelectedCompetence();
+  clearDailyFilter();resetForm();
+  void load();
+ });
+ el('finCurrentMonth')?.addEventListener('click',()=>{
+  const month=currentMonthBR();
+  el('finMonth').value=month;
+  state.month=month;
+  showSelectedCompetence();
+  clearDailyFilter();resetForm();
+  void load();
+ });
+ // Android may restore the form value when returning from the background.
+ // On a new visit to the finance module, the initial month is always the current one.
+ window.addEventListener('pageshow',event=>{
+  if(!event.persisted)return;
+  const month=selectedCompetence();
+  if(state.loadedMonth!==month){state.month=month;showSelectedCompetence();void load();}
+ });
  el('finDailyApply').addEventListener('click',applyDailyFilter);
  el('finDailyReset').addEventListener('click',()=>{clearDailyFilter();message('Exibindo vendas do mês '+state.month+'.');});
  el('finDailyToday').addEventListener('click',()=>{el('finDailyFrom').value=nowBR();el('finDailyTo').value=nowBR();applyDailyFilter();});
