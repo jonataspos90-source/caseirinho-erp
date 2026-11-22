@@ -403,7 +403,7 @@
 </section>
 <section id="blackfriday" class="section">
  <div class="section-head"><div><h2>🖤 Black Friday • Campanhas</h2><p>Cadastre produtos e preços especiais com início e término automáticos. Publicação integrada ao ERP e à loja.</p></div><button type="button" id="bfRefresh" class="btn">↻ Atualizar</button></div>
- <div class="notice"><strong>Tarja preta na loja + vigência vermelha:</strong> o preço especial só começa a valer no horário programado e termina automaticamente. O preço normal fica preservado. Produtos em pack ou outra promoção ativa não podem receber campanhas conflitantes.</div>
+ <div class="notice"><strong>Tarja preta na loja + vigência vermelha:</strong> o preço especial só começa a valer no horário programado e termina automaticamente. O preço normal e os Packs ficam preservados. A Black Friday prevalece durante a vigência e o Pack volta automaticamente ao terminar. Apenas outras promoções individuais ativas impedem o cadastro.</div>
  <div id="bfMessage" class="notice" hidden aria-live="polite"></div>
  <article class="card">
   <div class="section-head"><div><h3>📅 Vigência da Black Friday</h3><p>Horário de Brasília (São Paulo)</p></div></div>
@@ -411,10 +411,10 @@
     <label>Início da promoção<input id="bfStart" type="datetime-local" required></label>
     <label>Término da promoção<input id="bfEnd" type="datetime-local" required></label>
   </div>
-  <div class="toolbar"><input id="bfSearch" type="search" placeholder="Buscar produto por nome ou código..."><select id="bfFilter"><option value="all">Todos os produtos</option><option value="campaign">🖤 Com Black Friday</option><option value="available">✅ Disponíveis para campanha</option><option value="conflict">⚠️ Promoção ou pack existente</option></select></div>
+  <div class="toolbar"><input id="bfSearch" type="search" placeholder="Buscar produto por nome ou código..."><select id="bfFilter"><option value="all">Todos os produtos</option><option value="campaign">🖤 Com Black Friday</option><option value="available">✅ Disponíveis para campanha</option><option value="conflict">⚠️ Outra promoção ativa</option></select></div>
   <div class="section-head"><div><h3>🎁 Produtos participantes</h3><p>Marque os produtos e informe o preço especial de cada um.</p></div><span id="bfSelectedCount" class="badge">0 selecionados</span></div>
   <div id="bfProducts"></div>
-  <div class="notice">Ao salvar, os produtos selecionados terão preço promocional e vigência no ERP e no catálogo da loja. A tarja só aparecerá durante a vigência. Para cancelar uma campanha já gravada, use <b>Desativar</b> no produto.</div>
+  <div class="notice">Ao salvar, os produtos selecionados terão preço Black Friday com vigência no ERP e na loja. Um Pack ativo não será apagado: a Black Friday o substitui temporariamente e o Pack volta automaticamente após o término ou desativação. Para cancelar, use <b>Desativar</b> no produto.</div>
   <button type="button" class="btn primary" id="bfPublish" style="width:100%">🖤 Salvar e publicar Black Friday</button>
  </article>
 </section>
@@ -670,7 +670,7 @@
  </nav>
 <div id="toast" class="toast" role="status" hidden></div>
 <div id="modal" class="modal-bg" hidden><div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><h2 id="modalTitle">Mensagem para WhatsApp</h2><div id="modalContent"></div><div class="toolbar" style="justify-content:flex-end;margin-top:20px"><button class="btn" id="modalClose">Fechar</button></div></div></div>
-<script src="./app.js?v=20261119-convenios" defer></script>
+<script src="./app.js?v=20261122-bf-pack-priority1" defer></script>
 <script src="./store-hours-admin.js?v=20261116-2" defer></script>
 <script src="./seasonal-merch-admin.js?v=20261117-save-verify1" defer></script>
 <script src="./seasonal-best-deal-admin.js?v=20261116-virtual3" defer></script>
