@@ -99,10 +99,11 @@ function exportCsv(){
 }
 function bind(){
  if(!E('finReportApply'))return;
- const current=monthLocal(),[y,m]=current.split('-').map(Number);
- const previous=new Date(Date.UTC(y,m-2,1)).toISOString().slice(0,7);
- E('finReportMonth').value=previous;
- E('finReportFrom').value=previous+'-01';E('finReportTo').value=lastDay(previous);
+ const current=monthLocal();
+ // Relatórios abrem na competência atual; meses encerrados seguem disponíveis no filtro.
+ E('finReportMonth').value=current;
+ E('finReportFrom').value=current+'-01';E('finReportTo').value=lastDay(current);
+ E('finReportClosedOnly').checked=false;
  E('finReportMode').addEventListener('change',selectMode);selectMode();
  E('finReportApply').addEventListener('click',load);
  E('finReportKind').addEventListener('change',render);
