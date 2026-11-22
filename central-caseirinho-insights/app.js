@@ -2418,13 +2418,20 @@ function seasonExclusiveRender(){
  const productSelect=E('seasonExclusiveSelect'),old=productSelect.value;
  productSelect.innerHTML='<option value="">➕ Novo produto sazonal</option>'+products.map(p=>'<option value="'+esc(p.id)+'">'+esc(p.name)+' — '+esc(campaigns.find(c=>c.id===p.campaignId)?.title||'Campanha')+'</option>').join('');
  if(products.some(p=>p.id===old))productSelect.value=old;
- const remainingProducts=products.filter(p=>!p.published);
- E('seasonExclusiveList').innerHTML=remainingProducts.length?remainingProducts.map(p=>
+ const publishedProducts=products.filter(p=>p.published===true);
+ const pendingProducts=products.filter(p=>p.published!==true);
+ const productLine=p=>
   '<div class="season-admin-product">'+(p.image?'<img loading="lazy" src="'+esc(p.image)+'" alt="" style="width:80px;height:80px;object-fit:cover;border-radius:10px">':'<span class="subtitle">📷 Sem foto</span>')+
-  '<div style="flex:1"><b>'+esc(p.name)+'</b><p>'+esc(campaigns.find(c=>c.id===p.campaignId)?.title||'Campanha não encontrada')+' · '+brl(p.price)+'</p>'+
-  '<span class="badge '+(p.active?'good':'warn')+'">'+(p.active?'Disponível':'Inativo')+'</span></div>'+
-  '<span class="badge">'+(p.published?'🟢 Publicado':'📝 Rascunho')+'</span> <button type="button" class="btn small" data-season-exclusive-edit="'+esc(p.id)+'">✏️ Editar</button></div>').join(''):
-  '<div class="notice">✅ Nenhum produto exclusivo pendente. Os publicados saíram desta lista.</div>';
+  '<div style="flex:1;min-width:0"><b>'+esc(p.name)+'</b><p>'+esc(campaigns.find(c=>c.id===p.campaignId)?.title||'Campanha não encontrada')+' · '+brl(p.price)+'</p>'+
+  '<span class="badge '+(p.active?'good':'warn')+'">'+(p.active?'Disponível':'Inativo')+'</span>'+
+  (p.published!==true?(!p.image||!p.categoryId?'<small style="display:block;margin-top:5px;color:#935400">Pendente: '+esc([!p.image?'foto':null,!p.categoryId?'categoria':null].filter(Boolean).join(' e '))+'</small>':'<small style="display:block;margin-top:5px">Pronto para publicar</small>'):'')+'</div>'+
+  '<span class="badge">'+(p.published===true?'🟢 Publicado':'📝 Rascunho')+'</span> <button type="button" class="btn small" data-season-exclusive-edit="'+esc(p.id)+'">✏️ Editar</button></div>';
+ E('seasonExclusiveList').innerHTML=
+  '<div class="notice">📦 Catálogo de encomendas: <b>'+products.length+' cadastrados</b> · '+publishedProducts.length+' publicados · '+pendingProducts.length+' rascunhos. A publicação não retira produtos desta lista.</div>'+
+  '<h4 style="margin:16px 0 8px">🟢 Publicados na loja ('+publishedProducts.length+')</h4>'+
+  (publishedProducts.length?publishedProducts.map(productLine).join(''):'<p class="subtitle">Nenhum produto exclusivo publicado.</p>')+
+  '<h4 style="margin:18px 0 8px">📝 Rascunhos e pendentes ('+pendingProducts.length+')</h4>'+
+  (pendingProducts.length?pendingProducts.map(productLine).join(''):'<p class="subtitle">Nenhum produto exclusivo pendente.</p>');
 }
 async function seasonExclusiveSave(){
  const campaignId=E('seasonExclusiveCampaign').value;
