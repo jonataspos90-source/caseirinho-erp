@@ -211,7 +211,7 @@ function nav(tab){
  if(tab==='coupons'&&!st.couponsData)loadCoupons();
  if(tab==='blackfriday'&&!st.bfData)loadBlackFriday();
  if(tab==='sazonais'&&!st.seasonData)loadSeasonAdmin();
- if(tab==='financeiro'){window.CaseirinhoFinance?.load();window.CaseirinhoFinance?.updateSidebar?.();}
+ if(tab==='financeiro'){window.CaseirinhoFinance?.ensureCurrentMonth?.();window.CaseirinhoFinance?.load?.();window.CaseirinhoFinance?.updateSidebar?.();}
  if(tab==='receivables')window.CaseirinhoReceivables?.load?.(true);
  if(tab==='receivables')window.CaseirinhoConvenios?.load?.();
  if(tab==='operations')loadOpsAudit();
