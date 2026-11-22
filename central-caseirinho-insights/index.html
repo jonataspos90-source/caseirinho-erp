@@ -2,7 +2,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#183c2e"><meta name="description" content="Central Caseirinho Insights — painel administrativo independente de CRM, acessos, pedidos e cardápio.">
 <title>Central Caseirinho | Gestão e Loja</title>
-<link rel="stylesheet" href="./styles.css?v=20261122-sidebar-scroll1"><link rel="stylesheet" href="./store-hours-admin.css?v=20261116-1"><link rel="stylesheet" href="./season-virtual-packs.css?v=20261116-virtual1"><link rel="stylesheet" href="./financeiro.css?v=20261110-platform-1">
+<link rel="stylesheet" href="./styles.css?v=20261122-sidebar-scroll1"><link rel="stylesheet" href="./store-hours-admin.css?v=20261116-1"><link rel="stylesheet" href="./season-virtual-packs.css?v=20261116-virtual1"><link rel="stylesheet" href="./financeiro.css?v=20261122-finance-modules1">
 <link rel="manifest" href="./manifest.webmanifest?v=20261119-central"><link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png"><link rel="apple-touch-icon" href="./icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default">
 <style>.season-images-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;margin-top:12px}.season-image-tile{border:1px solid #c9dfd0;padding:8px;border-radius:10px;background:#f8fbf8}.season-image-tile img{height:100px;width:100%;object-fit:cover;border-radius:7px}.season-image-tile .toolbar{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}.season-image-tile button{padding:6px 8px}</style> <link rel="stylesheet" href="./seasonal-workspace.css?v=20261119-1">
  <link rel="stylesheet" href="./workspace-modules.css?v=20261119-1">
@@ -47,7 +47,17 @@
  <button type="button" data-view="reports">📄 Relatórios / PDF</button>
  <button type="button" data-view="sales">📈 Vendas & Estoque</button>
  <button type="button" data-view="receivables">💳 Conta Cliente / Recebimentos</button>
- <button type="button" data-view="financeiro" data-fin-tab="platforms">🍔 iFood / 99Food</button><button type="button" data-view="financeiro">💰 Financeiro / DRE</button>
+ <span class="nav-group-title">FINANCEIRO</span>
+  <button type="button" data-view="financeiro" data-fin-tab="platforms">🍔 iFood / 99Food</button>
+  <button type="button" data-view="financeiro" data-fin-tab="revenue">💵 Receitas e vendas</button>
+  <button type="button" data-view="financeiro" data-fin-tab="entries">🧾 Custos e despesas</button>
+  <button type="button" data-view="financeiro" data-fin-tab="fixed">🏠 Contas fixas</button>
+  <button type="button" data-view="financeiro" data-fin-tab="payroll">👥 Pagamento de funcionários</button>
+  <button type="button" data-view="financeiro" data-fin-tab="employeeExpenses">🧾 Despesas funcionários</button>
+  <button type="button" data-view="financeiro" data-fin-tab="assets">🧰 Ativos e investimentos</button>
+  <button type="button" data-view="financeiro" data-fin-tab="daily">📅 Vendas por dia</button>
+  <button type="button" data-view="financeiro" data-fin-tab="reports">📑 Relatórios financeiros</button>
+  <button type="button" data-view="financeiro" data-fin-tab="dre">📊 DRE por competência</button>
  <button type="button" data-view="menu">🍝 Cardápio</button>
  <button type="button" data-view="requests">🔔 Solicitações <span id="requestCount" class="num" hidden>0</span></button>
  <button type="button" data-view="settings">⚙️ Configurações</button>
@@ -228,14 +238,14 @@
  <div class="notice"><b>Separação gerencial:</b> vendas finalizadas compõem a receita do DRE por data de compra. Recebimentos parciais ou totais entram no fluxo de caixa, mas não criam outra venda. Nenhum pagamento é dado como recebido sem confirmação explícita.</div>
 </section>
 <section id="financeiro" class="section">
- <div class="section-head"><div><h2>💰 Financeiro Caseirinho</h2><p>Vendas diárias, despesas, compras para revenda sem estoque, contas fixas, ativos e DRE mensal.</p></div><button class="btn primary" type="button" id="finRefresh">↻ Atualizar financeiro</button></div>
+ <div class="section-head"><div><h2 id="finSectionTitle">🧾 Custos e despesas</h2><p id="finSectionDescription">Cada processo financeiro possui seu módulo. Selecione o módulo no menu lateral.</p></div><button class="btn primary" type="button" id="finRefresh">↻ Atualizar financeiro</button></div>
  <div class="card fin-toolbar">
   <label>📆 Competência (mês) <input id="finMonth" type="month" aria-label="Competência financeira"></label>
-  <div class="toolbar"><button class="btn small" type="button" data-fin-tab="platforms">🍔 iFood / 99Food</button><button class="btn small" type="button" data-fin-tab="dre">📊 DRE</button><button class="btn small" type="button" data-fin-tab="daily">📅 Vendas por dia</button><button class="btn small" type="button" data-fin-tab="entries">🧾 Gastos / Revenda</button><button class="btn small" type="button" data-fin-tab="fixed">🏠 Contas fixas</button><button class="btn small" type="button" data-fin-tab="payroll">👥 Pagamentos</button><button class="btn small" type="button" data-fin-tab="employeeExpenses">🧾 Despesas de funcionários</button><button class="btn small" type="button" data-fin-tab="assets">🧰 Ativos</button></div>
+  <p class="fin-toolbar-hint">Use o menu lateral para mudar de módulo. As informações são compartilhadas com o ERP, mas cada funcionalidade fica em sua própria tela.</p>
   <div class="toolbar"><button id="finCsv" class="btn small" type="button">⬇ CSV do mês</button><button id="finPrint" class="btn small gold" type="button">🖨️ Imprimir / Salvar PDF</button></div>
  </div>
  <div id="finMessage" class="notice">Acesse o Financeiro para consultar as vendas e o DRE.</div>
- <div id="finKpis" class="grid stats"></div>
+ <div id="finKpis" class="grid stats" hidden></div>
  
 <div id="finPlatformsPanel" class="fin-panel" hidden>
  <article class="card"><div class="section-head"><div><h2>🍔 Vendas de plataformas · iFood / 99Food</h2>
@@ -277,6 +287,12 @@
   <button type="button" class="btn" id="finPlatformExport">⬇ CSV</button>
  </div><div id="finPlatformGroups"></div>
  <h3>🧾 Lançamentos individuais</h3><div id="finPlatformEntries"></div></article>
+</div>
+<div id="finRevenuePanel" class="fin-panel" hidden>
+ <article class="card"><div class="section-head"><div><h2>💵 Receitas e vendas</h2><p>Receita das vendas concluídas no aplicativo/ERP e vendas avulsas sem duplicar pedidos existentes.</p></div><button class="btn primary" type="button" data-fin-kind="RECEITA_AVULSA">＋ Lançar receita fora do app</button></div>
+  <div id="finRevenueKpis" class="grid stats"></div><h3>🧾 Receitas avulsas da competência</h3><div id="finRevenueList"></div>
+  <p class="notice">Vendas do aplicativo e do ERP são importadas automaticamente. Registre manualmente apenas receitas que não constem nelas.</p>
+ </article>
 </div>
 <div id="finDrePanel" class="fin-panel">
   <article class="card"><h2>📊 DRE Gerencial — mês selecionado</h2><div id="finDre"></div></article>
@@ -361,7 +377,57 @@
   <div id="finEmployeeExpenseList"></div>
  </article>
 </div>
-<div id="finAssetsPanel" class="fin-panel" hidden><article class="card"><h2>🧰 Ativos e investimentos</h2><p>Registre freezer, fogão, máquinas, móveis e outros equipamentos. O valor aparece como investimento, separado dos gastos do DRE. Não há controle de estoque nem depreciação automática.</p><button class="btn primary" type="button" data-fin-kind="ATIVO">＋ Lançar ativo</button><div id="finAssets"></div></article></div>
+<div id="finAssetsPanel" class="fin-panel" hidden>
+ <article class="card">
+  <div class="section-head"><div><h2>🧰 Patrimônio e investimentos</h2><p>Cadastre cada bem, custo de aquisição, parcelas, vencimentos, pagamentos e vida útil.</p></div><button id="finAssetRefresh" class="btn" type="button">↻ Atualizar ativos</button></div>
+  <div class="notice">A compra é um <b>investimento</b>. Cada parcela paga é uma saída de caixa, não uma nova despesa. O DRE reconhece a <b>depreciação gerencial</b> informada para o bem a partir do mês seguinte ao início de uso. Confira o enquadramento contábil antes do fechamento fiscal.</div>
+  <div id="finAssetsSummary" class="grid stats"></div>
+  <div id="finAssetMessage" class="notice">Consulte os equipamentos cadastrados no ERP.</div>
+ </article>
+ <article class="card"><h3>＋ Cadastrar ou editar equipamento</h3>
+  <form class="fin-form" id="finAssetForm">
+   <label class="fin-wide">Nome do bem<input id="finAssetName" required minlength="3" maxlength="150" placeholder="Ex.: Geladeira industrial"></label>
+   <label>Categoria<select id="finAssetCategory"><option value="EQUIPAMENTOS">Equipamentos</option><option value="MAQUINAS">Máquinas</option><option value="MOVEIS">Móveis</option><option value="REFRIGERACAO">Refrigeração</option><option value="VEICULOS">Veículos</option><option value="OUTROS_ATIVOS">Outros ativos</option></select></label>
+   <label>Valor total da compra (R$)<input type="number" id="finAssetAmount" required min="0.01" max="10000000" step="0.01"></label>
+   <label>Data da compra<input type="date" id="finAssetPurchase" required></label>
+   <label>Início de uso (depreciação)<input type="date" id="finAssetUse" required></label>
+   <label>Quantidade de parcelas<input type="number" id="finAssetInstallments" min="1" max="120" step="1" required value="1"></label>
+   <label>Vencimento da primeira parcela<input type="date" id="finAssetFirstDue" required></label>
+   <label>Vida útil (meses)<input type="number" id="finAssetLife" min="1" max="600" required value="60"></label>
+   <label>Valor residual estimado (R$)<input type="number" id="finAssetResidual" min="0" max="10000000" step="0.01" value="0"></label>
+   <label class="fin-wide">Fornecedor<input id="finAssetSupplier" maxlength="140" placeholder="Onde comprou o bem"></label>
+   <label class="fin-wide">Observações<textarea id="finAssetNotes" maxlength="500" rows="2"></textarea></label>
+   <div class="toolbar fin-wide"><button class="btn primary" type="submit" id="finAssetSave">💾 Cadastrar equipamento</button><button type="button" class="btn" id="finAssetCancel" hidden>Cancelar edição</button></div>
+  </form>
+ </article>
+ <article class="card"><h3>📦 Equipamentos cadastrados</h3>
+  <div class="toolbar"><input id="finAssetSearch" type="search" placeholder="Buscar equipamento ou fornecedor" aria-label="Buscar ativos"><select id="finAssetFilter"><option value="ALL">Todas as categorias</option><option value="REFRIGERACAO">Refrigeração</option><option value="EQUIPAMENTOS">Equipamentos</option><option value="MAQUINAS">Máquinas</option><option value="MOVEIS">Móveis</option><option value="VEICULOS">Veículos</option><option value="OUTROS_ATIVOS">Outros</option></select></div>
+  <div id="finAssetsList"></div>
+ </article>
+ <article class="card"><h3>📜 Lançamentos antigos de ativos</h3><p>Registros anteriores preservados. Não serão convertidos automaticamente em equipamentos parcelados para evitar duplicidade.</p><div id="finAssets"></div></article>
+</div>
+<div id="finReportsPanel" class="fin-panel" hidden>
+ <article class="card">
+  <h2>📑 Relatórios financeiros por período</h2>
+  <p>Consulte receitas, folha de pagamento, custos, despesas, compras, tributos, investimentos e vendas diárias. Filtros por competência mensal ou intervalo personalizado.</p>
+  <div class="fin-report-filters">
+   <label>Relatório<select id="finReportKind"><option value="ALL">Todos os lançamentos</option><option value="REVENUE">Receitas: pedidos e avulsas</option><option value="RECEITA_AVULSA">Vendas avulsas</option><option value="PAGAMENTO_FUNCIONARIO">Pagamento de funcionários</option><option value="DESPESA_FUNCIONARIO">Despesas de funcionários</option><option value="DESPESA_FIXA">Contas fixas</option><option value="DESPESA_VARIAVEL">Despesas variáveis</option><option value="CUSTO_PRODUCAO">Custos de produção</option><option value="COMPRA_REVENDA">Compras para revenda</option><option value="TRIBUTO">Impostos e tributos</option><option value="ATIVO">Ativos e investimentos</option><option value="DAILY">Vendas diárias</option></select></label>
+   <label>Período<select id="finReportMode"><option value="MONTH">Competência mensal completa</option><option value="RANGE">Entre datas (De / Até)</option></select></label>
+   <label id="finReportMonthWrap">Competência (mês)<input id="finReportMonth" type="month"></label>
+   <label id="finReportFromWrap" hidden>De<input id="finReportFrom" type="date"></label>
+   <label id="finReportToWrap" hidden>Até<input id="finReportTo" type="date"></label>
+   <label>Pagamento<select id="finReportPayment"><option value="ALL">Todos os status</option><option value="PAGO">Pagos / recebidos</option><option value="PENDENTE">Pendentes</option></select></label>
+   <label class="fin-report-check"><input id="finReportClosedOnly" type="checkbox" checked> Apenas competências de meses calendário encerrados</label>
+  </div>
+  <div class="toolbar"><button id="finReportApply" type="button" class="btn primary">🔎 Consultar relatório</button><button id="finReportCsv" class="btn" type="button">⬇ Exportar CSV</button><button id="finReportPrint" class="btn gold" type="button">🖨️ Imprimir / PDF</button></div>
+  <div class="notice">Mês encerrado significa que o calendário passou do último dia da competência, <b>não</b> que a contabilidade esteja bloqueada ou homologada. Movimentos podem ser corrigidos até existir um fechamento formal. As parcelas de investimento não são despesas do DRE.</div>
+  <div id="finReportStatus" class="notice">Defina o relatório e consulte.</div>
+  <p id="finReportPeriod" class="subtitle"></p>
+  <div class="toolbar"><input id="finReportSearch" type="search" placeholder="Buscar funcionário, fornecedor, descrição ou categoria"></div>
+  <div id="finReportSummary" class="notice"></div>
+  <div id="finReportResults"></div>
+ </article>
+</div>
 </section>
 <section id="fichas" class="section">
  <div class="section-head"><div><h2>📋 Fichas Técnicas do ERP</h2><p>Consulte, cadastre ou altere fichas diretamente no mesmo cadastro usado pelo ERP Caseirinho.</p></div><div class="actions"><button class="btn primary" id="newFicha">➕ Nova ficha</button><button class="btn" id="refreshFichas">↻ Atualizar</button></div></div>
@@ -689,8 +755,10 @@
 <script src="./cashback-pending-erp.js?v=1" defer></script>
 <script src="./order-reject.js?v=4" defer></script>
 <script src="./operations-recovery.js?v=1" defer></script>
-<script src="./financeiro.js?v=20261110-platform-1" defer></script>
+<script src="./financeiro.js?v=20261122-finance-modules1" defer></script>
 <script src="./platform-sales.js?v=20261110-platform-1" defer></script>
+<script src="./asset-registry.js?v=20261122-1" defer></script>
+<script src="./finance-reports.js?v=20261122-1" defer></script>
 <script src="./conta-cliente-recebimentos.js?v=20261111-2" defer></script>
 <script src="./devedores.js?v=20261119-1" defer></script>
 <script src="./convenios-receber.js?v=20261119-1" defer></script>
