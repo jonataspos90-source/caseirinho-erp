@@ -180,7 +180,7 @@ function nav(tab){
  st.view=tab;
  document.querySelectorAll('.section').forEach(x=>x.classList.toggle('active',x.id===tab));
  document.querySelectorAll('[data-view]').forEach(x=>x.classList.toggle('active',x.dataset.view===tab));
- const labels={dashboard:'Visão geral',contacts:'CRM e contatos',ranking:'Ranking de acessos',orders:'Pedidos',carts:'Recuperação de Sacolas',operations:'Central Operacional',financeiro:'Financeiro e DRE',receivables:'Conta Cliente e Recebimentos',menu:'Cardápio escrito',products:'Produtos e preços',blackfriday:'Black Friday',sazonais:'Encomendas Sazonais',reports:'Relatórios e PDF',sales:'Vendas & Estoque',merch:'Grades e Packs',fichas:'Fichas Técnicas',cashbacks:'Cashback Clientes',coupons:'Cupons e Utilizações',requests:'Solicitações de cardápio',settings:'Configurações'};
+ const labels={dashboard:'Visão geral',contacts:'CRM e contatos',ranking:'Ranking de acessos',orders:'Pedidos',carts:'Recuperação de Sacolas',operations:'Central Operacional',financeiro:'Financeiro',receivables:'Conta Cliente e Recebimentos',menu:'Cardápio escrito',products:'Produtos e preços',blackfriday:'Black Friday',sazonais:'Encomendas Sazonais',reports:'Relatórios e PDF',sales:'Vendas & Estoque',merch:'Grades e Packs',fichas:'Fichas Técnicas',cashbacks:'Cashback Clientes',coupons:'Cupons e Utilizações',requests:'Solicitações de cardápio',settings:'Configurações'};
  E('pageTitle').textContent=labels[tab]||'Central de Insights';
  window.scrollTo({top:0,behavior:'smooth'});
  render();
@@ -191,7 +191,7 @@ function nav(tab){
  if(tab==='coupons'&&!st.couponsData)loadCoupons();
  if(tab==='blackfriday'&&!st.bfData)loadBlackFriday();
  if(tab==='sazonais'&&!st.seasonData)loadSeasonAdmin();
- if(tab==='financeiro')window.CaseirinhoFinance?.load();
+ if(tab==='financeiro'){window.CaseirinhoFinance?.load();window.CaseirinhoFinance?.updateSidebar?.();}
  if(tab==='receivables')window.CaseirinhoReceivables?.load?.(true);
  if(tab==='receivables')window.CaseirinhoConvenios?.load?.();
  if(tab==='operations')loadOpsAudit();
@@ -225,7 +225,7 @@ function renderDailyPulse(){
  ].join('')+'</div><div class="daily-pulse-shortcuts">'+
  '<button type="button" class="btn primary" data-view="sazonais">🎄 Encomendas</button>'+
  '<button type="button" class="btn" data-view="receivables">💳 Contas a receber</button>'+
- '<button type="button" class="btn" data-view="financeiro">💰 Caixa / DRE</button>'+
+ '<button type="button" class="btn" data-view="financeiro">🧾 Financeiro</button>'+
  '<button type="button" class="btn" data-view="products">🏷️ Publicar produtos</button></div>';
 }
 function renderOverview(){
