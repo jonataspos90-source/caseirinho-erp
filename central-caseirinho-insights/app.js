@@ -180,7 +180,7 @@ function nav(tab){
  st.view=tab;
  document.querySelectorAll('.section').forEach(x=>x.classList.toggle('active',x.id===tab));
  document.querySelectorAll('[data-view]').forEach(x=>x.classList.toggle('active',x.dataset.view===tab));
- const labels={dashboard:'Visão geral',contacts:'CRM e contatos',ranking:'Ranking de acessos',orders:'Pedidos',operations:'Central Operacional',financeiro:'Financeiro e DRE',receivables:'Conta Cliente e Recebimentos',menu:'Cardápio escrito',products:'Produtos e preços',blackfriday:'Black Friday',sazonais:'Encomendas Sazonais',reports:'Relatórios e PDF',sales:'Vendas & Estoque',merch:'Grades e Packs',fichas:'Fichas Técnicas',cashbacks:'Cashback Clientes',coupons:'Cupons e Utilizações',requests:'Solicitações de cardápio',settings:'Configurações'};
+ const labels={dashboard:'Visão geral',contacts:'CRM e contatos',ranking:'Ranking de acessos',orders:'Pedidos',carts:'Recuperação de Sacolas',operations:'Central Operacional',financeiro:'Financeiro e DRE',receivables:'Conta Cliente e Recebimentos',menu:'Cardápio escrito',products:'Produtos e preços',blackfriday:'Black Friday',sazonais:'Encomendas Sazonais',reports:'Relatórios e PDF',sales:'Vendas & Estoque',merch:'Grades e Packs',fichas:'Fichas Técnicas',cashbacks:'Cashback Clientes',coupons:'Cupons e Utilizações',requests:'Solicitações de cardápio',settings:'Configurações'};
  E('pageTitle').textContent=labels[tab]||'Central de Insights';
  window.scrollTo({top:0,behavior:'smooth'});
  render();
@@ -195,6 +195,7 @@ function nav(tab){
  if(tab==='receivables')window.CaseirinhoReceivables?.load?.(true);
  if(tab==='receivables')window.CaseirinhoConvenios?.load?.();
  if(tab==='operations')loadOpsAudit();
+ if(tab==='carts')window.CaseirinhoCartRecovery?.load?.(true);
  if(tab==='settings')window.CaseirinhoStoreHoursAdmin?.load?.();
 }
 function badge(x){const v=s(x).toUpperCase();return '<span class="badge '+(v.includes('PENDENTE')?'warn':v.includes('IMPORTANDO')?'light':v.includes('NOVO')?'light':v.includes('IMPORTADO')||v.includes('CONCLU')||v.includes('APROV')?'good':'')+'">'+esc(x||'—')+'</span>';}
