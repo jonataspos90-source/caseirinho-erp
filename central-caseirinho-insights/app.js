@@ -2218,15 +2218,16 @@ function renderBlackFriday(){
  if(!st.bfData)return;
  const all=st.bfData.items||[],q=s(E('bfSearch').value).toLowerCase(),filter=E('bfFilter').value;
  const filtered=all.filter(p=>(s(p.name)+' '+s(p.code)).toLowerCase().includes(q)&&
-  (filter==='all'||filter==='campaign'&&p.promotion||filter==='available'&&!p.hasOtherPromotion&&!p.hasPack||filter==='conflict'&&(p.hasOtherPromotion||p.hasPack)));
+  (filter==='all'||filter==='campaign'&&p.promotion||filter==='available'&&!p.hasOtherPromotion||filter==='conflict'&&p.hasOtherPromotion));
  E('bfSelectedCount').textContent=st.bfSelected.size+' selecionado(s)';
  E('bfProducts').innerHTML=filtered.length?'<div class="bf-product-list">'+filtered.map(p=>{
-  const blocked=p.hasOtherPromotion||p.hasPack,status=bfState(p);
+  const blocked=p.hasOtherPromotion,status=bfState(p);
   const selected=st.bfSelected.has(p.id),v=selected?st.bfSelected.get(p.id):(p.promotion?.price||'');
-  const reason=blocked?'⚠️ '+(p.hasOtherPromotion?'Outra promoção ativa':'Pack ativo'):'';
+  const reason=blocked?'⚠️ Outra promoção ativa':'';
   return '<div class="bf-product-row" data-bf-row="'+esc(p.id)+'">'+
    '<label class="bf-product-choice"><input type="checkbox" data-bf-check value="'+esc(p.id)+'" '+(selected?'checked':'')+' '+(blocked?'disabled':'')+'><span><b>'+esc(p.name)+'</b><small>'+esc(p.code)+' · Preço normal '+bfPrice(p.price)+'</small></span></label>'+
    '<span class="badge '+status.css+'">'+esc(reason||status.label)+'</span>'+
+   (p.hasPack?'<span class="badge light">🎁 Pack preservado · Black Friday tem prioridade</span>':'')+
    '<label class="bf-price-field">Preço Black Friday (R$)<input data-bf-price type="number" min=".01" max="'+esc(p.price)+'" step=".01" inputmode="decimal" '+(blocked?'disabled':'')+' value="'+esc(v)+'" placeholder="Ex.: '+esc((Number(p.price)*.85).toFixed(2))+'"></label>'+
    (p.promotion?'<div class="bf-published">Vigência cadastrada: <b>'+esc(dt(p.promotion.startAt))+' até '+esc(dt(p.promotion.endAt))+'</b>'+
      ' · <button type="button" class="btn small" data-bf-disable="'+esc(p.id)+'">⛔ Desativar</button></div>':'')+
@@ -2259,23 +2260,23 @@ async function publishBlackFriday(){
  let startAt,endAt;
  try{startAt=bfMoment(E('bfStart').value);endAt=bfMoment(E('bfEnd').value);}catch(err){return bfStatus(err.message,true);}
  if(Date.parse(startAt)>=Date.parse(endAt)||Date.parse(endAt)<=Date.now())return bfStatus('A data final precisa ser posterior ao início e estar no futuro.',true);
- const msg='Publicar BLACK FRIDAY para '+items.length+' produto(s)? Vigência: '+dt(startAt)+' até '+dt(endAt)+'. O preço normal será preservado; o especial entrará em vigor somente nas datas configuradas.';
+ const msg='Publicar BLACK FRIDAY para '+items.length+' produto(s)? Vigência: '+dt(startAt)+' até '+dt(endAt)+'. O preço normal e os Packs serão preservados; a Black Friday terá prioridade apenas durante a vigência e, ao encerrar, o Pack voltará automaticamente.';
  if(!window.confirm(msg))return;
  const btn=E('bfPublish');btn.disabled=true;btn.textContent='Publicando campanha...';
  try{
   const out=await api('black-friday',{method:'POST',body:{startAt,endAt,items}});
   st.bfSelected.clear();
   await loadBlackFriday();
-  bfStatus('✅ Black Friday publicada no ERP e loja para '+out.products.length+' produto(s). A tarja aparecerá somente durante a vigência.');
+  bfStatus('✅ Black Friday publicada para '+out.products.length+' produto(s). Durante a vigência, ela prevalece sobre Packs; após o término, os Packs voltam automaticamente.');
  }catch(err){bfStatus('❌ Não foi possível confirmar a publicação: '+err.message+'. Atualize para conferir antes de tentar novamente.',true);}
  finally{btn.disabled=false;btn.textContent='🖤 Salvar e publicar Black Friday';}
 }
 async function deactivateBlackFriday(id){
  const p=(st.bfData?.items||[]).find(x=>x.id===id);if(!p)return;
- if(!window.confirm('Desativar a Black Friday para '+p.name+'? O preço regular continuará publicado na loja.'))return;
+ if(!window.confirm('Desativar a Black Friday para '+p.name+'? O Pack anterior, se houver, voltará automaticamente a valer.'))return;
  try{
   await api('black-friday/'+encodeURIComponent(id)+'/deactivate',{method:'PATCH',body:{}});
-  await loadBlackFriday();bfStatus('✅ Black Friday desativada para '+p.name+'.');
+  await loadBlackFriday();bfStatus('✅ Black Friday desativada para '+p.name+'. O Pack ativo voltou a valer, se aplicável.');
  }catch(err){bfStatus('Não foi possível desativar: '+err.message,true);}
 }
 function bindBlackFriday(){
