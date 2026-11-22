@@ -33,6 +33,13 @@ async function api(path,options={}){
  if(!res.ok)throw Error(d.error||'Erro HTTP '+res.status);
  return d;
 }
+let rolloverPromise=null;
+function reconcileMonth(){
+ if(!rolloverPromise)rolloverPromise=api('/monthly/rollover',{method:'POST',body:{}})
+  .catch(error=>({ok:false,error:error.message}))
+  .finally(()=>{rolloverPromise=null;});
+ return rolloverPromise;
+}
 function message(text,error=false){el('finMessage').textContent=text;el('finMessage').className='notice'+(error?' error':' success');}
 function number(x){return Number(x)||0;}
 function row(cells){return '<tr>'+cells.map(x=>'<td>'+x+'</td>').join('')+'</tr>';}
@@ -146,6 +153,7 @@ function setTab(tab){
  if(tab==='entries')el('finEntryForm').scrollIntoView({block:'nearest',behavior:'smooth'});
  if(tab==='platforms')window.CaseirinhoPlatformSales?.load?.();
  if(tab==='assets')window.CaseirinhoAssetRegistry?.load?.();
+ if(tab==='fixed')window.CaseirinhoRent?.load?.();
  if(tab==='reports')window.CaseirinhoFinanceReports?.load?.();
  render();
 }
@@ -176,6 +184,7 @@ function resetForm(kind='CUSTO_PRODUCAO',category){
  el('finSave').textContent='💾 Salvar lançamento';
 }
 function preset(cat){
+ if(cat==='ALUGUEL'){setTab('fixed');el('finRentAmount')?.focus();return;}
  resetForm('DESPESA_FIXA',cat);el('finDescription').value=CATS.DESPESA_FIXA[cat]+' · '+state.month;el('finRepeat').checked=true;setTab('entries');el('finAmount').focus();
 }
 function startKind(kind){
@@ -206,15 +215,17 @@ async function load(){
  state.loading=true;el('finRefresh').disabled=true;message('Consultando vendas e lançamentos financeiros…');
  try{
   state.month=el('finMonth').value||nowBR().slice(0,7);el('finMonth').value=state.month;
+  const rollover=await reconcileMonth();
   state.data=await api('/overview?month='+encodeURIComponent(state.month));
   await employeeExtras();
   if(state.tab==='assets')window.CaseirinhoAssetRegistry?.load?.();
+  if(state.tab==='fixed')window.CaseirinhoRent?.load?.();
   if(state.dailyRange){
    try{state.dailyData=await api(dailyPath(state.dailyRange.from,state.dailyRange.to));}
    catch(error){state.dailyData=null;message('DRE atualizado; período não carregou: '+error.message,true);}
   }
   render();
-  message('Financeiro sincronizado com o ERP • competência '+state.month+' • '+new Date().toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo'}));
+  message('Financeiro sincronizado com o ERP • competência '+state.month+' • '+new Date().toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo'})+(rollover?.error?' • Atenção: confirmação mensal não executada: '+rollover.error:''),!!rollover?.error);
  }catch(e){message('Não foi possível consultar o financeiro: '+e.message,true);}
  finally{state.loading=false;el('finRefresh').disabled=false;}
 }
@@ -252,8 +263,11 @@ function render(){
   ['(-) Despesas variáveis (inclusive taxas das plataformas)',-number(d.variableCents)],
   ['(i) Taxas de plataformas já incluídas nas despesas variáveis',number(d.externalPlatformFeesCents)],
   ['(-) Impostos e taxas lançados',-number(d.taxesCents)],
-  ['(-) Depreciação gerencial dos ativos',-number(d.depreciationCents)],
-  ['(=) RESULTADO GERENCIAL DO MÊS',d.netCents,true],
+  ['(=) RESULTADO OPERACIONAL ANTES DAS PARCELAS DE ATIVOS',d.operatingNetCents,true],
+  ['(-) Parcelas de ativos da competência — despesa gerencial',-number(d.assetInstallmentExpenseCents)],
+  ['(=) RESULTADO GERENCIAL APÓS INVESTIMENTOS',d.netCents,true],
+  ['(i) Depreciação contábil estimada — informativo, NÃO deduzida',d.depreciationCents],
+  ['(i) Resultado estimado pelo critério de depreciação',d.accountingNetEstimateCents],
   ['(i) Ativos antigos lançados no mês (fora do DRE)',d.assetsCents],
   ['(i) Bens adquiridos no cadastro patrimonial (fora do DRE)',d.assetRegistry?.acquiredCents],
   ['(i) Parcelas de investimentos pagas no mês (fluxo de caixa)',d.assetRegistry?.paidCents],
@@ -261,7 +275,7 @@ function render(){
  ];
  el('finDre').innerHTML='<div class="fin-dre">'+dreRows.map(([name,value,highlight])=>
   '<div class="fin-dre-row'+(highlight?' fin-dre-total':'')+'"><span>'+esc(name)+'</span><strong>'+money(value)+'</strong></div>').join('')+'</div>'+
-  '<p class="notice">Resultado gerencial com depreciação configurada no cadastro patrimonial, mas sem tributos não lançados. Parcelas pagas são saídas de caixa e não despesas repetidas do DRE. Valores por competência; contas pendentes também afetam o resultado. Vendas em andamento não compõem receita realizada.</p>';
+  '<p class="notice">Resultado gerencial por competência do vencimento: cada parcela de ativo reduz o resultado, mesmo pendente. A depreciação é apenas informativa e não é abatida novamente. O resultado gerencial NÃO equivale ao lucro contábil. A confirmação automática de pagamento é administrativa e não consulta banco. Vendas em andamento não compõem receita realizada.</p>';
  const total=days.reduce((a,x)=>({count:a.count+number(x.completedCount),completed:a.completed+number(x.completedCents),
   manual:a.manual+number(x.manualCents),pending:a.pending+number(x.pendingCents)}),{count:0,completed:0,manual:0,pending:0});
  const range=state.dailyRange?datestr(state.dailyRange.from)+(state.dailyRange.from===state.dailyRange.to?'':' até '+datestr(state.dailyRange.to)):'mês '+state.month;
@@ -314,6 +328,8 @@ async function save(event){
  try{
   const amount=Number(String(el('finAmount').value).replace(',','.'));
   if(!Number.isFinite(amount)||amount<=0)throw Error('Informe o valor.');
+  if(el('finKind').value==='DESPESA_FIXA'&&el('finCategory').value==='ALUGUEL'&&!state.editing)
+   throw Error('Cadastre o aluguel pelo módulo Contas fixas → Aluguel recorrente, para evitar duplicidade.');
   const data={
    kind:el('finKind').value,category:el('finCategory').value,description:el('finDescription').value.trim(),
    amountCents:Math.round(amount*100),competenceDate:el('finDate').value,
@@ -375,8 +391,9 @@ function downloadCsv(){
    ['Pagamento de funcionários (3.02.01)',toReais(d.payrollCents)],
    ['Despesas com funcionários (3.02.02)',toReais(d.employeeExpensesCents)],
    ['Despesas variáveis',toReais(d.variableCents)],['Tributos lançados',toReais(d.taxesCents)],
-   ['Depreciação dos ativos',toReais(d.depreciationCents)],
-   ['Resultado gerencial',toReais(d.netCents)],['Ativos antigos fora do DRE',toReais(d.assetsCents)],
+   ['Parcelas de ativos da competência',toReais(d.assetInstallmentExpenseCents)],
+   ['Depreciação apenas informativa',toReais(d.depreciationCents)],
+   ['Resultado gerencial após parcelas',toReais(d.netCents)],['Ativos antigos fora do DRE',toReais(d.assetsCents)],
    ['Bens adquiridos na competência',toReais(d.assetRegistry?.acquiredCents)],
    ['Parcelas de investimento pagas',toReais(d.assetRegistry?.paidCents)]];
  }else{
@@ -440,6 +457,6 @@ function bind(){
   if(b.dataset.finRepeat)repeat(b.dataset.finRepeat);
  });
 }
-window.CaseirinhoFinance={load,setTab,updateSidebar};
+window.CaseirinhoFinance={load,setTab,updateSidebar,reconcile:reconcileMonth};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bind,{once:true});else bind();
 })();
