@@ -51,11 +51,24 @@ function browserNotify(carts){
  const x=carts[0];
  try{new Notification('🛒 Sacola para recuperar • Caseirinho',{body:(x.name?x.name+' • ':'')+itemNames(x).slice(0,150),tag:'caseirinho-carrinho-'+x.sessionId})}catch(_){}
 }
+function inAppAlert(newOnes){
+ if(!newOnes.length)return;
+ E('crAlertToast')?.remove();
+ const box=document.createElement('div');
+ box.id='crAlertToast';box.className='cr-alert-toast';box.setAttribute('role','status');
+ const amount=newOnes.length;
+ const title=document.createElement('strong');title.textContent='🛒 '+amount+' sacola'+(amount===1?'':'s')+' aguardando conclusão';
+ const detail=document.createElement('p');detail.textContent='Há novas sacolas sem compra finalizada. Veja os horários e confira quem pode receber ajuda.';
+ const open=document.createElement('button');open.type='button';open.className='btn primary';open.textContent='Ver sacolas';open.onclick=()=>{document.querySelector('.nav [data-view="carts"]')?.click();box.remove()};
+ const close=document.createElement('button');close.type='button';close.className='btn';close.textContent='Fechar';close.onclick=()=>box.remove();
+ box.append(title,detail,open,close);document.body.appendChild(box);
+ setTimeout(()=>box.remove(),12000);
+}
 function updateNotifications(){
- const current=new Set(A(data.carts).filter(c=>c.status==='PENDING'&&c.contactEligible).map(c=>c.sessionId));
+ const current=new Set(A(data.carts).filter(c=>c.status==='PENDING').map(c=>c.sessionId));
  if(loaded){
-  const newOnes=A(data.carts).filter(c=>c.status==='PENDING'&&c.contactEligible&&!previousContactable.has(c.sessionId));
-  if(newOnes.length)browserNotify(newOnes);
+  const newOnes=A(data.carts).filter(c=>c.status==='PENDING'&&!previousContactable.has(c.sessionId));
+  if(newOnes.length){browserNotify(newOnes);inAppAlert(newOnes)}
  }
  previousContactable=current;
  loaded=true;
