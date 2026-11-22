@@ -1,0 +1,20 @@
+/* Recuperação de Sacolas • Caseirinho */
+.cr-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:12px 0 18px}
+.cr-stat{background:#fff;border:1px solid #d5e7db;border-radius:16px;padding:15px;box-shadow:0 2px 9px #183c2e0c}
+.cr-stat strong{display:block;color:#154e38;font-size:27px;margin-bottom:3px}
+.cr-stat small{color:#526458;font-weight:650}
+.cr-toolbar{display:flex;flex-wrap:wrap;align-items:end;gap:10px;margin:12px 0}
+.cr-toolbar label{display:flex;flex-direction:column;gap:5px;flex:1 1 175px;font-size:13px;font-weight:750}
+.cr-toolbar input,.cr-toolbar select{border:1px solid #c5dccc;border-radius:10px;background:white;color:#172b20;padding:11px 12px;font:inherit;width:100%;box-sizing:border-box}
+.cr-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:13px;margin-top:15px}
+.cr-card{background:#fbfffc;border:1px solid #d2e6d7;border-radius:17px;padding:16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.cr-card-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.cr-card-head strong{color:#173f2f;font-size:16px}
+.cr-tag{display:inline-flex;flex:none;border-radius:999px;padding:5px 10px;background:#fff3cd;color:#815b15;font-size:12px;font-weight:800}
+.cr-tag.contacted{background:#e0f4e8;color:#14673e}.cr-tag.dismissed{background:#e9ecef;color:#53606b}
+.cr-meta{display:grid;gap:4px;color:#546358;font-size:12px;overflow-wrap:anywhere}
+.cr-products{border-top:1px solid #e0e8e1;border-bottom:1px solid #e0e8e1;padding:12px 0;font-size:13px}
+.cr-products ul{padding-left:18px;margin:7px 0 12px}.cr-products li{margin-bottom:4px;overflow-wrap:anywhere}
+.cr-actions{display:flex;flex-wrap:wrap;gap:7px;align-items:center}.cr-actions a,.cr-actions button{font-size:12px;line-height:1.35;text-decoration:none}
+.cr-muted{font-size:12px;color:#68756c;padding:9px 0}
+@media(max-width:650px){.cr-stats{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.cr-stat{padding:10px}.cr-stat strong{font-size:21px}.cr-stat small{font-size:10px}.cr-card{padding:12px}.cr-actions a,.cr-actions button{flex:1 1 135px;text-align:center}}
