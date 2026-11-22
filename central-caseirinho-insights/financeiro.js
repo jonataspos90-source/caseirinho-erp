@@ -18,7 +18,7 @@ const el=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"']/g
 const money=c=>(Number(c||0)/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const datestr=x=>x?String(x).slice(0,10).split('-').reverse().join('/'):'—';
 const nowBR=()=>{const x=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()),p=Object.fromEntries(x.map(i=>[i.type,i.value]));return p.year+'-'+p.month+'-'+p.day;};
-const state={data:null,month:'',tab:'dre',editing:null,loading:false,dailyRange:null,dailyData:null,dailyLoading:false,employeePriceBasis:'CUSTO',employeeBasisLoaded:false,employeeProducts:[]};
+const state={data:null,month:'',tab:'entries',editing:null,loading:false,dailyRange:null,dailyData:null,dailyLoading:false,employeePriceBasis:'CUSTO',employeeBasisLoaded:false,employeeProducts:[]};
 function session(){
  try{const x=JSON.parse(sessionStorage.getItem(KEY)||'{}');return x.token&&Number(x.expiresAt)>Date.now()+10000?x.token:'';}catch(_){return ''}
 }
@@ -117,15 +117,39 @@ async function saveEmployeePriceBasis(){
  finally{button.disabled=false;}
 }
 
+const MODULES={platforms:['🍔 iFood / 99Food','Receitas, taxas e repasses de plataformas'],
+ revenue:['💵 Receitas e vendas','Vendas concluídas e receitas fora do aplicativo'],
+ entries:['🧾 Custos e despesas','Lançamentos de compras, custos e despesas operacionais'],
+ fixed:['🏠 Contas fixas','Aluguel, energia, água e demais compromissos recorrentes'],
+ payroll:['👥 Pagamento de funcionários','Salários, encargos, comissões, férias e benefícios'],
+ employeeExpenses:['🧾 Despesas de funcionários','Consumo de produtos, transporte, alimentação e outros gastos'],
+ assets:['🧰 Ativos e investimentos','Cadastro patrimonial, parcelas, pagamentos e depreciação'],
+ daily:['📅 Vendas por dia','Receitas concluídas por data da compra'],
+ reports:['📑 Relatórios financeiros','Filtros por período, categoria, status e competência encerrada'],
+ dre:['📊 DRE por competência','Resultado gerencial após registro de receitas e despesas']};
+function updateSidebar(){
+ document.querySelectorAll('.side .nav [data-fin-tab]').forEach(b=>b.classList.toggle('active',b.dataset.finTab===state.tab&&el('financeiro')?.classList.contains('active')));
+ if(el('financeiro')?.classList.contains('active')){
+  el('pageTitle').textContent=MODULES[state.tab][0].replace(/^[^ ]+ /,'');
+  el('finSectionTitle').textContent=MODULES[state.tab][0];
+  el('finSectionDescription').textContent=MODULES[state.tab][1];
+ }
+}
 function setTab(tab){
+ if(!MODULES[tab])tab='entries';
  state.tab=tab;
- const all=['platforms','dre','daily','entries','fixed','payroll','employeeExpenses','assets'];
- for(const t of all)el('fin'+t[0].toUpperCase()+t.slice(1)+'Panel').hidden=t!==tab;
- document.querySelectorAll('[data-fin-tab]').forEach(b=>b.classList.toggle('primary',b.dataset.finTab===tab));
+ for(const t of Object.keys(MODULES)){const panel=el('fin'+t[0].toUpperCase()+t.slice(1)+'Panel');if(panel)panel.hidden=t!==tab;}
+ el('finKpis').hidden=tab!=='dre';
+ el('finCsv').hidden=['assets','reports','revenue','platforms'].includes(tab);
+ el('finPrint').hidden=tab==='reports';
+ updateSidebar();
  if(tab==='entries')el('finEntryForm').scrollIntoView({block:'nearest',behavior:'smooth'});
  if(tab==='platforms')window.CaseirinhoPlatformSales?.load?.();
+ if(tab==='assets')window.CaseirinhoAssetRegistry?.load?.();
+ if(tab==='reports')window.CaseirinhoFinanceReports?.load?.();
  render();
 }
+
 function populateTypes(){
  el('finKind').innerHTML=Object.entries(TYPES).map(([k,v])=>'<option value="'+k+'">'+esc(v)+'</option>').join('');
  populateCategories();
@@ -155,6 +179,7 @@ function preset(cat){
  resetForm('DESPESA_FIXA',cat);el('finDescription').value=CATS.DESPESA_FIXA[cat]+' · '+state.month;el('finRepeat').checked=true;setTab('entries');el('finAmount').focus();
 }
 function startKind(kind){
+ if(kind==='ATIVO'){setTab('assets');message('Cadastre o bem e suas parcelas no módulo Ativos e investimentos. Os lançamentos antigos permanecem disponíveis.');return;}
  resetForm(kind);
  if(kind==='PAGAMENTO_FUNCIONARIO'){el('finStatus').value='PENDENTE';el('finPaidAt').value='';el('finPaidAt').disabled=true;}
  setTab('entries');
@@ -183,6 +208,7 @@ async function load(){
   state.month=el('finMonth').value||nowBR().slice(0,7);el('finMonth').value=state.month;
   state.data=await api('/overview?month='+encodeURIComponent(state.month));
   await employeeExtras();
+  if(state.tab==='assets')window.CaseirinhoAssetRegistry?.load?.();
   if(state.dailyRange){
    try{state.dailyData=await api(dailyPath(state.dailyRange.from,state.dailyRange.to));}
    catch(error){state.dailyData=null;message('DRE atualizado; período não carregou: '+error.message,true);}
@@ -207,6 +233,12 @@ function render(){
   kpi('🧰','Investimento em ativos',money(d.assetsCents),'Não reduz o DRE diretamente'),
   kpi('⏳','Gastos a pagar',money(d.unpaidOperatingCents),'Competência já incluída no DRE')
  ].join('');
+ el('finRevenueKpis').innerHTML=[
+  kpi('✅','Vendas concluídas',money(d.confirmedCents),number(d.orders)+' pedidos'),
+  kpi('💵','Receitas avulsas',money(d.manualRevenueCents),'Lançamentos fora do app'),
+  kpi('📈','Receita total',money(d.revenueCents),'Competência '+state.month)
+ ].join('');
+ el('finRevenueList').innerHTML=entryTable(entries.filter(x=>x.kind==='RECEITA_AVULSA'));
  const dreRows=[
   ['(+) Vendas concluídas pelo aplicativo',d.confirmedCents],
   ['(+) Receitas / vendas lançadas fora do app',d.manualRevenueCents],
@@ -220,12 +252,16 @@ function render(){
   ['(-) Despesas variáveis (inclusive taxas das plataformas)',-number(d.variableCents)],
   ['(i) Taxas de plataformas já incluídas nas despesas variáveis',number(d.externalPlatformFeesCents)],
   ['(-) Impostos e taxas lançados',-number(d.taxesCents)],
+  ['(-) Depreciação gerencial dos ativos',-number(d.depreciationCents)],
   ['(=) RESULTADO GERENCIAL DO MÊS',d.netCents,true],
-  ['(i) Investimentos/ativos (fora do DRE)',d.assetsCents],
+  ['(i) Ativos antigos lançados no mês (fora do DRE)',d.assetsCents],
+  ['(i) Bens adquiridos no cadastro patrimonial (fora do DRE)',d.assetRegistry?.acquiredCents],
+  ['(i) Parcelas de investimentos pagas no mês (fluxo de caixa)',d.assetRegistry?.paidCents],
+  ['(i) Parcelas previstas no mês (fluxo de caixa)',d.assetRegistry?.installmentDueCents],
  ];
  el('finDre').innerHTML='<div class="fin-dre">'+dreRows.map(([name,value,highlight])=>
   '<div class="fin-dre-row'+(highlight?' fin-dre-total':'')+'"><span>'+esc(name)+'</span><strong>'+money(value)+'</strong></div>').join('')+'</div>'+
-  '<p class="notice">Resultado sem depreciação e sem tributos não lançados. Valores por competência; contas pendentes também afetam o resultado. Vendas em andamento não compõem receita realizada. Vendas concluídas são agrupadas pela data da compra, mesmo quando entregues depois.</p>';
+  '<p class="notice">Resultado gerencial com depreciação configurada no cadastro patrimonial, mas sem tributos não lançados. Parcelas pagas são saídas de caixa e não despesas repetidas do DRE. Valores por competência; contas pendentes também afetam o resultado. Vendas em andamento não compõem receita realizada.</p>';
  const total=days.reduce((a,x)=>({count:a.count+number(x.completedCount),completed:a.completed+number(x.completedCents),
   manual:a.manual+number(x.manualCents),pending:a.pending+number(x.pendingCents)}),{count:0,completed:0,manual:0,pending:0});
  const range=state.dailyRange?datestr(state.dailyRange.from)+(state.dailyRange.from===state.dailyRange.to?'':' até '+datestr(state.dailyRange.to)):'mês '+state.month;
@@ -339,7 +375,10 @@ function downloadCsv(){
    ['Pagamento de funcionários (3.02.01)',toReais(d.payrollCents)],
    ['Despesas com funcionários (3.02.02)',toReais(d.employeeExpensesCents)],
    ['Despesas variáveis',toReais(d.variableCents)],['Tributos lançados',toReais(d.taxesCents)],
-   ['Resultado gerencial',toReais(d.netCents)],['Ativos fora do DRE',toReais(d.assetsCents)]];
+   ['Depreciação dos ativos',toReais(d.depreciationCents)],
+   ['Resultado gerencial',toReais(d.netCents)],['Ativos antigos fora do DRE',toReais(d.assetsCents)],
+   ['Bens adquiridos na competência',toReais(d.assetRegistry?.acquiredCents)],
+   ['Parcelas de investimento pagas',toReais(d.assetRegistry?.paidCents)]];
  }else{
   const filtered=(data.entries||[]).filter(x=>
    state.tab==='fixed'?(x.kind==='DESPESA_FIXA'&&x.category!=='SALARIOS'):
@@ -363,9 +402,9 @@ function downloadCsv(){
 function bind(){
  if(!el('finMonth'))return;
  state.month=nowBR().slice(0,7);el('finMonth').value=state.month;
- populateTypes();resetForm();setTab('dre');
+ populateTypes();resetForm();setTab('entries');
  const initialTab=new URLSearchParams(window.location.search).get('finTab');
- if(['platforms','payroll','employeeExpenses','daily','entries','fixed','assets'].includes(initialTab))setTab(initialTab);
+ if(Object.keys(MODULES).includes(initialTab))setTab(initialTab);
  el('finMonth').addEventListener('change',()=>{state.month=el('finMonth').value;clearDailyFilter();resetForm();load();});
  el('finDailyApply').addEventListener('click',applyDailyFilter);
  el('finDailyReset').addEventListener('click',()=>{clearDailyFilter();message('Exibindo vendas do mês '+state.month+'.');});
@@ -401,6 +440,6 @@ function bind(){
   if(b.dataset.finRepeat)repeat(b.dataset.finRepeat);
  });
 }
-window.CaseirinhoFinance={load};
+window.CaseirinhoFinance={load,setTab,updateSidebar};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bind,{once:true});else bind();
 })();
