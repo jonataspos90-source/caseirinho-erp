@@ -435,3 +435,8 @@ button:disabled{cursor:not-allowed!important}
 /* Contas a receber: duplicatas separadas dos pedidos da loja. */
 .convenio-document{display:flex;flex-wrap:wrap;align-items:center;gap:9px;padding:9px 0;border-bottom:1px dashed #d8e4dc;font-size:12px}.convenio-document>b{color:#183c2e;margin-left:auto}.convenio-document .badge{white-space:normal}
 @media(max-width:600px){.convenio-document{align-items:flex-start;flex-direction:column}.convenio-document>b{margin-left:0}}
+
+/* Grupos do menu lateral; mantêm a rolagem vertical independente */
+.nav-group-title{display:block;font-size:10px;font-weight:850;letter-spacing:1.1px;color:#b5d3bb;border-top:1px solid #ffffff22;padding:15px 11px 4px;margin-top:8px;flex:none}
+.side .nav button.active{background:#ffffff27;border-color:#ffffff4a}
+@media(max-width:790px){.nav-group-title{display:none}}
