@@ -260,8 +260,14 @@
 <section id="financeiro" class="section">
  <div class="section-head"><div><h2 id="finSectionTitle">🧾 Custos e despesas</h2><p id="finSectionDescription">Cada processo financeiro possui seu módulo. Selecione o módulo no menu lateral.</p></div><button class="btn primary" type="button" id="finRefresh">↻ Atualizar financeiro</button></div>
  <div class="card fin-toolbar">
-  <label>📆 Competência (mês) <input id="finMonth" type="month" aria-label="Competência financeira"></label>
-  <p class="fin-toolbar-hint">Use o menu lateral para mudar de módulo. As informações são compartilhadas com o ERP, mas cada funcionalidade fica em sua própria tela.</p>
+  <div class="fin-competence-control">
+   <label for="finMonth">📆 Competência financeira (mês)</label>
+   <input id="finMonth" type="month" aria-label="Selecionar competência financeira" autocomplete="off">
+   <button id="finCurrentMonth" class="btn small" type="button">📅 Mês vigente</button>
+   <strong id="finMonthCaption" class="fin-competence-caption" aria-live="polite">Competência selecionada: carregando…</strong>
+   <small id="finLoadedMonth" class="fin-loaded-month" aria-live="polite">Selecione um mês para consultar os lançamentos.</small>
+  </div>
+  <p class="fin-toolbar-hint">Cada módulo financeiro é independente. Os dados mostrados abaixo pertencem exclusivamente à competência selecionada.</p>
   <div class="toolbar"><button id="finCsv" class="btn small" type="button">⬇ CSV do mês</button><button id="finPrint" class="btn small gold" type="button">🖨️ Imprimir / Salvar PDF</button></div>
  </div>
  <div id="finMessage" class="notice">Acesse o Financeiro para consultar as vendas e o DRE.</div>
