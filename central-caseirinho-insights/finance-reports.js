@@ -57,12 +57,17 @@ function render(){
  let rows=kind==='DAILY'?days:kind==='REVENUE'?[...mapped.filter(x=>x.code==='RECEITA_AVULSA'),...sales]:
  kind==='ATIVO'?[...mapped.filter(x=>x.code==='ATIVO'),...assetRows]:
  kind==='ALL'?[...mapped,...sales]:mapped.filter(x=>x.code===kind);
- rows=rows.filter(x=>!term||(x.kind+' '+x.description+' '+x.category+' '+x.status).toLowerCase().includes(term))
+ rows=rows.filter(x=>(pay==='ALL'||kind==='DAILY'||x.status===pay)&&(!term||(x.kind+' '+x.description+' '+x.category+' '+x.status).toLowerCase().includes(term)))
    .sort((a,b)=>a.date.localeCompare(b.date)||a.description.localeCompare(b.description));
  visible=rows;
  const total=rows.reduce((s,x)=>s+Number(x.amountCents||0),0);
- let detail=rows.length+' linha(s) encontradas • Soma de valores exibidos: '+money(total)+'.';
- if(kind==='ATIVO')detail+=' Aquisições, vencimentos e pagamentos são movimentos diferentes: não some essa coluna para apurar lucro ou caixa.';
+ let detail=rows.length+' linha(s) encontradas • Total listado: '+money(total)+'.';
+ if(kind==='ATIVO'){
+  const acquired=rows.filter(x=>x.kind==='Aquisição de ativo').reduce((n,x)=>n+x.amountCents,0);
+  const due=rows.filter(x=>x.kind==='Parcela prevista').reduce((n,x)=>n+x.amountCents,0);
+  const paid=rows.filter(x=>x.kind==='Pagamento de investimento').reduce((n,x)=>n+x.amountCents,0);
+  detail='Ativos · '+rows.length+' registros · Aquisições: '+money(acquired)+' · Parcelas com vencimento: '+money(due)+' · Pagamentos registrados: '+money(paid)+'. Movimentos não devem ser somados entre si.';
+ }
  if(kind==='ALL')detail+=' A soma reúne receitas e gastos; não representa resultado. Consulte o DRE para o lucro.';
  E('finReportSummary').textContent=detail;
  E('finReportResults').innerHTML=table(rows);
