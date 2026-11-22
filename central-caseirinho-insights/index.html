@@ -316,7 +316,7 @@
 </div>
 <div id="finDrePanel" class="fin-panel">
   <article class="card"><h2>📊 DRE Gerencial — mês selecionado</h2><div id="finDre"></div></article>
-  <div class="notice">Regime simplificado por competência: vendas do app somente quando ENTREGUES/RETIRADAS, agrupadas pela data do pedido; pagamentos de funcionários na conta gerencial 3.02.01, sem duplicar salários antigos; receitas avulsas somadas separadamente. Compras para revenda entram como custo integral no mês, sem baixa de estoque. Ativos não entram como despesa do DRE. Este relatório é gerencial e não substitui a contabilidade. Calcula a depreciação apenas dos ativos novos cadastrados com vida útil informada; ativos antigos permanecem fora até regularização e impostos não lançados não são presumidos.</div>
+  <div class="notice">Regime simplificado por competência: vendas do app somente quando ENTREGUES/RETIRADAS, agrupadas pela data do pedido; pagamentos de funcionários na conta gerencial 3.02.01, sem duplicar salários antigos; receitas avulsas somadas separadamente. Compras para revenda entram como custo integral no mês, sem baixa de estoque. Na análise gerencial, as parcelas de ativos são deduzidas pela competência do vencimento, independentemente do pagamento. A depreciação é demonstrada separadamente, apenas como informação contábil estimada, sem desconto em duplicidade. Este resultado gerencial NÃO substitui a DRE contábil nem presume impostos não lançados.</div>
  </div>
  <div id="finDailyPanel" class="fin-panel" hidden><article class="card">
  <h2>📅 Vendas por dia</h2>
@@ -364,7 +364,30 @@
   </article>
   <article class="card"><h2>📋 Lançamentos do mês</h2><div class="toolbar"><input id="finSearch" type="search" placeholder="Pesquisar descrição ou fornecedor"><select id="finFilter"><option value="ALL">Todos</option><option value="CUSTO_PRODUCAO">Custos produção</option><option value="COMPRA_REVENDA">Compras revenda</option><option value="DESPESA_FIXA">Contas fixas</option><option value="DESPESA_VARIAVEL">Despesas variáveis</option><option value="PAGAMENTO_FUNCIONARIO">Pagamento de funcionários</option><option value="DESPESA_FUNCIONARIO">Despesas de funcionários</option><option value="TRIBUTO">Impostos</option><option value="RECEITA_AVULSA">Vendas fora app</option><option value="ATIVO">Ativos</option></select></div><div id="finEntries"></div></article>
  </div>
- <div id="finFixedPanel" class="fin-panel" hidden><article class="card"><h2>🏠 Aluguel, água, luz e internet</h2><p>Use os atalhos para preencher o formulário de lançamento. Marque «repetir mensalmente» e use «Copiar próximo mês» para gerar a próxima conta sem duplicar.</p><div class="toolbar"><button class="btn" type="button" data-fin-preset="ALUGUEL">🏠 Aluguel</button><button class="btn" type="button" data-fin-preset="AGUA">💧 Água</button><button class="btn" type="button" data-fin-preset="LUZ">💡 Luz</button><button class="btn" type="button" data-fin-preset="INTERNET">🌐 Internet</button><button class="btn" type="button" data-fin-preset="TELEFONE">📞 Telefone</button></div><div id="finFixed"></div></article></div>
+ <div id="finFixedPanel" class="fin-panel" hidden>
+ <article class="card">
+  <h2>🏠 Aluguel mensal recorrente</h2>
+  <p>Cadastre uma vez o valor, a primeira competência e o vencimento. O sistema criará o lançamento por competência e, ao abrir a Central com o login Jonatas, registrará a confirmação gerencial do mês atual. Os meses futuros permanecerão programados e em aberto.</p>
+  <form class="fin-form" id="finRentForm">
+   <label class="fin-wide">Descrição<input id="finRentName" required maxlength="180" value="Aluguel" placeholder="Ex.: Aluguel da cozinha"></label>
+   <label>Valor mensal do aluguel (R$)<input id="finRentAmount" type="number" required min="0.01" max="10000000" step="0.01" placeholder="Informe o valor"></label>
+   <label>Primeira competência<input id="finRentStart" type="month" required></label>
+   <label>Dia do vencimento (1 a 28)<input id="finRentDueDay" type="number" min="1" max="28" step="1" required value="10"></label>
+   <label class="fin-wide">Locador / fornecedor<input id="finRentSupplier" maxlength="140" placeholder="Opcional"></label>
+   <label class="fin-wide fin-check"><input type="checkbox" id="finRentAuto" checked> Confirmação administrativa automática no mês vigente, pelo login Jonatas</label>
+   <label class="fin-wide">Observações<textarea id="finRentNotes" rows="2" maxlength="500"></textarea></label>
+   <div class="toolbar fin-wide"><button id="finRentSave" type="submit" class="btn primary">💾 Salvar aluguel recorrente</button><button id="finRentRefresh" type="button" class="btn">↻ Atualizar</button></div>
+  </form>
+  <div id="finRentStatus" class="notice">Não há configuração de aluguel carregada.</div>
+  <h3>📅 Competências do aluguel</h3><div id="finRentSchedule"></div>
+  <p class="notice">Confirmação gerencial automática não é transferência bancária nem comprovante de quitação. Se um pagamento não ocorreu, edite o lançamento e marque pendente; a revisão manual será preservada.</p>
+ </article>
+ <article class="card"><h2>🏠 Outras despesas fixas</h2>
+  <p>Água, energia, internet e demais contas permanecem no cadastro de lançamentos. Para aluguel, utilize exclusivamente o formulário recorrente acima, evitando lançamentos duplicados.</p>
+  <div class="toolbar"><button class="btn" type="button" data-fin-preset="AGUA">💧 Água</button><button class="btn" type="button" data-fin-preset="LUZ">💡 Luz</button><button class="btn" type="button" data-fin-preset="INTERNET">🌐 Internet</button><button class="btn" type="button" data-fin-preset="TELEFONE">📞 Telefone</button></div>
+  <div id="finFixed"></div>
+ </article>
+</div>
  <div id="finPayrollPanel" class="fin-panel" hidden>
  <article class="card">
   <div class="section-head"><div><h2>👥 Pagamento de funcionários</h2>
@@ -400,7 +423,7 @@
 <div id="finAssetsPanel" class="fin-panel" hidden>
  <article class="card">
   <div class="section-head"><div><h2>🧰 Patrimônio e investimentos</h2><p>Cadastre cada bem, custo de aquisição, parcelas, vencimentos, pagamentos e vida útil.</p></div><button id="finAssetRefresh" class="btn" type="button">↻ Atualizar ativos</button></div>
-  <div class="notice">A compra é um <b>investimento</b>. Cada parcela paga é uma saída de caixa, não uma nova despesa. O DRE reconhece a <b>depreciação gerencial</b> informada para o bem a partir do mês seguinte ao início de uso. Confira o enquadramento contábil antes do fechamento fiscal.</div>
+  <div class="notice">A compra permanece um <b>ativo patrimonial</b>. Para o <b>resultado gerencial mensal</b>, cada parcela é deduzida na competência de seu vencimento, paga ou pendente. A depreciação permanece apenas informativa e não é deduzida novamente. Esse resultado é diferente da DRE contábil. Confirmação automática pelo login Jonatas é <b>registro administrativo</b>, não comprovante bancário.</div>
   <div id="finAssetsSummary" class="grid stats"></div>
   <div id="finAssetMessage" class="notice">Consulte os equipamentos cadastrados no ERP.</div>
  </article>
@@ -410,11 +433,12 @@
    <label>Categoria<select id="finAssetCategory"><option value="EQUIPAMENTOS">Equipamentos</option><option value="MAQUINAS">Máquinas</option><option value="MOVEIS">Móveis</option><option value="REFRIGERACAO">Refrigeração</option><option value="VEICULOS">Veículos</option><option value="OUTROS_ATIVOS">Outros ativos</option></select></label>
    <label>Valor total da compra (R$)<input type="number" id="finAssetAmount" required min="0.01" max="10000000" step="0.01"></label>
    <label>Data da compra<input type="date" id="finAssetPurchase" required></label>
-   <label>Início de uso (depreciação)<input type="date" id="finAssetUse" required></label>
+   <label>Início de uso (depreciação informativa)<input type="date" id="finAssetUse" required></label>
    <label>Quantidade de parcelas<input type="number" id="finAssetInstallments" min="1" max="120" step="1" required value="1"></label>
    <label>Vencimento da primeira parcela<input type="date" id="finAssetFirstDue" required></label>
    <label>Vida útil (meses)<input type="number" id="finAssetLife" min="1" max="600" required value="60"></label>
    <label>Valor residual estimado (R$)<input type="number" id="finAssetResidual" min="0" max="10000000" step="0.01" value="0"></label>
+   <label class="fin-wide fin-check"><input type="checkbox" id="finAssetAuto" checked> Confirmar automaticamente pelo login Jonatas a parcela da competência vigente (os meses futuros ficam pendentes)</label>
    <label class="fin-wide">Fornecedor<input id="finAssetSupplier" maxlength="140" placeholder="Onde comprou o bem"></label>
    <label class="fin-wide">Observações<textarea id="finAssetNotes" maxlength="500" rows="2"></textarea></label>
    <div class="toolbar fin-wide"><button class="btn primary" type="submit" id="finAssetSave">💾 Cadastrar equipamento</button><button type="button" class="btn" id="finAssetCancel" hidden>Cancelar edição</button></div>
@@ -777,7 +801,8 @@
 <script src="./operations-recovery.js?v=1" defer></script>
 <script src="./financeiro.js?v=20261122-finance-modules2" defer></script>
 <script src="./platform-sales.js?v=20261110-platform-1" defer></script>
-<script src="./asset-registry.js?v=20261122-1" defer></script>
+<script src="./asset-registry.js?v=20261122-2" defer></script>
+<script src="./rent-recurring.js?v=20261122-1" defer></script>
 <script src="./finance-reports.js?v=20261122-2" defer></script>
 <script src="./conta-cliente-recebimentos.js?v=20261111-2" defer></script>
 <script src="./devedores.js?v=20261119-1" defer></script>
