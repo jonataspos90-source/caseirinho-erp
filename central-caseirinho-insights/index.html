@@ -2,7 +2,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#183c2e"><meta name="description" content="Central Caseirinho Insights — painel administrativo independente de CRM, acessos, pedidos e cardápio.">
 <title>Central Caseirinho | Gestão e Loja</title>
-<link rel="stylesheet" href="./styles.css?v=20261122-finance-modules2"><link rel="stylesheet" href="./store-hours-admin.css?v=20261116-1"><link rel="stylesheet" href="./season-virtual-packs.css?v=20261116-virtual1"><link rel="stylesheet" href="./financeiro.css?v=20261122-finance-modules1">
+<link rel="stylesheet" href="./styles.css?v=20261122-month-current83"><link rel="stylesheet" href="./store-hours-admin.css?v=20261116-1"><link rel="stylesheet" href="./season-virtual-packs.css?v=20261116-virtual1"><link rel="stylesheet" href="./financeiro.css?v=20261122-month-current83">
 <link rel="manifest" href="./manifest.webmanifest?v=20261119-central"><link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png"><link rel="apple-touch-icon" href="./icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default">
 <style>.season-images-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;margin-top:12px}.season-image-tile{border:1px solid #c9dfd0;padding:8px;border-radius:10px;background:#f8fbf8}.season-image-tile img{height:100px;width:100%;object-fit:cover;border-radius:7px}.season-image-tile .toolbar{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}.season-image-tile button{padding:6px 8px}</style> <link rel="stylesheet" href="./seasonal-workspace.css?v=20261119-1">
  <link rel="stylesheet" href="./workspace-modules.css?v=20261119-1">
@@ -467,7 +467,7 @@
    <label id="finReportFromWrap" hidden>De<input id="finReportFrom" type="date"></label>
    <label id="finReportToWrap" hidden>Até<input id="finReportTo" type="date"></label>
    <label>Pagamento<select id="finReportPayment"><option value="ALL">Todos os status</option><option value="PAGO">Pagos / recebidos</option><option value="PENDENTE">Pendentes</option></select></label>
-   <label class="fin-report-check"><input id="finReportClosedOnly" type="checkbox" checked> Apenas competências de meses calendário encerrados</label>
+   <label class="fin-report-check"><input id="finReportClosedOnly" type="checkbox"> Apenas competências de meses calendário encerrados</label>
   </div>
   <div class="toolbar"><button id="finReportApply" type="button" class="btn primary">🔎 Consultar relatório</button><button id="finReportCsv" class="btn" type="button">⬇ Exportar CSV</button><button id="finReportPrint" class="btn gold" type="button">🖨️ Imprimir / PDF</button></div>
   <div class="notice">Mês encerrado significa que o calendário passou do último dia da competência, <b>não</b> que a contabilidade esteja bloqueada ou homologada. Movimentos podem ser corrigidos até existir um fechamento formal. As parcelas de investimento não são despesas do DRE.</div>
@@ -786,7 +786,7 @@
  </nav>
 <div id="toast" class="toast" role="status" hidden></div>
 <div id="modal" class="modal-bg" hidden><div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><h2 id="modalTitle">Mensagem para WhatsApp</h2><div id="modalContent"></div><div class="toolbar" style="justify-content:flex-end;margin-top:20px"><button class="btn" id="modalClose">Fechar</button></div></div></div>
-<script src="./app.js?v=20261122-finance-modules2" defer></script>
+<script src="./app.js?v=20261122-month-current83" defer></script>
 <script src="./store-hours-admin.js?v=20261116-2" defer></script>
 <script src="./seasonal-merch-admin.js?v=20261117-save-verify1" defer></script>
 <script src="./seasonal-best-deal-admin.js?v=20261116-virtual3" defer></script>
@@ -805,11 +805,11 @@
 <script src="./cashback-pending-erp.js?v=1" defer></script>
 <script src="./order-reject.js?v=4" defer></script>
 <script src="./operations-recovery.js?v=1" defer></script>
-<script src="./financeiro.js?v=20261122-monthly-payment3" defer></script>
+<script src="./financeiro.js?v=20261122-month-current83" defer></script>
 <script src="./platform-sales.js?v=20261110-platform-1" defer></script>
 <script src="./asset-registry.js?v=20261122-monthly-payment2" defer></script>
 <script src="./rent-recurring.js?v=20261122-1" defer></script>
-<script src="./finance-reports.js?v=20261122-2" defer></script>
+<script src="./finance-reports.js?v=20261122-month-current83" defer></script>
 <script src="./conta-cliente-recebimentos.js?v=20261111-2" defer></script>
 <script src="./devedores.js?v=20261119-1" defer></script>
 <script src="./convenios-receber.js?v=20261119-1" defer></script>
