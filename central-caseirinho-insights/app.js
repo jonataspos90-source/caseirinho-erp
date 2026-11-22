@@ -124,7 +124,27 @@ function setupInstall(){
  });
  window.matchMedia?.('(display-mode: standalone)').addEventListener?.('change',refreshInstallControls);
  refreshInstallControls();
- if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js',{scope:'./'}).catch(()=>{});
+ if('serviceWorker' in navigator&&location.protocol==='https:'){
+  const controlledAtStart=!!navigator.serviceWorker.controller;
+  const refreshKey='caseirinho-sw-refreshed-finance-v82-20261122';
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{
+   if(!controlledAtStart||sessionStorage.getItem(refreshKey))return;
+   sessionStorage.setItem(refreshKey,'1');
+   window.location.reload();
+  });
+  navigator.serviceWorker.register('./sw.js?v=20261122-finance-current82',{
+   scope:'./',updateViaCache:'none'
+  }).then(reg=>{
+   let lastUpdate=0;
+   const check=()=>{
+    if(navigator.onLine===false||Date.now()-lastUpdate<5*60*1000)return;
+    lastUpdate=Date.now();
+    reg.update().catch(()=>{});
+   };
+   check();
+   document.addEventListener('visibilitychange',()=>{if(!document.hidden)check();});
+  }).catch(()=>{});
+ }
 }
 async function api(path,options){
  if(!st.token)throw Error('É necessário entrar com seu usuário administrativo.');
