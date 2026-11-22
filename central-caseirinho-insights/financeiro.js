@@ -230,7 +230,7 @@ function render(){
   kpi('👥','Pagamento de funcionários',money(d.payrollCents),'Conta gerencial 3.02.01 • competência do mês'),
   kpi('🧾','Despesas dos funcionários',money(d.employeeExpensesCents),'Conta 3.02.02 • separada de salários'),
   kpi('📊','Resultado do mês',money(d.netCents),'Margem: '+(d.marginPercent===null?'—':d.marginPercent+'%')),
-  kpi('🧰','Investimento em ativos',money(d.assetsCents),'Não reduz o DRE diretamente'),
+  kpi('🧰','Investimento em ativos',money(number(d.assetsCents)+number(d.assetRegistry?.acquiredCents)),'Bens adquiridos; sem dupla despesa no DRE'),
   kpi('⏳','Gastos a pagar',money(d.unpaidOperatingCents),'Competência já incluída no DRE')
  ].join('');
  el('finRevenueKpis').innerHTML=[
