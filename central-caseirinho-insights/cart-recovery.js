@@ -75,7 +75,7 @@ function card(c){
   '<div class="cr-products"><b>Produtos na sacola</b><ul>'+lines+'</ul><b>Valor estimado: '+esc(brl(c.total))+'</b></div>'+
   '<div class="cr-actions">'+
   (eligible?'<a class="btn primary" target="_blank" rel="noopener noreferrer" href="'+esc(url)+'">💬 Abrir WhatsApp</a>'+
-  '<button type="button" class="btn" data-cr="copy" data-id="'+esc(c.sessionId)+'">📋 Copiar mensagem</button>'
+  '<button type="button" class="btn" data-cr="copy" data-id="'+esc(c.sessionId)+'">📋 Copiar mensagem</button>'+  '<button type="button" class="btn" data-cr="optout" data-id="'+esc(c.sessionId)+'">🚫 Bloquear novos contatos</button>'
   :'<span class="cr-muted"'+disabled+'>🔒 Sem autorização para contato direto</span>')+
   (c.status==='PENDING'?'<button type="button" class="btn" data-cr="contacted" data-id="'+esc(c.sessionId)+'" '+(eligible?'':'disabled')+'>✅ Marcar como contatado</button>'+
   '<button type="button" class="btn" data-cr="dismiss" data-id="'+esc(c.sessionId)+'">Arquivar</button>':'')+
@@ -122,6 +122,7 @@ function wire(){
   const c=A(data.carts).find(c=>c.sessionId===btn.dataset.id);if(!c)return;
   if(btn.dataset.cr==='contacted')await setStatus(c,'CONTACTED');
   if(btn.dataset.cr==='dismiss')await setStatus(c,'DISMISSED');
+  if(btn.dataset.cr==='optout'&&c.contactEligible&&window.confirm('O cliente solicitou parar de receber mensagens? Esta opção cancela a autorização de recuperação de sacolas para este WhatsApp.')){try{await call('/cart-recovery/'+encodeURIComponent(c.sessionId)+'/status',{method:'POST',body:{action:'OPTOUT'}});await load()}catch(err){note(err.message,true)}}
   if(btn.dataset.cr==='copy'&&c.contactEligible){
    try{await navigator.clipboard.writeText(message(c));note('Mensagem copiada. Confira o WhatsApp antes de enviar.')}catch(_){note('Não foi possível copiar automaticamente.',true)}
   }
