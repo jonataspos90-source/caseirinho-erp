@@ -29,6 +29,13 @@ function selectedCompetence(){
  const input=el('finMonth');
  return monthValid(input?.value)?input.value:currentMonthBR();
 }
+function ensureCurrentMonth(){
+ if(state.userSelectedMonth)return;
+ const current=currentMonthBR();
+ if(el('finMonth')&&el('finMonth').value!==current)el('finMonth').value=current;
+ state.month=current;
+ showSelectedCompetence();
+}
 function showSelectedCompetence(){
  const month=selectedCompetence();
  const label=el('finMonthCaption');
@@ -44,7 +51,7 @@ function clearPreviousMonthData(month){
  const loaded=el('finLoadedMonth');
  if(loaded)loaded.textContent='Consultando competência '+monthLabel(month)+'…';
 }
-const state={data:null,month:'',tab:'entries',editing:null,loading:false,dailyRange:null,dailyData:null,dailyLoading:false,employeePriceBasis:'CUSTO',employeeBasisLoaded:false,employeeProducts:[],loadedMonth:'',pendingReload:false};
+const state={data:null,month:'',tab:'entries',editing:null,loading:false,dailyRange:null,dailyData:null,dailyLoading:false,employeePriceBasis:'CUSTO',employeeBasisLoaded:false,employeeProducts:[],loadedMonth:'',pendingReload:false,userSelectedMonth:false};
 function session(){
  try{const x=JSON.parse(sessionStorage.getItem(KEY)||'{}');return x.token&&Number(x.expiresAt)>Date.now()+10000?x.token:'';}catch(_){return ''}
 }
@@ -486,6 +493,7 @@ function bind(){
  const initialTab=new URLSearchParams(window.location.search).get('finTab');
  if(Object.keys(MODULES).includes(initialTab))setTab(initialTab);
  el('finMonth').addEventListener('change',()=>{
+  state.userSelectedMonth=true;
   state.month=selectedCompetence();
   showSelectedCompetence();
   clearDailyFilter();resetForm();
@@ -494,6 +502,7 @@ function bind(){
  el('finCurrentMonth')?.addEventListener('click',()=>{
   const month=currentMonthBR();
   el('finMonth').value=month;
+  state.userSelectedMonth=false;
   state.month=month;
   showSelectedCompetence();
   clearDailyFilter();resetForm();
@@ -540,6 +549,6 @@ function bind(){
   if(b.dataset.finRepeat)repeat(b.dataset.finRepeat);
  });
 }
-window.CaseirinhoFinance={load,setTab,updateSidebar,reconcile:reconcileMonth};
+window.CaseirinhoFinance={load,setTab,updateSidebar,reconcile:reconcileMonth,ensureCurrentMonth};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bind,{once:true});else bind();
 })();
