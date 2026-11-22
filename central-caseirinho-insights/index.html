@@ -6,6 +6,7 @@
 <link rel="manifest" href="./manifest.webmanifest?v=20261119-central"><link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png"><link rel="apple-touch-icon" href="./icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default">
 <style>.season-images-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;margin-top:12px}.season-image-tile{border:1px solid #c9dfd0;padding:8px;border-radius:10px;background:#f8fbf8}.season-image-tile img{height:100px;width:100%;object-fit:cover;border-radius:7px}.season-image-tile .toolbar{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}.season-image-tile button{padding:6px 8px}</style> <link rel="stylesheet" href="./seasonal-workspace.css?v=20261119-1">
  <link rel="stylesheet" href="./workspace-modules.css?v=20261119-1">
+<link rel="stylesheet" href="./cart-recovery.css?v=20261122-1">
 </head><body>
 <div class="auth-screen" id="loginScreen">
  <div class="auth"><img src="./icons/icon-192.png" class="auth-logo" alt="Ícone do Caseirinho" width="76" height="76"><p class="eyebrow">Caseirinho Massas Artesanais</p>
@@ -34,6 +35,7 @@
  <button type="button" data-view="contacts">👥 CRM e contatos</button>
  <button type="button" data-view="ranking">🏆 Ranking</button>
  <button type="button" data-view="orders">🛒 Pedidos</button>
+ <button type="button" data-view="carts">🛒 Sacolas <span id="cartRecoveryBadge" class="num" hidden>0</span></button>
  <button type="button" data-view="operations">🩺 Central Operacional</button>
  <button type="button" data-view="products">🏷️ Produtos e preços</button>
  <button type="button" data-view="blackfriday">🖤 Black Friday</button>
@@ -80,7 +82,28 @@
  </section>
  <section id="ranking" class="section"><div class="section-head"><div><h2>🏆 Mais acessados</h2><p>Ranking dos últimos 7 dias, usando apenas visitas associadas a clientes identificados.</p></div></div><div id="rankingTable"></div></section>
  <section id="orders" class="section"><div class="section-head"><div><h2>🛒 Pedidos da loja</h2><button class="btn small" type="button" id="orderAlertToggle">🔔 Ativar alerta sonoro</button><p>Histórico recente de pedidos feitos no aplicativo e situação da integração com o ERP.</p></div></div><div class="toolbar"><input type="search" id="orderSearch" placeholder="Buscar pedido, nome ou telefone..."><select id="orderFilter"><option value="all">Todos</option><option value="NEW">🆕 Novos — aceitar</option><option value="PENDENTE">Integração pendente</option><option value="IMPORTANDO">Importando</option><option value="READY">📦 Aguardando entrega / retirada</option><option value="CASHBACK_PENDING">💚 Cashback a decidir</option><option value="CASHBACK_GRANTED">✅ Cashback liberado</option><option value="COMPLETED">✅ Pedidos concluídos</option></select><button id="orderQuickNewFilter" type="button" class="btn">🆕 Ver novos pedidos</button><button id="refreshFulfillment" type="button" class="btn">↻ Atualizar entregas</button></div><div class="grid stats" id="orderFulfillmentKpis"></div><div class="notice"><b>Fluxo simples:</b> confira o <b>pagamento Mercado Pago</b> na coluna Pagamento (Pix ou cartão) e use <b>🔄 Conferir MP</b> para atualizar o status pela operadora. <b>ACEITO</b> significa pedido aceito, não pagamento confirmado.  pedidos <b>NOVO</b> têm o botão <b>✅ Aceitar pedido</b>; pedidos <b>ACEITO</b> têm <b>📦 Finalizar (confirmar)</b>. Abra a janela, escolha cashback, confirme entrega e pagamento e clique em <b>CONFIRMAR E FINALIZAR AGORA</b>. Só então o status muda; a receita entrará nas vendas e no DRE sem duplicar lançamentos. Pelo botão <b>💚 Decidir cashback</b>, escolha <b>Aprovar cashback</b> ou <b>Não liberar</b> antes de finalizar; o saldo só é creditado após a conclusão e conforme as regras do programa.</div><div id="ordersTable"></div></section>
- <section id="operations" class="section">
+ <section id="carts" class="section" aria-labelledby="crTitle">
+ <div class="section-head"><div><h2 id="crTitle">🛒 Recuperação de Sacolas</h2><p>Veja quem colocou produtos na sacola e ainda não finalizou a compra. A identificação é liberada somente com autorização de contato.</p></div>
+ <button type="button" id="crRefresh" class="btn">↻ Atualizar agora</button></div>
+ <div class="notice" id="crCountText">Consultando sacolas...</div>
+ <div class="cr-stats">
+  <div class="cr-stat"><strong id="crPending">—</strong><small>Sacolas pendentes</small></div>
+  <div class="cr-stat"><strong id="crContactable">—</strong><small>Prontas para contato</small></div>
+  <div class="cr-stat"><strong id="crContacted">—</strong><small>Já contatadas</small></div>
+ </div>
+ <article class="card">
+  <div class="section-head"><div><h3>📨 Avisos de sacolas sem conclusão</h3><p>Uma sacola entra aqui após <b id="crThreshold">30</b> minutos sem movimentação e sem pedido concluído. A consulta é atualizada a cada minuto enquanto a Central estiver aberta.</p></div><button type="button" id="crNotify" class="btn">🔔 Ativar avisos neste dispositivo</button></div>
+  <div class="cr-toolbar">
+   <label>Exibir<select id="crFilter"><option value="PENDING">Aguardando contato</option><option value="CONTACTED">Já contatadas</option><option value="DISMISSED">Arquivadas</option><option value="ALL">Todas as sacolas</option></select></label>
+   <label>Pesquisar<input id="crSearch" type="search" placeholder="Cliente, produto ou WhatsApp"></label>
+  </div>
+  <div class="notice" id="crNotice" hidden role="status"></div>
+  <div id="crList" class="cr-list" aria-live="polite"><div class="notice">Carregando registros...</div></div>
+  <p class="notice">💚 O botão de WhatsApp abre uma mensagem personalizada para revisão; não envia nada automaticamente. Clique em <b>Marcar como contatado</b> somente depois de enviar. Clientes sem consentimento aparecem sem telefone.</p>
+  <p id="crUpdatedAt" class="muted"></p>
+ </article>
+</section>
+<section id="operations" class="section">
  <div class="section-head"><div><h2>🩺 Central Operacional</h2>
  <p>Auditoria de pedidos pendentes, sincronização do catálogo e notificações. Dados diretos do ERP e da API, sem alterar pedidos.</p></div>
  <button id="opsRefresh" type="button" class="btn primary">↻ Auditar agora</button></div>
@@ -671,4 +694,5 @@
 <script src="./conta-cliente-recebimentos.js?v=20261111-2" defer></script>
 <script src="./devedores.js?v=20261119-1" defer></script>
 <script src="./convenios-receber.js?v=20261119-1" defer></script>
+<script src="./cart-recovery.js?v=20261122-1" defer></script>
 </body></html>
