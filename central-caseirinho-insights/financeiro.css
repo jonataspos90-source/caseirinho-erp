@@ -114,3 +114,33 @@
 @media(max-width:620px){.platform-fields,.platform-preview-grid,.platform-line{grid-template-columns:repeat(2,minmax(0,1fr))}
  .platform-line label:first-child{grid-column:1/-1}.platform-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
  .platform-preview-grid strong{font-size:14px}.platform-group-grid,.platform-entry-grid{grid-template-columns:1fr}}
+
+/* Módulos financeiros independentes, patrimônio e relatórios */
+.fin-toolbar-hint{font-size:13px;line-height:1.5;color:#496453;margin:3px 0}
+.asset-record{margin:14px 0;padding:18px}
+.asset-record .section-head{align-items:flex-start;flex-wrap:wrap}
+.asset-record-figures{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:12px 0}
+.asset-record-figures span{display:flex;flex-direction:column;gap:6px;border:1px solid #d9e8dc;border-radius:9px;padding:10px;background:#f7fbf7}
+.asset-record-figures small{color:#5b7061;font-size:11px}
+.asset-record-figures strong{font-size:16px;color:#194b30;overflow-wrap:anywhere}
+.asset-record summary{cursor:pointer;font-weight:700;color:#235b3d;padding:10px 0}
+.asset-record details .table-wrap{max-width:100%;overflow-x:auto}
+.asset-record details .table{min-width:700px}
+.asset-record .asset-pay-date{width:155px;min-height:35px;padding:5px;border:1px solid #b5c8b8;border-radius:6px;margin-right:5px;font:inherit}
+.asset-record .asset-depreciation-note{display:block;color:#58715f;margin-top:10px;line-height:1.4}
+.fin-report-filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:12px;margin:16px 0}
+.fin-report-filters label{display:flex;flex-direction:column;gap:7px;min-width:0;font-weight:700;font-size:13px;color:#244b34}
+.fin-report-filters input,.fin-report-filters select{width:100%;min-width:0;padding:10px;min-height:43px;border-radius:9px;border:1px solid #bfcfc0;background:#fff;color:#153624}
+.fin-report-filters .fin-report-check{flex-direction:row;align-items:center;gap:9px}
+.fin-report-filters .fin-report-check input{width:20px;min-height:20px;accent-color:#276847}
+.fin-report-filters label[hidden]{display:none}
+#finReportsPanel .table-wrap{overflow-x:auto}
+#finReportsPanel .table{min-width:650px}
+#finAssetsPanel .fin-form input,#finAssetsPanel .fin-form select,#finAssetsPanel .fin-form textarea{min-width:0}
+@media(max-width:700px){.asset-record-figures{grid-template-columns:repeat(2,minmax(0,1fr))}.fin-report-filters{grid-template-columns:1fr 1fr}}
+@media(max-width:470px){.fin-report-filters{grid-template-columns:1fr}}
+@media print{
+ body:has(#financeiro.section.active) .side,body:has(#financeiro.section.active) .topbar,body:has(#financeiro.section.active) .fin-toolbar,body:has(#financeiro.section.active) #finMessage,body:has(#financeiro.section.active) #finRefresh{display:none!important}
+ body:has(#financeiro.section.active) .app{padding:8px!important;max-width:100%!important}
+ body:has(#finReportsPanel:not([hidden])) #finReportsPanel .toolbar,body:has(#finReportsPanel:not([hidden])) #finReportsPanel .fin-report-filters{display:none!important}
+}
