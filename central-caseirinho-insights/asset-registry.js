@@ -24,6 +24,7 @@ function assetFormReset(){
  E('finAssetPurchase').value=today();E('finAssetUse').value=today();E('finAssetFirstDue').value=today();
  E('finAssetInstallments').value='1';E('finAssetLife').value='60';E('finAssetResidual').value='0';
  E('finAssetSave').textContent='💾 Cadastrar equipamento';E('finAssetCancel').hidden=true;
+ E('finAssetAuto').checked=true;
 }
 function editAsset(id){
  const a=assets.find(x=>x.id===id);if(!a)return;
@@ -33,6 +34,7 @@ function editAsset(id){
  finAssetResidual:(a.residualCents/100).toFixed(2),finAssetLife:a.usefulLifeMonths,
  finAssetInstallments:a.installmentsCount,finAssetSupplier:a.supplier||'',finAssetNotes:a.notes||''};
  for(const [id,val] of Object.entries(values))E(id).value=val;
+ E('finAssetAuto').checked=a.autoConfirmMonthly!==false;
  E('finAssetSave').textContent='💾 Atualizar equipamento';E('finAssetCancel').hidden=false;
  E('finAssetForm').scrollIntoView({behavior:'smooth',block:'start'});E('finAssetName').focus();
 }
@@ -42,9 +44,10 @@ function card(a){
  const open=(a.installments||[]).length-settled.length;
  const lines=(a.installments||[]).map(p=>{
   const paid=p.status==='PAGO',late=!paid&&p.dueDate<today();
+  const paymentSource=paid?(p.autoConfirmedBy?' · Auto: '+p.autoConfirmedBy:' · Manual'):(p.manualOverride?' · Revisão manual':'' );
   const btn=paid?'<button type="button" class="btn small" data-asset-unpay="'+esc(a.id)+'" data-n="'+p.number+'">↩ Estornar marcação</button>':
   '<button type="button" class="btn small primary" data-asset-pay="'+esc(a.id)+'" data-n="'+p.number+'">✅ Confirmar pagamento</button>';
-  return '<tr><td>'+p.number+'/'+a.installmentsCount+'</td><td>'+date(p.dueDate)+'</td><td>'+brl(p.amountCents)+'</td><td><span class="badge '+(paid?'good':late?'warn':'light')+'">'+(paid?'Pago '+date(p.paidAt):late?'Vencido':'Pendente')+'</span></td><td>'+
+  return '<tr><td>'+p.number+'/'+a.installmentsCount+'</td><td>'+date(p.dueDate)+'</td><td>'+brl(p.amountCents)+'</td><td><span class="badge '+(paid?'good':late?'warn':'light')+'">'+(paid?'Confirmado '+date(p.paidAt)+paymentSource:late?'Vencido'+paymentSource:'Pendente'+paymentSource)+'</span></td><td>'+
    (paid?'':'<input class="asset-pay-date" type="date" aria-label="Data do pagamento da parcela '+p.number+'" data-asset-date="'+esc(a.id)+'-'+p.number+'" value="'+today()+'">')+btn+'</td></tr>';
  }).join('');
  return '<article class="card asset-record"><div class="section-head"><div><h3>🧰 '+esc(a.name)+'</h3><p>'+esc(a.category)+' · Compra: '+date(a.purchaseDate)+' · Fornecedor: '+esc(a.supplier||'não informado')+'</p></div>'+
@@ -55,17 +58,19 @@ function card(a){
  '<span><small>Saldo a pagar</small><strong>'+brl(a.amountCents-totalPaid)+'</strong></span>'+
  '<span><small>Em aberto</small><strong>'+open+' de '+a.installmentsCount+'</strong></span></div>'+
  '<details><summary>Ver parcelas e vencimentos</summary><div class="table-wrap"><table class="table"><thead><tr><th>Parcela</th><th>Vencimento</th><th>Valor</th><th>Situação</th><th>Ação</th></tr></thead><tbody>'+lines+'</tbody></table></div></details>'+
- '<small class="asset-depreciation-note">Vida útil gerencial: '+a.usefulLifeMonths+' meses · Valor residual: '+brl(a.residualCents)+' · Depreciação a partir do mês seguinte ao início de uso ('+date(a.inServiceDate)+')</small></article>';
+ '<small class="asset-depreciation-note">Confirmação automática mensal: '+(a.autoConfirmMonthly===false?'desativada':'ativa pelo login Jonatas')+' · Depreciação estimada: somente informativa (não descontada das parcelas) · Vida útil: '+a.usefulLifeMonths+' meses</small></article>';
 }
 function render(){
  if(!E('finAssetsList'))return;
  const x=summary||{},month=E('finMonth')?.value||'';
  E('finAssetsSummary').innerHTML=[
   ['🧰','Ativos cadastrados',String(assets.length),'Bens permanentes'],
-  ['💳','Parcelas com vencimento em '+month,brl(x.installmentDueCents),'Valor previsto, pago ou pendente'],
-  ['✅','Parcelas pagas no mês',brl(x.paidCents),'Saída de caixa efetivamente registrada'],
+  ['💳','Parcelas da competência '+month,brl(x.installmentDueCents),'Dedução mensal do resultado gerencial, mesmo pendente'],
+  ['✅','Confirmadas na competência',brl(x.confirmedCompetenceCents),'Confirmações gerenciais, automáticas ou manuais'],
+  ['🕓','Abertas na competência',brl(x.pendingCompetenceCents),'Ainda não confirmadas'],
+  ['💰','Pagamentos registrados no mês',brl(x.paidCents),'Não significa conciliação bancária'],
   ['⏳','Saldo de todas as parcelas',brl(x.outstandingCents),'Ainda não quitadas'],
-  ['📉','Depreciação da competência',brl(x.depreciationCents),'Valor gerencial considerado no DRE']
+  ['📉','Depreciação estimada',brl(x.depreciationCents),'Somente informação; não descontada de novo']
  ].map(([ico,label,value,detail])=>'<div class="stat"><span class="icon">'+ico+'</span><strong>'+esc(label)+'</strong><div class="n">'+esc(value)+'</div><small>'+esc(detail)+'</small></div>').join('');
  const term=E('finAssetSearch')?.value?.trim()?.toLowerCase()||'',cat=E('finAssetFilter')?.value||'ALL';
  const filtered=assets.filter(a=>(cat==='ALL'||a.category===cat)&&(!term||(a.name+' '+a.supplier).toLowerCase().includes(term)));
@@ -76,9 +81,10 @@ async function load(){
  loading=true;
  try{
   const month=E('finMonth')?.value||today().slice(0,7);
+  const reconciliation=await window.CaseirinhoFinance?.reconcile?.();
   const d=await request('/assets?month='+encodeURIComponent(month));
   assets=d.assets||[];summary=d.monthSummary;render();
-  notice('✅ Patrimônio e parcelas atualizados para '+month+'.');
+  notice('✅ Patrimônio e parcelas atualizados para '+month+'.'+(reconciliation?.error?' A confirmação automática não foi executada: '+reconciliation.error:''),!!reconciliation?.error);
  }catch(e){notice('Não foi possível consultar ativos: '+e.message,true);}
  finally{loading=false;}
 }
@@ -89,13 +95,13 @@ async function save(ev){
    inServiceDate:E('finAssetUse').value||E('finAssetPurchase').value,firstDueDate:E('finAssetFirstDue').value,
    amountCents:intMoney('finAssetAmount'),residualCents:intMoney('finAssetResidual'),
    usefulLifeMonths:Number(E('finAssetLife').value),installmentsCount:Number(E('finAssetInstallments').value),
-   supplier:E('finAssetSupplier').value,notes:E('finAssetNotes').value};
+   supplier:E('finAssetSupplier').value,notes:E('finAssetNotes').value,autoConfirmMonthly:E('finAssetAuto').checked};
   if(!Number.isSafeInteger(body.amountCents)||body.amountCents<=0)throw Error('Informe o custo do equipamento.');
-  if(!confirm((editing?'Alterar':'Cadastrar')+' '+body.name+' por '+brl(body.amountCents)+' em '+body.installmentsCount+' parcela(s)? As parcelas ficam fora das despesas do DRE.'))return;
+  if(!confirm((editing?'Alterar':'Cadastrar')+' '+body.name+' por '+brl(body.amountCents)+' em '+body.installmentsCount+' parcela(s)? Cada parcela será deduzida no resultado gerencial da respectiva competência, independentemente do pagamento. A depreciação não será descontada em duplicidade.'))return;
   if(editing)await request('/assets/'+encodeURIComponent(editing.id),'PATCH',{...body,recordVersion:editing.recordVersion});
   else await request('/assets','POST',body);
   assetFormReset();await load();window.CaseirinhoFinance?.load?.();
-  notice('✅ Equipamento salvo no ERP. Investimento e parcelas agora são acompanhados por competência.');
+  notice('✅ Equipamento salvo. As parcelas passam a integrar o resultado gerencial das competências de vencimento.');
  }catch(e){notice('Não foi possível salvar o equipamento: '+e.message,true);}
  finally{btn.disabled=false;}
 }
