@@ -144,3 +144,14 @@
  body:has(#financeiro.section.active) .app{padding:8px!important;max-width:100%!important}
  body:has(#finReportsPanel:not([hidden])) #finReportsPanel .toolbar,body:has(#finReportsPanel:not([hidden])) #finReportsPanel .fin-report-filters{display:none!important}
 }
+
+/* Competência explícita e legível no celular (novembro/2026, sem truncamento) */
+.fin-competence-control{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;column-gap:10px;row-gap:8px;max-width:630px;width:100%}
+.fin-competence-control>label{grid-column:1/-1;font-weight:750;color:#244633;line-height:1.4}
+.fin-competence-control input[type="month"]{width:100%;min-width:0;max-width:100%;box-sizing:border-box;border:1px solid #acc4b3;border-radius:10px;padding:10px;color:#244633;background:#fff;min-height:46px;font-size:16px}
+.fin-competence-control #finCurrentMonth{min-height:44px;min-width:124px;white-space:normal}
+.fin-competence-caption{grid-column:1/-1;display:block;color:#19472f;font-size:15px;line-height:1.35;text-transform:capitalize;overflow-wrap:anywhere}
+.fin-loaded-month{grid-column:1/-1;color:#576d5d;font-size:12px;line-height:1.4}
+#finKpis[hidden]{display:none!important}
+@media(max-width:760px){.fin-competence-control{width:100%;max-width:100%}.fin-competence-control>label{margin:0}.fin-toolbar{display:flex;flex-direction:column;align-items:stretch}.fin-toolbar #finCurrentMonth{font-size:13px}}
+@media(max-width:390px){.fin-competence-control{grid-template-columns:minmax(0,1fr)}.fin-competence-control #finCurrentMonth{width:100%}}
