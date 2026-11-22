@@ -44,7 +44,7 @@
  <button type="button" data-view="cashbacks">💚 Cashback Clientes</button>
  <button type="button" data-view="coupons">🎟️ Cupons e Utilizações</button>
  <button type="button" data-view="merch">🎁 Grades e Packs</button>
- <button type="button" data-view="reports">📄 Relatórios / PDF</button>
+ <button type="button" data-view="reports">📑 Central de Relatórios</button>
  <button type="button" data-view="sales">📈 Vendas & Estoque</button>
  <button type="button" data-view="receivables">💳 Conta Cliente / Recebimentos</button>
  <span class="nav-group-title">FINANCEIRO</span>
@@ -147,13 +147,33 @@
  <div id="draftProducts"></div><div id="productsList"></div>
 </section>
 <section id="reports" class="section">
- <div class="section-head"><div><h2>📄 Relatórios e PDF</h2><p>Relatórios prontos para imprimir ou salvar em PDF diretamente pelo celular.</p></div></div>
+ <div class="section-head"><div><h2>📑 Central de Relatórios</h2><p>Consulte relatórios financeiros por competência e período, ou acesse os relatórios operacionais dos outros módulos.</p></div></div>
+ <article class="card"><h3>📊 Relatórios financeiros com filtros de De / Até</h3>
+  <p>Receita, vendas avulsas, custos, contas fixas, pagamentos e despesas de funcionários, tributos, investimentos e movimento diário. Selecione competência mensal completa ou intervalo de até 366 dias.</p>
+  <div class="toolbar">
+   <button type="button" class="btn primary" data-view="financeiro" data-fin-tab="reports">📑 Abrir relatórios financeiros</button>
+   <button type="button" class="btn" data-view="financeiro" data-fin-tab="payroll">👥 Pagamentos de funcionários</button>
+   <button type="button" class="btn" data-view="financeiro" data-fin-tab="revenue">💵 Receitas</button>
+   <button type="button" class="btn" data-view="financeiro" data-fin-tab="assets">🧰 Ativos e investimentos</button>
+   <button type="button" class="btn" data-view="financeiro" data-fin-tab="dre">📊 DRE mensal</button>
+  </div>
+ </article>
+ <article class="card"><h3>📈 Relatórios e consultas dos demais processos</h3>
+  <div class="toolbar">
+   <button type="button" class="btn" data-view="sales">📦 Vendas, produtos e estoque</button>
+   <button type="button" class="btn" data-view="receivables">💳 Contas a receber / devedores</button>
+   <button type="button" class="btn" data-view="cashbacks">💚 Cashback dos clientes</button>
+   <button type="button" class="btn" data-view="coupons">🎟️ Cupons e utilização</button>
+   <button type="button" class="btn" data-view="sazonais">🎄 Encomendas sazonais</button>
+  </div>
+  <p class="subtitle">Esses atalhos abrem os respectivos módulos. Os filtros disponíveis fora do Financeiro dependem de cada relatório operacional.</p>
+ </article>
  <div class="grid three">
  <article class="card"><h3>👥 Clientes e CRM</h3><p>Nome, WhatsApp, quantidade de pedidos, visitas comprovadas e último contato.</p><button class="btn primary" data-report="contacts" type="button">📄 PDF dos clientes</button></article>
  <article class="card"><h3>🛒 Pedidos e vendas</h3><p>Código, cliente, situação, valores e itens que foram pedidos.</p><button class="btn primary" data-report="orders" type="button">📄 PDF dos pedidos</button></article>
  <article class="card"><h3>🍝 Produtos e valores</h3><p>Todos os produtos, preços, quantidade mínima e limite máximo.</p><button class="btn primary" data-report="products" type="button">📄 PDF dos produtos</button></article>
  </div>
- <div class="notice">No Android, toque em <b>Imprimir</b> e escolha <b>Salvar como PDF</b>. Os PDFs são gerados no seu navegador, sem enviar os dados a outros serviços.</div>
+ <div class="notice">Para relatórios financeiros, utilize os filtros por competência ou De/Até e exporte CSV ou imprima em PDF. Os três relatórios gerais acima imprimem os dados já disponíveis na Central e ainda não possuem filtro histórico de data próprio. No Android, escolha <b>Imprimir → Salvar como PDF</b>.</div>
 </section>
 <section id="sales" class="section">
  <div class="section-head"><div><h2>📈 Vendas, Performance e Estoque</h2><p>Identifique os produtos mais vendidos, confira a Curva ABC e aplique estoque mínimo/máximo sugerido no cadastro principal do ERP.</p></div><button id="salesRefresh" class="btn primary" type="button">🔎 Consultar</button></div>
