@@ -126,13 +126,13 @@ function setupInstall(){
  refreshInstallControls();
  if('serviceWorker' in navigator&&location.protocol==='https:'){
   const controlledAtStart=!!navigator.serviceWorker.controller;
-  const refreshKey='caseirinho-sw-refreshed-finance-v82-20261122';
+  const refreshKey='caseirinho-sw-refreshed-finance-v83-20261122';
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    if(!controlledAtStart||sessionStorage.getItem(refreshKey))return;
    sessionStorage.setItem(refreshKey,'1');
    window.location.reload();
   });
-  navigator.serviceWorker.register('./sw.js?v=20261122-finance-current82',{
+  navigator.serviceWorker.register('./sw.js?v=20261122-finance-current83',{
    scope:'./',updateViaCache:'none'
   }).then(reg=>{
    let lastUpdate=0;
