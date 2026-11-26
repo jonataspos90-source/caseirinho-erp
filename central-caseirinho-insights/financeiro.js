@@ -106,11 +106,21 @@ async function applyDailyFilter(){
  finally{state.dailyLoading=false;el('finDailyApply').disabled=false;}
 }
 
+const employeeTypes=p=>Array.isArray(p?.types)?p.types:[];
+const employeeBasis=p=>employeeTypes(p).some(t=>String(t).toLowerCase().includes('produto acabado'))?'PRECO_VENDA':state.employeePriceBasis;
 function fillEmployeeProducts(preferred){
- const selected=el('finEmployeeProduct'),value=preferred??selected.value;
- selected.innerHTML='<option value="">Selecione um produto...</option>'+
-  state.employeeProducts.map(p=>'<option value="'+esc(p.id)+'">'+esc((p.code?p.code+' · ':'')+p.name)+'</option>').join('');
- if(value&&state.employeeProducts.some(p=>p.id===value))selected.value=value;
+ const selected=el('finEmployeeProduct'),filter=el('finEmployeeProductType'),value=preferred??selected.value;
+ const oldFilter=filter.value||'__all';
+ const types=[...new Set(state.employeeProducts.flatMap(employeeTypes))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+ filter.innerHTML='<option value="__all">Todos os tipos</option>'+types.map(t=>'<option value="'+esc(t)+'">'+esc(t)+'</option>').join('')+
+  (state.employeeProducts.some(p=>!employeeTypes(p).length)?'<option value="__none">Sem tipo cadastrado</option>':'');
+ filter.value=Array.from(filter.options).some(o=>o.value===oldFilter)?oldFilter:'__all';
+ const matches=p=>filter.value==='__all'||(filter.value==='__none'?!employeeTypes(p).length:employeeTypes(p).includes(filter.value));
+ if(preferred&&state.employeeProducts.some(p=>p.id===preferred&&!matches(p)))filter.value='__all';
+ const visible=state.employeeProducts.filter(matches);
+ selected.innerHTML='<option value="">'+(visible.length?'Selecione um produto...':'Nenhum produto deste tipo')+'</option>'+
+  visible.map(p=>'<option value="'+esc(p.id)+'">'+esc((p.code?p.code+' · ':'')+p.name)+'</option>').join('');
+ if(value&&visible.some(p=>p.id===value))selected.value=value;
 }
 function employeeProductPreview(){
  const isProduct=el('finKind').value==='DESPESA_FUNCIONARIO'&&el('finCategory').value==='CONSUMO_PRODUTO';
@@ -119,14 +129,16 @@ function employeeProductPreview(){
  if(!isProduct){el('finManualUnitField').hidden=true;return;}
  const product=state.employeeProducts.find(p=>p.id===el('finEmployeeProduct').value);
  const quantity=Number(el('finProductQty').value);
- const price=product?Number(state.employeePriceBasis==='CUSTO'?product.costCents:product.saleCents):0;
+ const basis=employeeBasis(product);
+ const price=product?Number(basis==='CUSTO'?product.costCents:product.saleCents)||0:0;
  const manual=Number(el('finManualUnitPrice').value);
  el('finManualUnitField').hidden=!(product&&price<=0);
  const unitCents=price>0?price:Math.round(manual*100);
  const total=Number.isFinite(quantity)&&quantity>0&&unitCents>0?Math.round(quantity*unitCents):0;
  amount.value=total>0?(total/100).toFixed(2):'';
- const mode=state.employeePriceBasis==='CUSTO'?'custo':'preço de venda';
- const hint=!state.employeeBasisLoaded?'Carregue a configuração antes de lançar produtos.':
+ const mode=basis==='CUSTO'?'custo':'preço de venda';
+ el('finEmployeeUnitValue').value=product&&unitCents>0?money(unitCents):'—';
+ const hint=!state.employeeBasisLoaded?'Catálogo ou configuração indisponível. Atualize o Financeiro antes de lançar produtos.':
   !product?'Escolha um produto do cadastro do ERP.':
   quantity<=0?'Informe a quantidade utilizada.':
   !price&&!manual?'Sem '+mode+' no cadastro: informe manualmente o valor unitário e confira-o.':
@@ -137,11 +149,12 @@ async function employeeExtras(){
  try{
   const [settings,products]=await Promise.all([api('/employee-expense/settings'),api('/employee-expense/products')]);
   state.employeePriceBasis=settings.priceBasis||'CUSTO';state.employeeBasisLoaded=true;
-  state.employeeProducts=products.products||[];
+  if(!Array.isArray(products.products)||products.products.some(p=>!Array.isArray(p.types)))throw Error('A API de tipos de produto ainda não está atualizada.');
+  state.employeeProducts=products.products;
   el('finEmployeePriceBasis').value=state.employeePriceBasis;
   fillEmployeeProducts();employeeProductPreview();
  }catch(err){
-  state.employeeBasisLoaded=false;state.employeeProducts=[];fillEmployeeProducts();
+  state.employeeBasisLoaded=false;state.employeeProducts=[];fillEmployeeProducts();employeeProductPreview();
   message('DRE carregado, mas configuração de despesas com funcionários indisponível: '+err.message,true);
  }
 }
@@ -152,7 +165,7 @@ async function saveEmployeePriceBasis(){
   const data=await api('/employee-expense/settings',{method:'PUT',body:{priceBasis:basis}});
   state.employeePriceBasis=data.priceBasis;state.employeeBasisLoaded=true;employeeProductPreview();
   message('✅ Configuração salva: '+(basis==='CUSTO'?'custo':'preço de venda')+
-   '. Válida para novos lançamentos e edições, sem recalcular despesas anteriores.');
+   '. Válida para os demais tipos; produtos acabados usam preço de venda. Não recalcula despesas anteriores.');
  }catch(err){message('Erro ao salvar configuração: '+err.message,true);}
  finally{button.disabled=false;}
 }
@@ -213,7 +226,7 @@ function resetForm(kind='CUSTO_PRODUCAO',category){
  el('finDate').value=state.month?state.month+'-01':nowBR();
  el('finStatus').value='PAGO';el('finPaidAt').disabled=false;el('finPaidAt').value=nowBR();
  el('finEmployeeName').value='';el('finPayMethod').value='PIX';
- el('finEmployeeProduct').value='';el('finProductQty').value='1';el('finManualUnitPrice').value='';employeeProductPreview();
+ el('finEmployeeProductType').value='__all';fillEmployeeProducts('');el('finEmployeeProduct').value='';el('finProductQty').value='1';el('finManualUnitPrice').value='';employeeProductPreview();
  el('finSave').textContent='💾 Salvar lançamento';
 }
 function preset(cat){
@@ -415,7 +428,7 @@ async function save(event){
    if(!state.employeeBasisLoaded)throw Error('Configuração custo/preço de venda indisponível.');
    if(!data.productId)throw Error('Selecione o produto utilizado.');
    if(!Number.isFinite(data.quantity)||data.quantity<=0)throw Error('Quantidade do produto inválida.');
-   if(!confirm('Confirmar despesa de '+money(data.amountCents)+' pela base '+(state.employeePriceBasis==='CUSTO'?'CUSTO':'PREÇO DE VENDA')+'? Não gera venda nem baixa estoque.'))return;
+   if(!confirm('Confirmar despesa de '+money(data.amountCents)+' pela base '+(employeeBasis(state.employeeProducts.find(p=>p.id===data.productId))==='CUSTO'?'CUSTO':'PREÇO DE VENDA')+'? Não gera venda nem baixa estoque.'))return;
   }
   if(data.kind==='RECEITA_AVULSA'&&!state.editing&&!confirm('Confirma que esta receita NÃO foi registrada no aplicativo? Lançar duas vezes duplicaria o DRE.'))return;
   if(state.editing){
@@ -522,7 +535,8 @@ function bind(){
  el('finEntryForm').addEventListener('submit',save);
  el('finKind').addEventListener('change',()=>populateCategories());
  el('finCategory').addEventListener('change',employeeProductPreview);
- el('finEmployeeProduct').addEventListener('change',employeeProductPreview);
+ el('finEmployeeProductType').addEventListener('change',()=>{el('finManualUnitPrice').value='';fillEmployeeProducts('');el('finEmployeeProduct').value='';employeeProductPreview();});
+ el('finEmployeeProduct').addEventListener('change',()=>{el('finManualUnitPrice').value='';employeeProductPreview();});
  el('finProductQty').addEventListener('input',employeeProductPreview);
  el('finManualUnitPrice').addEventListener('input',employeeProductPreview);
  el('finEmployeePriceSave').addEventListener('click',saveEmployeePriceBasis);
