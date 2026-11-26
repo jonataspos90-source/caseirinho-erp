@@ -58,10 +58,13 @@ function session(){
 async function api(path,options={}){
  const token=session();if(!token)throw Error('Sua sessão expirou. Saia e entre novamente na Central.');
  let res;
- try{res=await fetch(API+path,{method:options.method||'GET',cache:'no-store',credentials:'omit',
+ const controller=new AbortController(),method=options.method||'GET';
+ const timer=setTimeout(()=>controller.abort(),method==='GET'?30000:45000);
+ try{res=await fetch(API+path,{method,signal:controller.signal,cache:'no-store',credentials:'omit',
   headers:{Authorization:'Bearer '+token,'Content-Type':'application/json','Cache-Control':'no-store'},
   body:options.body?JSON.stringify(options.body):undefined});
- }catch(_){throw Error('Sem conexão com a API. Nenhum lançamento foi confirmado.');}
+ }catch(error){throw Error(error.name==='AbortError'?'A API demorou a responder. '+(method==='GET'?'Tente atualizar novamente.':'Consulte os lançamentos antes de repetir a operação.'): 'Falha de conexão com a API. '+(method==='GET'?'Tente atualizar.':'Consulte os lançamentos antes de repetir a operação.'));}
+ finally{clearTimeout(timer);}
  const d=await res.json().catch(()=>({}));
  if(!res.ok)throw Error(d.error||'Erro HTTP '+res.status);
  return d;
@@ -145,7 +148,14 @@ function employeeProductPreview(){
   'Valorização pelo '+mode+': '+money(total)+(price<=0?' • preço unitário informado manualmente':' • valor do cadastro ERP');
  el('finEmployeeProductHint').textContent=hint+' Não gera venda nem baixa automática de estoque.';
 }
-async function employeeExtras(){
+let employeeExtrasPromise=null;
+function employeeExtras(){
+ if(employeeExtrasPromise)return employeeExtrasPromise;
+ employeeExtrasPromise=fetchEmployeeExtras().finally(()=>{employeeExtrasPromise=null;});
+ return employeeExtrasPromise;
+}
+async function fetchEmployeeExtras(){
+ if(!session())return;
  try{
   const [settings,products]=await Promise.all([api('/employee-expense/settings'),api('/employee-expense/products')]);
   state.employeePriceBasis=settings.priceBasis||'CUSTO';state.employeeBasisLoaded=true;
@@ -155,7 +165,8 @@ async function employeeExtras(){
   fillEmployeeProducts();employeeProductPreview();
  }catch(err){
   state.employeeBasisLoaded=false;state.employeeProducts=[];fillEmployeeProducts();employeeProductPreview();
-  message('DRE carregado, mas configuração de despesas com funcionários indisponível: '+err.message,true);
+  el('finEmployeeProductHint').textContent='Não foi possível carregar o catálogo: '+err.message+' Use Atualizar financeiro para tentar novamente.';
+  if(state.tab==='employeeExpenses'||(state.tab==='entries'&&el('finKind').value==='DESPESA_FUNCIONARIO'))message('Catálogo de funcionários indisponível: '+err.message,true);
  }
 }
 async function saveEmployeePriceBasis(){
@@ -196,7 +207,8 @@ function setTab(tab){
  el('finCsv').hidden=['assets','reports','revenue','platforms'].includes(tab);
  el('finPrint').hidden=tab==='reports';
  updateSidebar();
- if(tab==='entries')el('finEntryForm').scrollIntoView({block:'nearest',behavior:'smooth'});
+ if(tab==='entries'&&el('financeiro')?.classList.contains('active'))el('finEntryForm').scrollIntoView({block:'nearest',behavior:'smooth'});
+ if(tab==='employeeExpenses'&&!state.employeeBasisLoaded&&session())void employeeExtras();
  if(tab==='platforms')window.CaseirinhoPlatformSales?.load?.();
  if(tab==='assets')window.CaseirinhoAssetRegistry?.load?.();
  if(tab==='fixed')window.CaseirinhoRent?.load?.();
@@ -259,6 +271,7 @@ async function load(){
  const month=showSelectedCompetence();
  // When another month is selected during a request, its previous results must never appear.
  if(state.loading){
+  if(state.month===month&&!state.pendingReload)return;
   state.pendingReload=true;
   clearPreviousMonthData(month);
   message('Consultando '+monthLabel(month)+'…');
@@ -271,6 +284,8 @@ async function load(){
  clearPreviousMonthData(month);
  el('finRefresh').disabled=true;
  message('Consultando vendas e lançamentos de '+monthLabel(month)+'…');
+ // O catálogo de consumo não depende do fechamento mensal ou do DRE.
+ void employeeExtras();
  try{
   const rollover=await reconcileMonth();
   // No cached or previous-month data may be used as a substitute for this response.
@@ -295,8 +310,7 @@ async function load(){
    }catch(error){state.dailyData=null;message('DRE atualizado; período diário indisponível: '+error.message,true);}
   }
   message('✅ Financeiro sincronizado • competência '+monthLabel(month)+' • '+new Date().toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo'})+(rollover?.error?' • Confirmação automática não executada: '+rollover.error:''),!!rollover?.error);
-  // Optional configuration errors must not erase a successfully loaded DRE.
-  try{await employeeExtras()}catch(error){message('Dados de '+monthLabel(month)+' carregados. Configurações de funcionários indisponíveis: '+error.message,true);}
+  // Catálogo carregado independentemente, sem bloquear o botão de atualização.
  }catch(error){
   if(selectedCompetence()===month){
    clearPreviousMonthData(month);
@@ -552,10 +566,15 @@ function bind(){
  el('finCsv').addEventListener('click',downloadCsv);
  el('finPrint').addEventListener('click',()=>window.print());
  el('finSearch').addEventListener('input',render);el('finFilter').addEventListener('change',render);
+ // Seleciona o submódulo antes da navegação geral, inclusive no Android.
+ document.addEventListener('click',e=>{
+  const b=e.target.closest?.('[data-view="financeiro"][data-fin-tab]');
+  if(b&&MODULES[b.dataset.finTab])setTab(b.dataset.finTab);
+ },true);
  document.addEventListener('click',e=>{
   const b=e.target.closest('[data-fin-tab],[data-fin-kind],[data-fin-preset],[data-fin-edit],[data-fin-delete],[data-fin-repeat]');
   if(!b)return;
-  if(b.dataset.finTab)setTab(b.dataset.finTab);
+  if(b.dataset.finTab&&b.dataset.finTab!==state.tab)setTab(b.dataset.finTab);
   if(b.dataset.finKind)startKind(b.dataset.finKind);
   if(b.dataset.finPreset)preset(b.dataset.finPreset);
   if(b.dataset.finEdit)edit(b.dataset.finEdit);
