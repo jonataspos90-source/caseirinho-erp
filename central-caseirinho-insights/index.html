@@ -350,8 +350,10 @@
     <div id="finProductField" class="fin-wide fin-product-entry" hidden>
  <h3>📦 Produto utilizado pelo funcionário</h3>
  <div class="fin-product-grid">
+  <label>Tipo de produto <select id="finEmployeeProductType"><option value="__all">Todos os tipos</option></select></label>
   <label>Produto do ERP <select id="finEmployeeProduct"><option value="">Selecione um produto...</option></select></label>
   <label>Quantidade <input id="finProductQty" type="number" min="0.001" max="10000" step="0.001" value="1"></label>
+  <label>Valor unitário do produto <input id="finEmployeeUnitValue" type="text" value="—" readonly></label>
   <label id="finManualUnitField" hidden>Preço unitário manual (R$) <input id="finManualUnitPrice" type="number" min="0.01" step="0.01" placeholder="Informe o valor unitário"></label>
  </div>
  <p id="finEmployeeProductHint" class="notice" role="status">O valor será calculado pela configuração escolhida.</p>
@@ -412,14 +414,14 @@
   </div><button type="button" class="btn primary" data-fin-kind="DESPESA_FUNCIONARIO">➕ Lançar despesa</button></div>
   <div class="fin-employee-settings">
    <h3>⚙️ Configuração — valor dos produtos lançados</h3>
-   <label>Valor utilizado para produtos consumidos pelo funcionário
+   <label>Valor utilizado para os demais tipos de produto (exceto produto acabado)
     <select id="finEmployeePriceBasis">
      <option value="CUSTO">Custo cadastrado no ERP (padrão)</option>
      <option value="PRECO_VENDA">Preço de venda cadastrado no ERP</option>
     </select>
    </label>
    <button id="finEmployeePriceSave" type="button" class="btn primary">💾 Salvar configuração</button>
-   <p class="notice">A escolha vale somente para novos lançamentos e edições de consumo de produtos. Registros anteriores mantêm o valor original. Usar preço de venda constitui uma <strong>valorização gerencial</strong>, não cria receita, não representa custo fiscal nem faz baixa automática de estoque.</p>
+   <p class="notice">Produto acabado utiliza automaticamente o preço de venda. A configuração acima vale para os demais tipos, somente em novos lançamentos e edições. Registros anteriores mantêm o valor original. Usar preço de venda constitui uma <strong>valorização gerencial</strong>, não cria receita, não representa custo fiscal nem faz baixa automática de estoque.</p>
   </div>
   <div id="finEmployeeExpenseKpis" class="grid stats"></div>
   <div class="toolbar"><input id="finEmployeeExpenseSearch" type="search" placeholder="Localizar funcionário, produto ou despesa..." aria-label="Pesquisar despesas de funcionários"></div>
@@ -805,7 +807,7 @@
 <script src="./cashback-pending-erp.js?v=1" defer></script>
 <script src="./order-reject.js?v=4" defer></script>
 <script src="./operations-recovery.js?v=1" defer></script>
-<script src="./financeiro.js?v=20261122-month-current83" defer></script>
+<script src="./financeiro.js?v=20261126-employee-types85" defer></script>
 <script src="./platform-sales.js?v=20261110-platform-1" defer></script>
 <script src="./asset-registry.js?v=20261122-monthly-payment2" defer></script>
 <script src="./rent-recurring.js?v=20261122-1" defer></script>
