@@ -1885,6 +1885,69 @@ function openFicha(productId='',fichaId=''){
 }
 
 /* Cupom de produção: somente dados da ficha salva, sem valores financeiros. */
+
+/* PDF térmico autônomo: não depende de pop-up, CDN nem window.print(). */
+function ficha80Pdf(p,f,products,quantity,revision,date){
+ const width=80*72/25.4, margin=14, usable=width-2*margin;
+ const pages=[];let lines=[],y=14;
+ const canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');
+ const clean=v=>s(v).replace(/[\u2010-\u2015]/g,'-').replace(/[‘’]/g,"'").replace(/[“”]/g,'"').replace(/\u2026/g,'...').replace(/\u00a0/g,' ').replace(/[^\x20-\x7e\u00a0-\u00ff\n]/g,'?');
+ const literal=v=>clean(v).replace(/[\n]/g,' ').replace(/[()\\\u00a0-\u00ff]/g,ch=>'\\'+ch.charCodeAt(0).toString(8).padStart(3,'0'));
+ const measure=(v,size,bold)=>{if(!ctx)return v.length*size*.61;ctx.font=(bold?'bold ':'')+size+'px Arial';return ctx.measureText(v).width};
+ function page(){if(lines.length)pages.push({lines,height:Math.max(160,y+12)});lines=[];y=14;}
+ function ensure(h){if(y+h>1100)page();}
+ function line(v,size=10,bold=false,center=false){
+  const val=clean(v),height=size+4;ensure(height);
+  lines.push({val,size,bold,x:center?Math.max(margin,(width-measure(val,size,bold))/2):margin,y:y+size});y+=height;
+ }
+ function wrap(v,size=10,bold=false,center=false){
+  for(const paragraph of clean(v).split('\n')){
+   let buf='';
+   for(const word of paragraph.split(/\s+/)){
+    if(!word)continue;
+    const test=buf?buf+' '+word:word;
+    if(measure(test,size,bold)<=usable){buf=test;continue;}
+    if(buf){line(buf,size,bold,center);buf='';}
+    for(const ch of word){if(measure(buf+ch,size,bold)>usable&&buf){line(buf,size,bold,center);buf='';}buf+=ch;}
+   }
+   if(buf)line(buf,size,bold,center);else if(!paragraph.trim())y+=5;
+  }
+ }
+ function rule(){ensure(9);y+=3;lines.push({rule:true,y});y+=6;}
+ line('CASEIRINHO',16,true,true);line('Massas Artesanais',10,false,true);rule();
+ line('FICHA TÉCNICA DE PRODUÇÃO',10,true,true);wrap(p.name,13,true,true);
+ wrap('Código: '+s(p.code||'-'),9,false,true);
+ if(revision)wrap('Atualizada em '+revision,9,false,true);
+ rule();line('RENDIMENTO PREVISTO',10,true,true);wrap(quantity(f.yield,f.unit),16,true,true);rule();
+ line('INGREDIENTES / INSUMOS',11,true);
+ for(const part of (Array.isArray(f.components)?f.components:[])){
+  const id=part.produtoId??part.productId, item=products.find(x=>s(x.id)===s(id));
+  ensure(45);
+  wrap('[ ] '+(item?.name||('Insumo não localizado: '+s(id))),10,true);
+  wrap('Quantidade: '+quantity(part.quantidade??part.quantity,item?.unit),11,true);
+  rule();
+ }
+ if(!f.components?.length)wrap('Atenção: nenhum insumo cadastrado.',10,true);
+ line('MODO DE PREPARO / OBSERVAÇÕES',10,true);wrap(f.notes||'Não cadastrado na ficha.');rule();
+ line('CONTROLE DA PRODUÇÃO',11,true);
+ for(const label of ['Data: ____/____/________','Responsável: __________________','Lote: _________________________','Rendimento real: ______________','Conferido por: _________________']){wrap(label,10);y+=4;}
+ rule();wrap('Impresso em '+date,9);line('Uso interno - Caseirinho',9,false,true);page();
+ const objects=[null,'<< /Type /Catalog /Pages 2 0 R >>','', '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>','<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>'];
+ const ids=[];
+ for(const pg of pages){
+  const pageId=objects.length,streamId=pageId+1;ids.push(pageId+' 0 R');
+  const stream=pg.lines.map(l=>l.rule?'0.5 w '+margin+' '+(pg.height-l.y)+' m '+(width-margin)+' '+(pg.height-l.y)+' l S':'BT /'+(l.bold?'F2':'F1')+' '+l.size+' Tf 1 0 0 1 '+l.x.toFixed(2)+' '+(pg.height-l.y).toFixed(2)+' Tm ('+literal(l.val)+') Tj ET').join('\n')+'\n';
+  objects.push('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 '+width.toFixed(3)+' '+pg.height.toFixed(2)+'] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents '+streamId+' 0 R >>','<< /Length '+stream.length+' >>\nstream\n'+stream+'endstream');
+ }
+ objects[2]='<< /Type /Pages /Count '+ids.length+' /Kids ['+ids.join(' ')+'] >>';
+ let pdf='%PDF-1.4\n',offsets=[0];
+ for(let i=1;i<objects.length;i++){offsets.push(pdf.length);pdf+=i+' 0 obj\n'+objects[i]+'\nendobj\n';}
+ const xref=pdf.length;pdf+='xref\n0 '+objects.length+'\n0000000000 65535 f \n';
+ for(let i=1;i<offsets.length;i++)pdf+=String(offsets[i]).padStart(10,'0')+' 00000 n \n';
+ pdf+='trailer\n<< /Size '+objects.length+' /Root 1 0 R >>\nstartxref\n'+xref+'\n%%EOF\n';
+ return pdf;
+}
+
 function printFicha80(productId,fichaId){
  const f=(fichaId?(st.fichasData?.fichas||[]).find(item=>s(item.id)===s(fichaId)):fichaFor(productId));
  if(!f)return toast('Ficha técnica não encontrada. Atualize a lista.',true);
@@ -1913,17 +1976,24 @@ function printFicha80(productId,fichaId){
  const old=document.getElementById('fichaPrint80');if(old)old.remove();
  const panel=document.createElement('div');panel.id='fichaPrint80';panel.setAttribute('role','dialog');panel.setAttribute('aria-label','Prévia da ficha técnica 80 mm');panel.setAttribute('aria-modal','true');
  const style=document.createElement('style');style.textContent="#fichaPrint80{position:fixed;inset:0;z-index:2147483647;background:#e8e8e8;color:#000;overflow:auto;overscroll-behavior:contain;font:12px Arial,sans-serif;text-align:left}#fichaPrint80 *{box-sizing:border-box}#fichaPrint80 .print-controls{position:sticky;top:0;z-index:1;text-align:center;background:#fff;padding:12px 8px;box-shadow:0 2px 8px #0002}#fichaPrint80 .print-controls button{margin:3px;padding:10px 16px;border:1px solid #183c2e;border-radius:8px;background:#183c2e;color:#fff;font:bold 14px Arial;cursor:pointer}#fichaPrint80 .print-controls button[data-print-close]{background:#fff;color:#183c2e}#fichaPrint80 .receipt{display:block;width:72mm;max-width:100%;margin:12px auto;padding:2mm;background:#fff;color:#000;overflow-wrap:anywhere;font:12px Arial,sans-serif}#fichaPrint80 header{text-align:center;position:static}#fichaPrint80 h1{font: bold 17px Arial;margin:0 0 3px;color:#000}#fichaPrint80 h2{font:bold 15px Arial;margin:9px 0 4px;color:#000}#fichaPrint80 h3{font:bold 12px Arial;margin:0 0 4px;color:#000}#fichaPrint80 p{margin:4px 0;color:#000}#fichaPrint80 .rule{border-top:1px dashed #000;margin:8px 0}#fichaPrint80 .yield{text-align:center;border:1px solid #000;padding:7px 2px;margin:9px 0}#fichaPrint80 .yield strong{display:block;font-size:19px;margin-top:3px}#fichaPrint80 table{width:100%;border-collapse:collapse;table-layout:fixed}#fichaPrint80 th,#fichaPrint80 td{padding:5px 2px;vertical-align:top;text-align:left;border-bottom:1px dotted #777;color:#000;background:#fff}#fichaPrint80 th{font-size:10px}#fichaPrint80 td:first-child,#fichaPrint80 th:first-child{width:6mm}#fichaPrint80 .qty{width:23mm;text-align:right;font-weight:bold}#fichaPrint80 .check{display:inline-block;width:3.5mm;height:3.5mm;border:1px solid #000}#fichaPrint80 tr,#fichaPrint80 .yield,#fichaPrint80 .fields p{break-inside:avoid;page-break-inside:avoid}#fichaPrint80 .notes{white-space:pre-wrap;line-height:1.45}#fichaPrint80 .fields p{margin:12px 0}#fichaPrint80 .small{font-size:10px}@media print{@page{size:auto;margin:0}html:has(body.ficha-print-active),body.ficha-print-active{display:block!important;width:100%!important;min-width:0!important;height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;margin:0!important;padding:0!important;background:#fff!important}body.ficha-print-active> :not(#fichaPrint80){display:none!important}body.ficha-print-active>#fichaPrint80{display:block!important;position:static!important;inset:auto!important;width:100%!important;height:auto!important;max-height:none!important;overflow:visible!important;margin:0!important;padding:0!important;background:#fff!important}#fichaPrint80 .print-controls{display:none!important}#fichaPrint80 .receipt{display:block!important;width:72mm!important;max-width:100%!important;margin:0 auto!important;padding:2mm!important;overflow:visible!important;box-shadow:none!important}#fichaPrint80 thead{display:table-header-group}}";
- panel.innerHTML='<div class="print-controls"><button type="button" data-print-now>🖨️ Imprimir na impressora</button><button type="button" data-print-close>Fechar</button><p>Selecione a térmica de 80 mm, escala 100%, margens nenhuma e sem cabeçalhos/rodapés.</p><p>Se a janela não abrir no app instalado, abra a Central no Chrome ou Edge e use Ctrl+P nesta prévia.</p></div>'+ '<main class="receipt"><header><h1>CASEIRINHO</h1><div>Massas Artesanais</div><div class="rule"></div><b>FICHA TÉCNICA DE PRODUÇÃO</b><h2>'+esc(p.name)+'</h2><p>Código: '+esc(p.code||'—')+'</p>'+(revision?'<p class="small">Ficha atualizada em '+esc(revision)+'</p>':'')+'</header><div class="yield">RENDIMENTO PREVISTO<strong>'+esc(quantity(f.yield,f.unit))+'</strong></div><h3>INGREDIENTES / INSUMOS</h3><table><thead><tr><th>OK</th><th>Insumo</th><th class="qty">Qtd.</th></tr></thead><tbody>'+rows+'</tbody></table>'+(!rows?'<p><b>Atenção: nenhum insumo cadastrado.</b></p>':'')+'<div class="rule"></div><h3>MODO DE PREPARO / OBSERVAÇÕES</h3><div class="notes">'+(notes?esc(notes):'Não cadastrado na ficha.')+'</div><div class="rule"></div><h3>CONTROLE DA PRODUÇÃO</h3><div class="fields"><p>Data: ____/____/________</p><p>Responsável: __________________</p><p>Lote: _________________________</p><p>Rendimento real: ______________</p><p>Conferido por: _________________</p></div><div class="rule"></div><p class="small">Impresso em '+esc(date)+'</p><p class="small">Uso interno • Receita cadastrada no ERP</p></main>';
+ panel.innerHTML='<div class="print-controls"><button type="button" data-print-now>🖨️ Imprimir na impressora</button><button type="button" data-print-pdf>⬇ Baixar PDF 80 mm</button><button type="button" data-print-close>Fechar</button><p>Se a impressão direta não funcionar, baixe o PDF e imprima pelo leitor de PDF.</p><p>Selecione a térmica de 80 mm, escala 100%, margens nenhuma e sem cabeçalhos/rodapés.</p><p>Se a janela não abrir no app instalado, abra a Central no Chrome ou Edge e use Ctrl+P nesta prévia.</p></div>'+ '<main class="receipt"><header><h1>CASEIRINHO</h1><div>Massas Artesanais</div><div class="rule"></div><b>FICHA TÉCNICA DE PRODUÇÃO</b><h2>'+esc(p.name)+'</h2><p>Código: '+esc(p.code||'—')+'</p>'+(revision?'<p class="small">Ficha atualizada em '+esc(revision)+'</p>':'')+'</header><div class="yield">RENDIMENTO PREVISTO<strong>'+esc(quantity(f.yield,f.unit))+'</strong></div><h3>INGREDIENTES / INSUMOS</h3><table><thead><tr><th>OK</th><th>Insumo</th><th class="qty">Qtd.</th></tr></thead><tbody>'+rows+'</tbody></table>'+(!rows?'<p><b>Atenção: nenhum insumo cadastrado.</b></p>':'')+'<div class="rule"></div><h3>MODO DE PREPARO / OBSERVAÇÕES</h3><div class="notes">'+(notes?esc(notes):'Não cadastrado na ficha.')+'</div><div class="rule"></div><h3>CONTROLE DA PRODUÇÃO</h3><div class="fields"><p>Data: ____/____/________</p><p>Responsável: __________________</p><p>Lote: _________________________</p><p>Rendimento real: ______________</p><p>Conferido por: _________________</p></div><div class="rule"></div><p class="small">Impresso em '+esc(date)+'</p><p class="small">Uso interno • Receita cadastrada no ERP</p></main>';
  panel.prepend(style);document.body.appendChild(panel);document.body.classList.add('ficha-print-active');
  const close=()=>{panel.remove();document.body.classList.remove('ficha-print-active');};
  const print=()=>{if(typeof window.print!=='function')return toast('Abra a Central no navegador para imprimir.',true);try{window.print();}catch(err){toast('Não foi possível abrir a impressão. Tente pelo Chrome ou Edge.',true);}};
  panel.querySelector('[data-print-close]').addEventListener('click',close);
  panel.querySelector('[data-print-now]').addEventListener('click',print);
+ panel.querySelector('[data-print-pdf]').addEventListener('click',()=>{
+  try{
+   const pdf=ficha80Pdf(p,f,products,quantity,revision,date);
+   const url=URL.createObjectURL(new Blob([pdf],{type:'application/pdf'}));
+   const a=document.createElement('a');a.href=url;a.download='ficha-80mm-'+s(p.code||p.id).replace(/[^a-zA-Z0-9_-]/g,'_')+'.pdf';
+   document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
+   toast('PDF 80 mm gerado. Abra o arquivo baixado e imprima.');
+  }catch(err){toast('Falha ao gerar PDF: '+err.message,true);}
+ });
  panel.addEventListener('keydown',event=>{if(event.key==='Escape'){event.stopPropagation();close();}});
  panel.querySelector('[data-print-now]').focus();
- // Força o layout antes da impressão, mantendo o gesto original do usuário.
- void panel.offsetHeight;
- print();
+ // Prévia permanece aberta para o usuário escolher impressão direta ou PDF.
 }
 
 async function saveFicha(e){
