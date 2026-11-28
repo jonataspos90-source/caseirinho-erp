@@ -1844,7 +1844,7 @@ function renderFichas(){
   const existing=fichaFor(p.id);
   return '<article class="mobile-record"><div class="mobile-record-head"><b>'+esc(p.name)+'</b>'+fichaWarning(p)+'</div><p>'+esc(p.code)+' · '+esc(p.unit)+' · '+esc((p.types||[]).join(', '))+'</p>'+
    (p.hasFicha&&p.warnings?.length?'<p class="muted">'+esc(p.warnings.join(' · '))+'</p>':'')+
-   '<div class="record-actions"><button type="button" class="btn small primary" data-ficha-edit="'+esc(p.id)+'">'+(existing?'✏️ Editar ficha':'➕ Cadastrar ficha')+'</button></div></article>';
+   '<div class="record-actions"><button type="button" class="btn small primary" data-ficha-edit="'+esc(p.id)+'">'+(existing?'✏️ Editar ficha':'➕ Cadastrar ficha')+'</button>'+(existing?'<button type="button" class="btn small" data-ficha-print="'+esc(p.id)+'">🖨️ Imprimir 80 mm</button>':'')+'</div></article>';
  }).join('')+'</div>':cellEmpty('Nenhum produto encontrado neste filtro.');
 }
 function fichaOptions(selected){
@@ -1870,6 +1870,7 @@ function openFicha(productId='',fichaId=''){
  '<label>Quantidade mínima de produção<input name="minimumProduction" type="number" min="1" step="1" value="'+esc(existing?.minimumProduction||1)+'"></label></div>'+
  '<div class="form-grid"><label>Antecedência (dias)<input name="leadDays" type="number" min="0" max="365" value="'+esc(existing?.leadDays||0)+'"></label>'+
  '<label>Dia de produção (0–7)<input name="productionDay" type="number" min="0" max="7" value="'+esc(existing?.productionDay||0)+'"></label></div>'+
+ (existing?'<button type="button" class="btn" data-ficha-print="'+esc(pId)+'" data-ficha-print-id="'+esc(existing.id)+'">🖨️ Imprimir ficha salva (80 mm)</button><p class="muted">Salve as alterações antes de imprimir a versão atualizada.</p>':'')+
  '<h3>Ingredientes / insumos da ficha</h3><p class="muted">A quantidade deve usar a unidade cadastrada no próprio insumo. Ex.: 0,5 KG para 500 g quando a unidade for KG.</p>'+
  '<div id="fichaComponentList"></div><button type="button" class="btn" id="addFichaComponent">➕ Adicionar insumo</button>'+
  '<label>Modo de preparo / observações<textarea name="notes" rows="5" maxlength="10000">'+esc(existing?.notes||'')+'</textarea></label>'+
@@ -1882,6 +1883,40 @@ function openFicha(productId='',fichaId=''){
  E('fichaComponentList').addEventListener('click',e=>{if(e.target.closest('[data-ficha-remove]')){const rows=E('fichaComponentList').querySelectorAll('.ficha-component-row');if(rows.length>1)e.target.closest('.ficha-component-row').remove();}});
  E('fichaProduct').addEventListener('change',()=>{const f=fichaFor(E('fichaProduct').value);if(f&&s(f.id)!==s(E('fichaForm').dataset.id))toast('Este produto já possui ficha. Escolha Editar ficha na lista.',true);});
 }
+
+/* Cupom de produção: somente dados da ficha salva, sem valores financeiros. */
+function printFicha80(productId,fichaId){
+ const f=(fichaId?(st.fichasData?.fichas||[]).find(item=>s(item.id)===s(fichaId)):fichaFor(productId));
+ if(!f)return toast('Ficha técnica não encontrada. Atualize a lista.',true);
+ const products=fichaProducts(),p=products.find(item=>s(item.id)===s(f.productId));
+ if(!p)return toast('Produto da ficha não encontrado. Atualize a lista.',true);
+ const fmt=new Intl.NumberFormat('pt-BR',{maximumFractionDigits:12,useGrouping:false});
+ const quantity=(value,unit)=>{
+  const n=Number(value),u=s(unit).trim().toUpperCase();
+  if(value==null||s(value).trim()===''||!Number.isFinite(n)||n<=0)return 'NÃO INFORMADA';
+  if(u==='KG'&&n<1)return fmt.format(n*1000)+' g';
+  if(u==='L'&&n<1)return fmt.format(n*1000)+' ml';
+  return fmt.format(n)+(u?' '+u:' (unidade não informada)');
+ };
+ const parts=Array.isArray(f.components)?f.components:[];
+ const rows=parts.map(part=>{
+  const id=part.produtoId??part.productId;
+  const ingredient=products.find(item=>s(item.id)===s(id));
+  const name=ingredient?.name||('Insumo não localizado: '+s(id||'sem código'));
+  const qty=quantity(part.quantidade??part.quantity,ingredient?.unit);
+  return '<tr><td><span class="check"></span></td><td>'+esc(name)+'</td><td class="qty">'+esc(qty)+'</td></tr>';
+ }).join('');
+ const notes=s(f.notes).trim(),date=new Date().toLocaleString('pt-BR');
+ const updated=f.updatedAt?new Date(f.updatedAt):null;
+ const revision=updated&&!Number.isNaN(updated.getTime())?updated.toLocaleDateString('pt-BR'):'';
+ const css='*{box-sizing:border-box}html{color-scheme:light}body{margin:0;background:#eee;color:#000;font:12px Arial,sans-serif}.receipt{width:72mm;max-width:100%;margin:12px auto;padding:2mm;background:#fff;overflow-wrap:anywhere}header{text-align:center}h1{font-size:17px;margin:0 0 3px}h2{font-size:15px;margin:9px 0 4px}h3{font-size:12px;margin:0 0 4px}p{margin:4px 0}.rule{border-top:1px dashed #000;margin:8px 0}.yield{text-align:center;border:1px solid #000;padding:7px 2px;margin:9px 0}.yield strong{display:block;font-size:19px;margin-top:3px}table{width:100%;border-collapse:collapse;table-layout:fixed}th,td{padding:5px 2px;vertical-align:top;text-align:left;border-bottom:1px dotted #777}th{font-size:10px}td:first-child,th:first-child{width:6mm}.qty{width:23mm;text-align:right;font-weight:bold}.check{display:inline-block;width:3.5mm;height:3.5mm;border:1px solid #000}tr,.yield,.fields p{break-inside:avoid;page-break-inside:avoid}.notes{white-space:pre-wrap;line-height:1.45}.fields p{margin:12px 0}.small{font-size:10px}.controls{text-align:center;padding:10px}.controls button{padding:10px 18px;font: bold 14px Arial;cursor:pointer}@media print{@page{size:auto;margin:0}html,body{width:100%;margin:0;background:#fff}.receipt{margin:0 auto;width:72mm;max-width:100%;padding:2mm}.controls{display:none}thead{display:table-header-group}}';
+ const html='<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ficha técnica 80 mm — '+esc(p.name)+'</title><style>'+css+'</style></head><body><div class="controls"><button type="button" onclick="window.print()">Imprimir 80 mm</button><p>Selecione papel 80 mm, escala 100% e desative cabeçalhos e rodapés.</p></div><main class="receipt"><header><h1>CASEIRINHO</h1><div>Massas Artesanais</div><div class="rule"></div><b>FICHA TÉCNICA DE PRODUÇÃO</b><h2>'+esc(p.name)+'</h2><p>Código: '+esc(p.code||'—')+'</p>'+(revision?'<p class="small">Ficha atualizada em '+esc(revision)+'</p>':'')+'</header><div class="yield">RENDIMENTO PREVISTO<strong>'+esc(quantity(f.yield,f.unit))+'</strong></div><h3>INGREDIENTES / INSUMOS</h3><table><thead><tr><th>OK</th><th>Insumo</th><th class="qty">Qtd.</th></tr></thead><tbody>'+rows+'</tbody></table>'+(!rows?'<p><b>Atenção: nenhum insumo cadastrado.</b></p>':'')+'<div class="rule"></div><h3>MODO DE PREPARO / OBSERVAÇÕES</h3><div class="notes">'+(notes?esc(notes):'Não cadastrado na ficha.')+'</div><div class="rule"></div><h3>CONTROLE DA PRODUÇÃO</h3><div class="fields"><p>Data: ____/____/________</p><p>Responsável: __________________</p><p>Lote: _________________________</p><p>Rendimento real: ______________</p><p>Conferido por: _________________</p></div><div class="rule"></div><p class="small">Impresso em '+esc(date)+'</p><p class="small">Uso interno • Receita cadastrada no ERP</p></main></body></html>';
+ const w=window.open('','_blank');
+ if(!w)return toast('Permita pop-ups para abrir a impressão da ficha.',true);
+ w.document.open();w.document.write(html);w.document.close();w.focus();
+ setTimeout(()=>{try{if(!w.closed)w.print();}catch(_){}},450);
+}
+
 async function saveFicha(e){
  e.preventDefault();const form=e.target,fd=new FormData(form),lines=[...form.querySelectorAll('.ficha-component-row')];
  const components=lines.map(line=>{
@@ -2016,6 +2051,7 @@ function bindMoreFeatures(){
  E('openNewOrders').addEventListener('click',()=>{E('newOrderBanner').hidden=true;nav('orders');loadAll();});
  E('dismissNewOrders').addEventListener('click',()=>E('newOrderBanner').hidden=true);
  document.addEventListener('click',e=>{
+  const printFicha=e.target.closest('[data-ficha-print]');if(printFicha)return printFicha80(printFicha.dataset.fichaPrint,printFicha.dataset.fichaPrintId);
   const ficha=e.target.closest('[data-ficha-edit]');if(ficha)return openFicha(ficha.dataset.fichaEdit);
   const cashback=e.target.closest('[data-cashback-history]');if(cashback)return showCashbackHistory(cashback.dataset.cashbackHistory);
   const account=e.target.closest('[data-cashback-account]');if(account)return cashbackAccount(account.dataset.cashbackAccount);
